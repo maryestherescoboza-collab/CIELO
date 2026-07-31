@@ -37,3 +37,7 @@ lint_output.txt
 *.njsproj
 *.sln
 *.sw?
+
+# Scratch files
+scratch/
+
