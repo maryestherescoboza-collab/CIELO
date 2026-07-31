@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soporte Material de la Obra — Código Fuente — CIELO (Plataforma SaaS Educativa)</title>
+<style>
+  @page { size: A4; margin: 18mm 15mm 18mm 15mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: #1e293b; margin: 0; padding: 20px; background: #f8fafc; line-height: 1.5; }
+  .cover { page-break-after: always; text-align: center; padding-top: 120px; }
+  .cover h1 { font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+  .cover h2 { font-size: 20px; font-weight: 600; color: #475569; margin-bottom: 40px; }
+  .cover .subtitle { font-size: 14px; color: #64748b; margin-bottom: 8px; }
+  .cover .line { width: 80px; height: 3px; background: #059669; margin: 30px auto; border-radius: 4px; }
+  .cover table { margin: 40px auto 0 auto; border-collapse: collapse; text-align: left; font-size: 13px; }
+  .cover table td { padding: 6px 16px; color: #334155; }
+  .cover table td:first-child { font-weight: 700; color: #0f172a; }
+
+  h2.section-title { font-size: 18px; font-weight: 800; color: #0f172a; border-bottom: 2px solid #059669; padding-bottom: 6px; margin-top: 40px; margin-bottom: 4px; page-break-after: avoid; }
+  h3.file-title { font-size: 13px; font-weight: 700; color: #059669; margin: 20px 0 2px 0; page-break-after: avoid; }
+  p.file-desc { font-size: 11px; color: #64748b; margin: 0 0 6px 0; page-break-after: avoid; }
+
+  pre { background: #0f172a; color: #e2e8f0; padding: 14px 16px; border-radius: 8px; font-size: 10px; line-height: 1.55; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; page-break-inside: auto; font-family: "Cascadia Code", "Fira Code", "JetBrains Mono", Consolas, monospace; margin: 0 0 16px 0; }
+  pre .kw { color: #c084fc; }   /* keywords: import, export, const, if, return, function, async, await */
+  pre .str { color: #86efac; }  /* strings */
+  pre .cm { color: #64748b; font-style: italic; } /* comments */
+  pre .fn { color: #67e8f9; }   /* function names */
+  pre .tp { color: #fbbf24; }   /* types */
+  pre .num { color: #f97316; }  /* numbers */
+  pre .op { color: #94a3b8; }   /* operators */
+
+  .toc { page-break-after: always; }
+  .toc h2 { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 16px; }
+  .toc ol { font-size: 13px; color: #334155; line-height: 2.2; }
+  .toc ol li { border-bottom: 1px dotted #cbd5e1; }
+
+  .disclaimer { background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 12px 16px; font-size: 11px; color: #92400e; margin: 20px 0; page-break-inside: avoid; }
+  .footer-note { font-size: 10px; color: #94a3b8; text-align: center; margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    pre { font-size: 8.5px; padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ PORTADA ═══════════════════ -->
+<div class="cover">
+  <h1>CIELO</h1>
+  <h2>Plataforma SaaS Educativa</h2>
+  <div class="line"></div>
+  <p class="subtitle">SOPORTE MATERIAL DE LA OBRA</p>
+  <p class="subtitle">Fragmentos representativos del código fuente original</p>
+  <p class="subtitle">Para fines de registro ante la Oficina Nacional de Derecho de Autor (ONDA)</p>
+  <p class="subtitle">República Dominicana</p>
+  <table>
+    <tr><td>Nombre de la obra:</td><td>CIELO</td></tr>
+    <tr><td>Tipo:</td><td>Programa de Computadora (Plataforma SaaS Educativa)</td></tr>
+    <tr><td>Autor:</td><td>Mary Esther Martínez Escoboza</td></tr>
+    <tr><td>Tecnologías:</td><td>TypeScript, React, Node.js, PostgreSQL (Supabase)</td></tr>
+    <tr><td>Fecha de generación:</td><td>31 de julio de 2026</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════ DISCLAIMER ═══════════════════ -->
+<div class="disclaimer">
+  <strong>Aviso de seguridad:</strong> Toda credencial, llave API, token de base de datos, contraseña u otro dato sensible ha sido reemplazado por <code>************</code>. Este documento contiene únicamente lógica de negocio y código fuente original del autor. Se han excluido librerías externas (node_modules), archivos de configuración genéricos y dependencias de terceros.
+</div>
+
+<!-- ═══════════════════ ÍNDICE ═══════════════════ -->
+<div class="toc">
+  <h2>Índice de Contenidos</h2>
+  <ol>
+    <li><strong>Sección 1 — Modelo de Datos</strong>: Definiciones de tipos e interfaces del dominio</li>
+    <li><strong>Sección 2 — Estado Global (Store)</strong>: Gestor centralizado del estado de la aplicación</li>
+    <li><strong>Sección 3 — Capa de Datos</strong>: Conexión a base de datos y sincronización en tiempo real</li>
+    <li><strong>Sección 4 — Lógica de Negocio</strong>: Evaluaciones, calificaciones, recuperaciones y cursos</li>
+    <li><strong>Sección 5 — Enrutamiento</strong>: Definición de rutas de la aplicación</li>
+    <li><strong>Sección 6 — Punto de Entrada</strong>: Orquestador principal de la aplicación</li>
+    <li><strong>Sección 7 — Pantallas Principales</strong>: Curso Detalle y Autenticación</li>
+    <li><strong>Sección 8 — Componentes Especializados</strong>: Rúbrica de evaluación y Acta de recuperación</li>
+    <li><strong>Sección 9 — Constantes del Dominio</strong>: Competencias, asignaturas y escala académica</li>
+    <li><strong>Sección 10 — Plantillas de Boletines</strong>: Generación de informes escolares oficiales</li>
+    <li><strong>Sección 11 — Backend (Servidor)</strong>: API de autenticación y recuperación de contraseñas</li>
+    <li><strong>Sección 12 — Esquema de Base de Datos</strong>: Políticas de seguridad y estructura SQL</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 1: MODELO DE DATOS                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 1 — Modelo de Datos</h2>
+
+<h3 class="file-title">src/types/index.ts</h3>
+<p class="file-desc">Define todas las interfaces TypeScript del dominio educativo: estudiantes, cursos, actividades, calificaciones, competencias, boletines, evaluaciones de rúbrica/cotejo, incidencias, perfiles docentes y el estado global de la aplicación.</p>
+<pre>
+<span class="kw">export type</span> Screen =
+    | <span class="str">'inicio'</span> | <span class="str">'dashboard'</span> | <span class="str">'cursos'</span> | <span class="str">'curso-detalle'</span>
+    | <span class="str">'incidencias'</span> | <span class="str">'planificacion'</span> | <span class="str">'comunidad'</span>
+    | <span class="str">'rubrica'</span> | <span class="str">'cotejo'</span> | <span class="str">'estudiante'</span> | <span class="str">'calificaciones-anuales'</span> | <span class="str">'ajustes'</span>;
+
+<span class="kw">export type</span> Nivel = <span class="num">1</span> | <span class="num">2</span> | <span class="num">3</span> | <span class="num">4</span>;
+
+<span class="kw">export const</span> COMPETENCIAS_LABEL = {
+  BC1: <span class="str">"Comunicativa"</span>,
+  BC2: <span class="str">"Pensamiento lógico, creativo y crítico; resolución de problemas"</span>,
+  BC3: <span class="str">"Científica y tecnológica; ambiental y de la salud"</span>,
+  BC4: <span class="str">"Desarrollo personal y espiritual; ética y ciudadana"</span>,
+} <span class="kw">as const</span>;
+
+<span class="kw">export type</span> <span class="tp">Competencia</span> = <span class="kw">keyof typeof</span> COMPETENCIAS_LABEL;
+
+<span class="kw">export interface</span> <span class="tp">BCScore</span> { nivel: Nivel; puntaje: <span class="kw">number</span>; }
+
+<span class="kw">export interface</span> <span class="tp">Estudiante</span> {
+    id: <span class="kw">number</span>; nombre: <span class="kw">string</span>; apellido: <span class="kw">string</span>; avatarColor: <span class="kw">string</span>;
+    cursoId: <span class="kw">number</span>; grupoId: <span class="kw">number</span>; sharedCourseId?: <span class="kw">string</span>;
+    nivel: Nivel; puntaje: <span class="kw">number</span>;
+    bc1: <span class="tp">BCScore</span>; bc2: <span class="tp">BCScore</span>; bc3: <span class="tp">BCScore</span>; bc4: <span class="tp">BCScore</span>;
+    actividadesRecientes: <span class="kw">number</span>; enRiesgo: <span class="kw">boolean</span>;
+    userId?: <span class="kw">string</span>; numeroLista: <span class="kw">number</span>;
+}
+
+<span class="kw">export interface</span> <span class="tp">Curso</span> {
+    id: <span class="kw">number</span>; nombre: <span class="kw">string</span>; asignatura: <span class="kw">string</span>;
+    grado: <span class="kw">string</span>; seccion: <span class="kw">string</span>; periodo: <span class="kw">string</span>;
+    diasSemana: <span class="kw">string</span>[]; color: <span class="kw">string</span>;
+    isTutorOficial?: <span class="kw">boolean</span>; userId?: <span class="kw">string</span>;
+    grupoId: <span class="kw">number</span>; sharedCourseId?: <span class="kw">string</span>;
+    configuracionEvaluacion?: Record&lt;<span class="kw">string</span>, <span class="kw">unknown</span>&gt;;
+}
+
+<span class="kw">export interface</span> <span class="tp">Actividad</span> {
+    id: <span class="kw">number</span>; nombre: <span class="kw">string</span>; cursoId: <span class="kw">number</span>;
+    fecha: <span class="kw">string</span>; periodo: <span class="kw">string</span>;
+    bcAsignados: <span class="tp">Competencia</span>[];
+    secuenciaId?: <span class="kw">number</span>; isRec?: <span class="kw">boolean</span>;
+}
+
+<span class="kw">export interface</span> <span class="tp">CalificacionActividad</span> {
+    id?: <span class="kw">number</span>; cursoId: <span class="kw">number</span>; estudianteId: <span class="kw">number</span>;
+    actividadId: <span class="kw">number</span>; userId: <span class="kw">string</span>; asignatura: <span class="kw">string</span>;
+    periodo: <span class="kw">string</span>; competencias: <span class="tp">Competencia</span>[];
+    descriptores: <span class="kw">string</span>[]; puntaje: <span class="kw">number</span> | <span class="kw">null</span>;
+    recuperacion: <span class="kw">number</span> | <span class="kw">null</span>; sharedCourseId?: <span class="kw">string</span>;
+}
+
+<span class="kw">export interface</span> <span class="tp">RecuperacionBC</span> {
+    estudianteId: <span class="kw">number</span>; cursoId: <span class="kw">number</span>;
+    bc: <span class="num">1</span> | <span class="num">2</span> | <span class="num">3</span> | <span class="num">4</span>; puntaje: <span class="kw">number</span> | <span class="kw">null</span>;
+    periodo: <span class="kw">string</span>; sharedCourseId?: <span class="kw">string</span>;
+    asignatura?: <span class="kw">string</span>; userId?: <span class="kw">string</span>;
+}
+
+<span class="kw">export interface</span> <span class="tp">EvaluacionRubrica</span> {
+    id: <span class="kw">number</span>; estudianteId: <span class="kw">number</span>; actividadId: <span class="kw">number</span>;
+    cursoId: <span class="kw">number</span>; fecha: <span class="kw">string</span>;
+    selecciones: Partial&lt;Record&lt;<span class="tp">Competencia</span>, Nivel&gt;&gt;;
+    observaciones?: <span class="kw">string</span>; puntajeTotal: <span class="kw">number</span>;
+    plantillaId?: <span class="kw">number</span> | <span class="kw">null</span>;
+}
+
+<span class="kw">export interface</span> <span class="tp">AppState</span> {
+    cursos: <span class="tp">Curso</span>[]; estudiantes: <span class="tp">Estudiante</span>[];
+    incidencias: <span class="tp">Incidencia</span>[]; actividades: <span class="tp">Actividad</span>[];
+    calificaciones: <span class="tp">CalificacionActividad</span>[];
+    recuperaciones: <span class="tp">RecuperacionBC</span>[];
+    secuencias: <span class="tp">Secuencia</span>[]; eventos: <span class="tp">EventoCalendario</span>[];
+    posts: <span class="tp">Post</span>[]; descriptoresRubrica: <span class="tp">DescriptorRubrica</span>[];
+    nivelesPuntaje: <span class="tp">NivelPuntaje</span>[];
+    evaluacionesRubrica: <span class="tp">EvaluacionRubrica</span>[];
+    evaluacionesCotejo: <span class="tp">EvaluacionCotejo</span>[];
+    docentes: <span class="tp">Docente</span>[]; plantillas: <span class="tp">Plantilla</span>[];
+    cursoDetalle: <span class="tp">CursoDetalleEvaluacion</span>[];
+    perfiles: <span class="tp">UserProfile</span>[]; notificaciones: <span class="tp">Notification</span>[];
+    cursoDocentes: <span class="tp">CursoDocente</span>[]; grupos: <span class="tp">Grupo</span>[];
+}
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 2: ESTADO GLOBAL                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 2 — Estado Global (Store)</h2>
+
+<h3 class="file-title">src/store/appStore.ts</h3>
+<p class="file-desc">Almacén centralizado Zustand que gestiona el estado completo de la aplicación: datos académicos, sesión de usuario, configuración de interfaz y rúbricas flotantes. Solo persiste preferencias de UI, no datos sensibles.</p>
+<pre>
+<span class="kw">import</span> { create } <span class="kw">from</span> <span class="str">'zustand'</span>;
+<span class="kw">import</span> { persist } <span class="kw">from</span> <span class="str">'zustand/middleware'</span>;
+<span class="kw">import type</span> { Session } <span class="kw">from</span> <span class="str">'@supabase/supabase-js'</span>;
+<span class="kw">import type</span> { <span class="tp">AppState</span>, <span class="tp">SearchResults</span>, <span class="tp">FloatingRubricWindow</span>, <span class="tp">Nivel</span> } <span class="kw">from</span> <span class="str">'../types'</span>;
+<span class="kw">import</span> { initialState } <span class="kw">from</span> <span class="str">'../data/mockData'</span>;
+
+<span class="kw">interface</span> <span class="tp">AppStore</span> {
+    state: <span class="tp">AppState</span>;
+    session: Session | <span class="kw">null</span>;
+    loading: <span class="kw">boolean</span>;
+    darkMode: <span class="kw">boolean</span>;
+    selectedCursoId: <span class="kw">number</span> | <span class="kw">null</span>;
+    selectedEstudianteId: <span class="kw">number</span> | <span class="kw">null</span>;
+    genericToast: { message: <span class="kw">string</span>; type: <span class="str">'success'</span> | <span class="str">'error'</span> } | <span class="kw">null</span>;
+    floatingRubrics: <span class="tp">FloatingRubricWindow</span>[];
+    activeRubricSelection: Record&lt;<span class="kw">string</span>, <span class="tp">Nivel</span>&gt;;
+    <span class="cm">// Actions</span>
+    <span class="fn">setAppState</span>: (state: <span class="tp">AppState</span> | ((prev: <span class="tp">AppState</span>) =&gt; <span class="tp">AppState</span>)) =&gt; <span class="kw">void</span>;
+    <span class="fn">setSession</span>: (session: Session | <span class="kw">null</span>) =&gt; <span class="kw">void</span>;
+    <span class="fn">setLoading</span>: (loading: <span class="kw">boolean</span>) =&gt; <span class="kw">void</span>;
+}
+
+<span class="kw">export const</span> useAppStore = <span class="fn">create</span>&lt;<span class="tp">AppStore</span>&gt;()(
+  <span class="fn">persist</span>(
+    (set) =&gt; ({
+        state: initialState,
+        session: <span class="kw">null</span>,
+        loading: <span class="kw">true</span>,
+        darkMode: <span class="kw">false</span>,
+        <span class="cm">// ... demás valores iniciales</span>
+        <span class="fn">setAppState</span>: (updater) =&gt; set((prev) =&gt; ({
+            state: <span class="kw">typeof</span> updater === <span class="str">'function'</span> ? <span class="fn">updater</span>(prev.state) : updater
+        })),
+        <span class="fn">setState</span>: (updater) =&gt; set((prev) =&gt; ({
+            state: <span class="kw">typeof</span> updater === <span class="str">'function'</span> ? <span class="fn">updater</span>(prev.state) : updater
+        })),
+    }),
+    {
+      name: <span class="str">'terra-cognita-storage'</span>,
+      <span class="fn">partialize</span>: (state) =&gt; ({
+        selectedCursoId: state.selectedCursoId,
+        selectedEstudianteId: state.selectedEstudianteId,
+        darkMode: state.darkMode
+      }),
+    }
+  )
+);
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 3: CAPA DE DATOS                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 3 — Capa de Datos y Sincronización en Tiempo Real</h2>
+
+<h3 class="file-title">src/lib/supabase.ts</h3>
+<p class="file-desc">Inicialización del cliente de base de datos con wrapper de fetch personalizado para diagnóstico de errores de red y detección de bloqueos CORS.</p>
+<pre>
+<span class="kw">import</span> { createClient } <span class="kw">from</span> <span class="str">'@supabase/supabase-js'</span>;
+
+<span class="kw">const</span> supabaseUrl = <span class="str">'************'</span>;
+<span class="kw">const</span> supabaseAnonKey = <span class="str">'************'</span>;
+
+<span class="cm">// Wrapper de fetch personalizado para auditoría de red</span>
+<span class="kw">const</span> <span class="fn">customFetch</span> = <span class="kw">async</span> (url: RequestInfo | URL, options?: RequestInit): Promise&lt;Response&gt; =&gt; {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(url, options);
+    <span class="kw">return</span> res;
+  } <span class="kw">catch</span> (err: <span class="kw">any</span>) {
+    console.<span class="fn">error</span>(<span class="str">`[Supabase API Client] Fallo: ${url}. ${err?.message}`</span>);
+    <span class="kw">throw</span> err;
+  }
+};
+
+<span class="kw">export const</span> supabase = <span class="fn">createClient</span>(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: customFetch }
+});
+</pre>
+
+<h3 class="file-title">src/hooks/useSupabaseData.ts (fragmento principal)</h3>
+<p class="file-desc">Hook maestro que sincroniza 25 tablas de Supabase con el estado React. Incluye suscripciones en tiempo real (Realtime) y mapeo camelCase ↔ snake_case entre frontend y base de datos.</p>
+<pre>
+<span class="kw">export function</span> <span class="fn">useSupabaseData</span>() {
+    <span class="kw">const</span> { state, setAppState: setState, loading, setLoading, session } = <span class="fn">useAppStore</span>();
+
+    <span class="kw">const</span> <span class="fn">fetchData</span> = <span class="fn">useCallback</span>(<span class="kw">async</span> (isSilent = <span class="kw">false</span>) =&gt; {
+        <span class="kw">if</span> (!session?.user?.id) <span class="kw">return</span>;
+        <span class="kw">if</span> (!isSilent) <span class="fn">setLoading</span>(<span class="kw">true</span>);
+        <span class="kw">try</span> {
+            <span class="kw">const</span> results = <span class="kw">await</span> Promise.<span class="fn">all</span>([
+                supabase.<span class="fn">from</span>(<span class="str">'perfiles'</span>).<span class="fn">select</span>(<span class="str">'*, centros!perfiles_centro_id_fkey(*)'</span>),
+                supabase.<span class="fn">from</span>(<span class="str">'cursos'</span>).<span class="fn">select</span>(<span class="str">'*'</span>),
+                supabase.<span class="fn">from</span>(<span class="str">'estudiantes'</span>).<span class="fn">select</span>(<span class="str">'*'</span>),
+                supabase.<span class="fn">from</span>(<span class="str">'actividades'</span>).<span class="fn">select</span>(<span class="str">'*'</span>),
+                supabase.<span class="fn">from</span>(<span class="str">'calificaciones'</span>).<span class="fn">select</span>(<span class="str">'*'</span>),
+                supabase.<span class="fn">from</span>(<span class="str">'recuperaciones'</span>).<span class="fn">select</span>(<span class="str">'*'</span>),
+                <span class="cm">// ... 19 tablas adicionales</span>
+            ]);
+
+            <span class="cm">// Detección y reporte de errores por tabla</span>
+            results.<span class="fn">forEach</span>((result, idx) =&gt; {
+                <span class="kw">if</span> (result.error) {
+                    console.<span class="fn">error</span>(<span class="str">`[fetchData] Error en tabla "${tableNames[idx]}":`</span>, result.error);
+                }
+            });
+
+            <span class="cm">// Protección: si una consulta falla, conservar estado previo</span>
+            <span class="kw">const</span> calificaciones = results[<span class="num">4</span>].error ? <span class="kw">null</span> : results[<span class="num">4</span>].data;
+            <span class="kw">const</span> recuperaciones = results[<span class="num">5</span>].error ? <span class="kw">null</span> : results[<span class="num">5</span>].data;
+
+            <span class="fn">setState</span>(prev =&gt; ({
+                ...prev,
+                <span class="cm">// Mapeo de cada tabla con transformación snake_case → camelCase</span>
+                calificaciones: calificaciones === <span class="kw">null</span> ? prev.calificaciones
+                    : calificaciones.<span class="fn">map</span>((c) =&gt; ({ <span class="cm">/* ... mapeo ... */</span> })),
+                recuperaciones: recuperaciones === <span class="kw">null</span> ? prev.recuperaciones
+                    : recuperaciones.<span class="fn">map</span>((r) =&gt; ({ <span class="cm">/* ... mapeo ... */</span> })),
+            }));
+        } <span class="kw">finally</span> { <span class="kw">if</span> (!isSilent) <span class="fn">setLoading</span>(<span class="kw">false</span>); }
+    }, [session]);
+
+    <span class="cm">// Suscripciones Realtime a cambios en la base de datos</span>
+    <span class="fn">useEffect</span>(() =&gt; {
+        <span class="kw">if</span> (session) {
+            <span class="fn">fetchData</span>();
+            <span class="kw">const</span> channel = supabase.<span class="fn">channel</span>(<span class="str">`db-changes-${session.user.id}`</span>)
+                .<span class="fn">on</span>(<span class="str">'postgres_changes'</span>, { event: <span class="str">'*'</span>, schema: <span class="str">'public'</span>, table: <span class="str">'calificaciones'</span> }, () =&gt; <span class="fn">fetchData</span>(<span class="kw">true</span>))
+                .<span class="fn">on</span>(<span class="str">'postgres_changes'</span>, { event: <span class="str">'*'</span>, schema: <span class="str">'public'</span>, table: <span class="str">'recuperaciones'</span> }, () =&gt; <span class="fn">fetchData</span>(<span class="kw">true</span>))
+                .<span class="fn">on</span>(<span class="str">'postgres_changes'</span>, { event: <span class="str">'*'</span>, schema: <span class="str">'public'</span>, table: <span class="str">'cursos'</span> }, () =&gt; <span class="fn">fetchData</span>(<span class="kw">true</span>))
+                .<span class="fn">subscribe</span>();
+            <span class="kw">return</span> () =&gt; supabase.<span class="fn">removeChannel</span>(channel);
+        }
+    }, [session, fetchData]);
+}
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 4: LÓGICA DE NEGOCIO                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 4 — Lógica de Negocio</h2>
+
+<h3 class="file-title">src/hooks/useEvaluationActions.ts (fragmento: guardado de calificaciones y recuperaciones)</h3>
+<p class="file-desc">Lógica central de negocio para persistir calificaciones y actas de recuperación de competencias. Implementa upsert con resolución de conflictos por clave compuesta (estudiante + actividad) y actualización optimista del estado.</p>
+<pre>
+<span class="kw">const</span> <span class="fn">saveCalificaciones</span> = <span class="fn">useCallback</span>(<span class="kw">async</span> (
+    califs: <span class="tp">CalificacionActividad</span>[],
+    recs: <span class="tp">RecuperacionBC</span>[],
+    cursoIdOverride?: <span class="kw">number</span> | <span class="kw">null</span>,
+) =&gt; {
+    <span class="kw">const</span> cursoId = cursoIdOverride ?? selectedCursoId;
+    <span class="kw">if</span> (cursoId === <span class="kw">null</span> || !session?.user?.id) <span class="kw">return</span>;
+
+    <span class="kw">const</span> dbCalifs = califs.<span class="fn">map</span>(c =&gt; ({
+        user_id: session.user.id,
+        curso_id: cursoId,
+        estudiante_id: c.estudianteId,
+        actividad_id: c.actividadId,
+        asignatura: c.asignatura,
+        periodo: c.periodo,
+        competencias: c.competencias,
+        descriptores: c.descriptores || [],
+        puntaje: c.puntaje,
+        recuperacion: c.recuperacion,
+        shared_course_id: c.sharedCourseId || String(cursoId)
+    }));
+
+    <span class="kw">const</span> dbRecs = recs.<span class="fn">map</span>(r =&gt; ({
+        user_id: session.user.id,
+        estudiante_id: r.estudianteId,
+        curso_id: r.cursoId,
+        bc: r.bc,
+        puntaje: r.puntaje,
+        periodo: r.periodo,
+        shared_course_id: r.sharedCourseId || String(r.cursoId),
+        asignatura: r.asignatura || <span class="str">''</span>
+    }));
+
+    <span class="kw">const</span> promises = [];
+    <span class="kw">if</span> (dbCalifs.length &gt; <span class="num">0</span>)
+        promises.<span class="fn">push</span>(supabase.<span class="fn">from</span>(<span class="str">'calificaciones'</span>).<span class="fn">upsert</span>(dbCalifs,
+            { onConflict: <span class="str">'estudiante_id,actividad_id'</span> }));
+    <span class="kw">if</span> (dbRecs.length &gt; <span class="num">0</span>)
+        promises.<span class="fn">push</span>(supabase.<span class="fn">from</span>(<span class="str">'recuperaciones'</span>).<span class="fn">upsert</span>(dbRecs,
+            { onConflict: <span class="str">'estudiante_id,curso_id,bc,periodo,asignatura'</span> }));
+
+    <span class="kw">if</span> (promises.length &gt; <span class="num">0</span>) {
+        <span class="kw">await</span> Promise.<span class="fn">all</span>(promises);
+        <span class="cm">// Actualización optimista del estado global</span>
+        <span class="fn">setState</span>(s =&gt; {
+            <span class="kw">const</span> nextCalifs = [...s.calificaciones];
+            califs.<span class="fn">forEach</span>(newC =&gt; {
+                <span class="kw">const</span> idx = nextCalifs.<span class="fn">findIndex</span>(oc =&gt;
+                    oc.estudianteId === newC.estudianteId &amp;&amp; oc.actividadId === newC.actividadId);
+                <span class="kw">if</span> (idx !== <span class="num">-1</span>) nextCalifs[idx] = newC; <span class="kw">else</span> nextCalifs.<span class="fn">push</span>(newC);
+            });
+            <span class="kw">const</span> nextRecs = [...s.recuperaciones];
+            recs.<span class="fn">forEach</span>(nr =&gt; {
+                <span class="kw">const</span> idx = nextRecs.<span class="fn">findIndex</span>(or =&gt;
+                    or.estudianteId === nr.estudianteId &amp;&amp; or.bc === nr.bc
+                    &amp;&amp; or.periodo === nr.periodo &amp;&amp; or.asignatura === nr.asignatura);
+                <span class="kw">if</span> (idx !== <span class="num">-1</span>) nextRecs[idx] = nr; <span class="kw">else</span> nextRecs.<span class="fn">push</span>(nr);
+            });
+            <span class="kw">return</span> { ...s, calificaciones: nextCalifs, recuperaciones: nextRecs };
+        });
+    }
+}, [session, selectedCursoId, state, setState]);
+</pre>
+
+<h3 class="file-title">src/hooks/useCursoDetalleData.ts (fragmento: cálculo de competencias por BC)</h3>
+<p class="file-desc">Motor de cálculo de promedios por competencia fundamental (BC1–BC4) con lógica de recuperación integrada: si el promedio de una competencia es inferior a 70 y existe un acta de recuperación, el puntaje de recuperación reemplaza el promedio. Incluye auto-guardado con debounce de 1 segundo.</p>
+<pre>
+<span class="kw">export function</span> <span class="fn">useCursoDetalleData</span>({ state, cursoId, currentUserId, onSaveCalificaciones }: Params) {
+    <span class="kw">const</span> [localCalifs, setLocalCalifs] = <span class="fn">useState</span>&lt;<span class="tp">CalificacionActividad</span>[]&gt;([]);
+    <span class="kw">const</span> [localRecs, setLocalRecs] = <span class="fn">useState</span>&lt;<span class="tp">RecuperacionBC</span>[]&gt;([]);
+    <span class="kw">const</span> [isDirty, setIsDirty] = <span class="fn">useState</span>(<span class="kw">false</span>);
+
+    <span class="cm">// Sincronización bidireccional: estado global → estado local</span>
+    <span class="fn">useEffect</span>(() =&gt; {
+        <span class="fn">setLocalCalifs</span>(state.calificaciones.<span class="fn">filter</span>(c =&gt; /* filtro por curso */));
+        <span class="fn">setLocalRecs</span>(state.recuperaciones.<span class="fn">filter</span>(r =&gt;
+            (r.cursoId === cursoId || r.sharedCourseId === curso?.sharedCourseId)
+            &amp;&amp; (r.userId === currentUserId || !r.userId)));
+    }, [state.calificaciones, state.recuperaciones, cursoId]);
+
+    <span class="cm">// Auto-save con debounce de 1 segundo</span>
+    <span class="fn">useEffect</span>(() =&gt; {
+        <span class="kw">if</span> (!isDirty || !onSaveCalificaciones) <span class="kw">return</span>;
+        <span class="kw">const</span> timer = <span class="fn">setTimeout</span>(<span class="kw">async</span> () =&gt; {
+            <span class="kw">await</span> <span class="fn">onSaveCalificaciones</span>(localCalifs, localRecs, cursoId);
+            <span class="fn">setIsDirty</span>(<span class="kw">false</span>);
+        }, <span class="num">1000</span>);
+        <span class="kw">return</span> () =&gt; <span class="fn">clearTimeout</span>(timer);
+    }, [localCalifs, localRecs, isDirty]);
+
+    <span class="cm">// Cálculo de promedios por competencia con lógica de recuperación</span>
+    <span class="kw">const</span> enhancedEstudiantes = <span class="fn">useMemo</span>(() =&gt; {
+        <span class="kw">return</span> filteredStudents.<span class="fn">map</span>(est =&gt; {
+            <span class="kw">const</span> bcs: <span class="tp">BCKey</span>[] = [<span class="str">'BC1'</span>, <span class="str">'BC2'</span>, <span class="str">'BC3'</span>, <span class="str">'BC4'</span>];
+            <span class="kw">const</span> bcValues = bcs.<span class="fn">map</span>((bc, idx) =&gt; {
+                <span class="kw">const</span> bcNum = (idx + <span class="num">1</span>) <span class="kw">as</span> <span class="num">1</span> | <span class="num">2</span> | <span class="num">3</span> | <span class="num">4</span>;
+                <span class="cm">// Filtrar actividades que NO sean recuperación y que tengan esta BC</span>
+                <span class="kw">const</span> actsBc = actividades.<span class="fn">filter</span>(a =&gt;
+                    a.nombre !== <span class="str">'Recuperación'</span> &amp;&amp; bcSel[a.id]?.<span class="fn">has</span>(bc));
+                <span class="kw">const</span> rawScores = actsBc.<span class="fn">map</span>(a =&gt;
+                    localCalifs.<span class="fn">find</span>(c =&gt; c.estudianteId === est.id
+                        &amp;&amp; c.actividadId === a.id)?.puntaje ?? <span class="num">0</span>);
+                <span class="kw">const</span> avg = actsBc.length
+                    ? Math.<span class="fn">round</span>(rawScores.<span class="fn">reduce</span>((a, b) =&gt; a + b, <span class="num">0</span>) / actsBc.length)
+                    : <span class="kw">null</span>;
+                <span class="cm">// Buscar acta de recuperación para esta BC y período</span>
+                <span class="kw">const</span> rec = localRecs.<span class="fn">find</span>(r =&gt;
+                    r.estudianteId === est.id &amp;&amp; Number(r.bc) === bcNum
+                    &amp;&amp; r.periodo === selectedPeriodo)?.puntaje ?? <span class="kw">null</span>;
+                <span class="cm">// Regla: Si hay recuperación Y el promedio era &lt; 70, usar recuperación</span>
+                <span class="kw">const</span> final = (rec !== <span class="kw">null</span> &amp;&amp; (avg === <span class="kw">null</span> || avg &lt; <span class="num">70</span>)) ? rec : avg;
+                <span class="kw">return</span> { bc, avg, rec, final };
+            });
+            <span class="kw">return</span> { ...est, bcValues, promTotal };
+        });
+    }, [state.estudiantes, actividades, localCalifs, localRecs, selectedPeriodo]);
+}
+</pre>
+
+<h3 class="file-title">src/hooks/useCourseActions.ts (fragmento: creación de curso con grupo académico)</h3>
+<p class="file-desc">Lógica de creación de cursos con resolución automática de grupo académico (grado + sección) y vinculación de co-docentes mediante notificaciones pendientes.</p>
+<pre>
+<span class="kw">const</span> <span class="fn">handleAddCurso</span> = <span class="fn">useCallback</span>(<span class="kw">async</span> (c: Omit&lt;<span class="tp">Curso</span>, <span class="str">'id'</span> | <span class="str">'grupoId'</span>&gt;) =&gt; {
+    <span class="kw">if</span> (!session?.user?.id) <span class="kw">return null</span>;
+
+    <span class="cm">// Upsert de grupo: si el grado+sección ya existe, reutilizar el grupo</span>
+    <span class="kw">const</span> { data: grupoData } = <span class="kw">await</span> supabase
+        .<span class="fn">from</span>(<span class="str">'grupos'</span>)
+        .<span class="fn">upsert</span>({
+            nombre: <span class="str">`${c.grado} ${c.seccion}`</span>,
+            grado: c.grado,
+            seccion: c.seccion
+        }, { onConflict: <span class="str">'grado,seccion'</span> })
+        .<span class="fn">select</span>();
+
+    <span class="kw">const</span> grupo_id = grupoData[<span class="num">0</span>].id;
+    <span class="kw">const</span> shared_course_id = c.sharedCourseId || crypto.<span class="fn">randomUUID</span>();
+
+    <span class="kw">const</span> { data } = <span class="kw">await</span> supabase.<span class="fn">from</span>(<span class="str">'cursos'</span>).<span class="fn">insert</span>([{
+        nombre: c.nombre, asignatura: c.asignatura,
+        grado: c.grado, seccion: c.seccion, periodo: c.periodo,
+        dias_semana: c.diasSemana, color: c.color,
+        is_tutor_oficial: c.isTutorOficial,
+        configuracion_evaluacion: c.configuracionEvaluacion || {},
+        user_id: session.user.id, shared_course_id, grupo_id
+    }]).<span class="fn">select</span>();
+
+    <span class="cm">// Vinculación automática de co-docentes pendientes</span>
+    <span class="kw">const</span> pendingNotif = state.notificaciones.<span class="fn">find</span>(n =&gt;
+        n.tipo === <span class="str">'solicitud_vinculacion'</span> &amp;&amp; n.estado === <span class="str">'pendiente'</span>
+        &amp;&amp; n.grado === mapped.grado &amp;&amp; n.seccion === mapped.seccion);
+    <span class="kw">if</span> (pendingNotif) {
+        <span class="kw">await</span> supabase.<span class="fn">from</span>(<span class="str">'curso_docentes'</span>).<span class="fn">insert</span>([{
+            curso_id: tutorCurso.id,
+            docente_id: session.user.id,
+            rol: <span class="str">'co-docente'</span>,
+            asignatura: mapped.asignatura
+        }]);
+    }
+}, [session, state.cursos, setState]);
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 5: ENRUTAMIENTO                                -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 5 — Enrutamiento de la Aplicación</h2>
+
+<h3 class="file-title">src/AppRoutes.tsx (fragmento: definición de rutas)</h3>
+<p class="file-desc">Definición centralizada de todas las rutas de la SPA con wrappers que sincronizan el cursoId de la URL con el estado global. Incluye rutas para: Inicio, Dashboard, Cursos, Detalle de Curso, Rúbricas, Cotejo, Estudiante, Calificaciones Anuales, Planificación, Comunidad, Incidencias y Boletines.</p>
+<pre>
+<span class="kw">const</span> <span class="fn">CourseDetailRouteWrapper</span>: React.FC&lt;{
+  <span class="fn">setSelectedCursoId</span>: (id: <span class="kw">number</span> | <span class="kw">null</span>) =&gt; <span class="kw">void</span>;
+  <span class="fn">renderCourseDetail</span>: () =&gt; React.ReactElement;
+}&gt; = ({ setSelectedCursoId, renderCourseDetail }) =&gt; {
+  <span class="kw">const</span> { id } = <span class="fn">useParams</span>&lt;{ id: <span class="kw">string</span> }&gt;();
+  React.<span class="fn">useEffect</span>(() =&gt; {
+    <span class="kw">if</span> (id) { <span class="fn">setSelectedCursoId</span>(Number(id)); }
+  }, [id, setSelectedCursoId]);
+  <span class="kw">return</span> <span class="fn">renderCourseDetail</span>();
+};
+
+<span class="cm">// Rutas principales del sistema</span>
+&lt;Routes&gt;
+  &lt;Route path=<span class="str">"/"</span> element={&lt;<span class="fn">Inicio</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/dashboard"</span> element={&lt;<span class="fn">Dashboard</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/cursos"</span> element={&lt;<span class="fn">Cursos</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/curso-detalle/:id?"</span> element={&lt;<span class="fn">CursoDetalle</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/rubrica"</span> element={&lt;<span class="fn">Rubrica</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/cotejo"</span> element={&lt;<span class="fn">Cotejo</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/estudiante"</span> element={&lt;<span class="fn">Estudiante</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/calificaciones-anuales/:id?"</span> element={...} /&gt;
+  &lt;Route path=<span class="str">"/planificacion"</span> element={&lt;<span class="fn">Planificacion</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/comunidad"</span> element={&lt;<span class="fn">Comunidad</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/incidencias"</span> element={&lt;<span class="fn">Incidencias</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/print-boletines/:cursoId"</span> element={&lt;<span class="fn">PrintBoletines</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/ajustes"</span> element={&lt;<span class="fn">ProfileSettings</span> /&gt;} /&gt;
+  &lt;Route path=<span class="str">"/reset-password"</span> element={&lt;<span class="fn">ResetPassword</span> /&gt;} /&gt;
+&lt;/Routes&gt;
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 6: PUNTO DE ENTRADA                            -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 6 — Punto de Entrada de la Aplicación</h2>
+
+<h3 class="file-title">src/App.tsx</h3>
+<p class="file-desc">Componente raíz que orquesta la inicialización de datos, autenticación, composición de acciones (hooks), determinación de roles docentes, filtrado de datos visibles por asignatura y renderización condicional del layout completo.</p>
+<pre>
+<span class="kw">export default function</span> <span class="fn">App</span>() {
+  <span class="kw">const</span> { state, loading, session, selectedCursoId } = <span class="fn">useAppStore</span>(<span class="fn">useShallow</span>(s =&gt; ({
+    state: s.state, loading: s.loading, session: s.session,
+    selectedCursoId: s.selectedCursoId,
+  })));
+
+  <span class="cm">// Composición de todas las acciones del sistema</span>
+  <span class="kw">const</span> actions = {
+    ...<span class="fn">useCourseActions</span>(),   ...<span class="fn">useStudentActions</span>(),
+    ...<span class="fn">useProfileActions</span>(),   ...<span class="fn">useEvaluationActions</span>(),
+    ...<span class="fn">useIncidenciaActions</span>(), ...<span class="fn">useSecuenciaActions</span>(),
+    ...<span class="fn">usePostActions</span>(),       ...<span class="fn">useNotificationActions</span>(),
+    ...<span class="fn">useSupabaseData</span>()
+  };
+
+  <span class="cm">// Determinación del rol del docente actual en el curso seleccionado</span>
+  <span class="kw">const</span> currentCourseRole = <span class="fn">useMemo</span>(() =&gt; {
+    <span class="kw">const</span> linked = state.cursoDocentes.<span class="fn">find</span>(cd =&gt;
+        cd.cursoId === selectedCursoId &amp;&amp; cd.userId === session.user.id);
+    <span class="kw">if</span> (linked) <span class="kw">return</span> linked;
+    <span class="kw">const</span> curso = state.cursos.<span class="fn">find</span>(c =&gt; c.id === selectedCursoId);
+    <span class="kw">if</span> (curso?.userId === session.user.id)
+        <span class="kw">return</span> { rol: <span class="str">'tutor'</span>, asignatura: curso.asignatura };
+    <span class="kw">return null</span>;
+  }, [selectedCursoId, session, state.cursoDocentes, state.cursos]);
+
+  <span class="kw">if</span> (!session) <span class="kw">return</span> &lt;<span class="fn">Auth</span> onAuthSuccess={() =&gt; actions.<span class="fn">refresh</span>()} /&gt;;
+
+  <span class="kw">return</span> (
+    &lt;<span class="fn">Layout</span>&gt;
+      &lt;<span class="fn">AppRoutes</span> {...actions} state={state} session={session} /&gt;
+      &lt;<span class="fn">FloatingRubricManager</span> /&gt;
+    &lt;/<span class="fn">Layout</span>&gt;
+  );
+}
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 7: PANTALLAS PRINCIPALES                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 7 — Pantallas Principales</h2>
+
+<h3 class="file-title">src/screens/CursoDetalle.tsx</h3>
+<p class="file-desc">Pantalla central del sistema donde el docente visualiza y edita calificaciones en una tabla interactiva estilo hoja de cálculo. Soporta modos de pintura por puntos, edición directa de celdas, asignación de competencias por actividad, eliminación masiva, y vinculación de co-docentes.</p>
+<pre>
+<span class="kw">export default function</span> <span class="fn">CursoDetalle</span>(props: Props) {
+    <span class="kw">const</span> { id } = <span class="fn">useParams</span>();
+    <span class="kw">const</span> cursoId = Number(id) || props.cursoId || <span class="num">0</span>;
+    <span class="kw">const</span> currentUserId = props.currentUserId || store.session?.user?.id;
+
+    <span class="kw">const</span> {
+        curso, selectedPeriodo, actividades, enhancedEstudiantes,
+        localCalifs, localRecs, setCalif, setRec,
+        isPointMode, isDragging, isDirty, isSaving,
+        bcSel, setBcSel, triggerAnimation
+    } = <span class="fn">useCursoDetalleData</span>({ state, cursoId, currentUserId,
+        onSaveCalificaciones: props.onSaveCalificaciones });
+
+    <span class="kw">return</span> (
+        &lt;<span class="kw">div</span> className=<span class="str">"fixed inset-0 z-50 flex flex-col"</span>&gt;
+            &lt;<span class="fn">CursoDetalleHeader</span>
+                curso={curso} isDirty={isDirty} isSaving={isSaving}
+                onSave={onSave} isPointMode={isPointMode}
+                selectedPeriodo={selectedPeriodo}
+                onAddActividad={onAddActividad} /&gt;
+            &lt;<span class="fn">GradeTable</span>
+                actividades={actividades}
+                estudiantes={enhancedEstudiantes}
+                bcSel={bcSel}
+                onSetGrade={(estId, actId, val) =&gt; {
+                    <span class="fn">setCalif</span>(estId, actId, val);
+                    <span class="kw">if</span> (val !== <span class="kw">null</span>) <span class="fn">triggerAnimation</span>(estId, actId, val);
+                }} /&gt;
+            &lt;<span class="fn">RubricModal</span>
+                targetEst={targetEst}
+                onSetRec={setRec}
+                selectedPeriodo={selectedPeriodo} /&gt;
+            &lt;<span class="fn">VincularDocentesModal</span>
+                state={state} cursoId={cursoId} /&gt;
+        &lt;/<span class="kw">div</span>&gt;
+    );
+}
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 8: COMPONENTES ESPECIALIZADOS                  -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 8 — Componentes Especializados</h2>
+
+<h3 class="file-title">src/components/curso-detalle/RubricModal.tsx</h3>
+<p class="file-desc">Componente de Acta de Recuperación de Competencias. Presenta una tabla donde cada fila es una competencia fundamental (BC1–BC4). Solo habilita recuperación para competencias con promedio inferior a 70. El docente selecciona un nivel (Estratégico/90, Autónomo/80, Resolutivo/70, Receptivo/BC actual) mediante radio buttons visuales con colores institucionales.</p>
+<pre>
+<span class="kw">const</span> <span class="fn">RubricModal</span>: React.FC&lt;<span class="tp">RubricModalProps</span>&gt; = ({
+    targetEst, rubricTarget, onClose, onSetRec, selectedPeriodo
+}) =&gt; {
+    <span class="kw">if</span> (!rubricTarget || !targetEst) <span class="kw">return null</span>;
+    <span class="kw">return</span> (
+        &lt;<span class="kw">div</span> className=<span class="str">"fixed inset-0 z-100 flex items-center justify-center"</span>&gt;
+          &lt;<span class="kw">table</span>&gt;
+            &lt;<span class="kw">thead</span>&gt;
+              &lt;<span class="kw">tr</span>&gt;
+                &lt;<span class="kw">th</span>&gt;Competencia Deficiente&lt;/<span class="kw">th</span>&gt;
+                &lt;<span class="kw">th</span>&gt;Estratégico (<span class="num">90</span>)&lt;/<span class="kw">th</span>&gt;
+                &lt;<span class="kw">th</span>&gt;Autónomo (<span class="num">80</span>)&lt;/<span class="kw">th</span>&gt;
+                &lt;<span class="kw">th</span>&gt;Resolutivo (<span class="num">70</span>)&lt;/<span class="kw">th</span>&gt;
+                &lt;<span class="kw">th</span>&gt;Receptivo (BC actual)&lt;/<span class="kw">th</span>&gt;
+              &lt;/<span class="kw">tr</span>&gt;
+            &lt;/<span class="kw">thead</span>&gt;
+            &lt;<span class="kw">tbody</span>&gt;
+              {targetEst.bcValues.<span class="fn">map</span>((v, idx) =&gt; {
+                <span class="kw">const</span> bcIdx = (idx + <span class="num">1</span>) <span class="kw">as</span> <span class="num">1</span> | <span class="num">2</span> | <span class="num">3</span> | <span class="num">4</span>;
+                <span class="kw">const</span> isPassed = v.avg !== <span class="kw">null</span> &amp;&amp; v.avg &gt;= <span class="num">70</span>;
+                <span class="cm">// Deshabilitar fila si la competencia ya está aprobada</span>
+                <span class="kw">return</span> (
+                  &lt;<span class="kw">tr</span> className={isPassed ? <span class="str">'opacity-40 pointer-events-none'</span> : <span class="str">''</span>}&gt;
+                    &lt;<span class="kw">td</span>&gt;{v.bc} — BC: {v.avg ?? <span class="str">'--'</span>}&lt;/<span class="kw">td</span>&gt;
+                    {[<span class="num">90</span>, <span class="num">80</span>, <span class="num">70</span>, v.avg || <span class="num">0</span>].<span class="fn">map</span>((score) =&gt; (
+                      &lt;<span class="kw">td</span>&gt;
+                        &lt;<span class="kw">button</span>
+                          onClick={() =&gt; <span class="fn">onSetRec</span>(targetEst.id, bcIdx, score)}
+                          className={v.rec === score ? <span class="str">'selected'</span> : <span class="str">''</span>}
+                        /&gt;
+                      &lt;/<span class="kw">td</span>&gt;
+                    ))}
+                  &lt;/<span class="kw">tr</span>&gt;
+                );
+              })}
+            &lt;/<span class="kw">tbody</span>&gt;
+          &lt;/<span class="kw">table</span>&gt;
+        &lt;/<span class="kw">div</span>&gt;
+    );
+};
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 9: CONSTANTES DEL DOMINIO                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 9 — Constantes del Dominio Educativo</h2>
+
+<h3 class="file-title">src/constants/asignaturas.ts</h3>
+<p class="file-desc">Catálogo oficial de asignaturas del sistema educativo dominicano con funciones de búsqueda bidireccional (id ↔ nombre).</p>
+<pre>
+<span class="kw">export const</span> ASIGNATURAS_CATALOGO: <span class="tp">Asignatura</span>[] = [
+  { id: <span class="str">'lengua_espanola'</span>,     nombre: <span class="str">'Lengua Española'</span> },
+  { id: <span class="str">'ingles'</span>,              nombre: <span class="str">'Lenguas Extranjeras (Inglés)'</span> },
+  { id: <span class="str">'frances'</span>,             nombre: <span class="str">'Lenguas Extranjeras (Francés)'</span> },
+  { id: <span class="str">'matematica'</span>,          nombre: <span class="str">'Matemática'</span> },
+  { id: <span class="str">'ciencias_sociales'</span>,   nombre: <span class="str">'Ciencias Sociales'</span> },
+  { id: <span class="str">'ciencias_naturaleza'</span>, nombre: <span class="str">'Ciencias de la Naturaleza'</span> },
+  { id: <span class="str">'artistica'</span>,           nombre: <span class="str">'Educación Artística'</span> },
+  { id: <span class="str">'educacion_fisica'</span>,    nombre: <span class="str">'Educación Física'</span> },
+  { id: <span class="str">'formacion_integral'</span>,  nombre: <span class="str">'Formación Integral Humana y Religiosa'</span> },
+];
+</pre>
+
+<h3 class="file-title">src/utils/academic.ts</h3>
+<p class="file-desc">Escala de clasificación académica por competencias con colores institucionales propios del sistema.</p>
+<pre>
+<span class="kw">export const</span> <span class="fn">getGradeClass</span> = (score: <span class="kw">number</span> | <span class="kw">null</span>) =&gt; {
+    <span class="kw">if</span> (score === <span class="kw">null</span>) <span class="kw">return</span> <span class="str">'bg-slate-50 text-slate-400'</span>;
+    <span class="kw">if</span> (score &gt;= <span class="num">90</span>) <span class="kw">return</span> <span class="str">'bg-[#7C9672]/10 text-[#7C9672]'</span>; <span class="cm">// Estratégico</span>
+    <span class="kw">if</span> (score &gt;= <span class="num">80</span>) <span class="kw">return</span> <span class="str">'bg-[#D8B55A]/15 text-[#8C6D1F]'</span>; <span class="cm">// Autónomo</span>
+    <span class="kw">if</span> (score &gt;= <span class="num">70</span>) <span class="kw">return</span> <span class="str">'bg-[#CB4834]/10 text-[#CB4834]'</span>; <span class="cm">// Resolutivo</span>
+    <span class="kw">return</span> <span class="str">'bg-[#3F3C36]/10 text-[#3F3C36]'</span>; <span class="cm">// Receptivo</span>
+};
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 10: PLANTILLAS DE BOLETINES                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 10 — Plantillas de Boletines Escolares</h2>
+
+<h3 class="file-title">src/templates/boletines/types.ts</h3>
+<p class="file-desc">Interfaz de datos para la generación de boletines. Estructura las calificaciones por periodo (P1–P4), promedio de competencia (PC), y calificación final por asignatura para cada estudiante.</p>
+<pre>
+<span class="kw">export interface</span> <span class="tp">BoletinTemplateProps</span> {
+    curso: <span class="kw">any</span>;
+    estudiantes: <span class="kw">any</span>[];
+    docenteNombre: <span class="kw">string</span>;
+    studentGrades: Record&lt;<span class="kw">number</span>, Record&lt;<span class="kw">string</span>, {
+        P1: Record&lt;<span class="tp">BCKey</span>, <span class="kw">number</span> | <span class="kw">null</span>&gt;;
+        P2: Record&lt;<span class="tp">BCKey</span>, <span class="kw">number</span> | <span class="kw">null</span>&gt;;
+        P3: Record&lt;<span class="tp">BCKey</span>, <span class="kw">number</span> | <span class="kw">null</span>&gt;;
+        P4: Record&lt;<span class="tp">BCKey</span>, <span class="kw">number</span> | <span class="kw">null</span>&gt;;
+        PC: Record&lt;<span class="tp">BCKey</span>, <span class="kw">number</span> | <span class="kw">null</span>&gt;;
+        finalGrade: <span class="kw">number</span> | <span class="kw">null</span>;
+    }&gt;&gt;;
+    state: <span class="tp">AppState</span>;
+}
+</pre>
+
+<h3 class="file-title">src/templates/boletines/Boletin2do.tsx (fragmento: estructura del boletín oficial)</h3>
+<p class="file-desc">Plantilla de Boletín de Calificaciones de 2do Grado del Nivel Primario, con diseño de impresión landscape (11×8.5in) conforme al formato del MINERD (Ministerio de Educación de la República Dominicana). Incluye portada con datos del centro, tabla de competencias por asignatura/periodo, y sección de observaciones.</p>
+<pre>
+<span class="kw">export default function</span> <span class="fn">Boletin2do</span>({ curso, estudiantes, docenteNombre,
+    studentGrades, state }: <span class="tp">BoletinTemplateProps</span>) {
+    <span class="kw">return</span> (
+        &lt;&gt;
+            &lt;<span class="kw">style</span> dangerouslySetInnerHTML={{ __html: <span class="str">`
+                @page { size: 11in 8.5in; margin: 0.3in; }
+                .page.landscape { width: 11in; min-height: 8.5in; }
+                :root { --navy: #1c3f5f; --lightblue: #cfe3f2; }
+                .header-bar { background: var(--navy); color: #fff; }
+                .boletin-title { color: #0072bc; font-weight: bold; }
+                @media print { .page { page-break-after: always; } }
+            `</span>}} /&gt;
+
+            {estudiantes.<span class="fn">map</span>((est) =&gt; (
+                &lt;<span class="kw">div</span> key={est.id}&gt;
+                    <span class="cm">{/* Página 1: Portada con datos del centro educativo */}</span>
+                    &lt;<span class="kw">div</span> className=<span class="str">"page landscape"</span>&gt;
+                        &lt;<span class="kw">div</span>&gt;REPÚBLICA DOMINICANA&lt;/<span class="kw">div</span>&gt;
+                        &lt;<span class="kw">div</span>&gt;MINISTERIO DE EDUCACIÓN&lt;/<span class="kw">div</span>&gt;
+                        &lt;<span class="kw">div</span>&gt;INFORME DE APRENDIZAJE&lt;/<span class="kw">div</span>&gt;
+                        <span class="cm">{/* Campos: Centro, Regional, Distrito, Grado, etc. */}</span>
+                    &lt;/<span class="kw">div</span>&gt;
+
+                    <span class="cm">{/* Página 2: Tabla de competencias fundamentales */}</span>
+                    &lt;<span class="kw">div</span> className=<span class="str">"page landscape"</span>&gt;
+                        <span class="cm">{/* Filas: Asignaturas × Columnas: BC1-BC4 × Periodos P1-P4 + PC */}</span>
+                    &lt;/<span class="kw">div</span>&gt;
+                &lt;/<span class="kw">div</span>&gt;
+            ))}
+        &lt;/&gt;
+    );
+}
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 11: BACKEND (SERVIDOR)                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 11 — Backend: API de Autenticación</h2>
+
+<h3 class="file-title">server/server.js</h3>
+<p class="file-desc">Servidor Express.js con 3 endpoints de autenticación segura: solicitud de recuperación de contraseña (con anti-abuso, timing attack protection, tokens criptográficos de un solo uso con expiración de 30 minutos), validación de tokens, y restablecimiento de contraseña con validación de complejidad. Incluye auditoría de eventos de seguridad, limitación de tasa (rate limiting) y configuración SMTP para envío de correos.</p>
+<pre>
+<span class="kw">import</span> express <span class="kw">from</span> <span class="str">'express'</span>;
+<span class="kw">import</span> cors <span class="kw">from</span> <span class="str">'cors'</span>;
+<span class="kw">import</span> helmet <span class="kw">from</span> <span class="str">'helmet'</span>;
+<span class="kw">import</span> crypto <span class="kw">from</span> <span class="str">'crypto'</span>;
+<span class="kw">import</span> nodemailer <span class="kw">from</span> <span class="str">'nodemailer'</span>;
+<span class="kw">import</span> { createClient } <span class="kw">from</span> <span class="str">'@supabase/supabase-js'</span>;
+<span class="kw">import</span> { rateLimit } <span class="kw">from</span> <span class="str">'express-rate-limit'</span>;
+
+<span class="kw">const</span> supabaseUrl = <span class="str">'************'</span>;
+<span class="kw">const</span> supabaseServiceKey = <span class="str">'************'</span>;
+
+<span class="kw">const</span> supabaseAdmin = <span class="fn">createClient</span>(supabaseUrl, supabaseServiceKey, {
+  auth: { autoRefreshToken: <span class="kw">false</span>, persistSession: <span class="kw">false</span> }
+});
+
+<span class="cm">// Helper para registrar auditoría de eventos de seguridad</span>
+<span class="kw">async function</span> <span class="fn">registrarAuditoria</span>(userId, email, ip, evento, detalles) {
+  <span class="kw">await</span> supabaseAdmin.<span class="fn">from</span>(<span class="str">'auditoria_recuperacion'</span>).<span class="fn">insert</span>({
+    user_id: userId, email, ip_address: ip,
+    evento, detalles: detalles || {}
+  });
+}
+
+<span class="cm">/**
+ * Endpoint: Solicitar recuperación de contraseña
+ * Seguridad: rate limiting, detección de fuerza bruta, timing attack protection
+ */</span>
+app.<span class="fn">post</span>(<span class="str">'/api/auth/forgot-password'</span>, forgotPasswordLimiter, <span class="kw">async</span> (req, res) =&gt; {
+  <span class="kw">const</span> { email } = req.body;
+  <span class="kw">const</span> ip = req.ip;
+
+  <span class="cm">// Control de abuso: máximo 3 envíos por correo cada 15 minutos</span>
+  <span class="kw">const</span> { data: enviosRecientes } = <span class="kw">await</span> supabaseAdmin
+    .<span class="fn">from</span>(<span class="str">'auditoria_recuperacion'</span>).<span class="fn">select</span>(<span class="str">'id'</span>)
+    .<span class="fn">eq</span>(<span class="str">'email'</span>, cleanEmail).<span class="fn">eq</span>(<span class="str">'evento'</span>, <span class="str">'solicitud_enviada'</span>)
+    .<span class="fn">gt</span>(<span class="str">'created_at'</span>, <span class="kw">new</span> Date(Date.<span class="fn">now</span>() - <span class="num">15</span> * <span class="num">60</span> * <span class="num">1000</span>).<span class="fn">toISOString</span>());
+
+  <span class="kw">if</span> (enviosRecientes?.length &gt;= <span class="num">3</span>) {
+    <span class="kw">await</span> <span class="fn">registrarAuditoria</span>(<span class="kw">null</span>, cleanEmail, ip, <span class="str">'fuerza_bruta_detectada'</span>);
+    <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">200</span>).<span class="fn">json</span>({ message: responseMsg });
+  }
+
+  <span class="cm">// Generar token criptográficamente seguro (32 bytes, hex)</span>
+  <span class="kw">const</span> token = crypto.<span class="fn">randomBytes</span>(<span class="num">32</span>).<span class="fn">toString</span>(<span class="str">'hex'</span>);
+  <span class="kw">const</span> expiresAt = <span class="kw">new</span> Date(Date.<span class="fn">now</span>() + <span class="num">30</span> * <span class="num">60</span> * <span class="num">1000</span>); <span class="cm">// 30 minutos</span>
+
+  <span class="kw">await</span> supabaseAdmin.<span class="fn">from</span>(<span class="str">'recuperacion_tokens'</span>).<span class="fn">insert</span>({
+    user_id: userId, token, expires_at: expiresAt.<span class="fn">toISOString</span>(), estado: <span class="str">'activo'</span>
+  });
+});
+
+<span class="cm">/**
+ * Endpoint: Restablecer contraseña con token válido
+ * Validación: complejidad de contraseña, estado del token, expiración
+ */</span>
+app.<span class="fn">post</span>(<span class="str">'/api/auth/reset-password'</span>, resetPasswordLimiter, <span class="kw">async</span> (req, res) =&gt; {
+  <span class="kw">const</span> passwordRegex = <span class="str">/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/</span>;
+  <span class="kw">if</span> (!passwordRegex.<span class="fn">test</span>(password)) {
+    <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">400</span>).<span class="fn">json</span>({ error: <span class="str">'La contraseña no cumple requisitos de seguridad'</span> });
+  }
+
+  <span class="cm">// Cambiar contraseña via API administrativa de Supabase</span>
+  <span class="kw">await</span> supabaseAdmin.auth.admin.<span class="fn">updateUserById</span>(userId, { password });
+
+  <span class="cm">// Marcar token como usado e invalidar tokens remanentes</span>
+  <span class="kw">await</span> supabaseAdmin.<span class="fn">from</span>(<span class="str">'recuperacion_tokens'</span>)
+    .<span class="fn">update</span>({ estado: <span class="str">'usado'</span> }).<span class="fn">eq</span>(<span class="str">'id'</span>, record.id);
+  <span class="kw">await</span> supabaseAdmin.<span class="fn">rpc</span>(<span class="str">'revocar_tokens_activos'</span>, { p_user_id: userId });
+});
+
+app.<span class="fn">listen</span>(PORT, () =&gt; console.<span class="fn">log</span>(<span class="str">`🚀 Servidor corriendo en puerto ${PORT}`</span>));
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECCIÓN 12: ESQUEMA DE BASE DE DATOS                   -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 class="section-title">Sección 12 — Esquema de Base de Datos y Seguridad SQL</h2>
+
+<h3 class="file-title">supabase_fix.sql (fragmento: políticas RLS y función de seguridad)</h3>
+<p class="file-desc">Esquema de políticas de seguridad a nivel de fila (Row Level Security) que garantiza aislamiento de datos por usuario. Incluye la función personalizada is_course_teacher() que verifica pertenencia a un curso como propietario o co-docente.</p>
+<pre>
+<span class="cm">-- Función auxiliar para configurar RLS estándar en cada tabla</span>
+<span class="kw">CREATE OR REPLACE FUNCTION</span> <span class="fn">setup_user_rls</span>(table_name TEXT) <span class="kw">RETURNS VOID AS</span> $$
+<span class="kw">BEGIN</span>
+    <span class="kw">EXECUTE</span> <span class="fn">format</span>(<span class="str">'ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY'</span>, table_name);
+    <span class="kw">EXECUTE</span> <span class="fn">format</span>(<span class="str">'CREATE POLICY %I_select ON public.%I FOR SELECT
+        TO authenticated USING (auth.uid() = user_id)'</span>, table_name, table_name);
+    <span class="kw">EXECUTE</span> <span class="fn">format</span>(<span class="str">'CREATE POLICY %I_insert ON public.%I FOR INSERT
+        TO authenticated WITH CHECK (auth.uid() = user_id)'</span>, table_name, table_name);
+    <span class="kw">EXECUTE</span> <span class="fn">format</span>(<span class="str">'CREATE POLICY %I_update ON public.%I FOR UPDATE
+        TO authenticated USING (auth.uid() = user_id)
+        WITH CHECK (auth.uid() = user_id)'</span>, table_name, table_name);
+<span class="kw">END</span>;
+$$ <span class="kw">LANGUAGE</span> plpgsql;
+
+<span class="cm">-- Aplicar RLS a todas las tablas del sistema educativo</span>
+<span class="kw">SELECT</span> <span class="fn">setup_user_rls</span>(<span class="str">'cursos'</span>);
+<span class="kw">SELECT</span> <span class="fn">setup_user_rls</span>(<span class="str">'estudiantes'</span>);
+<span class="kw">SELECT</span> <span class="fn">setup_user_rls</span>(<span class="str">'actividades'</span>);
+<span class="kw">SELECT</span> <span class="fn">setup_user_rls</span>(<span class="str">'calificaciones'</span>);
+<span class="kw">SELECT</span> <span class="fn">setup_user_rls</span>(<span class="str">'recuperaciones'</span>);
+<span class="kw">SELECT</span> <span class="fn">setup_user_rls</span>(<span class="str">'evaluaciones_rubrica'</span>);
+<span class="kw">SELECT</span> <span class="fn">setup_user_rls</span>(<span class="str">'evaluaciones_cotejo'</span>);
+
+<span class="cm">-- Función de verificación de pertenencia a curso (SECURITY DEFINER)</span>
+<span class="kw">CREATE OR REPLACE FUNCTION</span> public.<span class="fn">is_course_teacher</span>(p_curso_id bigint)
+<span class="kw">RETURNS</span> boolean <span class="kw">AS</span> $$
+<span class="kw">DECLARE</span>
+    current_user_id uuid;
+<span class="kw">BEGIN</span>
+    current_user_id := auth.<span class="fn">uid</span>();
+    <span class="kw">RETURN EXISTS</span> (
+        <span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> public.cursos
+        <span class="kw">WHERE</span> id = p_curso_id <span class="kw">AND</span> user_id = current_user_id
+    ) <span class="kw">OR EXISTS</span> (
+        <span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">FROM</span> public.curso_docentes
+        <span class="kw">WHERE</span> curso_id = p_curso_id <span class="kw">AND</span> docente_id = current_user_id
+    );
+<span class="kw">END</span>;
+$$ <span class="kw">LANGUAGE</span> plpgsql <span class="kw">SECURITY DEFINER</span>;
+
+<span class="cm">-- Tabla de tokens de recuperación de contraseña</span>
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> public.recuperacion_tokens (
+    id BIGINT <span class="kw">GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY</span>,
+    user_id UUID <span class="kw">REFERENCES</span> auth.users(id) <span class="kw">ON DELETE CASCADE NOT NULL</span>,
+    token TEXT <span class="kw">UNIQUE NOT NULL</span>,
+    created_at TIMESTAMPTZ <span class="kw">DEFAULT</span> <span class="fn">now</span>() <span class="kw">NOT NULL</span>,
+    expires_at TIMESTAMPTZ <span class="kw">NOT NULL</span>,
+    estado TEXT <span class="kw">DEFAULT</span> <span class="str">'activo'</span> <span class="kw">NOT NULL
+        CHECK</span> (estado <span class="kw">IN</span> (<span class="str">'activo'</span>, <span class="str">'usado'</span>, <span class="str">'revocado'</span>))
+);
+
+<span class="cm">-- Función para revocar tokens activos de un usuario (prevención de fugas)</span>
+<span class="kw">CREATE OR REPLACE FUNCTION</span> public.<span class="fn">revocar_tokens_activos</span>(p_user_id uuid)
+<span class="kw">RETURNS</span> void <span class="kw">AS</span> $$
+<span class="kw">BEGIN</span>
+    <span class="kw">UPDATE</span> public.recuperacion_tokens
+    <span class="kw">SET</span> estado = <span class="str">'revocado'</span>
+    <span class="kw">WHERE</span> user_id = p_user_id <span class="kw">AND</span> estado = <span class="str">'activo'</span>;
+<span class="kw">END</span>;
+$$ <span class="kw">LANGUAGE</span> plpgsql <span class="kw">SECURITY DEFINER</span>;
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="footer-note">
+  <p><strong>CIELO</strong> — Plataforma SaaS Educativa</p>
+  <p>Autor: <strong>Mary Esther Martínez Escoboza</strong></p>
+  <p>Soporte Material de la Obra para registro ante ONDA — República Dominicana</p>
+  <p>Documento generado el 31 de julio de 2026. Todos los derechos reservados.</p>
+  <p>Este documento contiene fragmentos representativos del código fuente original de la autora.</p>
+</div>
+
+</body>
+</html>

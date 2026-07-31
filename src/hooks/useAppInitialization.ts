@@ -1,0 +1,64 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+
+import { usePresence } from './usePresence';
+import type { AppState } from '../types';
+
+const DOCENTE_DEFAULT = 'Elena M.';
+
+interface Params {
+    state: AppState;
+    session: any;
+}
+
+export function useAppInitialization({ state, session }: Params) {
+    const { pathname } = useLocation();
+    const currentModule = pathname.substring(1) || 'inicio';
+
+
+    useEffect(() => {
+        if (session?.user?.id) {
+            const updatePresence = async () => {
+                await supabase.from('perfiles').upsert({
+                    user_id: session.user.id,
+                    last_seen: new Date().toISOString(),
+                    current_module: currentModule
+                });
+            };
+            updatePresence();
+            const interval = setInterval(updatePresence, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [session, currentModule]);
+
+    const DOCENTE = useMemo(() => 
+        state.nombreDocente || session?.user?.email?.split('@')[0] || DOCENTE_DEFAULT, 
+        [state.nombreDocente, session]
+    );
+
+    const currentUserProfile = useMemo(
+        () => state.perfiles.find(p => p.userId === session?.user?.id),
+        [state.perfiles, session]
+    );
+
+    const [onlineSince] = useState(() => new Date().toISOString());
+
+    const presencePayload = useMemo(() => ({
+        nombre: currentUserProfile?.nombreDocente || DOCENTE,
+        avatarUrl: state.perfilAvatarUrl || currentUserProfile?.avatarUrl || '',
+        asignatura: Array.isArray(state.asignaturas) ? state.asignaturas[0] : '',
+        onlineSince,
+    }), [currentUserProfile?.nombreDocente, DOCENTE, state.perfilAvatarUrl, currentUserProfile?.avatarUrl, state.asignaturas, onlineSince]);
+
+    const { onlineUsers } = usePresence(session?.user?.id, currentModule, presencePayload);
+
+
+
+    return {
+        currentModule,
+        DOCENTE,
+        currentUserProfile,
+        onlineUsers
+    };
+}

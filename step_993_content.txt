@@ -1,0 +1,119 @@
+Created At: 2026-07-13T01:56:07Z
+Completed At: 2026-07-13T01:56:08Z
+File Path: `file:///c:/Users/user/OneDrive/Escritorio/Evaluaci%C3%B3n%20por%20competencias/src/hooks/useSupabaseData.ts`
+Total Lines: 460
+Total Bytes: 25967
+Showing lines 350 to 460
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+350:                     userId: String(cd.docente_id),
+351:                     rol: cd.rol as 'tutor' | 'co-docente',
+352:                     asignatura: cd.asignatura as string,
+353:                     createdAt: cd.created_at as string
+354:                 })),
+355:                 grupos: (grupos || []).map((g: Record<string, unknown>): Grupo => ({
+356:                     id: g.id as number,
+357:                     nombre: g.nombre as string,
+358:                     grado: g.grado as string,
+359:                     seccion: g.seccion as string,
+360:                     createdAt: g.created_at as string
+361:                 })),
+362:             };});
+363:         } catch (error) {
+364:             console.error('Error fetching data from Supabase:', error);
+365:         } finally {
+366:             if (!isSilent) setLoading(false);
+367:         }
+368:     }, [session]);
+369: 
+370:     useEffect(() => {
+371:         if (session) {
+372:             fetchData();
+373:             // Intervalo silencioso de respaldo mÃ¡s largo
+374:             const interval = setInterval(() => fetchData(true), 120000);
+375: 
+376:             // Realtime para evitar recargas constantes pero mantener sincronización
+377:             const channel = supabase.channel(`db-changes-${session.user.id}-${Date.now()}`)
+378:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchData(true))
+379:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'notificaciones', filter: `user_id=eq.${session.user.id}` }, () => fetchData(true))
+380:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_detalle' }, () => fetchData(true))
+381:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'user_badges', filter: `user_id=eq.${session.user.id}` }, () => fetchData(true))
+382:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'calificaciones' }, () => fetchData(true))
+383:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones' }, () => fetchData(true))
+384:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_docentes' }, () => fetchData(true))
+385:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'cursos' }, () => fetchData(true))
+386:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'estudiantes' }, () => fetchData(true))
+387:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'actividades' }, () => fetchData(true))
+388:                 .on('postgres_changes', { event: '*', schema: 'public', table: 'grupos' }, () => fetchData(true))
+389:                 .subscribe();
+390: 
+391:             return () => {
+392:                 clearInterval(interval);
+393:                 supabase.removeChannel(channel);
+394:             };
+395:         } else {
+396:             setLoading(false);
+397:         }
+398:     }, [session, fetchData]);
+399: 
+400:     const syncUpsert = useCallback(async (table: string, data: Record<string, unknown> | Record<string, unknown>[]) => {
+401:         if (!session?.user?.id) return;
+402: 
+403:         const toSnakeCase = (obj: Record<string, unknown>) => {
+404:             const snakeObj: Record<string, unknown> = {};
+405:             for (const key in obj) {
+406:                 const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+407:                 snakeObj[snakeKey] = obj[key];
+408:             }
+409:             return snakeObj;
+410:         };
+411: 
+412:         const dbData = Array.isArray(data)
+413:             ? (data as Record<string, unknown>[]).map(toSnakeCase)
+414:             : toSnakeCase(data as Record<string, unknown>);
+415: 
+416:         if (Array.isArray(dbData)) {
+417:             dbData.forEach(item => (item as Record<string, unknown>).user_id = session.user.id);
+418:         } else {
+419:             (dbData as Record<string, unknown>).user_id = session.user.id;
+420:         }
+421: 
+422:         const { error } = await supabase.from(table).upsert(dbData);
+423:         if (error) console.error('Error syncing upsert to ' + table + ':', error);
+424:     }, [session]);
+425: 
+426:     const syncDelete = useCallback(async (table: string, idOrFilter: number | string | Record<string, unknown>) => {
+427:         if (!session?.user?.id) return;
+428: 
+429:         let query = supabase.from(table).delete();
+430: 
+431:         if (typeof idOrFilter === 'object' && idOrFilter !== null) {
+432:             const toSnakeCase = (obj: Record<string, unknown>) => {
+433:                 const snakeObj: Record<string, unknown> = {};
+434:                 for (const key in obj) {
+435:                     const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+436:                     snakeObj[snakeKey] = obj[key];
+437:                 }
+438:                 return snakeObj;
+439:             };
+440:             const snakeFilter = toSnakeCase(idOrFilter as Record<string, unknown>);
+441:             query = query.match(snakeFilter);
+442:         } else {
+443:             query = query.eq('id', idOrFilter);
+444:         }
+445: 
+446:         const { error } = await query;
+447:         if (error) console.error('Error syncing delete to ' + table + ':', error);
+448:     }, [session]);
+449: 
+450:     return {
+451:         state,
+452:         setState,
+453:         loading,
+454:         session,
+455:         syncUpsert,
+456:         syncDelete,
+457:         refresh: fetchData
+458:     };
+459: }
+460: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

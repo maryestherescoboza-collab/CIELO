@@ -1,0 +1,148 @@
+Created At: 2026-07-13T01:55:48Z
+Completed At: 2026-07-13T01:55:48Z
+File Path: `file:///c:/Users/user/OneDrive/Escritorio/Evaluaci%C3%B3n%20por%20competencias/src/hooks/useSupabaseData.ts`
+Total Lines: 460
+Total Bytes: 25967
+Showing lines 111 to 250
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+111:                     };
+112:                 });
+113: 
+114:                 const optimisticPosts = prev.posts.filter(p => 
+115:                     p.isOptimistic && !mappedPosts.some(mp => mp.id === p.id)
+116:                 );
+117: 
+118:                 return {
+119:                 instituto: currentProfile?.instituto || currentProfile?.institucion || 'Mi Instituto',
+120:                 perfilBio: currentProfile?.bio || '',
+121:                 perfilAvatarUrl: currentProfile?.avatar_url || '',
+122:                 nombreDocente: currentProfile?.nombre_docente || '',
+123:                 tipoInstitucion: currentProfile?.tipo_institucion as 'publica' | 'privada' || undefined,
+124:                 perfilAvatarColor: currentProfile?.avatar_color || '',
+125:                 asignaturas: currentProfile?.asignaturas || [],
+126:                 perfiles: (perfiles || []).map((p: Record<string, unknown>): UserProfile => ({
+127:                     userId: p.user_id as string,
+128:                     nombreDocente: p.nombre_docente as string || p.nombre as string || '',
+129:                     bio: p.bio as string || '',
+130:                     avatarUrl: p.avatar_url as string || '',
+131:                     avatarColor: p.avatar_color as string || '',
+132:                     asignatura: Array.isArray(p.asignaturas) ? p.asignaturas[0] : (p.asignatura as string || ''),
+133:                     institucion: (p.instituto || p.institucion) as string || '',
+134:                     lastSeen: p.last_seen as string,
+135:                     currentModule: p.current_module as string,
+136:                     totalCorazones: p.total_corazones as number || 0
+137:                 })),
+138:                 cursos: (cursos || []).map((c: Record<string, unknown>): Curso => ({
+139:                     id: c.id as number,
+140:                     nombre: c.nombre as string,
+141:                     asignatura: c.asignatura as string,
+142:                     grado: c.grado as string,
+143:                     seccion: c.seccion as string,
+144:                     periodo: c.periodo as string,
+145:                     diasSemana: c.dias_semana as string[] || [],
+146:                     color: c.color as string,
+147:                     isTutorOficial: c.is_tutor_oficial as boolean,
+148:                     userId: c.user_id as string,
+149:                     grupoId: c.grupo_id as number,
+150:                     sharedCourseId: (c.shared_course_id as string) || (c.grupo_id ? `group_${c.grupo_id}` : String(c.id)),
+151:                     configuracionEvaluacion: c.configuracion_evaluacion as Record<string, unknown> || {},
+152:                     createdAt: c.created_at as string
+153:                 })),
+154:                 estudiantes: (estudiantes || []).map((e: Record<string, unknown>): Estudiante => ({
+155:                     id: e.id as number,
+156:                     nombre: e.nombre as string,
+157:                     apellido: e.apellido as string,
+158:                     avatarColor: e.avatar_color as string,
+159:                     cursoId: e.curso_id as number,
+160:                     grupoId: e.grupo_id as number,
+161:                     userId: e.docente_id as string,
+162:                     sharedCourseId: (e.shared_course_id as string) || (e.grupo_id ? `group_${e.grupo_id}` : String(e.curso_id)),
+163:                     nivel: e.nivel as 1 | 2 | 3 | 4,
+164:                     puntaje: e.puntaje as number,
+165:                     bc1: e.bc1 as BCScore || { nivel: 1, puntaje: 0 },
+166:                     bc2: e.bc2 as BCScore || { nivel: 1, puntaje: 0 },
+167:                     bc3: e.bc3 as BCScore || { nivel: 1, puntaje: 0 },
+168:                     bc4: e.bc4 as BCScore || { nivel: 1, puntaje: 0 },
+169:                     actividadesRecientes: e.actividades_recientes as number,
+170:                     enRiesgo: e.en_riesgo as boolean,
+171:                     numeroLista: e.numero_lista as number
+172:                 })),
+173:                 actividades: (actividades || []).map((a: Record<string, unknown>): Actividad => ({
+174:                     id: a.id as number,
+175:                     nombre: a.nombre as string,
+176:                     cursoId: a.curso_id as number,
+177:                     fecha: a.fecha as string,
+178:                     periodo: a.periodo as string,
+179:                     bcAsignados: (a.bc_asignados && (a.bc_asignados as BCKey[]).length > 0)
+180:                         ? a.bc_asignados as BCKey[]
+181:                         : ['BC1'] as BCKey[],
+182:                     secuenciaId: a.secuencia_id as number,
+183:                     isRec: a.is_rec as boolean,
+184:                     userId: a.user_id as string,
+185:                     asignatura: a.asignatura as string,
+186:                     sharedCourseId: a.shared_course_id as string || (cursos?.find(cur => cur.id === a.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === a.curso_id)?.grupo_id}` : String(a.curso_id))
+187:                 })),
+188:                 calificaciones: (calificaciones || []).map((c: Record<string, unknown>): CalificacionActividad => ({
+189:                     id: c.id as number,
+190:                     cursoId: c.curso_id as number,
+191:                     estudianteId: c.estudiante_id as number,
+192:                     actividadId: c.actividad_id as number,
+193:                     userId: c.user_id as string || '',
+194:                     asignatura: c.asignatura as string || '',
+195:                     periodo: c.periodo as string,
+196:                     competencias: c.competencias as BCKey[] || [],
+197:                     descriptores: c.descriptores as string[] || [],
+198:                     puntaje: c.puntaje as number,
+199:                     recuperacion: c.recuperacion as number,
+200:                     sharedCourseId: (c.shared_course_id as string) || (cursos?.find(cur => cur.id === c.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === c.curso_id)?.grupo_id}` : String(c.curso_id))
+201:                 })),
+202:                 recuperaciones: (recuperaciones || []).map((r: Record<string, unknown>): RecuperacionBC => ({
+203:                     estudianteId: r.estudiante_id as number,
+204:                     cursoId: r.curso_id as number,
+205:                     bc: r.bc as 1 | 2 | 3 | 4,
+206:                     puntaje: r.puntaje as number,
+207:                     periodo: r.periodo as string,
+208:                     sharedCourseId: (r.shared_course_id as string) || (cursos?.find(cur => cur.id === r.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === r.curso_id)?.grupo_id}` : String(r.curso_id)),
+209:                     userId: r.user_id as string,
+210:                     asignatura: r.asignatura as string,
+211:                     fecha: r.created_at as string
+212:                 })),
+213:                 secuencias: (secuencias || []).map((s: Record<string, unknown>): Secuencia => ({
+214:                     id: s.id as number,
+215:                     titulo: s.titulo as string,
+216:                     cursoId: s.curso_id as number,
+217:                     fechaInicio: s.fecha_inicio as string,
+218:                     contenidoHtml: s.contenido_html as string,
+219:                     estado: s.estado as 'Pendiente' | 'En progreso' | 'Completada',
+220:                     archivoUrl: s.archivo_url as string | undefined,
+221:                     archivoNombre: s.archivo_nombre as string | undefined,
+222:                     archivoSize: s.archivo_size as number | undefined,
+223:                     archivoTipo: s.archivo_tipo as string | undefined,
+224:                     archivoFechaCarga: s.archivo_fecha_carga as string | undefined
+225:                 })),
+226:                 incidencias: (incidencias || []).map((i: Record<string, unknown>): Incidencia => ({
+227:                     id: i.id as number,
+228:                     estudianteId: i.estudiante_id as number,
+229:                     categoria: i.categoria as 'Conducta' | 'Académico' | 'Salud' | 'Otro',
+230:                     descripcion: i.descripcion as string,
+231:                     accionesTomadas: i.acciones_tomadas as string[] || [],
+232:                     acuerdos: i.acuerdos as string,
+233:                     fecha: i.fecha as string,
+234:                     gravedad: i.gravedad as 'leve' | 'moderada' | 'grave',
+235:                     userId: i.user_id as string,
+236:                     sharedCourseId: (i.shared_course_id as string) || (estudiantes?.find(e => e.id === i.estudiante_id)?.shared_course_id as string) || (estudiantes?.find(e => e.id === i.estudiante_id)?.curso_id ? String(estudiantes?.find(e => e.id === i.estudiante_id)?.curso_id) : '')
+237:                 })),
+238:                 eventos: (eventos || []).map((ev: Record<string, unknown>): EventoCalendario => ({
+239:                     id: ev.id as number,
+240:                     titulo: ev.titulo as string,
+241:                     fecha: ev.fecha as string,
+242:                     tipo: ev.tipo as 'evaluacion' | 'reunion' | 'actividad' | 'otro'
+243:                 })),
+244:                 posts: [...optimisticPosts, ...mappedPosts],
+245:                 docentes: Array.from(new Map<string, Docente>([
+246:                     ...(docentes || []).map((d: Record<string, unknown>): [string, Docente] => [d.nombre as string || '', {
+247:                         id: d.id as string | number,
+248:                         userId: d.user_id as string,
+249:                         nombre: d.nombre as string || 'Colega',
+250:                         asignatura: d.asignatura as string || '',
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

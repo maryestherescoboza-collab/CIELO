@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MANUAL_TECNICO_DESARROLLO</title>
+  <style>
+    @page { size: A4; margin: 16mm; }
+    :root { color-scheme: light; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #1f2937;
+      line-height: 1.45;
+      font-size: 11.2pt;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+    h1, h2, h3 { color: #111827; margin: 0 0 8px 0; page-break-after: avoid; }
+    h1 { font-size: 22pt; margin-top: 6px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
+    h2 { font-size: 15pt; margin-top: 18px; border-left: 4px solid #f59e0b; padding-left: 8px; }
+    h3 { font-size: 12pt; margin-top: 12px; }
+    p { margin: 0 0 6px 0; }
+    ul, ol { margin: 0 0 8px 20px; padding: 0; }
+    li { margin: 2px 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 10px 0; }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-size: 90%;
+    }
+    pre {
+      background: #111827;
+      color: #f9fafb;
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      page-break-inside: avoid;
+      margin: 0 0 10px 0;
+    }
+    pre code { background: transparent; padding: 0; color: inherit; }
+  </style>
+</head>
+<body>
+<h1>Manual Técnico de Desarrollo y Mantenimiento — CIELO</h1>
+<p><strong>Nombre del Sistema:</strong> CIELO  </p>
+<p><strong>Tipo:</strong> Plataforma SaaS Educativa (Sistema de Evaluación por Competencias)  </p>
+<p><strong>Autora:</strong> Mary Esther Martínez Escoboza  </p>
+<p><strong>Destino:</strong> Registro de Soporte Material ante la Oficina Nacional de Derecho de Autor (ONDA)  </p>
+<h2>1. Objetivo</h2>
+<p>Este documento describe la arquitectura técnica del sistema, su flujo de datos, contratos entre módulos y criterios de mantenimiento.</p>
+<p>Esta versión está orientada a:</p>
+<ul>
+<li>Desarrolladores que implementan nuevas funciones.</li>
+<li>Equipo de soporte técnico.</li>
+<li>Mantenimiento correctivo/evolutivo.</li>
+</ul>
+<h2>2. Stack y Entorno</h2>
+<h3>2.1 Frontend</h3>
+<ul>
+<li><strong>React 19 + TypeScript</strong></li>
+<li><strong>Vite</strong> (Empaquetador y servidor de desarrollo)</li>
+<li><strong>Tailwind CSS</strong> (Estilos y variables de diseño)</li>
+<li><strong>Zustand</strong> (Gestión de estado global y persistencia local)</li>
+<li><strong>Lucide React</strong> (Set de iconos del sistema)</li>
+</ul>
+<h3>2.2 Desktop</h3>
+<ul>
+<li><strong>Electron 32</strong></li>
+<li>Entrada Electron: <code>electron/main.ts</code></li>
+<li>Preload: <code>electron/preload.js</code> (generado a partir de preload.mjs)</li>
+</ul>
+<h3>2.3 Backend</h3>
+<ul>
+<li><strong>Supabase</strong> (Autenticación, Base de datos relacional PostgreSQL, Storage para archivos/avatars y Realtime para actualizaciones en tiempo real)</li>
+<li>Cliente Supabase: <code>src/lib/supabase.ts</code></li>
+</ul>
+<h3>2.4 Scripts Relevantes</h3>
+<ul>
+<li><code>npm run dev</code>: Inicia el entorno concurrente de desarrollo (frontend Vite + backend servidor local si aplica).</li>
+<li><code>npm run build</code>: Compila TypeScript y empaqueta el frontend con Vite.</li>
+<li><code>npm run lint</code>: Ejecuta las reglas de validación de código con ESLint.</li>
+</ul>
+<hr/>
+<h2>3. Estructura de Carpetas</h2>
+<ul>
+<li><code>src/App.tsx</code>: Punto de entrada del árbol de componentes, inicializa el almacén y envuelve las rutas con el Layout.</li>
+<li><code>src/AppRoutes.tsx</code>: Configuración de enrutamiento del sistema a través de <code>react-router-dom</code>.</li>
+<li><code>src/screens/*</code>: Módulos de interfaz de usuario de las vistas/pantallas principales.</li>
+<li><code>src/components/*</code>: Componentes UI compartidos y widgets del panel (gráficos, modales, etc.).</li>
+<li><code>src/store/appStore.ts</code>: Almacén Zustand centralizado para el estado global de datos y de UI.</li>
+<li><code>src/hooks/*</code>: Hooks de acción delegada por dominio (<code>useCourseActions.ts</code>, <code>useStudentActions.ts</code>, etc.) e integración con Supabase (<code>useSupabaseData.ts</code>).</li>
+<li><code>src/types/index.ts</code>: Contratos de tipos de datos de dominio y de la aplicación.</li>
+<li><code>src/data/mockData.ts</code>: Estado semilla y valores de respaldo por defecto.</li>
+<li><code>electron/*</code>: Lógica de arranque y configuración de la aplicación de escritorio.</li>
+</ul>
+<hr/>
+<h2>4. Arquitectura de Runtime y Estado (Zustand)</h2>
+<p>El sistema utiliza una arquitectura reactiva y centralizada para simplificar el flujo de datos:</p>
+<pre><code>
+graph TD
+
+    A[Supabase DB / Realtime] --&gt;|useSupabaseData / fetch| B(Zustand AppStore)
+
+    B --&gt;|State &amp; UI Context| C[App / AppRoutes]
+
+    C --&gt;|Acciones de negocio| D[Pantallas &amp; Componentes]
+
+    D --&gt;|Mutaciones async| E[Hooks de Acción]
+
+    E --&gt;|Write / Upsert / Delete| A
+
+</code></pre>
+<ol>
+<li><strong>useAppStore (<code>src/store/appStore.ts</code>)</strong>:</li>
+</ol>
+<p>   - Centraliza el <code>AppState</code> (cursos, estudiantes, actividades, calificaciones, incidencias, publicaciones, notificaciones, etc.).</p>
+<p>   - Controla el estado de sesión de Supabase Auth, indicadores de carga (<code>loading</code>), tema oscuro (<code>darkMode</code>) e interacciones globales como notificaciones breves (<code>genericToast</code>) y ventanas emergentes flotantes para rúbricas (<code>floatingRubrics</code>).</p>
+<p>   - Usa persistencia de Zustand para persistir ciertas preferencias (como el modo oscuro).</p>
+<ol>
+<li><strong>Ciclo de Carga</strong>:</li>
+</ol>
+<p>   - <code>useAppInitialization</code> detecta el estado de la sesión de Supabase.</p>
+<p>   - Si existe una sesión activa, se ejecuta <code>useSupabaseData().fetchData(isSilent)</code> para alimentar el almacén Zustand con los datos actualizados desde la base de datos PostgreSQL.</p>
+<ol>
+<li><strong>Manejo de Acciones</strong>:</li>
+</ol>
+<p>   - Los handlers de negocio ya no están acoplados a una única jerarquía en <code>App.tsx</code>. Se estructuran en hooks específicos por dominio (ej. <code>useCourseActions</code>, <code>useStudentActions</code>, <code>useEvaluationActions</code>) que mutan el estado local de Zustand de forma optimista y actualizan asíncronamente Supabase.</p>
+<ol>
+<li><strong>Suscripción Realtime</strong>:</li>
+</ol>
+<p>   - Supabase Realtime detecta cambios concurrentes en tablas críticas (<code>posts</code>, <code>notificaciones</code>, <code>curso_detalle</code>) y actualiza instantáneamente el almacén Zustand sin requerir recargas manuales.</p>
+<hr/>
+<h2>5. Modelo de Tipos (Dominio)</h2>
+<p>Definiciones principales localizadas en [types/index.ts](file:///c:/Users/user/OneDrive/Escritorio/Evaluaci%C3%B3n%20por%20competencias/src/types/index.ts):</p>
+<ul>
+<li><code>AppState</code>: Representación en memoria de la base de datos local y configuración de la escuela (instituto, cursos, estudiantes, etc.).</li>
+<li><code>Curso</code>, <code>Estudiante</code>, <code>Actividad</code>, <code>CalificacionActividad</code>: Entidades del núcleo educativo.</li>
+<li><code>RecuperacionBC</code>: Modelo para gestionar las recuperaciones por competencias (BC1 a BC4).</li>
+<li><code>Secuencia</code>: Datos de planificación pedagógica y secuencias didácticas.</li>
+<li><code>Incidencia</code>: Reportes disciplinarios y académicos.</li>
+<li><code>Post</code> y <code>PostLike</code>: Entidades de la red social de la comunidad educativa.</li>
+<li><code>Plantilla</code>, <code>DescriptorRubrica</code>, <code>CriterioCotejo</code>: Contratos para la evaluación formativa avanzada.</li>
+<li><code>EvaluacionRubrica</code>, <code>EvaluacionCotejo</code>: Evaluaciones aplicadas asociadas a estudiantes y actividades.</li>
+<li><code>CursoDetalleEvaluacion</code> / <code>CursoDetalle</code>: Registro consolidado de desempeño evaluativo por actividad/estudiante.</li>
+</ul>
+<p>&gt; [!NOTE]</p>
+<p>&gt; La aplicación realiza un mapeo automático entre la notación <code>camelCase</code> del frontend de React y el formato <code>snake_case</code> requerido por la base de datos Supabase al leer y guardar datos.</p>
+<hr/>
+<h2>6. Tablas Supabase Utilizadas</h2>
+<h3>Tablas de Lectura / Escritura</h3>
+<ul>
+<li><code>perfiles</code>: Detalles personales del docente y rol asignado.</li>
+<li><code>instituciones</code>: Escuelas o centros educativos asociados a los docentes.</li>
+<li><code>cursos</code>: Cursos creados por los tutores.</li>
+<li><code>curso_docentes</code>: Relaciones y permisos de co-docencia asignados para impartir áreas específicas en cursos ajenos.</li>
+<li><code>estudiantes</code>: Estudiantes pertenecientes a cada curso.</li>
+<li><code>actividades</code>: Actividades o tareas planificadas.</li>
+<li><code>calificaciones</code>: Notas/calificaciones numéricas tradicionales asociadas a actividades.</li>
+<li><code>recuperaciones</code>: Evaluaciones extraordinarias para recuperar notas bajas por competencia.</li>
+<li><code>secuencias</code>: Planificaciones didácticas detalladas de los docentes.</li>
+<li><code>incidencias</code>: Faltas disciplinarias o incidencias de los alumnos.</li>
+<li><code>eventos</code>: Eventos del calendario escolar.</li>
+<li><code>posts</code> / <code>post_likes</code>: Feed de comunicación y red social interna.</li>
+<li><code>notificaciones</code>: Mensajería del sistema para alertas de co-docencia y avisos.</li>
+<li><code>docentes</code>: Entidad histórica de profesores.</li>
+<li><code>plantillas</code>: Plantillas guardadas de Rúbricas o Listas de Cotejo.</li>
+<li><code>descriptores_rubrica</code> / <code>niveles_puntaje</code>: Estructuras de configuración para rúbricas analíticas.</li>
+<li><code>evaluaciones_rubrica</code> / <code>criterios_cotejo</code> / <code>evaluaciones_cotejo</code>: Evaluaciones formativas específicas aplicadas.</li>
+<li><code>curso_detalle</code>: Tabla unificada que consolida las calificaciones finales, indicadores alcanzados y comentarios de evaluación de cada actividad por estudiante.</li>
+</ul>
+<h3>Storage buckets</h3>
+<ul>
+<li><code>avatars</code>: Contenedor para almacenar las fotos de perfil de los docentes y usuarios del sistema.</li>
+</ul>
+<hr/>
+<h2>7. Capa de Datos e Integración: <code>useSupabaseData</code></h2>
+<p>La sincronización de datos con el backend se realiza mediante el hook unificado <code>useSupabaseData.ts</code>:</p>
+<ol>
+<li><code>fetchData(isSilent)</code>:</li>
+</ol>
+<p>   - Recupera la información de todas las tablas de forma paralela usando promesas.</p>
+<p>   - Aplica el formateador de tipos para transformar las llaves de base de datos (<code>snake_case</code>) a llaves del dominio de frontend (<code>camelCase</code>).</p>
+<p>   - Envía el resultado agregando toda la información a Zustand a través de <code>setAppState</code>.</p>
+<ol>
+<li><code>syncUpsert(table, data)</code>:</li>
+</ol>
+<p>   - Convierte los campos a formato <code>snake_case</code>.</p>
+<p>   - Asocia el <code>user_id</code> de la sesión actual al registro.</p>
+<p>   - Realiza la operación de guardado/actualización (<code>upsert</code>) genérica en Supabase.</p>
+<ol>
+<li><code>syncDelete(table, idOrFilter)</code>:</li>
+</ol>
+<p>   - Ejecuta peticiones de eliminación apuntando por ID único o mediante un objeto de filtrado dinámico.</p>
+<ol>
+<li><strong>Actualización optimista</strong>:</li>
+</ol>
+<p>   - Para mejorar la velocidad percibida, muchas mutaciones actualizan primero Zustand para refrescar la UI inmediatamente, ejecutando la persistencia física en Supabase en segundo plano.</p>
+<hr/>
+<h2>8. Contratos por Pantalla y Rutas</h2>
+<p>El sistema emplea <code>react-router-dom</code> para estructurar la navegación mediante las siguientes rutas y componentes en <code>AppRoutes.tsx</code>:</p>
+<h3>8.1 Autenticación (Auth)</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/</code> (si no hay sesión)</li>
+<li><strong>Archivo</strong>: <code>src/screens/Auth.tsx</code></li>
+<li><strong>Función</strong>: Maneja el registro de nuevos usuarios, creación de perfiles y la autenticación. Al registrarse, asocia al usuario a un centro educativo (<code>instituciones</code>).</li>
+</ul>
+<h3>8.2 Inicio (Home)</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/Inicio.tsx</code></li>
+<li><strong>Función</strong>: Dashboard inicial con widgets informativos (calendario escolar, actividades próximas, conteo rápido de KPIs, etc.). Permite la edición rápida del nombre del instituto/colegio del docente.</li>
+</ul>
+<h3>8.3 Dashboard Analítico</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/dashboard</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/Dashboard.tsx</code> y <code>src/screens/DashboardCharts.tsx</code></li>
+<li><strong>Función</strong>: Muestra visualizaciones y análisis estadísticos avanzados del rendimiento escolar (gráficos de promedios, distribución de estudiantes según su nivel de rendimiento, estudiantes en riesgo, distribución de población estudiantil). Permite crear registros rápidos de observación docente adjuntando imágenes.</li>
+</ul>
+<h3>8.4 Cursos</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/cursos</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/Cursos.tsx</code></li>
+<li><strong>Función</strong>: Lista y CRUD de asignaturas/cursos. Incluye la asignación de días y horas de clase a la semana y la invitación a co-docentes para compartir asignaturas.</li>
+</ul>
+<h3>8.5 Detalle del Curso (CursoDetalle)</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/curso-detalle</code> / <code>/curso-detalle/:id</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/CursoDetalle.tsx</code></li>
+<li><strong>Función</strong>: Vista matricial de control escolar. Permite calificar directamente a los estudiantes en cada actividad del curso, asignar co-docentes por área y gestionar recuperaciones por competencia (BC).</li>
+</ul>
+<h3>8.6 Incidencias disciplinarias</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/incidencias</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/Incidencias.tsx</code></li>
+<li><strong>Función</strong>: Bitácora de incidencias disciplinarias y académicas de los estudiantes del docente. Permite filtrar registros y realizar altas/bajas de incidencias de manera fluida.</li>
+</ul>
+<h3>8.7 Planificación (Secuencias didácticas)</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/planificacion</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/Planificacion.tsx</code></li>
+<li><strong>Función</strong>: Herramienta de planificación para crear secuencias didácticas semanales o trimestrales con visualizador de modo presentación (pantalla completa sin distracciones).</li>
+</ul>
+<h3>8.8 Comunidad Pedagógica</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/comunidad</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/Comunidad.tsx</code></li>
+<li><strong>Función</strong>: Red social integrada donde los profesores comparten recursos educativos, interactúan con posts de otros usuarios (likes) e importan secuencias didácticas o plantillas directamente a sus asignaturas.</li>
+</ul>
+<h3>8.9 Evaluación por Rúbrica Analítica</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/rubrica</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/Rubrica.tsx</code></li>
+<li><strong>Función</strong>: Evaluación cualitativa mediante descriptores de niveles de desempeño (1 al 4). Soporta copiado y pegado masivo desde planillas de cálculo (TSV) y guardado individual o colectivo.</li>
+</ul>
+<h3>8.10 Lista de Cotejo</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/cotejo</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/Cotejo.tsx</code></li>
+<li><strong>Función</strong>: Evaluación ágil mediante cumplimiento de criterios de cotejo de &quot;Logrado / No Logrado&quot;.</li>
+</ul>
+<h3>8.11 Ficha del Estudiante</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/estudiante</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/Estudiante.tsx</code></li>
+<li><strong>Función</strong>: Perfil analítico individual de cada estudiante, mostrando sus fortalezas, gráfico de progresión académica y listado oficial de notas si el docente es su tutor oficial.</li>
+</ul>
+<h3>8.12 Reporte Anual (Calificaciones Anuales)</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/calificaciones-anuales/:id</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/CalificacionesAnuales.tsx</code></li>
+<li><strong>Función</strong>: Sabana completa consolidada anual por períodos evaluativos. Contempla notas regulares, recuperaciones extraordinarias e impresión directa de boletines oficiales.</li>
+</ul>
+<h3>8.13 Ajustes de Perfil (ProfileSettings)</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/ajustes</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/ProfileSettings.tsx</code></li>
+<li><strong>Función</strong>: Edición de la información profesional del docente, cambio de color de avatar y avatar de perfil, y personalización estética de su interfaz.</li>
+</ul>
+<h3>8.14 Recuperación de Contraseña</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/reset-password</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/ResetPassword.tsx</code></li>
+<li><strong>Función</strong>: Pantalla de restablecimiento seguro de credenciales para usuarios que inician flujo de recuperación.</li>
+</ul>
+<h3>8.15 Impresión de Boletines</h3>
+<ul>
+<li><strong>Ruta</strong>: <code>/print-boletines/:cursoId</code></li>
+<li><strong>Archivo</strong>: <code>src/screens/PrintBoletines.tsx</code></li>
+<li><strong>Función</strong>: Vista optimizada para la impresión y exportación de reportes académicos, alineada a formatos de impresión A4 para boletines escolares.</li>
+</ul>
+<hr/>
+<h2>9. Flujo de Evaluación Unificada (<code>curso_detalle</code>)</h2>
+<p>Las calificaciones numéricas tradicionales, las valoraciones cualitativas de Rúbricas y los criterios de Cotejo convergen en la tabla unificada <code>curso_detalle</code>.</p>
+<ul>
+<li><strong>Consistencia</strong>: Esta tabla funciona como la única fuente de verdad (Single Source of Truth) para calcular las estadísticas académicas de los estudiantes y el estado de riesgo escolar visible en el dashboard.</li>
+<li><strong>Sincronización</strong>: Al guardar una evaluación cualitativa en Rúbrica o Cotejo, el sistema computa el puntaje correspondiente (según la escala de niveles 1-4) y lo vuelca automáticamente en <code>curso_detalle</code> junto con las observaciones y calificaciones de la actividad.</li>
+</ul>
+<hr/>
+<h2>10. Seguridad y Mitigación de Deuda Técnica</h2>
+<ol>
+<li><strong>Variables de Entorno</strong>:</li>
+</ol>
+<p>   - Las credenciales de Supabase se cargan mediante variables de entorno seguras en el archivo <code>.env</code> (<code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code>), evitando código expuesto en los archivos de distribución.</p>
+<ol>
+<li><strong>Endurecimiento de Electron</strong>:</li>
+</ol>
+<p>   - <em>Riesgo</em>: Uso previo de <code>nodeIntegration: true</code> y <code>contextIsolation: false</code> en configuraciones heredadas.</p>
+<p>   - <em>Acción Recomendada</em>: Migrar progresivamente a <code>contextIsolation: true</code> haciendo puente de funciones del sistema de archivos o configuración a través de un archivo <code>preload.js</code> seguro utilizando <code>contextBridge</code>.</p>
+<ol>
+<li><strong>Manejo de Caché de GPU en Windows</strong>:</li>
+</ol>
+<p>   - Se añadió <code>app.disableHardwareAcceleration()</code> en el inicio de Electron (<code>electron/main.ts</code>) para prevenir errores de bloqueo de archivos y denegación de accesos en entornos virtuales o Windows corporativos.</p>
+<hr/>
+<h2>11. Troubleshooting y Resolución de Problemas</h2>
+<h3>11.1 La aplicación no carga información</h3>
+<ul>
+<li>Comprobar que el archivo <code>.env</code> en la raíz contiene las credenciales válidas de Supabase.</li>
+<li>Verificar en las herramientas de desarrollo del navegador o Electron si existen bloqueos de CORS o credenciales incorrectas en la llamada a <code>createClient</code>.</li>
+<li>Confirmar que hay conexión de red estable y el backend de Supabase no se encuentra en pausa por inactividad.</li>
+</ul>
+<h3>11.2 Falta de sincronización en tiempo real</h3>
+<ul>
+<li>Verificar que el WebSocket de Supabase Realtime no esté bloqueado por firewalls locales o proxy de red.</li>
+<li>Validar las políticas de seguridad a nivel de fila (RLS) en Supabase para asegurar que el docente tiene permiso para recibir notificaciones de ese curso específico.</li>
+</ul>
+<h3>11.3 Problemas al subir imágenes o avatars</h3>
+<ul>
+<li>Comprobar que el bucket <code>avatars</code> existe en el panel de Supabase y tiene habilitados los permisos públicos de lectura y escritura para usuarios autenticados.</li>
+</ul>
+<hr/>
+<h2>12. Checklist de Mantenimiento Antes de un Release</h2>
+<ol>
+<li><strong>Pruebas Estáticas</strong>:</li>
+</ol>
+<p>   - Correr <code>npm run lint</code> y solucionar advertencias o errores reportados.</p>
+<p>   - Ejecutar <code>npm run build</code> para asegurar la compilación del tipado de TypeScript.</p>
+<ol>
+<li><strong>Validación del Flujo Principal</strong>:</li>
+</ol>
+<p>   - Verificar inicio de sesión y persistencia de cookies.</p>
+<p>   - Probar la creación de un nuevo curso y la edición del boletín de calificaciones del estudiante.</p>
+<p>   - Validar que al evaluar una actividad por Rúbrica se calcule y actualice el promedio en la ficha individual del Estudiante y en el Dashboard Analítico.</p>
+<ol>
+<li><strong>Generación de Documentación</strong>:</li>
+</ol>
+<p>   - Actualizar el manual técnico si hay modificaciones en el esquema de tablas o en la estructura de ruteo.</p>
+<p>   - Ejecutar <code>node tools/md_to_print_html.js MANUAL_TECNICO_DESARROLLO.md MANUAL_TECNICO_DESARROLLO.html</code> para compilar los cambios al manual impreso en formato HTML.</p>
+<hr/>
+<h2>13. Archivos Clave de Referencia</h2>
+<p>*   [App.tsx](file:///c:/Users/user/OneDrive/Escritorio/Evaluaci%C3%B3n%20por%20competencias/src/App.tsx) - Inicializador raíz de la aplicación React.</p>
+<p>*   [AppRoutes.tsx](file:///c:/Users/user/OneDrive/Escritorio/Evaluaci%C3%B3n%20por%20competencias/src/AppRoutes.tsx) - Enrutador general del sistema.</p>
+<p>*   [appStore.ts](file:///c:/Users/user/OneDrive/Escritorio/Evaluaci%C3%B3n%20por%20competencias/src/store/appStore.ts) - Definición del almacén Zustand.</p>
+<p>*   [useSupabaseData.ts](file:///c:/Users/user/OneDrive/Escritorio/Evaluaci%C3%B3n%20por%20competencias/src/hooks/useSupabaseData.ts) - Integración y consultas SQL a Supabase.</p>
+<p>*   [main.ts](file:///c:/Users/user/OneDrive/Escritorio/Evaluaci%C3%B3n%20por%20competencias/electron/main.ts) - Lanzador de la ventana nativa de Electron.</p>
+</body>
+</html>
