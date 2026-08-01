@@ -150,6 +150,19 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
 
     return (
         <div className="min-h-screen bg-white p-4 md:p-8 print:p-0 font-body">
+            <style>{`
+                @media print {
+                    @page {
+                        size: A4;
+                        margin: 10mm;
+                    }
+                    body {
+                        transform: scale(0.62);
+                        transform-origin: top left;
+                        width: 161.29% !important;
+                    }
+                }
+            `}</style>
             {/* Header / Tools */}
             <div className="max-w-300 mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 print:hidden">
                 <div>
@@ -172,7 +185,7 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                                     <>
                                         <span className="w-1 h-1 rounded-full bg-(--line)"></span>
                                         {currentCourseRole.rol === 'tutor' ? (
-                                            <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border border-indigo-100">
+                                            <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border text-white" style={{ backgroundColor: '#689C63', borderColor: '#689C63' }}>
                                                 Tutor
                                             </span>
                                         ) : (
@@ -191,10 +204,6 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                     <button onClick={handlePrint} className="bg-white border border-(--line) text-(--ink) px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-slate-50 transition-all">
                         <Printer size={18} className="text-(--ink-soft)" />
                         Imprimir Reporte
-                    </button>
-                    <button className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-900/10">
-                        <FileDown size={18} />
-                        Exportar PDF
                     </button>
                 </div>
             </div>

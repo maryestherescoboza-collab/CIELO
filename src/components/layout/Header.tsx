@@ -30,7 +30,7 @@ const Header: React.FC<HeaderProps> = ({
                 <img src={logo} alt="Noether Logo" className="app-logo w-24 h-24" />
                 <div className="hidden sm:block">
                     <p className="text-[10px] font-black uppercase tracking-widest text-(--ink-soft) opacity-40">Portafolio Docente</p>
-                    <h1 className="text-lg font-black text-(--ink) leading-tight">Noether Thinkers</h1>
+                    <h1 className="text-lg font-black text-(--ink) leading-tight">CIELO</h1>
                 </div>
             </div>
 

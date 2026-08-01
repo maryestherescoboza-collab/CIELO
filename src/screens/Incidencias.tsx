@@ -176,7 +176,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
 
                             <div className="border-t border-slate-100 pt-6">
                                 <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-600 mb-4">2. Categoría y Gravedad</h3>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="flex flex-wrap gap-2 mb-4">
                                     {CATEGORIAS.map(cat => {
                                         const Icon = cat.icon;
                                         const isSel = categoria === cat.key;
@@ -184,20 +184,20 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                             <button
                                                 key={cat.key}
                                                 onClick={() => setCategoria(cat.key)}
-                                                className={`p-4 rounded-[10px] border text-left transition-all ${isSel ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                                                className={`px-3.5 py-2 rounded-[10px] border flex items-center gap-2 transition-all w-fit ${isSel ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
                                             >
-                                                <Icon size={20} className={isSel ? 'text-white' : cat.iconColor} />
-                                                <p className="text-xs font-black uppercase tracking-wider mt-3 leading-tight">{cat.label}</p>
+                                                <Icon size={16} className={isSel ? 'text-white' : cat.iconColor} />
+                                                <span className="text-xs font-bold uppercase tracking-wider leading-tight">{cat.label}</span>
                                             </button>
                                         );
                                     })}
                                 </div>
-                                <div className="flex bg-slate-100 p-1.5 rounded-[10px] border border-slate-200">
+                                <div className="w-fit flex bg-slate-100 p-1 rounded-[10px] border border-slate-200 gap-1">
                                     {(['leve', 'moderada', 'grave'] as const).map((g) => (
                                         <button
                                             key={g}
                                             onClick={() => setGravedad(g)}
-                                            className={`flex-1 py-2 text-center text-[10px] font-black uppercase tracking-widest rounded-[10px] transition-all ${
+                                            className={`px-3 py-1.5 text-center text-[10px] font-black uppercase tracking-widest rounded-[10px] transition-all w-fit flex-none ${
                                                 gravedad === g 
                                                     ? 'bg-white text-slate-800 shadow-sm border border-slate-200/50' 
                                                     : 'text-slate-400 hover:text-slate-600'

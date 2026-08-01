@@ -39,7 +39,7 @@ export function CourseCard({
                                 <span className="notion-label bg-slate-100 text-slate-600 border-slate-200">{curso.grado}</span>
                                 <span className="notion-label bg-slate-100 text-slate-600 border-slate-200">Sección {curso.seccion}</span>
                             </div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nivel {curso.grado[0]}° Primaria</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nivel {curso.grado[0]}° Secundaria</span>
                         </div>
                     </div>
                     <button
