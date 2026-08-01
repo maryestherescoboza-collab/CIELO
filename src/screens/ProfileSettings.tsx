@@ -253,7 +253,7 @@ const Sidebar = React.memo(function Sidebar({
             : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
         }`}
       >
-        <span className={`${selected ? 'text-emerald-600' : 'text-slate-400'}`}>
+        <span className={`${selected ? 'text-cielo-blue' : 'text-slate-400'}`}>
           {icon}
         </span>
         {label}
@@ -293,14 +293,14 @@ const Sidebar = React.memo(function Sidebar({
                 onResetSchoolYear();
               }
             }}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-100"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-cielo-terracotta bg-cielo-terracotta/5 hover:bg-cielo-terracotta/10 transition-all border border-cielo-terracotta/20"
          >
             <AlertCircle size={16} />
             Reiniciar Año
          </button>
          <button 
             onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-cielo-terracotta hover:bg-cielo-terracotta/5 transition-colors"
          >
             <LogOut size={16} />
             Cerrar Sesión
@@ -375,13 +375,13 @@ function InformacionGeneralTab({ docenteNombre, userEmail, parsedBio, onSave }: 
   return (
     <form onSubmit={handleSave} className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-cielo-terracotta/5 border border-cielo-terracotta/20 text-cielo-terracotta text-xs font-bold uppercase tracking-wider flex items-center gap-2">
           <AlertCircle size={16} />
           {error}
         </div>
       )}
       {saved && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-cielo-olive/5 border border-cielo-olive/20 text-cielo-olive text-xs font-bold uppercase tracking-wider flex items-center gap-2">
           <CheckCircle size={16} />
           Cambios guardados con éxito
         </div>
@@ -391,7 +391,7 @@ function InformacionGeneralTab({ docenteNombre, userEmail, parsedBio, onSave }: 
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Docente</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={nombreDocente}
             onChange={e => setNombreDocente(e.target.value)}
             placeholder="Nombre del docente"
@@ -411,7 +411,7 @@ function InformacionGeneralTab({ docenteNombre, userEmail, parsedBio, onSave }: 
       <div className="space-y-1.5">
         <label className="text-xs font-black uppercase tracking-widest text-slate-500">Biografía</label>
         <textarea
-          className="w-full h-40 p-4 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none resize-none transition-all font-medium"
+          className="w-full h-40 p-4 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none resize-none transition-all font-medium"
           value={bio}
           onChange={e => setBio(e.target.value)}
           placeholder="Escribe tu trayectoria, metodologías o intereses..."
@@ -422,7 +422,7 @@ function InformacionGeneralTab({ docenteNombre, userEmail, parsedBio, onSave }: 
         <button
           type="submit"
           disabled={saving}
-          className="h-11 px-8 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest hover:bg-emerald-700 hover:-translate-y-0.5 transition-all shadow-lg shadow-emerald-900/10 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          className="h-11 px-8 rounded-xl bg-cielo-olive text-white text-xs font-black uppercase tracking-widest hover:bg-cielo-olive/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-cielo-olive/10 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
           {saving ? (
             <>
@@ -509,13 +509,13 @@ function DatosProfesionalesTab({
   return (
     <form onSubmit={handleSave} className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-cielo-terracotta/5 border border-cielo-terracotta/20 text-cielo-terracotta text-xs font-bold uppercase tracking-wider flex items-center gap-2">
           <AlertCircle size={16} />
           {error}
         </div>
       )}
       {saved && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-cielo-olive/5 border border-cielo-olive/20 text-cielo-olive text-xs font-bold uppercase tracking-wider flex items-center gap-2">
           <CheckCircle size={16} />
           Cambios guardados con éxito
         </div>
@@ -525,7 +525,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Centro educativo</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.instituto}
             onChange={e => setForm(p => ({ ...p, instituto: e.target.value }))}
             placeholder="Nombre del centro educativo"
@@ -535,7 +535,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Código del centro</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.codigoCentro}
             onChange={e => setForm(p => ({ ...p, codigoCentro: e.target.value }))}
             placeholder="Código del centro"
@@ -552,7 +552,7 @@ function DatosProfesionalesTab({
                 onClick={() => setForm(p => ({ ...p, tipoInstitucion: t }))}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                   form.tipoInstitucion === t 
-                    ? 'bg-slate-900 text-white border-transparent shadow-md font-bold' 
+                    ? 'bg-cielo-blue text-white border-transparent shadow-md font-bold' 
                     : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
@@ -565,7 +565,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Tanda</label>
           <select
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all font-bold cursor-pointer"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold cursor-pointer"
             value={form.tanda}
             onChange={e => setForm(p => ({ ...p, tanda: e.target.value }))}
           >
@@ -579,7 +579,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Teléfono del centro</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.telefonoCentro}
             onChange={e => setForm(p => ({ ...p, telefonoCentro: e.target.value }))}
             placeholder="Teléfono del centro"
@@ -589,7 +589,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Distrito educativo</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.distrito}
             onChange={e => setForm(p => ({ ...p, distrito: e.target.value }))}
             placeholder="Distrito educativo"
@@ -599,7 +599,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Regional de educación</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.regional}
             onChange={e => setForm(p => ({ ...p, regional: e.target.value }))}
             placeholder="Regional de educación"
@@ -609,7 +609,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Provincia</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.provincia}
             onChange={e => setForm(p => ({ ...p, provincia: e.target.value }))}
             placeholder="Provincia"
@@ -619,7 +619,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Municipio</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.municipio}
             onChange={e => setForm(p => ({ ...p, municipio: e.target.value }))}
             placeholder="Municipio"
@@ -631,7 +631,7 @@ function DatosProfesionalesTab({
         <button
           type="submit"
           disabled={saving}
-          className="h-11 px-8 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest hover:bg-emerald-700 hover:-translate-y-0.5 transition-all shadow-lg shadow-emerald-900/10 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          className="h-11 px-8 rounded-xl bg-cielo-olive text-white text-xs font-black uppercase tracking-widest hover:bg-cielo-olive/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-cielo-olive/10 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
           {saving ? (
             <>
@@ -688,7 +688,7 @@ function SeguridadTab() {
           <SimplePasswordField label="Confirmar Contraseña" value={confirmPassword} onChange={setConfirmPassword} show={showConfirmPw} onToggle={() => setShowConfirmPw(!showConfirmPw)} />
           
           {message && (
-            <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' : 'bg-rose-50 text-rose-800 border border-rose-100'}`}>
+            <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${message.type === 'success' ? 'bg-cielo-olive/5 text-cielo-olive border border-cielo-olive/20' : 'bg-cielo-terracotta/5 text-cielo-terracotta border border-cielo-terracotta/20'}`}>
                 {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
                 {message.text}
             </div>
@@ -699,7 +699,7 @@ function SeguridadTab() {
           <button 
             onClick={handleSubmit}
             disabled={saving || !newPassword || newPassword !== confirmPassword}
-            className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50"
+            className="w-full py-3 bg-cielo-blue text-white rounded-xl text-sm font-semibold hover:bg-cielo-blue/90 transition-colors shadow-sm disabled:opacity-50"
           >
             {saving ? "Actualizando Seguridad..." : "Cambiar Contraseña"}
           </button>
@@ -769,7 +769,7 @@ function AparienciaTab({
                     aria-label={`Seleccionar color ${color}`}
                     className={`w-12 h-12 rounded-full transition-all focus:outline-none focus:ring-4 focus:ring-slate-200 shadow-sm ${
                       avatarColor === color 
-                        ? 'ring-2 ring-offset-2 ring-emerald-500 scale-110' 
+                        ? 'ring-2 ring-offset-2 ring-cielo-blue scale-110' 
                         : 'hover:scale-110'
                     }`}
                     style={{ background: color }}

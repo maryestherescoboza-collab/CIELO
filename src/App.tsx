@@ -99,7 +99,7 @@ export default function App() {
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-(--paper)">
-      <img src={logo} alt="Logo" className="w-24 h-24 mb-12 animate-pulse" />
+      <img src={logo} alt="Logo" className="app-logo w-44 h-44 mb-8 animate-pulse" />
       <h2 className="text-2xl font-black text-(--ink)">Preparando tu espacio de trabajo</h2>
     </div>
   );

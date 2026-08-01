@@ -41,6 +41,13 @@
   --color-accent-indigo: #6E8CA0;
   --color-accent-sky: #7C9672;
 
+  /* Official secondary palette for CIELO */
+  --color-cielo-blue: #6F94AF;
+  --color-cielo-olive: #7C9672;
+  --color-cielo-gold: #D8B55A;
+  --color-cielo-terracotta: #CB4834;
+
+
   --animate-float: uiFloat 4s ease-in-out infinite;
 
   @keyframes uiFloat {
@@ -237,7 +244,7 @@
 .app-header {
   position: sticky;
   top: 0;
-  height: 72px;
+  height: 96px;
   @apply flex items-center justify-between px-8 bg-white border-b border-gray-100 z-50;
   box-shadow: var(--shadow-sm);
 }
@@ -743,4 +750,16 @@ input[type="range"]:focus::-webkit-slider-thumb {
 .animate-bubble-emoji {
   animation: bubble-up var(--bubble-duration, 2s) cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
   will-change: transform, opacity;
+}
+
+/* Global class for unified premium logo scaling and aspect ratio integrity */
+.app-logo {
+  object-fit: contain;
+  max-width: 100%;
+  height: auto;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-logo:hover {
+  transform: scale(1.03);
 }

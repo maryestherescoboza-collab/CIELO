@@ -128,8 +128,8 @@ export default function ResetPassword() {
       <main className="w-full max-w-md relative z-10 py-12">
         {/* Brand Identity */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-28 h-28 p-4 bg-white rounded-3xl shadow-paper border border-(--line) flex items-center justify-center mb-4">
-            <img alt="Brand Logo" className="w-full h-full object-contain" src={logo} />
+          <div className="w-36 h-36 md:w-44 md:h-44 p-4 bg-white rounded-3xl shadow-paper border border-(--line) flex items-center justify-center mb-4">
+            <img alt="Brand Logo" className="app-logo w-full h-full" src={logo} />
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-black text-(--ink) tracking-tighter mb-1">Portfolio Pro</h1>

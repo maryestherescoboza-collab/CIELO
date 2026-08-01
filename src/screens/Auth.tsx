@@ -301,8 +301,8 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
       <main className="w-full max-w-sm py-8 flex flex-col gap-6">
         {/* Brand Identity */}
         <div className="flex flex-col items-center">
-          <div className="w-32 h-32 flex items-center justify-center mb-3">
-            <img alt="Brand Logo" className="w-full h-full object-contain" src={logo} />
+          <div className="w-40 h-40 md:w-48 md:h-48 flex items-center justify-center mb-1">
+            <img alt="Brand Logo" className="app-logo w-full h-full" src={logo} />
           </div>
           <div className="text-center">
             <p className="text-xs font-bold tracking-tight text-[#716868] max-w-[280px] mx-auto">
