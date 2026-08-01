@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronLeft, Printer, FileDown, GraduationCap, Users } from 'lucide-react';
+import { ChevronLeft, Printer, GraduationCap, Users } from 'lucide-react';
 import { getAsignaturaNombre } from '../constants/asignaturas';
 import type { AppState, BCKey, Screen, CursoDocente } from '../types';
 
