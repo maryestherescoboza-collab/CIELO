@@ -297,8 +297,10 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col justify-center items-center px-6 bg-white font-sans text-[#3E3838]">
-      <main className="w-full max-w-sm py-8 flex flex-col gap-6">
+    <div className="min-h-screen flex flex-col md:flex-row bg-white font-sans text-[#3E3838]">
+      {/* Panel Izquierdo: Formulario */}
+      <div className="flex-1 flex flex-col justify-center items-center px-6 py-8 md:py-12">
+        <main className="w-full max-w-sm flex flex-col gap-6">
         {/* Brand Identity */}
         <div className="flex flex-col items-center">
           <div className="w-40 h-40 md:w-48 md:h-48 flex items-center justify-center mb-1">
@@ -539,9 +541,15 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
           )}
         </div>
 
-        {/* Brand Meta */}
-        <p className="text-center text-[8px] font-black text-[#3E3838]/30 uppercase tracking-[0.25em]">CIELO • 2026</p>
-      </main>
+          {/* Brand Meta */}
+          <p className="text-center text-[8px] font-black text-[#3E3838]/30 uppercase tracking-[0.25em]">CIELO • 2026</p>
+        </main>
+      </div>
+
+      {/* Panel Derecho: Fondo Decorativo */}
+      <div 
+        className="hidden md:block md:w-1/2 min-h-screen border-l border-slate-100 bg-[#EAE4DA] opacity-40 hover:opacity-50"
+      />
     </div>
   );
 }

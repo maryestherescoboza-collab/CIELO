@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { AppState, CalificacionActividad, RecuperacionBC, BCKey, CursoDocente } from '../types';
+import { calculateStudentPeriodBC } from '../utils/academic';
 
 interface Params {
     state: AppState;
@@ -101,13 +102,20 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
 
         return filtered.map(est => {
             const bcs: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
-            const bcValues = bcs.map((bc, idx) => {
-                const bcNum = (idx + 1) as 1 | 2 | 3 | 4;
-                const actsBc = actividades.filter(a => a.nombre !== 'Recuperación' && (bcSel[a.id] ?? new Set(a.bcAsignados)).has(bc));
-                const rawScores = actsBc.map(a => localCalifs.find(c => c.estudianteId === est.id && c.actividadId === a.id)?.puntaje ?? 0);
-                const avg = actsBc.length ? Math.round(rawScores.reduce((a, b) => a + (b || 0), 0) / actsBc.length) : null;
-                const rec = localRecs.find(r => r.estudianteId === est.id && Number(r.bc) === bcNum && r.periodo === selectedPeriodo)?.puntaje ?? null;
-                const final = (rec !== null && (avg === null || avg < 70)) ? rec : avg;
+            const bcValues = bcs.map((bc) => {
+                const { avg, rec, final } = calculateStudentPeriodBC({
+                    estudianteId: est.id,
+                    bc,
+                    periodo: selectedPeriodo,
+                    actividades: state.actividades,
+                    calificaciones: localCalifs,
+                    recuperaciones: localRecs,
+                    cursoId,
+                    sharedCourseId: curso?.sharedCourseId,
+                    targetAsignatura: myAsignatura,
+                    bcSel,
+                    currentUserId
+                });
                 return { bc, avg, rec, final };
             });
 

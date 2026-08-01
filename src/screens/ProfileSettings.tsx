@@ -162,7 +162,7 @@ export default function ProfileSettings({
 
       {/* Modal Container */}
       <div 
-        className="relative w-full h-dvh md:h-auto md:max-h-[85vh] md:max-w-5xl bg-white md:rounded-none shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full h-dvh md:h-auto md:max-h-[85vh] md:max-w-5xl bg-[#FDFBF7] md:rounded-[20px] border border-[rgba(46,51,48,0.08)] shadow-sm flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         <Sidebar 
@@ -176,7 +176,7 @@ export default function ProfileSettings({
           onLogout={() => supabase.auth.signOut()}
         />
 
-        <div className="flex-1 flex flex-col min-w-0 bg-white">
+        <div className="flex-1 flex flex-col min-w-0 bg-[#FDFBF7]">
           <Header activeSection={activeSection} onClose={onClose} />
           
           <div ref={contentRef} className="flex-1 overflow-y-auto px-6 py-8 custom-scrollbar">
@@ -247,13 +247,14 @@ const Sidebar = React.memo(function Sidebar({
     return (
       <button
         onClick={() => onSectionChange(id)}
-        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all text-sm font-medium ${
+        className={`w-full flex items-center gap-3 px-4 py-2 rounded-full transition-all text-xs font-bold ${
           selected 
-            ? 'bg-slate-100 text-slate-900 shadow-sm' 
-            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+            ? 'bg-[#BFC9A6] text-[#2E3330] shadow-sm' 
+            : 'text-[#5F665E] hover:bg-[#D4CCBE] hover:text-[#2E3330]'
         }`}
+        style={{ height: '36px' }}
       >
-        <span className={`${selected ? 'text-cielo-blue' : 'text-slate-400'}`}>
+        <span className={`${selected ? 'text-[#2E3330]' : 'text-slate-400'}`}>
           {icon}
         </span>
         {label}
@@ -262,8 +263,8 @@ const Sidebar = React.memo(function Sidebar({
   };
 
   return (
-    <aside className="w-full md:w-70 shrink-0 flex flex-col bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200">
-      <div className="p-6 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
+    <aside className="w-full md:w-70 shrink-0 flex flex-col bg-[#DDD5C8] border-b md:border-b-0 md:border-r border-[rgba(46,51,48,0.08)]">
+      <div className="p-6 border-b border-[rgba(46,51,48,0.08)] flex items-center gap-4 bg-[#DDD5C8]/25">
          <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-sm" style={{ background: avatarColor || 'white' }}>
             {!avatarColor ? (
               <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
@@ -274,35 +275,35 @@ const Sidebar = React.memo(function Sidebar({
             )}
          </div>
          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-slate-900 truncate tracking-tight">{docenteNombre}</h2>
-            <p className="text-xs text-slate-500 truncate">{userEmail}</p>
+            <h2 className="text-sm font-bold text-[#2E3330] truncate tracking-tight">{docenteNombre}</h2>
+            <p className="text-xs text-[#5F665E] truncate">{userEmail}</p>
          </div>
       </div>
 
       <nav className="p-4 flex-1 space-y-1.5 overflow-y-auto">
-        <NavItem id="perfil" label="Información general" icon={<User size={18} />} />
-        <NavItem id="profesional" label="Datos profesionales" icon={<Briefcase size={18} />} />
-        <NavItem id="seguridad" label="Seguridad" icon={<Shield size={18} />} />
-        <NavItem id="apariencia" label="Apariencia" icon={<Palette size={18} />} />
+        <NavItem id="perfil" label="Información general" icon={<User size={16} />} />
+        <NavItem id="profesional" label="Datos profesionales" icon={<Briefcase size={16} />} />
+        <NavItem id="seguridad" label="Seguridad" icon={<Shield size={16} />} />
+        <NavItem id="apariencia" label="Apariencia" icon={<Palette size={16} />} />
       </nav>
 
-      <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
+      <div className="p-4 border-t border-[rgba(46,51,48,0.08)] bg-[#DDD5C8]/10 space-y-3">
          <button
             onClick={() => {
               if (window.confirm('¿Estás SEGURO de que deseas reiniciar tu año escolar? Esta acción es irreversible.')) {
                 onResetSchoolYear();
               }
             }}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-cielo-terracotta bg-cielo-terracotta/5 hover:bg-cielo-terracotta/10 transition-all border border-cielo-terracotta/20"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest text-[#EB8847] bg-[#EB8847]/10 hover:bg-[#EB8847]/20 transition-all border border-[#EB8847]/20"
          >
-            <AlertCircle size={16} />
+            <AlertCircle size={14} />
             Reiniciar Año
          </button>
          <button 
             onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-cielo-terracotta hover:bg-cielo-terracotta/5 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-full text-xs font-bold text-[#5F665E] hover:text-[#EB8847] hover:bg-[#EB8847]/10 transition-colors"
          >
-            <LogOut size={16} />
+            <LogOut size={14} />
             Cerrar Sesión
          </button>
       </div>
@@ -319,16 +320,16 @@ function Header({ activeSection, onClose }: { activeSection: SectionId; onClose:
   };
 
   return (
-    <header className="px-6 py-5 flex items-center justify-between border-b border-slate-100 bg-white sticky top-0 z-10">
-       <h3 className="font-bold text-lg text-slate-800 tracking-tight">
+    <header className="px-6 py-4 flex items-center justify-between border-b border-[rgba(46,51,48,0.08)] bg-[#FDFBF7] sticky top-0 z-10">
+       <h3 className="font-bold text-base text-[#2E3330] tracking-tight">
           {titles[activeSection]}
        </h3>
        <button 
          onClick={onClose} 
-         className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all"
+         className="p-2 text-slate-400 hover:text-slate-700 hover:bg-[#FAF6F0] rounded-full transition-all"
          aria-label="Cerrar"
        >
-          <X size={20} />
+          <X size={18} />
        </button>
     </header>
   );
@@ -391,7 +392,7 @@ function InformacionGeneralTab({ docenteNombre, userEmail, parsedBio, onSave }: 
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Docente</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={nombreDocente}
             onChange={e => setNombreDocente(e.target.value)}
             placeholder="Nombre del docente"
@@ -401,7 +402,7 @@ function InformacionGeneralTab({ docenteNombre, userEmail, parsedBio, onSave }: 
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Correo Electrónico (Solo Lectura)</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-100 text-slate-500 outline-none cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] text-slate-500 outline-none cursor-not-allowed"
             value={userEmail}
             readOnly
           />
@@ -411,7 +412,7 @@ function InformacionGeneralTab({ docenteNombre, userEmail, parsedBio, onSave }: 
       <div className="space-y-1.5">
         <label className="text-xs font-black uppercase tracking-widest text-slate-500">Biografía</label>
         <textarea
-          className="w-full h-40 p-4 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none resize-none transition-all font-medium"
+          className="w-full h-40 p-4 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none resize-none transition-all font-medium"
           value={bio}
           onChange={e => setBio(e.target.value)}
           placeholder="Escribe tu trayectoria, metodologías o intereses..."
@@ -525,7 +526,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Centro educativo</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.instituto}
             onChange={e => setForm(p => ({ ...p, instituto: e.target.value }))}
             placeholder="Nombre del centro educativo"
@@ -535,7 +536,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Código del centro</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.codigoCentro}
             onChange={e => setForm(p => ({ ...p, codigoCentro: e.target.value }))}
             placeholder="Código del centro"
@@ -565,7 +566,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Tanda</label>
           <select
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold cursor-pointer"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold cursor-pointer"
             value={form.tanda}
             onChange={e => setForm(p => ({ ...p, tanda: e.target.value }))}
           >
@@ -579,7 +580,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Teléfono del centro</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.telefonoCentro}
             onChange={e => setForm(p => ({ ...p, telefonoCentro: e.target.value }))}
             placeholder="Teléfono del centro"
@@ -589,7 +590,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Distrito educativo</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.distrito}
             onChange={e => setForm(p => ({ ...p, distrito: e.target.value }))}
             placeholder="Distrito educativo"
@@ -599,7 +600,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Regional de educación</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.regional}
             onChange={e => setForm(p => ({ ...p, regional: e.target.value }))}
             placeholder="Regional de educación"
@@ -609,7 +610,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Provincia</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.provincia}
             onChange={e => setForm(p => ({ ...p, provincia: e.target.value }))}
             placeholder="Provincia"
@@ -619,7 +620,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Municipio</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
             value={form.municipio}
             onChange={e => setForm(p => ({ ...p, municipio: e.target.value }))}
             placeholder="Municipio"
@@ -799,7 +800,7 @@ function SimplePasswordField({ label, value, onChange, show, onToggle }: { label
              onChange={e => onChange(e.target.value)}
              placeholder="••••••••"
              autoComplete="new-password"
-             className="w-full px-4 py-2.5 pr-10 rounded-xl text-sm border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all"
+             className="w-full px-4 py-2.5 pr-10 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all"
           />
           <button 
              onClick={onToggle}

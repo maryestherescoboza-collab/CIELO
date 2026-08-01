@@ -1,6 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
 
+:root {
+  --background: #FDFBF7;
+  --surface: #F8F3ED;
+  --sidebar: #DDD5C8;
+
+  --olive-branch: #BFC9A6;
+  --herb-garden: #7A8D69;
+  --french-blue: #6D8FB9;
+  --clementine: #EB8847;
+  --calendula: #F5BC5D;
+  --sicilian-sky: #B8CADC;
+  --terra-cotta: #B87449;
+  --linen: #EAE4DA;
+
+  --text-primary: #2E3330;
+  --text-secondary: #5F665E;
+
+  --border: rgba(46, 51, 48, 0.08);
+}
+
 @theme {
   --color-slate-50: #f4f7f9;
   --color-slate-100: #e9eff2;
@@ -244,9 +264,9 @@
 .app-header {
   position: sticky;
   top: 0;
-  height: 96px;
-  @apply flex items-center justify-between px-8 bg-white border-b border-gray-100 z-50;
-  box-shadow: var(--shadow-sm);
+  height: 44px;
+  @apply flex items-center justify-between px-4 bg-white border-b border-gray-100 z-50;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
 .app-main {
@@ -276,9 +296,11 @@
   left: 0;
   right: 0;
   width: 100%;
-  height: 72px;
-  @apply flex items-center justify-center gap-6 px-4 bg-white border-t border-gray-100 z-50;
-  box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.05);
+  height: 56px;
+  @apply flex items-center justify-center gap-4 px-3 border-t z-50;
+  background-color: #FFFFFF !important;
+  border-color: rgba(46, 51, 48, 0.08) !important;
+  box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.04);
 }
 
 /* Component classes */
@@ -528,9 +550,6 @@
   }
 
   .bg-doodle {
-    background-image: url('/module_bg.png');
-    background-repeat: repeat;
-    background-size: 250px;
     background-color: var(--paper-soft);
     position: relative;
   }
@@ -762,4 +781,92 @@ input[type="range"]:focus::-webkit-slider-thumb {
 
 .app-logo:hover {
   transform: scale(1.03);
+}
+
+/* Interactive surface style (paper/stone card hover effects) */
+.paper-card-interactive {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+.paper-card-interactive:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Sidebar clay tablet style */
+.sidebar-clay {
+  background-color: #FAF6F0 !important;
+  border-right: 1px solid #E2D4C9 !important;
+  box-shadow: 2px 0 12px rgba(63, 60, 54, 0.05) !important;
+}
+
+/* Color de Fondo Principal de la App */
+.bg-artisan-main {
+  background-color: #FDFBF7 !important;
+}
+
+/* Panel Lateral con Fondo Rupestre */
+.artisan-sidebar {
+  background-color: #EAE4DA !important;
+  border-color: rgba(46, 51, 48, 0.08) !important;
+  color: #2E3330 !important;
+}
+
+/* Panel Lateral Blanco para Cotejo y Rúbricas */
+.sidebar-artisan-white {
+  background-color: #FDFBF7 !important;
+  border-color: rgba(46, 51, 48, 0.08) !important;
+  color: #2E3330 !important;
+}
+
+/* Botón Blanco para Secciones de Cotejo y Rúbricas */
+.artisan-btn-white {
+  background-color: #FDFBF7 !important;
+  color: #2E3330 !important;
+  border: 1px solid rgba(46, 51, 48, 0.08) !important;
+}
+.artisan-btn-white:hover {
+  background-color: #FAF6F0 !important;
+}
+
+/* Píldora Compacta Estándar */
+.artisan-pill {
+  border-radius: 9999px !important;
+  padding: 8px 18px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.08em !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  transition: all 0.2s ease-in-out !important;
+  font-size: 11px !important;
+  height: 36px !important;
+}
+
+/* Estados de Botones y Selectores */
+.artisan-btn-neutral {
+  background-color: #DDD5C8 !important;
+  color: #2E3330 !important;
+  border: 1px solid rgba(46, 51, 48, 0.08) !important;
+}
+.artisan-btn-neutral:hover {
+  background-color: #D4CCBE !important;
+}
+
+.artisan-btn-active {
+  background-color: #BFC9A6 !important;
+  color: #2E3330 !important;
+  border: 1px solid rgba(46, 51, 48, 0.08) !important;
+}
+
+.artisan-btn-highlight {
+  background-color: #F5BC5D !important;
+  color: #2E3330 !important;
+  border: 1px solid rgba(46, 51, 48, 0.08) !important;
+}
+
+.artisan-text {
+  color: #2E3330 !important;
 }

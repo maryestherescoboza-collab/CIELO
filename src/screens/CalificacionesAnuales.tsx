@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { ChevronLeft, Printer, GraduationCap, Users } from 'lucide-react';
 import { getAsignaturaNombre } from '../constants/asignaturas';
 import type { AppState, BCKey, Screen, CursoDocente } from '../types';
+import { calculateStudentPeriodBC } from '../utils/academic';
 
 interface Props {
     state: AppState;
@@ -26,42 +27,27 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
 
             const calculatePC = (bc: BCKey) => {
                 const targetAsignatura = currentCourseRole?.asignatura || curso?.asignatura;
+                const periods: ('P1' | 'P2' | 'P3' | 'P4')[] = ['P1', 'P2', 'P3', 'P4'];
 
-                const califs = state.calificaciones.filter(c =>
-                    c.estudianteId === est.id &&
-                    (c.cursoId === cursoId || (curso?.sharedCourseId && c.sharedCourseId === curso.sharedCourseId)) &&
-                    (!targetAsignatura || c.asignatura === targetAsignatura) &&
-                    c.competencias?.includes(bc) &&
-                    c.puntaje !== null
-                );
-                
-                const avg = califs.length > 0 
-                    ? Math.round(califs.reduce((acc, c) => acc + (c.puntaje as number), 0) / califs.length)
+                const periodScores = periods.map(p => {
+                    const { final } = calculateStudentPeriodBC({
+                        estudianteId: est.id,
+                        bc,
+                        periodo: p,
+                        actividades: state.actividades,
+                        calificaciones: state.calificaciones,
+                        recuperaciones: state.recuperaciones,
+                        cursoId,
+                        sharedCourseId: curso?.sharedCourseId,
+                        targetAsignatura,
+                    });
+                    return final;
+                });
+
+                const validScores = periodScores.filter(v => v !== null) as number[];
+                return validScores.length > 0
+                    ? Math.round(validScores.reduce((acc, score) => acc + score, 0) / validScores.length)
                     : 0;
-
-                // Recovery logic extension
-                if (avg < 70 || califs.length === 0) {
-                    const bcNumber = Number(bc.replace('BC', ''));
-
-                    const rec = (state.recuperaciones || [])
-                        .filter(r => 
-                            r.estudianteId === est.id &&
-                            (r.cursoId === cursoId || (curso?.sharedCourseId && r.sharedCourseId === curso.sharedCourseId)) &&
-                            (!targetAsignatura || r.asignatura === targetAsignatura) &&
-                            Number(r.bc) === bcNumber
-                        )
-                        .sort((a, b) => {
-                            const dateA = a.fecha ? new Date(a.fecha).getTime() : 0;
-                            const dateB = b.fecha ? new Date(b.fecha).getTime() : 0;
-                            return dateB - dateA;
-                        })[0];
-
-                    if (rec && rec.puntaje !== null) {
-                        return rec.puntaje;
-                    }
-                }
-                
-                return avg;
             };
 
             const pc1 = calculatePC('BC1');

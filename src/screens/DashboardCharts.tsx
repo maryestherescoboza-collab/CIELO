@@ -22,7 +22,7 @@ export function DonutChart({ segments, size = 130, strokeWidth = 14 }: {
       <div className="dash-donut-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap', width: '100%' }}>
         <div style={{ position: 'relative', width: size, height: size }}>
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: 'visible' }}>
-            <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f1f5f9" strokeWidth={strokeWidth} />
+            <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(46, 51, 48, 0.08)" strokeWidth={strokeWidth} />
             {segments.map((seg, i) => {
               if (seg.value === 0) return null;
               const pct = seg.value / (total || 1);
@@ -50,8 +50,8 @@ export function DonutChart({ segments, size = 130, strokeWidth = 14 }: {
                 />
               );
             })}
-            <text x={size / 2} y={size / 2 - 4} textAnchor="middle" fill="#0f172a" fontSize="18" fontWeight="800" fontFamily="Manrope, sans-serif">{total}</text>
-            <text x={size / 2} y={size / 2 + 10} textAnchor="middle" fill="#94a3b8" fontSize="8" fontWeight="700" style={{ textTransform: 'uppercase' }} letterSpacing="0.08em">Total</text>
+            <text x={size / 2} y={size / 2 - 4} textAnchor="middle" fill="#2E3330" fontSize="18" fontWeight="800" fontFamily="Manrope, sans-serif">{total}</text>
+            <text x={size / 2} y={size / 2 + 10} textAnchor="middle" fill="#5F665E" fontSize="8" fontWeight="700" style={{ textTransform: 'uppercase' }} letterSpacing="0.08em">Total</text>
           </svg>
 
           {/* Tooltip */}
@@ -61,29 +61,29 @@ export function DonutChart({ segments, size = 130, strokeWidth = 14 }: {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -130%)',
-              background: '#fff',
+              background: '#FDFBF7',
               padding: '10px 12px',
-              borderRadius: '10px',
-              boxShadow: '0 12px 28px -6px rgba(0,0,0,0.12), 0 6px 12px -6px rgba(0,0,0,0.08)',
-              border: '1px solid #f1f5f9',
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(46, 51, 48, 0.08)',
               minWidth: '180px',
               zIndex: 20,
               pointerEvents: 'none',
               animation: 'dash-fade-in 0.2s ease-out'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, borderBottom: '1px solid #f1f5f9', paddingBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, borderBottom: '1px solid rgba(46, 51, 48, 0.08)', paddingBottom: 6 }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: segments[hoveredIndex].color }} />
-                <span style={{ fontWeight: 900, color: '#0f172a', fontSize: 11 }}>
+                <span style={{ fontWeight: 950, color: '#2E3330', fontSize: 11 }}>
                   {segments[hoveredIndex].label} {segments[hoveredIndex].range ? `(${segments[hoveredIndex].range})` : ''}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginBottom: 4 }}>
-                <span style={{ color: '#64748b', fontWeight: 600 }}>Actividades:</span>
-                <span style={{ fontWeight: 800, color: '#0f172a' }}>{segments[hoveredIndex].value}</span>
+                <span style={{ color: '#5F665E', fontWeight: 600 }}>Actividades:</span>
+                <span style={{ fontWeight: 800, color: '#2E3330' }}>{segments[hoveredIndex].value}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10 }}>
-                <span style={{ color: '#64748b', fontWeight: 600 }}>Porcentaje:</span>
-                <span style={{ fontWeight: 800, color: '#0f172a' }}>
+                <span style={{ color: '#5F665E', fontWeight: 600 }}>Porcentaje:</span>
+                <span style={{ fontWeight: 800, color: '#2E3330' }}>
                   {Math.round((segments[hoveredIndex].value / (total || 1)) * 100)}%
                 </span>
               </div>
@@ -102,7 +102,7 @@ export function DonutChart({ segments, size = 130, strokeWidth = 14 }: {
                 gap: 8,
                 fontSize: 12,
                 fontWeight: 500,
-                color: '#64748b',
+                color: '#5F665E',
                 cursor: 'pointer',
                 opacity: hoveredIndex !== null && hoveredIndex !== i ? 0.5 : 1,
                 transition: 'opacity 0.2s ease'
@@ -112,7 +112,7 @@ export function DonutChart({ segments, size = 130, strokeWidth = 14 }: {
             >
               <span className="dash-donut-legend__dot" style={{ background: seg.color, width: 8, height: 8, borderRadius: '50%', flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{seg.label}</span>
-              <span style={{ fontWeight: 800, color: '#0f172a' }}>
+              <span style={{ fontWeight: 800, color: '#2E3330' }}>
                 {total > 0 ? Math.round((seg.value / total) * 100) : 0}%
               </span>
             </div>

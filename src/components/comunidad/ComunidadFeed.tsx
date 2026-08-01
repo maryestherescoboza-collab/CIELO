@@ -23,10 +23,10 @@ const getTipoLabel = (tipo: Post['tipo']) => {
 
 const getTagStyles = (tipo: Post['tipo']) => {
     switch (tipo) {
-        case 'rubrica': return 'bg-[#FDF2F2] text-[#E02424] border-transparent';
-        case 'cotejo': return 'bg-[#FFFBEB] text-[#D97706] border-transparent';
-        case 'secuencia': return 'bg-[#ECFDF5] text-[#059669] border-transparent';
-        default: return 'bg-slate-100 text-slate-600 border-transparent';
+        case 'rubrica': return 'bg-[#FEE2E2] text-[#C81E1E] border-[#FCA5A5]';
+        case 'cotejo': return 'bg-[#FEF3C7] text-[#B45309] border-[#FCD34D]';
+        case 'secuencia': return 'bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]';
+        default: return 'bg-slate-100 text-slate-600 border-slate-300';
     }
 };
 
@@ -44,10 +44,10 @@ export default function ComunidadFeed({
     onDeletePost, currentUserId
 }: Props) {
     return (
-        <div className="space-y-10">
+        <div className="space-y-6">
 
             {/* Feed Grid - Highly responsive masonry-style grid that fills all space */}
-            <section className="grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+            <section className="grid gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
                 {posts.length > 0 ? (
                     posts.map((post) => (
                         <PostCard 

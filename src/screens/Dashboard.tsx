@@ -370,10 +370,10 @@ export default function Dashboard({ docenteNombre }: Props) {
     
     // Largest Remainder Method for exactly 100 percentages
     const raw = [
-      { id: 'high', label: 'Alto Rendimiento', color: '#689C63', count: high, avg: high > 0 ? Math.round(highSum / high) : null, exact: (high / total) * 100 },
-      { id: 'medium', label: 'Rendimiento Medio', color: '#DBBD24', count: medium, avg: medium > 0 ? Math.round(mediumSum / medium) : null, exact: (medium / total) * 100 },
-      { id: 'risk', label: 'En Riesgo', color: '#D45050', count: risk, avg: risk > 0 ? Math.round(riskSum / risk) : null, exact: (risk / total) * 100 },
-      { id: 'nodata', label: 'Sin Datos', color: '#6F94AF', count: noData, avg: null, exact: (noData / total) * 100 },
+      { id: 'high', label: 'Alto Rendimiento', color: '#7A8D69', count: high, avg: high > 0 ? Math.round(highSum / high) : null, exact: (high / total) * 100 },
+      { id: 'medium', label: 'Rendimiento Medio', color: '#BFC9A6', count: medium, avg: medium > 0 ? Math.round(mediumSum / medium) : null, exact: (medium / total) * 100 },
+      { id: 'risk', label: 'En Riesgo', color: '#EB8847', count: risk, avg: risk > 0 ? Math.round(riskSum / risk) : null, exact: (risk / total) * 100 },
+      { id: 'nodata', label: 'Sin Datos', color: '#B8CADC', count: noData, avg: null, exact: (noData / total) * 100 },
     ];
 
     const items = raw.map(r => ({ ...r, floored: Math.floor(r.exact), remainder: r.exact - Math.floor(r.exact) }));
@@ -427,10 +427,10 @@ export default function Dashboard({ docenteNombre }: Props) {
     });
 
     return [
-      { value: excelente, color: '#689C63', label: 'Excelente', range: '>90' },
-      { value: bueno, color: '#DBBD24', label: 'Bueno', range: '80-90' },
-      { value: enDesarrollo, color: '#3E3838', label: 'En desarrollo', range: '70-80' },
-      { value: requiereApoyo, color: '#D45050', label: 'Requiere apoyo', range: '<70' }
+      { value: excelente, color: '#7A8D69', label: 'Excelente', range: '>90' },
+      { value: bueno, color: '#BFC9A6', label: 'Bueno', range: '80-90' },
+      { value: enDesarrollo, color: '#F5BC5D', label: 'En desarrollo', range: '70-80' },
+      { value: requiereApoyo, color: '#EB8847', label: 'Requiere apoyo', range: '<70' }
     ];
   }, [filteredCalificaciones]);
 
@@ -499,11 +499,11 @@ export default function Dashboard({ docenteNombre }: Props) {
         {/* ═══ HEADER ═══ */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div>
-            <h1 className="text-3xl font-black text-[#1E293B] tracking-tight mb-1.5 font-notion-title">
+            <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-1.5 font-notion-title">
                 Dashboard Analítico
             </h1>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                Bienvenido, <span className="text-turf-green-base">{docenteNombre.split(' ')[0]}</span> · {state.instituto || 'Instituto Central'}
+            <p className="text-[10px] font-bold text-[#5F665E] uppercase tracking-widest">
+                Bienvenido, <span className="text-[#7A8D69]">{docenteNombre.split(' ')[0]}</span> · {state.instituto || 'Instituto Central'}
             </p>
           </div>
           
@@ -511,7 +511,7 @@ export default function Dashboard({ docenteNombre }: Props) {
             <div className="relative group" ref={dropdownRef}>
                 <button
                     onClick={() => setIsSelectOpen(!isSelectOpen)}
-                    className="flex items-center justify-between min-w-55 h-12 pl-5 pr-4 rounded-xl bg-white border border-slate-100 text-slate-700 text-xs font-bold uppercase tracking-widest shadow-md shadow-slate-100/40 outline-none focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50 cursor-pointer transition-all hover:border-slate-300"
+                    className="flex items-center justify-between min-w-55 h-10 pl-5 pr-4 rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-[10px] font-black uppercase tracking-widest shadow-sm outline-none focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 cursor-pointer transition-all hover:bg-[#FAF6F0] artisan-pill"
                 >
                     <span className="truncate pr-4">
                         {selectedCursoId === 'all' ? 'Todos los Cursos' : (() => {
@@ -520,14 +520,14 @@ export default function Dashboard({ docenteNombre }: Props) {
                             return c ? `${c.grado} ${c.seccion} - ${c.nombre}` : 'Todos los Cursos';
                         })()}
                     </span>
-                    <TC_Flux size={12} className={`text-slate-500 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-turf-green-base' : 'rotate-90 group-hover:text-turf-green-base'}`} />
+                    <TC_Flux size={12} className={`text-slate-500 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-[#7A8D69]' : 'rotate-90 group-hover:text-[#7A8D69]'}`} />
                 </button>
                 {isSelectOpen && (
-                    <div className="absolute top-[calc(100%+6px)] left-0 w-full bg-white border border-slate-100 rounded-xl shadow-lg shadow-slate-100/40 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top">
+                    <div className="absolute top-[calc(100%+6px)] left-0 w-full bg-[#FDFBF7] border border-slate-300 rounded-[20px] shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top">
                         <div className="max-h-62.5 overflow-y-auto py-1.5 scrollbar-hide">
                             <button
                                 onClick={() => { setSelectedCursoId('all'); setIsSelectOpen(false); }}
-                                className={`w-full text-left px-5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors ${selectedCursoId === 'all' ? 'bg-turf-green-base/10 text-turf-green-base' : 'text-slate-600 hover:bg-slate-50'}`}
+                                className={`w-full text-left px-5 py-2.5 text-[9px] font-black uppercase tracking-widest transition-colors ${selectedCursoId === 'all' ? 'bg-[#BFC9A6]/30 text-[#2E3330]' : 'text-[#5F665E] hover:bg-[#FAF6F0]'}`}
                             >
                                 Todos los Cursos
                             </button>
@@ -535,7 +535,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                                 <button
                                     key={c.id}
                                     onClick={() => { setSelectedCursoId(String(c.id)); setIsSelectOpen(false); }}
-                                    className={`w-full text-left px-5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors ${selectedCursoId === String(c.id) ? 'bg-turf-green-base/10 text-turf-green-base' : 'text-slate-600 hover:bg-slate-50'}`}
+                                    className={`w-full text-left px-5 py-2.5 text-[9px] font-black uppercase tracking-widest transition-colors ${selectedCursoId === String(c.id) ? 'bg-[#BFC9A6]/30 text-[#2E3330]' : 'text-[#5F665E] hover:bg-[#FAF6F0]'}`}
                                 >
                                     {c.grado} {c.seccion} - {c.nombre}
                                 </button>
@@ -547,7 +547,7 @@ export default function Dashboard({ docenteNombre }: Props) {
             
             <button
                 onClick={() => navigate('/')}
-                className="h-12 px-6 rounded-xl bg-white border border-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest shadow-md shadow-slate-100/40 hover:bg-slate-50 hover:border-slate-300 transition-all outline-none focus-visible:ring-2 focus-visible:ring-turf-green-base/50 flex items-center justify-center gap-1.5"
+                className="h-10 px-6 rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-[#FAF6F0] hover:border-slate-350 transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 flex items-center justify-center gap-1.5 artisan-pill"
             >
                 ← Inicio
             </button>
@@ -558,10 +558,10 @@ export default function Dashboard({ docenteNombre }: Props) {
         {podiumsByPeriod.some(p => p.top10.length > 0) && (
           <div className="mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
             <div className="mb-2">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em]">
+              <h3 className="text-[10px] font-black text-[#2E3330] uppercase tracking-[0.25em]">
                   Podium de excelencia
               </h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+              <p className="text-[9px] font-bold text-[#5F665E] uppercase tracking-widest mt-0.5">
                   Top 10 de estudiantes con mejor promedio por período
               </p>
             </div>
@@ -572,9 +572,9 @@ export default function Dashboard({ docenteNombre }: Props) {
                 .map((podium, pIdx) => {
                   const periodNum = podium.periodo.replace(/^\D+/g, '') || String(pIdx + 1);
                   return (
-                    <div key={podium.periodo} className="flex items-center gap-3 py-1.5 border-b border-slate-100/40 last:border-b-0">
+                    <div key={podium.periodo} className="flex items-center gap-3 py-1.5 border-b border-[rgba(46,51,48,0.08)] last:border-b-0">
                       {/* Period Label */}
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100/80 border border-slate-200/40 text-slate-600 font-black text-[10px] shrink-0 shadow-sm">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#EAE4DA]/50 border border-[rgba(46,51,48,0.08)] text-[#2E3330] font-black text-[10px] shrink-0 shadow-sm">
                         <span>P{periodNum}</span>
                       </div>
 
@@ -589,25 +589,25 @@ export default function Dashboard({ docenteNombre }: Props) {
                           
                           if (rank === 1) {
                             avatarStyle += "w-8.5 h-8.5 text-[10px] border-[2.5px]";
-                            avatarBorderColor = { borderColor: '#DBBD24' };
+                            avatarBorderColor = { borderColor: '#F5BC5D' };
                           } else if (rank === 2) {
                             avatarStyle += "w-7.5 h-7.5 text-[9px] border-[2px]";
-                            avatarBorderColor = { borderColor: '#94A3B8' };
+                            avatarBorderColor = { borderColor: '#B8CADC' };
                           } else if (rank === 3) {
                             avatarStyle += "w-7.5 h-7.5 text-[9px] border-[2px]";
-                            avatarBorderColor = { borderColor: '#B45309' };
+                            avatarBorderColor = { borderColor: '#EB8847' };
                           } else {
-                            avatarStyle += "w-7.5 h-7.5 text-[9px] border border-slate-200/60";
+                            avatarStyle += "w-7.5 h-7.5 text-[9px] border border-[rgba(46,51,48,0.08)]";
                           }
 
                           return (
                             <div
                               key={est.id}
                               onClick={() => navigate(`/estudiante/${est.id}`)}
-                              className="flex items-center gap-2 hover:bg-slate-50/50 active:scale-98 transition-all cursor-pointer rounded-xl py-1 px-2.5 shrink-0"
+                              className="flex items-center gap-2 hover:bg-[#FAF6F0]/40 active:scale-98 transition-all cursor-pointer rounded-xl py-1 px-2.5 shrink-0"
                             >
                               {/* Position indicator */}
-                              <span className="text-[10px] font-black text-slate-400 shrink-0 min-w-4 text-center">
+                              <span className="text-[10px] font-black text-[#5F665E] shrink-0 min-w-4 text-center">
                                 {rank}
                               </span>
 
@@ -621,10 +621,10 @@ export default function Dashboard({ docenteNombre }: Props) {
 
                               {/* Details */}
                               <div className="flex flex-col min-w-0">
-                                <span className="text-[10px] font-bold text-slate-700 truncate leading-tight">
+                                <span className="text-[10px] font-bold text-[#2E3330] truncate leading-tight">
                                   {est.nombre} {est.apellido}
                                 </span>
-                                <span className="text-[9px] font-black text-turf-green-base/90 mt-0.5">
+                                <span className="text-[9px] font-black text-[#7A8D69] mt-0.5">
                                   {est.periodAvg}%
                                 </span>
                               </div>
@@ -644,13 +644,13 @@ export default function Dashboard({ docenteNombre }: Props) {
           {/* ═══ SMOOTH LINE CHART ═══ */}
           <div className="flex flex-col xl:col-span-2">
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em]">Promedio de calificaciones</h3>
+                <h3 className="text-[10px] font-black text-[#2E3330] uppercase tracking-[0.25em]">Promedio de calificaciones</h3>
             </div>
-            <div className="bg-white border border-slate-100 rounded-2xl shadow-md shadow-slate-100/40 p-5 min-h-95 flex flex-col justify-between">
+            <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-5 min-h-95 flex flex-col justify-between">
               <div className="flex-1 flex items-center justify-center">
                 <SmoothLineChart data={smoothLineData} height={220} />
               </div>
-              <div className="mt-4 p-3 bg-slate-50 border border-slate-100/50 rounded-xl text-[10px] text-slate-500 font-medium leading-relaxed">
+              <div className="mt-4 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-[10px] text-[#5F665E] font-medium leading-relaxed">
                 {lineChartDescription}
               </div>
             </div>
@@ -659,21 +659,21 @@ export default function Dashboard({ docenteNombre }: Props) {
           {/* ═══ STUDENT POPULATION (WAFFLE) ═══ */}
           <div className="flex flex-col xl:col-span-1">
             <div className="flex items-center justify-between mb-1.5">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em]">Distribución Poblacional</h3>
+                <h3 className="text-[10px] font-black text-[#2E3330] uppercase tracking-[0.25em]">Distribución Poblacional</h3>
             </div>
-            <div className="bg-white border border-slate-100 rounded-2xl shadow-md shadow-slate-100/40 p-4 min-h-80 flex flex-col justify-between relative overflow-hidden group">
+            <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-4 min-h-80 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex-1 flex flex-col justify-center">
                 <StudentPopulationChart categories={populationData} />
                 <div className="flex gap-3 justify-center mt-2.5 flex-wrap">
                   {populationData.map(c => (
-                    <div key={c.id} className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    <div key={c.id} className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-[#5F665E]">
                       <span className="w-2 h-2 rounded-full shadow-sm" style={{ background: c.color }} />
                       {c.label} <span className="text-slate-400">({c.percentage}%)</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="mt-3 p-3 bg-slate-50 border border-slate-100/50 rounded-xl text-[10px] text-slate-500 font-medium leading-relaxed">
+              <div className="mt-3 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-[10px] text-[#5F665E] font-medium leading-relaxed">
                 {populationChartDescription}
               </div>
             </div>
@@ -682,25 +682,24 @@ export default function Dashboard({ docenteNombre }: Props) {
           {/* ═══ DONUT CHART ═══ */}
           <div className="flex flex-col xl:col-span-1">
             <div className="flex items-center justify-between mb-1.5">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em]">Distribución del rendimiento académico</h3>
+                <h3 className="text-[10px] font-black text-[#2E3330] uppercase tracking-[0.25em]">Distribución del rendimiento académico</h3>
             </div>
-            <div className="bg-white border border-slate-100 rounded-2xl shadow-md shadow-slate-100/40 p-4 min-h-80 flex flex-col justify-between relative overflow-hidden group">
+            <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-4 min-h-80 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex-1 flex flex-col justify-center">
                 <DonutChart segments={donutData} />
               </div>
-              <div className="mt-3 p-3 bg-slate-50 border border-slate-100/50 rounded-xl text-[10px] text-slate-500 font-medium leading-relaxed">
-                Distribución porcentual de las actividades evaluadas según los niveles de desempeño alcanzados. Permite identificar la concentración de resultados y detectar oportunidades de mejora en el proceso de aprendizaje.
+              <div className="mt-3 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-[10px] text-[#5F665E] font-medium leading-relaxed">
+                Distribución porcentual de las actividades evaluadas según los niveles de desempeño alcanzados. Permite identificar la concentración de
               </div>
             </div>
           </div>
         </div>
 
-      </div>
 
       {/* ═══ REGISTRO DEL CURSO SIDEBAR ═══ */}
-      <div className="w-90 border-l border-slate-100 bg-white h-full hidden lg:flex flex-col shrink-0 shadow-sm">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest">
+      <div className="w-90 border-l border-[rgba(46,51,48,0.08)] bg-[#FDFBF7] h-full hidden lg:flex flex-col shrink-0 shadow-sm">
+        <div className="p-5 border-b border-[rgba(46,51,48,0.08)] flex items-center justify-between">
+          <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-widest">
             Registro Anecdótico
           </h3>
           {selectedCursoId !== 'all' && (
@@ -716,10 +715,10 @@ export default function Dashboard({ docenteNombre }: Props) {
                   setIsNewRecordOpen(true);
                 }}
                 disabled={courseRecords.length >= 5}
-                className={`px-3 py-1.5 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+                className={`px-3 py-1.5 text-white text-[10px] font-bold uppercase tracking-wider rounded-full transition-all artisan-pill ${
                   courseRecords.length >= 5
-                    ? 'bg-slate-300 cursor-not-allowed'
-                    : 'bg-turf-green-base hover:bg-turf-green-base/90 active:scale-95 cursor-pointer'
+                    ? 'bg-slate-350 cursor-not-allowed'
+                    : 'bg-[#7A8D69] hover:bg-[#6C7E5C] active:scale-95 cursor-pointer'
                 }`}
               >
                 + Nuevo Registro
@@ -750,20 +749,20 @@ export default function Dashboard({ docenteNombre }: Props) {
                   return (
                     <div key={r.id} className="relative">
                       {/* Timeline dot */}
-                      <span className="absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full bg-turf-green-base border-2 border-white ring-4 ring-turf-green-base/10" />
+                      <span className="absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full bg-[#7A8D69] border-2 border-white ring-4 ring-[#7A8D69]/10" />
                       
                       <div className="flex justify-between items-center gap-2 mb-0.5">
-                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{r.fecha}</div>
+                        <div className="text-[9px] font-bold text-[#5F665E] uppercase tracking-wider">{r.fecha}</div>
                         <button
                           onClick={() => handleDeleteRecord(r.id)}
-                          className="text-[9px] font-bold text-red-400 hover:text-red-500 uppercase tracking-wider cursor-pointer"
+                          className="text-[9px] font-bold text-[#EB8847] hover:text-[#B87449] uppercase tracking-wider cursor-pointer"
                         >
                           Eliminar
                         </button>
                       </div>
                       
-                      <h4 className="text-xs font-black text-slate-700 uppercase tracking-tight mb-1 leading-snug">{r.titulo}</h4>
-                      <p className="text-[10px] text-slate-500 leading-relaxed mb-2 whitespace-pre-wrap">{r.descripcion}</p>
+                      <h4 className="text-xs font-black text-[#2E3330] uppercase tracking-tight mb-1 leading-snug">{r.titulo}</h4>
+                      <p className="text-[10px] text-[#5F665E] leading-relaxed mb-2 whitespace-pre-wrap">{r.descripcion}</p>
                       
                       {images.length > 0 && (
                         <div className="flex gap-1.5 overflow-x-auto py-1 scrollbar-hide">
@@ -773,7 +772,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                               src={img.imagenUrl}
                               alt="Thumbnail"
                               loading="lazy"
-                              className="w-14 h-14 object-cover rounded-lg border border-slate-100 hover:scale-105 transition-transform cursor-pointer"
+                              className="w-14 h-14 object-cover rounded-lg border border-[rgba(46,51,48,0.08)] hover:scale-105 transition-transform cursor-pointer"
                               onClick={() => {
                                 window.open(img.imagenUrl, '_blank');
                               }}
@@ -789,7 +788,7 @@ export default function Dashboard({ docenteNombre }: Props) {
               {courseRecords.length > visibleCount && (
                 <button
                   onClick={() => setVisibleCount(prev => prev + 5)}
-                  className="w-full py-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer mt-2"
+                  className="w-full py-2 bg-[#FDFBF7] border border-slate-350 hover:bg-[#FAF6F0] text-[#2E3330] text-[10px] font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer mt-2 artisan-pill"
                 >
                   Cargar más registros
                 </button>
@@ -802,15 +801,15 @@ export default function Dashboard({ docenteNombre }: Props) {
       {/* ═══ NUEVO REGISTRO MODAL ═══ */}
       {isNewRecordOpen && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white border border-slate-100 rounded-none shadow-xl p-6 w-full max-w-md flex flex-col gap-4 animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-              <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest">Nuevo Registro Anecdótico</h3>
+          <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-6 w-full max-w-md flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center pb-2 border-b border-[rgba(46,51,48,0.08)]">
+              <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-widest">Nuevo Registro Anecdótico</h3>
               <button onClick={() => setIsNewRecordOpen(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer">×</button>
             </div>
             
             {optimizationProgress && (
-              <div className="p-3 bg-turf-green-base/5 border border-turf-green-base/10 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-turf-green-base uppercase tracking-widest animate-pulse">
+              <div className="p-3 bg-[#7A8D69]/5 border border-[#7A8D69]/10 rounded-xl text-center">
+                <span className="text-[10px] font-bold text-[#7A8D69] uppercase tracking-widest animate-pulse">
                   {optimizationProgress}
                 </span>
               </div>
@@ -818,47 +817,47 @@ export default function Dashboard({ docenteNombre }: Props) {
 
             <div className="flex flex-col gap-3.5">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Fecha</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#5F665E] mb-1">Fecha</label>
                 <input
                   type="date"
                   value={recordDate}
                   onChange={(e) => setRecordDate(e.target.value)}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-100 bg-slate-50/50 text-slate-700 text-xs font-medium outline-none focus:border-turf-green-base/50"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20"
                   disabled={isSaving}
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Título</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#5F665E] mb-1">Título</label>
                 <input
                   type="text"
                   placeholder="Ej. Excursión al museo de ciencias"
                   value={recordTitle}
                   onChange={(e) => setRecordTitle(e.target.value)}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-100 bg-slate-50/50 text-slate-700 text-xs font-medium outline-none focus:border-turf-green-base/50"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20"
                   disabled={isSaving}
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Descripción</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#5F665E] mb-1">Descripción</label>
                 <textarea
                   rows={3}
                   placeholder="Escribe aquí los acontecimientos o detalles importantes..."
                   value={recordDesc}
                   onChange={(e) => setRecordDesc(e.target.value)}
-                  className="w-full p-4 rounded-xl border border-slate-100 bg-slate-50/50 text-slate-700 text-xs font-medium outline-none focus:border-turf-green-base/50 resize-none leading-relaxed"
+                  className="w-full p-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20 resize-none leading-relaxed"
                   disabled={isSaving}
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Imágenes (Máx 2)</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#5F665E] mb-1">Imágenes (Máx 2)</label>
                 <div className="flex items-center gap-2">
                   <label className={`h-10 px-4 flex items-center justify-center border rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
                     selectedFiles.length >= 2 || isSaving
                       ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                      : 'bg-slate-50 hover:bg-slate-100 border-slate-100 text-slate-500 cursor-pointer'
+                      : 'bg-[#FDFBF7] hover:bg-[#FAF6F0] border-slate-300 text-slate-500 cursor-pointer'
                   }`}>
                     Seleccionar Fotos
                     <input
@@ -881,7 +880,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                   <div className="flex gap-2 overflow-x-auto mt-3 py-1 scrollbar-hide">
                     {imagePreviews.map((url, idx) => (
                       <div key={idx} className="relative shrink-0">
-                        <img src={url} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-slate-100" />
+                        <img src={url} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-[rgba(46,51,48,0.08)]" />
                         {!isSaving && (
                           <button
                             onClick={() => handleRemoveFile(idx)}
@@ -897,17 +896,17 @@ export default function Dashboard({ docenteNombre }: Props) {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-[rgba(46,51,48,0.08)]">
               <button
                 onClick={() => setIsNewRecordOpen(false)}
-                className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider rounded-lg cursor-pointer transition-all"
+                className="px-4 py-2 bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-[10px] font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all hover:bg-[#FAF6F0]"
                 disabled={isSaving}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveRecord}
-                className="px-4 py-2 bg-turf-green-base hover:bg-turf-green-base/90 active:scale-95 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg cursor-pointer transition-all flex items-center gap-1.5"
+                className="px-4 py-2 bg-[#7A8D69] hover:bg-[#6C7E5C] active:scale-95 text-white text-[10px] font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all flex items-center gap-1.5"
                 disabled={isSaving || !recordTitle.trim() || !recordDate}
               >
                 {isSaving ? 'Guardando...' : 'Guardar'}
@@ -916,9 +915,7 @@ export default function Dashboard({ docenteNombre }: Props) {
           </div>
         </div>
       )}
-
-
-
     </div>
-  );
+  </div>
+);
 }

@@ -73,31 +73,31 @@ export default function Comunidad({
                     </div>
 
                     <div className="lg:col-span-9 space-y-8">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-2">
                             <div>
-                                <h1 className="text-4xl font-black text-[#1E293B] tracking-tight mb-3 font-notion-title">
+                                <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2.5 font-notion-title">
                                     Comunidad Educativa
                                 </h1>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2.5 bg-slate-200/50 px-4 py-2 rounded-xl border border-slate-200">
-                                        <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 bg-[#EAE4DA] px-3 py-1 rounded-full border border-[rgba(46,51,48,0.08)]">
+                                        <span className="text-[9px] font-bold text-[#2E3330] uppercase tracking-[0.08em]">
                                             Recursos Compartidos
                                         </span>
                                     </div>
-                                    <div className="h-1.5 w-1.5 rounded-full bg-slate-400"></div>
-                                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Intercambio Docente</span>
+                                    <div className="h-1.5 w-1.5 rounded-full bg-slate-350"></div>
+                                    <span className="text-[9px] font-bold text-[#5F665E] uppercase tracking-[0.08em]">Intercambio Docente</span>
                                 </div>
                             </div>
                         </div>
 
-                        <section className="bg-white rounded-[10px] p-4 border border-slate-200 shadow-xl shadow-slate-200/50 mb-6">
+                        <section className="bg-[#FDFBF7] rounded-[20px] p-4 border border-[rgba(46,51,48,0.08)] shadow-sm mb-6">
                             <PostComposer
                                 state={globalState}
                                 onAddPost={onAddPost}
                             />
                         </section>
 
-                        <div className="pt-3">
+                        <div className="pt-2">
                             <ComunidadFeed
                                 posts={filteredPosts}
                                 onToggleLike={onToggleLike}

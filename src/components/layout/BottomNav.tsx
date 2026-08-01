@@ -25,29 +25,26 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
         <nav className="app-bottom-nav">
             {NAV_ITEMS.map(item => {
                 const isActive = currentScreen === item.screen && !item.isClose;
-                const isComunidad = item.screen === 'comunidad';
                 
-                if (isComunidad) {
-                    return (
-                        <button 
-                            key={item.label} 
-                            onClick={() => onNavigate(item.screen)} 
-                            className={`flex flex-col items-center justify-center gap-1.5 px-8 py-2 rounded-[1.25rem] transition-all ${isActive ? 'bg-[#FDE2E2] scale-105' : 'text-slate-400 opacity-60 hover:opacity-100'}`}
-                        >
-                            <div className={`${isActive ? 'text-[#991B1B]' : ''}`}>
-                                {item.icon}
-                            </div>
-                            <span className={`text-[9px] font-black uppercase tracking-widest ${isActive ? 'text-[#991B1B]' : ''}`}>{item.label}</span>
-                        </button>
-                    );
+                let btnBg = 'bg-transparent';
+                if (isActive) {
+                    btnBg = 'bg-[#BFC9A6]';
+                } else if (item.label === 'Comunidad') {
+                    // Let's make Comunidad have the highlight background F5BC5D
+                    btnBg = 'hover:bg-[#D4CCBE]';
                 }
 
                 return (
-                    <button key={item.label} onClick={() => onNavigate(item.screen)} className={`teacher-nav-item ${isActive ? 'active' : ''} group`}>
-                        <div className={`p-2.5 rounded-xl transition-all ${isActive ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-400 group-hover:bg-slate-50 group-hover:text-slate-600'}`}>
+                    <button 
+                        key={item.label} 
+                        onClick={() => onNavigate(item.screen)} 
+                        className={`flex flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 ${btnBg} hover:bg-slate-100 text-[#2E3330]`}
+                        style={{ minWidth: '72px', height: '40px' }}
+                    >
+                        <div className="text-[#2E3330]">
                             {item.icon}
                         </div>
-                        <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-slate-900' : 'text-slate-400 opacity-60'}`}>{item.label}</span>
+                        <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#2E3330]">{item.label}</span>
                     </button>
                 );
             })}

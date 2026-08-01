@@ -102,8 +102,8 @@ export default function PrintBoletines({ state, docenteNombre }: PrintBoletinesP
                         const avg = periodBCActs.length ? Math.round(rawScores.reduce((sum, val) => sum + val, 0) / periodBCActs.length) : null;
                         const rec = recoveries.find(r => r.periodo === p && Number(r.bc) === bcNum)?.puntaje ?? null;
 
-                        // Apply recovery logic (exact match with Estudiante.tsx)
-                        const finalBCScore = rec !== null ? rec : avg;
+                        // Apply recovery logic (exact match with system rule)
+                        const finalBCScore = (rec !== null && (avg === null || avg < 70)) ? rec : avg;
                         pGrades[p][bc] = finalBCScore;
                     });
                 });
@@ -180,29 +180,32 @@ export default function PrintBoletines({ state, docenteNombre }: PrintBoletinesP
                   position: fixed;
                   bottom: 24px;
                   right: 24px;
-                  background: #1e293b;
-                  color: #fff;
-                  padding: 12px 24px;
-                  border-radius: 12px;
-                  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                  background: #FDFBF7;
+                  color: #2E3330;
+                  padding: 10px 20px;
+                  border-radius: 100px;
+                  border: 1px solid rgba(46, 51, 48, 0.08);
+                  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
                   z-index: 100;
                   display: flex;
                   align-items: center;
                   gap: 12px;
                   font-family: system-ui, sans-serif;
+                  font-size: 11px;
+                  font-weight: bold;
                 }
                 .print-floating-bar button {
-                  background: #7C9672;
+                  background: #7A8D69;
                   border: none;
                   color: white;
-                  padding: 8px 16px;
-                  border-radius: 6px;
+                  padding: 6px 14px;
+                  border-radius: 100px;
                   font-weight: bold;
                   cursor: pointer;
                   transition: background 0.2s;
                 }
                 .print-floating-bar button:hover {
-                  background: #6a825f;
+                  background: #6C7E5C;
                 }
                 @media print {
                   .no-print { display: none !important; }

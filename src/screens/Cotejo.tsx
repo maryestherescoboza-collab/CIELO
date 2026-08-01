@@ -231,37 +231,37 @@ export default function Cotejo({
     return (
         <div className="flex flex-1 h-full overflow-hidden bg-[#FDFBF7]">
             {!readOnly && (
-                <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 bg-[#FDFBF7] overflow-hidden relative flex flex-col`}>
+                <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                        className="absolute top-4 -right-1 z-50 p-1.5 bg-[#1E293B] text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
+                        className="absolute top-4 -right-1 z-50 p-1.5 bg-[#7A8D69] text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
                     >
                         {isSidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                     </button>
 
                     {!isSidebarCollapsed ? (
-                        <div className="flex flex-col h-full overflow-y-auto">
-                            <div className="p-5 border-b border-slate-200 flex items-center gap-2.5">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1E293B] text-white">
+                        <div className="flex flex-col h-full overflow-y-auto relative z-10">
+                            <div className="p-5 border-b border-slate-250 flex items-center gap-2.5">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#7A8D69] text-white">
                                     <ClipboardCheck size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Instrumento</p>
-                                    <h1 className="text-lg font-black text-[#1E293B] truncate font-notion-title">Lista de Cotejo</h1>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#2E3330]">Instrumento</p>
+                                    <h1 className="text-lg font-black text-[#2E3330] truncate font-notion-title">Lista de Cotejo</h1>
                                 </div>
                             </div>
 
-                            <div className="p-5 space-y-6 flex-1">
-                                <div className="space-y-5">
+                            <div className="p-4 space-y-4 flex-1">
+                                <div className="space-y-4">
                                     <div className="space-y-3">
                                         <div className="px-1">
-                                            <p className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-1">Contexto</p>
-                                            <p className="text-[11px] font-medium text-slate-500">Configura el entorno de evaluación.</p>
+                                            <p className="text-[11px] font-black uppercase tracking-widest text-[#2E3330] mb-0.5">Contexto</p>
+                                            <p className="text-[11px] font-medium text-[#2E3330]/80">Configura el entorno de evaluación.</p>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Curso / Grado</label>
+                                            <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
                                             <select
-                                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1E293B] outline-none transition-all cursor-pointer focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50"
+                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedCursoId}
                                                 onChange={e => { setSelectedCursoId(Number(e.target.value)); setSelectedActId(null); setSelectedEstId(null); }}
                                             >
@@ -269,9 +269,9 @@ export default function Cotejo({
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Actividad</label>
+                                            <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
                                             <select
-                                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1E293B] outline-none transition-all cursor-pointer focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50"
+                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedAct?.id ?? ''}
                                                 onChange={e => setSelectedActId(Number(e.target.value) || null)}
                                             >
@@ -285,14 +285,14 @@ export default function Cotejo({
 
                                     <div className="space-y-3">
                                         <div className="px-1 flex items-center justify-between">
-                                            <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Plantillas</p>
-                                            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-[8px] font-black text-[#1E293B]">{cotejoPlantillas.length}</div>
+                                            <p className="text-[11px] font-black uppercase tracking-widest text-[#2E3330]">Plantillas</p>
+                                            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-[8px] font-black text-[#2E3330]">{cotejoPlantillas.length}</div>
                                         </div>
-                                        <div className="space-y-2.5">
-                                            <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-4 py-2.5 bg-white focus-within:border-turf-green-base focus-within:ring-2 focus-within:ring-turf-green-base/50 transition-all">
-                                                <BookMarked size={14} className="text-slate-400" />
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-[#7A8D69] focus-within:ring-2 focus-within:ring-[#7A8D69]/20 transition-all shadow-sm artisan-pill artisan-btn-white">
+                                                <BookMarked size={14} className="text-[#2E3330]" />
                                                 <select
-                                                    className="flex-1 bg-transparent text-xs font-bold outline-none text-[#1E293B] cursor-pointer"
+                                                    className="flex-1 bg-transparent text-xs font-bold outline-none text-[#2E3330] cursor-pointer"
                                                     value={selectedPlantillaId ?? ''}
                                                     onChange={e => {
                                                         const val = e.target.value;
@@ -343,7 +343,7 @@ export default function Cotejo({
                                                         }
                                                     }
                                                 }}
-                                                className="w-full bg-white border border-slate-200 text-slate-600 font-black uppercase tracking-widest text-[10px] py-2.5 rounded-xl hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                                                className="w-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-[10px] py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
                                             >
                                                 Guardar como Plantilla
                                             </button>
@@ -363,7 +363,7 @@ export default function Cotejo({
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center py-6 gap-4">
+                        <div className="flex flex-col items-center py-6 gap-4 relative z-10">
                             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1E293B] text-white shadow-sm">
                                 <ClipboardCheck size={20} />
                             </div>
@@ -381,8 +381,8 @@ export default function Cotejo({
                 </aside>
             )}
 
-            <main className="flex-1 overflow-y-auto px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
-                <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both space-y-6">
+            <main className="flex-1 overflow-y-auto px-6 py-5 md:px-12 scroll-smooth scrollbar-hide">
+                <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-8 pb-3">
                         <div>
                             <h1 className="text-4xl font-black text-[#1E293B] tracking-tight mb-3 font-notion-title">
@@ -468,7 +468,7 @@ export default function Cotejo({
                     </div>
 
                     {!readOnly && (
-                        <div className="sticky top-0 z-30 bg-[#FDFBF7]/95 backdrop-blur-md pb-4 pt-1 space-y-4">
+                        <div className="sticky top-0 z-30 bg-[#FDFBF7]/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
                             <div className="w-full space-y-3">
                                 <div className="px-1 flex items-center justify-between">
                                     <div className="flex items-center gap-3">

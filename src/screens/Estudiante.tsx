@@ -114,8 +114,8 @@ export default function Estudiante() {
                 const avgVal = gradesMap.get(mapKey);
                 const recVal = recuperacionesMap.get(mapKey);
 
-                const finalVal = recVal !== undefined ? recVal : avgVal;
-                const isRecovered = recVal !== undefined;
+                const finalVal = (recVal !== undefined && (avgVal === undefined || avgVal < 70)) ? recVal : avgVal;
+                const isRecovered = recVal !== undefined && (avgVal === undefined || avgVal < 70);
 
                 return (
                     <td key={`${p}-${bc}`} className="px-3 py-4 text-center border border-slate-200">
@@ -151,7 +151,7 @@ export default function Estudiante() {
                 onBack={() => navigate('/cursos')} 
             />
 
-            <div className="w-[98%] max-w-310 bg-[#fdfcf9] shadow-xl border border-slate-200/60 rounded-3xl p-8 relative">
+            <div className="w-[98%] max-w-310 bg-[#FDFBF7] shadow-sm border border-[rgba(46,51,48,0.08)] rounded-[20px] p-6 relative">
                 {activeTab === 'Perfil' && (
                     <PerfilTab 
                         est={est}
@@ -167,14 +167,14 @@ export default function Estudiante() {
                 )}
 
                 {activeTab === 'Evaluación' && (
-                    <div className="space-y-8 animate-in fade-in duration-500">
-                        <div className="flex justify-between items-center border-b pb-6 border-slate-100">
+                    <div className="space-y-6 animate-in fade-in duration-500">
+                        <div className="flex justify-between items-center border-b pb-5 border-slate-100">
                             <div>
-                                <h2 className="text-[28px] font-black text-slate-900 tracking-tight uppercase">Registro Anual</h2>
-                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
+                                <h2 className="text-xl font-black text-[#2E3330] tracking-tight">REGISTRO ANUAL</h2>
+                                <p className="text-[10px] font-bold text-[#5F665E] uppercase tracking-widest">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
                             </div>
-                            <button onClick={() => window.print()} className="flex items-center gap-2 px-6 py-3 bg-sky-600 text-white rounded-xl font-bold text-sm hover:bg-sky-700 transition-all uppercase tracking-widest shadow-lg">
-                                <Printer size={18} /> Imprimir
+                            <button onClick={() => window.print()} className="flex items-center gap-2 px-6 py-2 bg-[#7A8D69] text-white rounded-full font-bold text-xs hover:bg-[#6C7E5C] transition-all uppercase tracking-widest shadow-sm artisan-pill" style={{ height: '36px' }}>
+                                <Printer size={15} /> Imprimir
                             </button>
                         </div>
                         <AnnualGradesTable 

@@ -43,10 +43,10 @@ export function CalendarWidget({ eventos, actividades, onSelectDate }: CalendarW
             <div className="flex items-center justify-between mb-4">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest font-notion-title">{monthNames[month]} {year}</span>
                 <div className="flex gap-1">
-                    <button className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-slate-500 hover:text-white" onClick={prevMonth}>
+                    <button className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800" onClick={prevMonth}>
                         <TC_Flux size={14} className="rotate-180" />
                     </button>
-                    <button className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-slate-500 hover:text-white" onClick={nextMonth}>
+                    <button className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800" onClick={nextMonth}>
                         <TC_Flux size={14} />
                     </button>
                 </div>
@@ -81,8 +81,8 @@ export function CalendarWidget({ eventos, actividades, onSelectDate }: CalendarW
                             }}
                             className={`
                                 aspect-square w-full flex flex-col items-center justify-center rounded-lg text-[11px] font-medium transition-all relative overflow-hidden
-                                ${isToday ? 'bg-turf-green-base text-white shadow-lg z-10' : 'text-slate-400 hover:bg-white/5 hover:text-white'}
-                                ${selectedDate === dateStr && !isToday ? 'ring-2 ring-turf-green-base bg-turf-green-base/10 text-white' : ''}
+                                ${isToday ? 'bg-[#7A8D69] text-white shadow-sm z-10' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-bold'}
+                                ${selectedDate === dateStr && !isToday ? 'ring-2 ring-[#BFC9A6] bg-[#BFC9A6]/20 text-[#2E3330] font-bold' : ''}
                             `}
                         >
                             {hasRecord && (

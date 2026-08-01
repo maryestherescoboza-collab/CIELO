@@ -47,8 +47,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px] z-100 flex justify-center md:justify-end p-0 md:p-0" onClick={() => setShowProfile(false)}>
-            <div
-                className="w-full max-w-sm h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 md:rounded-l-[2.5rem] overflow-hidden"
+        <div
+                className="w-full max-w-sm h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 md:rounded-l-2xl overflow-hidden border-l border-slate-100"
                 onClick={e => e.stopPropagation()}
             >
                 <div className="h-40 bg-linear-to-br from-slate-800 to-slate-950 relative shrink-0">
@@ -56,7 +56,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         <X size={20} />
                     </button>
                     <div className="absolute -bottom-12 left-8">
-                        <div className="relative w-24 h-24 rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-white">
+                        <div className="relative w-24 h-24 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-white">
                             <img src={getAvatarSrc(isOwnProfile)} alt={activeProfile.nombre} className="w-full h-full object-cover" />
                             {isOwnProfile && (
                                 <button
@@ -84,16 +84,16 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2 items-center">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-[10px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-emerald-50 text-[10px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-200">
                                 {activeProfile.materias}
                             </div>
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-[10px] font-black text-rose-600 uppercase tracking-widest border border-rose-100">
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-rose-50 text-[10px] font-black text-rose-600 uppercase tracking-widest border border-rose-200">
                                 🍎 {activeProfile.stats?.manzanas || '0'} {activeProfile.stats?.manzanas === '1' ? 'manzana' : 'manzanas'}
                             </div>
                         </div>
                     </div>
 
-                    <div className="mb-8 p-6 rounded-2xl bg-slate-50 border border-slate-100 relative">
+                    <div className="mb-6 p-5 rounded-xl bg-slate-50 border border-slate-200 relative">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sobre mí</h3>
                             {isOwnProfile && !editingProfile && (
@@ -125,7 +125,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         )}
                     </div>
 
-                    <div className="mb-8 p-6 rounded-2xl bg-slate-50 border border-slate-100">
+                    <div className="mb-6 p-5 rounded-xl bg-slate-50 border border-slate-200">
                         <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Logros pedagógicos</h3>
                         <div className="space-y-3.5 text-sm">
                             <p className="text-slate-600 font-medium"><span className="font-black text-slate-900">{logros?.estudiantesEvaluados || 0}</span> estudiantes evaluados</p>
@@ -142,14 +142,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 {isOwnProfile && (
                     <div className="p-8 border-t border-slate-100 space-y-3">
                         {onOpenSettings && (
-                            <button onClick={() => { setShowProfile(false); onOpenSettings(); }} className="w-full py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2 transition-all">
+                            <button onClick={() => { setShowProfile(false); onOpenSettings(); }} className="w-full py-3 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2 transition-all">
                                 <Settings size={18} />
                                 Configuración
                             </button>
                         )}
                         <button
                             onClick={() => setShowResetModal(true)}
-                            className="w-full py-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all border-2 border-rose-100/50 hover:border-rose-200 shadow-sm"
+                            className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all border border-rose-200 hover:border-rose-300"
                         >
                             <div className="w-8 h-8 bg-rose-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-rose-600/20">
                                 <AlertTriangle size={16} />

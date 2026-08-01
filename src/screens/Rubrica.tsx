@@ -527,37 +527,37 @@ export default function Rubrica({
     return (
         <div className="flex flex-1 h-full overflow-hidden bg-[#FDFBF7]">
             {!readOnly && (
-                <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 bg-[#FDFBF7] overflow-hidden relative flex flex-col`}>
+                <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                        className="absolute top-4 -right-1 z-50 p-1.5 bg-[#1E293B] text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
+                        className="absolute top-4 -right-1 z-50 p-1.5 bg-[#7A8D69] text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
                     >
                         {isSidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                     </button>
 
                     {!isSidebarCollapsed ? (
-                        <div className="flex flex-col h-full overflow-y-auto">
-                            <div className="p-5 border-b border-slate-200 flex items-center gap-2.5">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1E293B] text-white">
+                        <div className="flex flex-col h-full overflow-y-auto relative z-10">
+                            <div className="p-5 border-b border-slate-250 flex items-center gap-2.5">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#7A8D69] text-white">
                                     <ClipboardList size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Instrumento</p>
-                                    <h1 className="text-lg font-black text-[#1E293B] truncate font-notion-title">Rúbrica</h1>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#2E3330]">Instrumento</p>
+                                    <h1 className="text-lg font-black text-[#2E3330] truncate font-notion-title">Rúbrica</h1>
                                 </div>
                             </div>
 
-                            <div className="p-5 space-y-6 flex-1">
-                                <div className="space-y-5">
+                            <div className="p-4 space-y-4 flex-1">
+                                <div className="space-y-4">
                                     <div className="space-y-3">
                                         <div className="px-1">
-                                            <p className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-1">Enfoque</p>
-                                            <p className="text-[11px] font-medium text-slate-500">Configura el entorno de evaluación.</p>
+                                            <p className="text-[11px] font-black uppercase tracking-widest text-[#2E3330] mb-0.5">Enfoque</p>
+                                            <p className="text-[11px] font-medium text-[#2E3330]/80">Configura el entorno de evaluación.</p>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Curso / Grado</label>
+                                            <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
                                             <select
-                                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1E293B] outline-none transition-all cursor-pointer focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50"
+                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedCursoId}
                                                 onChange={(event) => {
                                                     setSelectedCursoId(Number(event.target.value));
@@ -568,14 +568,14 @@ export default function Rubrica({
                                                 {state.cursos.map((curso) => (
                                                     <option key={curso.id} value={curso.id}>
                                                         {curso.grado} {curso.seccion} - {getAsignaturaNombre(curso.asignatura)}
-                                                    </option>
+                                                     </option>
                                                 ))}
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Actividad</label>
+                                            <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
                                             <select
-                                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1E293B] outline-none transition-all cursor-pointer focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50"
+                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedAct?.id ?? ''}
                                                 onChange={(event) => setSelectedActId(Number(event.target.value) || null)}
                                             >
@@ -593,14 +593,14 @@ export default function Rubrica({
 
                                     <div className="space-y-3">
                                         <div className="px-1 flex items-center justify-between">
-                                            <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Plantillas</p>
-                                            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-[8px] font-black text-[#1E293B]">{rubricaPlantillas.length}</div>
+                                            <p className="text-[11px] font-black uppercase tracking-widest text-[#2E3330]">Plantillas</p>
+                                            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-[8px] font-black text-[#2E3330]">{rubricaPlantillas.length}</div>
                                         </div>
-                                        <div className="space-y-2.5">
-                                            <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-4 py-2.5 bg-white focus-within:border-turf-green-base focus-within:ring-2 focus-within:ring-turf-green-base/50 transition-all">
-                                                <BookMarked size={14} className="text-slate-400" />
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-[#7A8D69] focus-within:ring-2 focus-within:ring-[#7A8D69]/20 transition-all shadow-sm artisan-pill artisan-btn-white">
+                                                <BookMarked size={14} className="text-[#2E3330]" />
                                                 <select
-                                                    className="flex-1 bg-transparent text-xs font-bold outline-none text-[#1E293B] cursor-pointer"
+                                                    className="flex-1 bg-transparent text-xs font-bold outline-none text-[#2E3330] cursor-pointer"
                                                     disabled={!hasTemplates}
                                                     value={selectedPlantillaId ?? ''}
                                                     onChange={(event) => {
@@ -621,13 +621,13 @@ export default function Rubrica({
                                             </div>
                                             <button
                                                 onClick={handleSaveTemplate}
-                                                className="w-full bg-white border border-slate-200 text-slate-600 font-black uppercase tracking-widest text-[10px] py-2.5 rounded-xl hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                                                className="w-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-[10px] py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
                                             >
                                                 Guardar como Plantilla
                                             </button>
                                             <button
                                                 onClick={() => setShowImportArea(!showImportArea)}
-                                                className="w-full bg-white border border-slate-200 text-slate-600 font-black uppercase tracking-widest text-[10px] py-2.5 rounded-xl hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 mt-2"
+                                                className="w-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-[10px] py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 mt-2 shadow-sm artisan-pill artisan-btn-white"
                                             >
                                                 {showImportArea ? 'Cancelar Importación' : 'Pegar tabla de rúbrica'}
                                             </button>
@@ -656,7 +656,7 @@ export default function Rubrica({
 
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center py-6 gap-4">
+                        <div className="flex flex-col items-center py-6 gap-4 relative z-10">
                             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1E293B] text-white shadow-sm">
                                 <ClipboardList size={20} />
                             </div>
@@ -671,33 +671,33 @@ export default function Rubrica({
                 </aside>
             )}
 
-            <main className="flex-1 overflow-y-auto px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
-                <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both space-y-6">
-                    <div className="flex flex-wrap items-center justify-between gap-8 pb-3">
+            <main className="flex-1 overflow-y-auto px-6 py-5 md:px-12 scroll-smooth scrollbar-hide">
+                <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-6 pb-3">
                         <div>
-                            <h1 className="text-4xl font-black text-[#1E293B] tracking-tight mb-3 font-notion-title">
+                            <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2.5 font-notion-title">
                                 {readOnly ? 'Vista Previa de Rúbrica' : 'Evaluación por Rúbrica'}
                             </h1>
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2.5 bg-slate-200/50 px-4 py-2 rounded-xl border border-slate-200">
-                                    <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 bg-[#EAE4DA] px-3 py-1 rounded-full border border-[rgba(46,51,48,0.08)]">
+                                    <span className="text-[9px] font-bold text-[#2E3330] uppercase tracking-[0.08em]">
                                         Desempeño Detallado
                                     </span>
                                 </div>
-                                <div className="h-1.5 w-1.5 rounded-full bg-slate-400"></div>
-                                <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Instrumento Escolar</span>
+                                <div className="h-1.5 w-1.5 rounded-full bg-slate-350"></div>
+                                <span className="text-[9px] font-bold text-[#5F665E] uppercase tracking-[0.08em]">Instrumento Escolar</span>
                             </div>
                         </div>
 
                         {!readOnly && (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2.5">
                                 {selectedEst && (
-                                    <div className="flex bg-white border border-slate-200 rounded-[16px] px-4 py-2.5 items-center gap-4 shadow-sm">
+                                    <div className="flex bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] px-4 py-2.5 items-center gap-4 shadow-sm">
                                         <div className="flex flex-col items-center">
                                             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
                                                 Puntaje Actual
                                             </p>
-                                            <p className="mt-0.5 text-xl font-black tracking-tighter text-[#1E293B]">
+                                            <p className="mt-0.5 text-xl font-black tracking-tighter text-[#2E3330]">
                                                 {calcPuntajeTotalWithSelection(selection)}
                                                 <span className="ml-1 text-[11px] font-bold text-slate-400">/100</span>
                                             </p>
@@ -712,7 +712,7 @@ export default function Rubrica({
                                             </div>
                                             <div className="flex flex-col">
                                                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Estudiante</p>
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-[#1E293B]">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-[#2E3330]">
                                                     {selectedEst.nombre} {selectedEst.apellido}
                                                 </span>
                                             </div>
@@ -721,19 +721,19 @@ export default function Rubrica({
                                 )}
 
                                 {activeCell && (
-                                    <div className="flex bg-slate-50 border border-slate-200 rounded-[16px] px-4 py-2.5 items-center gap-3 shadow-sm animate-pulse">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-turf-green-base text-white shadow-sm">
+                                    <div className="flex bg-[#FAF6F0] border border-slate-200 rounded-[20px] px-4 py-2.5 items-center gap-3 shadow-sm animate-pulse">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#7A8D69] text-white shadow-sm">
                                             <Plus size={16} />
                                         </div>
                                         <div className="flex flex-col">
                                             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Asignando Descriptor</p>
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-[#1E293B]">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-[#2E3330]">
                                                 {localDescriptors.find(d => d.id === activeCell.id)?.indicador.substring(0, 20)}...
                                             </span>
                                         </div>
                                         <button
                                             onClick={() => setActiveCell(null)}
-                                            className="ml-1 text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline"
+                                            className="ml-1 text-[9px] font-black text-[#EB8847] uppercase tracking-widest hover:underline"
                                         >
                                             Cancelar
                                         </button>
@@ -743,13 +743,13 @@ export default function Rubrica({
                                 <button
                                     disabled={(!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving}
                                     onClick={Object.keys(multiEvaluations).length > 0 ? handleFinalizeGroupEvaluation : handleSave}
-                                    className={`flex h-12 min-w-58 items-center justify-center gap-2.5 rounded-[16px] px-5 text-[12px] font-black text-white shadow-xl transition-all ${((!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving)
+                                    className={`flex h-10 min-w-58 items-center justify-center gap-2.5 rounded-full px-5 text-xs font-black text-white shadow-sm transition-all artisan-pill ${((!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving)
                                         ? 'bg-slate-300 cursor-not-allowed opacity-50'
-                                        : 'bg-turf-green-base hover:bg-turf-green-base/90 hover:-translate-y-0.5 active:scale-[0.98]'
+                                        : 'bg-[#7A8D69] hover:bg-[#6C7E5C] hover:-translate-y-0.5 active:scale-[0.98]'
                                         }`}
                                 >
                                     {isSaving ? <Loader2 size={16} className="animate-spin" /> : (savedFlash ? <CheckCircle size={18} /> : <Target size={18} />)}
-                                    <span className="uppercase tracking-widest">
+                                    <span className="uppercase tracking-[0.08em]">
                                         {savedFlash ? '¡Registrada!' : Object.keys(multiEvaluations).length > 1 ? `Evaluar ${Object.keys(multiEvaluations).length} Alumnos` : 'Finalizar Evaluación'}
                                     </span>
                                 </button>
@@ -759,7 +759,7 @@ export default function Rubrica({
                     
 
                     {!readOnly && (
-                        <div className="sticky top-0 z-30 bg-[#FDFBF7]/95 backdrop-blur-md pb-4 pt-1 space-y-4">
+                        <div className="sticky top-0 z-30 bg-[#FDFBF7]/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
                             <div className="w-full space-y-3">
                                 <div className="px-1 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -767,13 +767,13 @@ export default function Rubrica({
 
                                     </div>
                                     {selectedAct && (
-                                        <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-turf-green-base shadow-sm">
+                                        <div className="rounded-full border border-[rgba(46,51,48,0.08)] bg-[#FAF6F0] px-3.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-[#7A8D69] shadow-sm">
                                             Actividad: {selectedAct.nombre} ({selectedAct.periodo})
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="w-full bg-white rounded-3xl p-2 border border-slate-200 shadow-sm">
+                                <div className="w-full bg-[#FDFBF7] rounded-[20px] p-2 border border-[rgba(46,51,48,0.08)] shadow-sm">
                                     <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide py-1 px-2.5">
                                         {sortedEsts.map((estudiante, idx) => {
                                             const isViewing = selectedEstId === estudiante.id;

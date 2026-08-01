@@ -205,26 +205,26 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
     return (
         <div className="flex flex-col flex-1 h-full overflow-hidden bg-[#FDFBF7]">
             <div className="flex-1 overflow-y-auto px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div>
-                        <h1 className="text-4xl font-black text-[#1E293B] tracking-tight mb-3 font-notion-title">
+                        <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2.5 font-notion-title">
                             Secuencias Didácticas
                         </h1>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2.5 bg-slate-200/50 px-4 py-2 rounded-xl border border-slate-200">
-                                <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 bg-[#EAE4DA] px-3 py-1 rounded-full border border-[rgba(46,51,48,0.08)]">
+                                <span className="text-[9px] font-bold text-[#2E3330] uppercase tracking-[0.08em]">
                                     Pedagogía y Secuencias
                                 </span>
                             </div>
-                            <div className="h-1.5 w-1.5 rounded-full bg-slate-400"></div>
-                            <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Material Docente</span>
+                            <div className="h-1.5 w-1.5 rounded-full bg-slate-350"></div>
+                            <span className="text-[9px] font-bold text-[#5F665E] uppercase tracking-[0.08em]">Material Docente</span>
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-stretch sm:items-center gap-4 sm:flex-row">
+                    <div className="flex flex-col items-stretch sm:items-center gap-3 sm:flex-row">
                         <div className="relative group">
                             <select
-                                className="h-14 pl-6 pr-11 appearance-none rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-bold uppercase tracking-widest shadow-lg shadow-slate-200/40 outline-none focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50 cursor-pointer transition-all hover:border-slate-300 min-w-60"
+                                className="pl-5 pr-10 appearance-none rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-xs font-bold uppercase tracking-[0.08em] shadow-sm outline-none focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 cursor-pointer transition-all hover:bg-[#FAF6F0] min-w-60 artisan-pill"
                                 value={cursoSel}
                                 onChange={(event) => setCursoSel(Number(event.target.value))}
                             >
@@ -236,15 +236,16 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                             </select>
                             <ChevronDown
                                 size={14}
-                                className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-hover:text-turf-green-base"
+                                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-hover:text-[#7A8D69]"
                             />
                         </div>
 
                         <button
                             onClick={() => { setShowModal(true); setImportStep('select'); }}
-                            className="h-14 px-8 rounded-2xl bg-turf-green-base text-white text-sm font-black uppercase tracking-widest shadow-2xl shadow-turf-green-base/20 hover:bg-turf-green-base/90 hover:-translate-y-1 transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-turf-green-base/50 focus-visible:ring-offset-2 flex items-center justify-center gap-3 shrink-0"
+                            className="px-6 rounded-full bg-[#7A8D69] text-white text-xs font-black uppercase tracking-[0.08em] shadow-sm hover:bg-[#6C7E5C] hover:-translate-y-0.5 transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 flex items-center justify-center gap-2.5 shrink-0"
+                            style={{ height: '36px' }}
                         >
-                            <Plus size={20} strokeWidth={3} className="transition-transform duration-700 hover:rotate-180" />
+                            <Plus size={16} strokeWidth={3} className="transition-transform duration-700 hover:rotate-180" />
                             <span>Nueva secuencia</span>
                         </button>
                     </div>
@@ -252,19 +253,19 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
                 <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
                     {secuenciasCurso.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-24 px-8 border-2 border-dashed border-slate-300 rounded-4xl bg-white/50 text-center shadow-sm">
-                            <div className="w-20 h-20 bg-slate-100/80 rounded-full flex items-center justify-center mb-6 shadow-inner border border-slate-200/50">
-                                <BookOpen size={40} className="text-slate-400" />
+                        <div className="flex flex-col items-center justify-center py-20 px-8 border-2 border-dashed border-slate-250 rounded-[20px] bg-[#FDFBF7] text-center shadow-sm">
+                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-5 shadow-inner border border-slate-100">
+                                <BookOpen size={32} className="text-slate-400" />
                             </div>
-                            <h2 className="text-2xl font-black text-[#1E293B] tracking-tight font-notion-title mb-2">
+                            <h2 className="text-xl font-black text-[#2E3330] tracking-tight font-notion-title mb-2">
                                 No hay secuencias para este curso
                             </h2>
-                            <p className="text-slate-500 font-medium max-w-md mx-auto leading-relaxed text-sm">
+                            <p className="text-[#5F665E] font-medium max-w-sm mx-auto leading-relaxed text-xs">
                                 Crea una nueva secuencia para comenzar a organizar el material didáctico de esta asignatura.
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                        <div className="grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                             {secuenciasCurso.map((seq, index) => {
                                 const curso = state.cursos.find((item) => item.id === seq.cursoId);
                                 const bookIcon = BOOK_ICONS[index % BOOK_ICONS.length];
@@ -275,36 +276,36 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                         key={seq.id}
                                         type="button"
                                         onClick={() => setViewerSeq(seq)}
-                                        className="group flex flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-turf-green-base/50 rounded-2xl p-4 transition-all hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1"
+                                        className="group flex flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 rounded-[20px] p-5 transition-all bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] shadow-sm hover:shadow-md hover:bg-[#F8F3ED]/30 hover:-translate-y-1"
                                     >
-                                        <div className="relative flex h-48 items-end justify-center mb-4">
+                                        <div className="relative flex h-40 items-end justify-center mb-4">
                                             <img
                                                 src={bookIcon}
                                                 alt=""
-                                                className="w-32 transition-all duration-300 ease-out group-hover:-translate-y-3 group-hover:rotate-1 group-hover:drop-shadow-xl"
+                                                className="w-28 transition-all duration-300 ease-out group-hover:-translate-y-3 group-hover:rotate-1 group-hover:drop-shadow-md"
                                             />
-                                            <div className="pointer-events-none absolute bottom-0 h-4 w-20 rounded-full bg-slate-900/5 blur-md transition-all duration-300 group-hover:w-28 group-hover:bg-slate-900/10" />
+                                            <div className="pointer-events-none absolute bottom-0 h-4 w-16 rounded-full bg-slate-900/5 blur-md transition-all duration-300 group-hover:w-24 group-hover:bg-slate-900/10" />
                                         </div>
 
-                                        <div className="max-w-48">
-                                            <h3 className="text-[15px] font-black text-[#1E293B] leading-snug group-hover:text-turf-green-base transition-colors font-notion-title">
+                                        <div className="max-w-44 flex-1">
+                                            <h3 className="text-sm font-black text-[#2E3330] leading-snug group-hover:text-[#7A8D69] transition-colors font-notion-title">
                                                 {seq.titulo}
                                             </h3>
-                                            <p className="mt-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                            <p className="mt-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                                 {curso?.grado} {curso?.seccion}
                                             </p>
                                         </div>
 
-                                        <div className="mt-4 flex flex-col items-center gap-2">
-                                            <div className="flex items-center gap-1.5">
+                                        <div className="mt-3.5 flex flex-col items-center gap-2">
+                                            <div className="flex items-center gap-1">
                                                 {[0, 1, 2].map((dot) => (
                                                     <span
                                                         key={dot}
-                                                        className={`h-1.5 w-1.5 rounded-full ${dot < filledDots ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-slate-200'}`}
+                                                        className={`h-1.5 w-1.5 rounded-full ${dot < filledDots ? 'bg-[#7A8D69]' : 'bg-slate-200'}`}
                                                     />
                                                 ))}
                                             </div>
-                                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 px-2 py-0.5 rounded-md border border-slate-100 group-hover:border-emerald-100 group-hover:text-emerald-600 transition-colors">
+                                            <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#2E3330] px-2.5 py-0.5 rounded-full border border-slate-100 group-hover:border-[#7A8D69]/20 group-hover:text-[#7A8D69] bg-[#EAE4DA]/30 transition-colors">
                                                 {getDisplayStatus(seq.estado)}
                                             </p>
                                         </div>
@@ -317,39 +318,39 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
             </div>
 
             {viewerSeq && (
-                <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/60 px-4 py-5 backdrop-blur-sm sm:p-8">
+                <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/40 px-4 py-5 backdrop-blur-sm sm:p-8">
                     <div
                         ref={viewerRef}
-                        className="flex h-[min(92vh,58rem)] w-full max-w-6xl flex-col overflow-hidden rounded-none border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-300"
+                        className="flex h-[min(92vh,58rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[20px] border border-[rgba(46,51,48,0.08)] bg-[#FDFBF7] shadow-2xl animate-in zoom-in-95 duration-300"
                     >
-                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 bg-white px-8 py-6">
+                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 bg-[#FDFBF7] px-8 py-6">
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 mb-1.5">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-turf-green-base bg-turf-green-base/10 px-2.5 py-1 rounded-md">
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#2E3330] bg-[#BFC9A6]/30 px-2.5 py-1 rounded-full border border-[rgba(46,51,48,0.08)]">
                                         Vista de Lectura
                                     </span>
                                 </div>
-                                <h2 className="text-2xl font-black tracking-tight text-[#1E293B] font-notion-title">
+                                <h2 className="text-xl font-black tracking-tight text-[#2E3330] font-notion-title">
                                     {viewerSeq.titulo}
                                 </h2>
-                                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] font-bold text-[#5F665E] uppercase tracking-widest">
                                     <span className="flex items-center gap-1.5">
-                                        <Bookmark size={14} className="text-slate-400" />
+                                        <Bookmark size={12} className="text-slate-400" />
                                         {getCursoLabel(state.cursos.find((curso) => curso.id === viewerSeq.cursoId))}
                                     </span>
                                     <span className="text-slate-300">•</span>
                                     <span className="inline-flex items-center gap-1.5">
-                                        <Calendar size={14} className="text-slate-400" />
+                                        <Calendar size={12} className="text-slate-400" />
                                         {new Date(viewerSeq.fechaInicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-2.5">
                                 <select
-                                    className="h-10 px-3 pr-8 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 outline-none transition-all focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50 appearance-none relative shadow-sm"
+                                    className="px-3 rounded-full border border-slate-350 bg-[#FDFBF7] text-[10px] font-bold text-[#2E3330] uppercase tracking-[0.08em] outline-none transition-all focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 appearance-none relative shadow-sm artisan-pill artisan-btn-white"
                                     value={viewerSeq.estado}
-                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1rem' }}
+                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232e3330'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '0.8rem', paddingRight: '2rem' }}
                                     onChange={(event) => {
                                         const nextEstado = event.target.value as Secuencia['estado'];
                                         setViewerSeq((current) => (current ? { ...current, estado: nextEstado } : null));
@@ -368,10 +369,11 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                     onClick={() => {
                                         void togglePresentation();
                                     }}
-                                    className="h-10 px-4 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all outline-none focus-visible:ring-2 focus-visible:ring-turf-green-base/50 flex items-center gap-2"
+                                    className="px-4.5 rounded-full bg-[#FDFBF7] border border-slate-350 text-[#2E3330] text-[9px] font-bold uppercase tracking-[0.08em] shadow-sm hover:bg-[#FAF6F0] transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 flex items-center gap-1.5 artisan-pill"
+                                    style={{ height: '36px' }}
                                 >
-                                    {isPresenting ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-                                    <span className="hidden sm:inline">{isPresenting ? 'Salir' : 'Presentar'}</span>
+                                    {isPresenting ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                                    <span>{isPresenting ? 'Salir' : 'Presentar'}</span>
                                 </button>
 
                                 {onDeleteSecuencia && (
@@ -383,18 +385,18 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                                 void handleCloseViewer();
                                             }
                                         }}
-                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-ochre-base hover:bg-red-ochre-base/5 hover:border-red-ochre-base/20 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-red-ochre-base/50"
+                                        className="w-9 h-9 flex items-center justify-center rounded-full bg-[#FDFBF7] border border-slate-350 text-slate-400 hover:text-[#EB8847] hover:bg-[#EB8847]/5 hover:border-[#EB8847]/20 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[#EB8847]/50"
                                     >
-                                        <Trash2 size={16} />
+                                        <Trash2 size={14} />
                                     </button>
                                 )}
 
                                 <button
                                     type="button"
                                     onClick={handleCloseViewer}
-                                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                                    className="w-9 h-9 flex items-center justify-center rounded-full bg-[#FDFBF7] border border-slate-350 text-slate-400 hover:text-[#2E3330] hover:bg-slate-100 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                                 >
-                                    <X size={16} strokeWidth={2.5} />
+                                    <X size={15} strokeWidth={2.5} />
                                 </button>
                             </div>
                         </div>

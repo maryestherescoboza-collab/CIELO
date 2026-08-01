@@ -26,11 +26,11 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
     return (
         <header className="app-header">
-            <div className="flex items-center gap-4">
-                <img src={logo} alt="Noether Logo" className="app-logo w-24 h-24" />
+            <div className="flex items-center gap-3">
+                <img src={logo} alt="Noether Logo" className="app-logo w-8 h-8" />
                 <div className="hidden sm:block">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-(--ink-soft) opacity-40">Portafolio Docente</p>
-                    <h1 className="text-lg font-black text-(--ink) leading-tight">CIELO</h1>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-(--ink-soft) opacity-40">Portafolio Docente</p>
+                    <h1 className="text-sm font-black text-(--ink) leading-tight">CIELO</h1>
                 </div>
             </div>
 
@@ -140,7 +140,7 @@ const Header: React.FC<HeaderProps> = ({
                         <p className="text-[10px] font-black text-(--ink-soft) uppercase tracking-widest opacity-40 m-0">Docente Conectado</p>
                         <p className="text-sm font-black text-emerald-700 m-0 leading-tight">{docenteNombre}</p>
                     </div>
-                    <div className="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden bg-slate-100 ring-1 ring-slate-200">
+                    <div className="w-8 h-8 rounded-full border-2 border-white shadow-sm overflow-hidden bg-slate-100 ring-1 ring-slate-200">
                         <img
                             src={avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(docenteNombre)}&background=f1f5f9&color=0f172a&bold=true&size=128`}
                             alt="avatar"

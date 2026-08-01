@@ -14,7 +14,17 @@ module.exports = {
         "background": "#FEF0E7",
         "on-background": "#8695A7",
         "surface": "#FFFFFF",
-        "outline": "#6E8CA0"
+        "outline": "#6E8CA0",
+        // CIELO official palette
+        "cielo-high": "#BFC9A6",
+        "cielo-medium": "#7A8D69",
+        "cielo-low": "#EB8847",
+        "cielo-accent1": "#6D8FB9",
+        "cielo-accent2": "#F5BC5D",
+        "cielo-accent3": "#B87449",
+        // Additional UI colors
+        "cielo-bg-main": "#FDFBF7",
+        "cielo-sidebar": "#EAE4DA"
       },
       fontFamily: {
         "headline": ["Manrope", "sans-serif"],

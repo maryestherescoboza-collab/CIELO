@@ -65,17 +65,17 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
     };
 
     return (
-        <div className="flex flex-1 min-h-screen bg-[#FDFBF7]">
-            <div className="flex-1 px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
+        <div className="flex flex-1 min-h-screen bg-artisan-main">
+            <div className="flex-1 px-6 py-6 md:px-12 scroll-smooth scrollbar-hide">
                 {/* Refined Welcome Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-8">
                     <div>
-                        <h1 className="text-4xl font-black text-[#1E293B] tracking-tight mb-3 font-notion-title">
-                            Saludos, <span className="text-turf-green-base">{docenteNombre.split(' ')[0]}</span>
+                        <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2 font-notion-title">
+                            Saludos, <span className="text-[#7A8D69]">{docenteNombre.split(' ')[0]}</span>
                         </h1>
                         <div className="flex items-center gap-4">
-                            <div className={`flex items-center gap-2.5 bg-slate-200/50 px-4 py-2 rounded-xl border border-slate-200 transition-all ${currentCourseRole?.rol !== 'co-docente' ? 'group cursor-pointer hover:border-slate-300' : 'cursor-default'}`}>
-                                <TC_Archive size={14} className="text-turf-green-base transition-colors" />
+                            <div className={`flex items-center gap-2 bg-[#EAE4DA]/60 px-3 py-1.5 rounded-full border border-slate-200 transition-all ${currentCourseRole?.rol !== 'co-docente' ? 'group cursor-pointer hover:border-slate-350' : 'cursor-default'}`}>
+                                <TC_Archive size={12} className="text-[#7A8D69] transition-colors" />
                                 {isEditingInstituto && currentCourseRole?.rol !== 'co-docente' ? (
                                     <input
                                         autoFocus
@@ -104,7 +104,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                         <div className="relative group" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsSelectOpen(!isSelectOpen)}
-                                className="flex items-center justify-between min-w-60 h-14 pl-6 pr-5 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-bold uppercase tracking-widest shadow-lg shadow-slate-200/40 outline-none focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50 cursor-pointer transition-all hover:border-slate-300"
+                                className="flex items-center justify-between min-w-60 px-5 rounded-full border border-slate-200 text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm outline-none focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 cursor-pointer artisan-pill artisan-btn-neutral"
                             >
                                 <span className="truncate pr-4">
                                     {selectedCourseId === 'all' ? 'Global (Todos)' : (() => {
@@ -112,14 +112,14 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                                         return c ? `${c.grado} ${c.seccion} - ${c.nombre}` : 'Global (Todos)';
                                     })()}
                                 </span>
-                                <TC_Flux size={14} className={`text-slate-500 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-turf-green-base' : 'rotate-90 group-hover:text-turf-green-base'}`} />
+                                <TC_Flux size={12} className={`text-[#2E3330]/60 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-[#7A8D69]' : 'rotate-90 group-hover:text-[#7A8D69]'}`} />
                             </button>
                             {isSelectOpen && (
-                                <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-white border border-slate-200 rounded-[16px] shadow-xl shadow-slate-200/50 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top">
+                                <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-white border border-slate-200 rounded-[16px] shadow-md z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top">
                                     <div className="max-h-75 overflow-y-auto py-2 scrollbar-hide">
                                         <button
                                             onClick={() => { setSelectedCourseId('all'); setIsSelectOpen(false); }}
-                                            className={`w-full text-left px-6 py-3.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedCourseId === 'all' ? 'bg-turf-green-base/10 text-turf-green-base' : 'text-slate-600 hover:bg-slate-50'}`}
+                                            className={`w-full text-left px-6 py-3.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedCourseId === 'all' ? 'bg-[#BFC9A6] text-[#2E3330]' : 'text-[#2E3330]/70 hover:bg-[#EAE4DA]'}`}
                                         >
                                             Global (Todos)
                                         </button>
@@ -127,7 +127,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                                             <button
                                                 key={c.id}
                                                 onClick={() => { setSelectedCourseId(c.id); setIsSelectOpen(false); }}
-                                                className={`w-full text-left px-6 py-3.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedCourseId === c.id ? 'bg-turf-green-base/10 text-turf-green-base' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                className={`w-full text-left px-6 py-3.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedCourseId === c.id ? 'bg-[#BFC9A6] text-[#2E3330]' : 'text-[#2E3330]/70 hover:bg-[#EAE4DA]'}`}
                                             >
                                                 {c.grado} {c.seccion} - {c.nombre}
                                             </button>
@@ -138,10 +138,10 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                         </div>
 
                         <button
-                            className="h-14 px-8 rounded-2xl bg-turf-green-base text-white text-sm font-black uppercase tracking-widest shadow-2xl shadow-turf-green-base/20 hover:bg-turf-green-base/90 hover:-translate-y-1 transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-turf-green-base/50 focus-visible:ring-offset-2 group flex items-center gap-3"
+                            className="px-5 rounded-full bg-[#BFC9A6] text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 focus-visible:ring-offset-2 group flex items-center gap-2 artisan-pill"
                             onClick={() => setShowModal(true)}
                         >
-                            <TC_Genesis size={20} className="group-hover:rotate-180 transition-transform duration-700" />
+                            <TC_Genesis size={16} className="group-hover:rotate-180 transition-transform duration-700" />
                             <span>Nueva Actividad</span>
                         </button>
                     </div>
@@ -181,16 +181,16 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                 )}
             </div>
 
-            <div className="w-90 shrink-0 bg-doodle border-l border-slate-200 overflow-auto hidden lg:block p-8 scrollbar-hide">
-                <div className="mb-12">
+            <div className="w-90 shrink-0 artisan-sidebar border-l border-slate-200 overflow-auto hidden lg:block p-6 scrollbar-hide">
+                <div className="mb-8">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-[11px] font-black text-slate-600 uppercase tracking-[0.25em]">Calendario Escolar</h3>
+                        <h3 className="text-[12px] font-black text-[#0F172A] uppercase tracking-[0.25em]">Calendario Escolar</h3>
                         <div className="w-2 h-2 rounded-full bg-turf-green-base animate-pulse shadow-lg shadow-turf-green-base/50"></div>
                     </div>
                     {isLoading ? (
                         <div className="h-70 w-full rounded-[10px] bg-slate-200/40 animate-pulse border border-slate-200" />
                     ) : (
-                        <div className="bg-white border border-slate-200 rounded-[10px] p-6 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
+                        <div className="bg-white border border-slate-200 rounded-[10px] p-6 shadow-sm relative overflow-hidden group">
                             <CalendarWidget eventos={state.eventos} actividades={state.actividades} onSelectDate={setSelectedDate} />
                         </div>
                     )}
