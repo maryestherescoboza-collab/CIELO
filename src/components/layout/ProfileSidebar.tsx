@@ -48,7 +48,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px] z-100 flex justify-center md:justify-end p-0 md:p-0" onClick={() => setShowProfile(false)}>
         <div
-                className="w-full max-w-sm h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 md:rounded-l-2xl overflow-hidden border-l border-slate-100"
+                className="w-full max-w-sm h-full bg-[#FDFBF7] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 md:rounded-l-[4px] overflow-hidden border-l border-[#2E3330]/35"
                 onClick={e => e.stopPropagation()}
             >
                 <div className="h-40 bg-linear-to-br from-slate-800 to-slate-950 relative shrink-0">
@@ -56,7 +56,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         <X size={20} />
                     </button>
                     <div className="absolute -bottom-12 left-8">
-                        <div className="relative w-24 h-24 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-white">
+                        <div className="relative w-24 h-24 rounded-[4px] border-2 border-[#2E3330]/30 shadow-md overflow-hidden bg-white">
                             <img src={getAvatarSrc(isOwnProfile)} alt={activeProfile.nombre} className="w-full h-full object-cover" />
                             {isOwnProfile && (
                                 <button
@@ -78,26 +78,26 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 <div className="mt-20 p-8 flex-1 overflow-y-auto custom-scrollbar-minimal">
                     <div className="mb-8">
                         <div className="flex items-center justify-between mb-2">
-                            <h1 className="text-2xl font-black text-slate-900 tracking-tight">{activeProfile.nombre}</h1>
+                            <h1 className="text-2xl font-black text-[#2E3330] tracking-tight">{activeProfile.nombre}</h1>
                             <div className="flex gap-1">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                <div className="w-2 h-2 rounded-full bg-[#7A8D69] animate-pulse"></div>
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2 items-center">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-emerald-50 text-[10px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-200">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[4px] bg-[#BFC9A6]/20 text-[10px] font-black text-[#475438] uppercase tracking-widest border border-[#BFC9A6]/60">
                                 {activeProfile.materias}
                             </div>
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-rose-50 text-[10px] font-black text-rose-600 uppercase tracking-widest border border-rose-200">
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-rose-100/60 text-[10px] font-black text-rose-800 uppercase tracking-widest border border-rose-300">
                                 🍎 {activeProfile.stats?.manzanas || '0'} {activeProfile.stats?.manzanas === '1' ? 'manzana' : 'manzanas'}
                             </div>
                         </div>
                     </div>
 
-                    <div className="mb-6 p-5 rounded-xl bg-slate-50 border border-slate-200 relative">
+                    <div className="mb-6 p-5 rounded-[4px] bg-[#FAF6F0] border border-[#2E3330]/20 relative">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sobre mí</h3>
+                            <h3 className="text-[10px] font-bold text-[#5F665E] uppercase tracking-widest">Sobre mí</h3>
                             {isOwnProfile && !editingProfile && (
-                                <button onClick={() => setEditingProfile(true)} className="text-slate-400 hover:text-emerald-600 transition-colors">
+                                <button onClick={() => setEditingProfile(true)} className="text-[#5F665E] hover:text-[#7A8D69] transition-colors">
                                     <Pencil size={14} />
                                 </button>
                             )}
@@ -106,33 +106,33 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         {isOwnProfile && editingProfile ? (
                             <div className="space-y-4">
                                 <textarea 
-                                    className="w-full p-4 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:border-emerald-500 outline-none min-h-25" 
+                                    className="w-full p-4 bg-white border border-[#2E3330]/25 rounded-[4px] text-sm font-medium focus:border-[#7A8D69] outline-none min-h-25" 
                                     value={localBio} 
                                     onChange={e => setLocalBio(e.target.value)} 
                                     placeholder="Cuéntanos sobre ti..." 
                                 />
                                 <div className="flex gap-2">
-                                    <button className="flex-1 px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50" onClick={() => setEditingProfile(false)}>Cancelar</button>
-                                    <button className="flex-1 px-4 py-2 bg-emerald-600 rounded-lg text-xs font-bold text-white hover:bg-emerald-700" onClick={saveBio} disabled={bioSaving}>
+                                    <button className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-[4px] text-xs font-bold text-slate-600 hover:bg-slate-50" onClick={() => setEditingProfile(false)}>Cancelar</button>
+                                    <button className="flex-1 px-4 py-2 bg-[#7A8D69] rounded-[4px] text-xs font-bold text-white hover:bg-[#6C7E5C]" onClick={saveBio} disabled={bioSaving}>
                                         {bioSaving ? 'Guardando...' : 'Guardar'}
                                     </button>
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-sm text-slate-600 leading-relaxed">
+                            <p className="text-sm text-[#2E3330]/90 leading-relaxed font-medium">
                                 {activeProfile.descripcion || 'Docente innovador comprometido con el desarrollo pedagógico.'}
                             </p>
                         )}
                     </div>
 
-                    <div className="mb-6 p-5 rounded-xl bg-slate-50 border border-slate-200">
-                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Logros pedagógicos</h3>
+                    <div className="mb-6 p-5 rounded-[4px] bg-[#FAF6F0] border border-[#2E3330]/20">
+                        <h3 className="text-[10px] font-bold text-[#5F665E] uppercase tracking-widest mb-4">Logros pedagógicos</h3>
                         <div className="space-y-3.5 text-sm">
-                            <p className="text-slate-600 font-medium"><span className="font-black text-slate-900">{logros?.estudiantesEvaluados || 0}</span> estudiantes evaluados</p>
-                            <p className="text-slate-600 font-medium"><span className="font-black text-slate-900">{logros?.actividadesAplicadas || 0}</span> actividades aplicadas</p>
-                            <p className="text-slate-600 font-medium"><span className="font-black text-slate-900">{logros?.actividadesRubricas || 0}</span> actividades evaluadas con rúbricas</p>
-                            <p className="text-slate-600 font-medium"><span className="font-black text-slate-900">{logros?.actividadesCotejo || 0}</span> actividades evaluadas con lista de cotejo</p>
-                            <p className="text-slate-600 font-medium"><span className="font-black text-slate-900">{logros?.actividadesIndicadores || 0}</span> actividades evaluadas por indicadores de logro</p>
+                            <p className="text-[#5F665E] font-medium"><span className="font-black text-[#2E3330]">{logros?.estudiantesEvaluados || 0}</span> estudiantes evaluados</p>
+                            <p className="text-[#5F665E] font-medium"><span className="font-black text-[#2E3330]">{logros?.actividadesAplicadas || 0}</span> actividades aplicadas</p>
+                            <p className="text-[#5F665E] font-medium"><span className="font-black text-[#2E3330]">{logros?.actividadesRubricas || 0}</span> actividades evaluadas con rúbricas</p>
+                            <p className="text-[#5F665E] font-medium"><span className="font-black text-[#2E3330]">{logros?.actividadesCotejo || 0}</span> actividades evaluadas con lista de cotejo</p>
+                            <p className="text-[#5F665E] font-medium"><span className="font-black text-[#2E3330]">{logros?.actividadesIndicadores || 0}</span> actividades evaluadas por indicadores de logro</p>
                         </div>
                     </div>
 
@@ -140,24 +140,24 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 </div>
 
                 {isOwnProfile && (
-                    <div className="p-8 border-t border-slate-100 space-y-3">
+                    <div className="p-8 border-t border-[#EAE4DA] space-y-3 bg-[#FAF6F0]/40">
                         {onOpenSettings && (
-                            <button onClick={() => { setShowProfile(false); onOpenSettings(); }} className="w-full py-3 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2 transition-all">
+                            <button onClick={() => { setShowProfile(false); onOpenSettings(); }} className="w-full py-3 bg-white border border-[#2E3330]/20 rounded-[4px] text-sm font-bold text-[#2E3330] hover:bg-slate-50 flex items-center justify-center gap-2 transition-all">
                                 <Settings size={18} />
                                 Configuración
                             </button>
                         )}
                         <button
                             onClick={() => setShowResetModal(true)}
-                            className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all border border-rose-200 hover:border-rose-300"
+                            className="w-full py-3 bg-rose-50 hover:bg-rose-100/80 text-rose-800 rounded-[4px] text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all border border-rose-350"
                         >
-                            <div className="w-8 h-8 bg-rose-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-rose-600/20">
+                            <div className="w-8 h-8 bg-rose-600 text-white rounded-[4px] flex items-center justify-center shadow-lg shadow-rose-650/20">
                                 <AlertTriangle size={16} />
                             </div>
                             Reiniciar año escolar
                         </button>
                         {onLogout && (
-                            <button onClick={() => { if (window.confirm('¿Deseas cerrar sesión?')) onLogout(); }} className="w-full py-3 text-slate-400 hover:text-slate-800 text-[11px] font-black uppercase tracking-widest transition-all">
+                            <button onClick={() => { if (window.confirm('¿Deseas cerrar sesión?')) onLogout(); }} className="w-full py-3 text-slate-450 hover:text-slate-800 text-[11px] font-black uppercase tracking-widest transition-all">
                                 Cerrar sesión
                             </button>
                         )}

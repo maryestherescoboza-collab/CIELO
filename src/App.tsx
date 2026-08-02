@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import Auth from './screens/Auth';
 import ResetPassword from './screens/ResetPassword';
 import AppRoutes from './AppRoutes';
+import Landing from './screens/Landing';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import NotificationsOverlay from './components/NotificationsOverlay';
 import { FloatingRubricManager } from './components/FloatingRubricManager';
@@ -105,6 +106,9 @@ export default function App() {
   );
 
   if (!session) {
+    if (window.location.pathname === '/') {
+      return <Landing />;
+    }
     if (window.location.pathname === '/reset-password') {
       return <ResetPassword />;
     }

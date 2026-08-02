@@ -52,6 +52,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         if (!isDirty || !onSaveCalificaciones) return;
 
         const timer = setTimeout(async () => {
+            console.log('[DEBUG] 3. Se ejecuta el guardado automático desde useCursoDetalleData');
             setIsSaving(true);
             try {
                 await onSaveCalificaciones(localCalifs, localRecs, cursoId);
@@ -165,8 +166,10 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
     }, [state.actividades, cursoId, sharedCourseId, currentUserId, myAsignatura]);
 
     const setRec = useCallback((estId: number, bc: 1 | 2 | 3 | 4, val: number | null) => {
+        console.log(`[DEBUG] 1. El usuario introduce la nota. estId: ${estId}, BC: ${bc}, val: ${val}`);
         setIsDirty(true);
         setLocalRecs(prev => {
+            console.log('[DEBUG] 2. setRec() actualiza localRecs');
             const idx = prev.findIndex(r => r.estudianteId === estId && r.bc === bc && r.periodo === selectedPeriodo);
             if (idx >= 0) return prev.map((r, i) => i === idx ? { ...r, puntaje: val } : r);
             return [...prev, { 

@@ -104,10 +104,10 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
 
     return (
         <div className="flex flex-col flex-1 h-full overflow-hidden bg-[#FDFBF7]">
-            <div className="flex-1 overflow-y-auto px-3 py-4 md:px-6 scroll-smooth scrollbar-hide">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex-1 overflow-y-auto px-2 py-2 md:px-4 scroll-smooth scrollbar-hide">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 mb-3.5 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div>
-                        <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2.5 font-notion-title">
+                        <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2 font-notion-title">
                             Registro Anecdótico
                         </h1>
                         <div className="flex items-center gap-3">
@@ -128,10 +128,10 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                     </div>
                 </div>
 
-                <div className="max-w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both space-y-4">
-                    <div className="grid grid-cols-12 gap-4">
-                    <div className="col-span-12 space-y-4 xl:col-span-4">
-                        <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] p-6 shadow-sm space-y-6">
+                <div className="max-w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both space-y-3">
+                    <div className="grid grid-cols-12 gap-3">
+                    <div className="col-span-12 space-y-3 xl:col-span-4">
+                        <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] p-4 shadow-sm space-y-4.5">
                             <div>
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-[#2E3330] mb-3">1. Estudiantes Vinculados</h3>
                                 <div className="flex items-center gap-3 px-5 rounded-full bg-[#FDFBF7] border border-slate-300 focus-within:border-[#7A8D69] focus-within:ring-2 focus-within:ring-[#7A8D69]/20 transition-all artisan-pill">
@@ -174,9 +174,9 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                 </div>
                             )}
 
-                            <div className="border-t border-slate-100 pt-5">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-[#2E3330] mb-3.5">2. Categoría y Gravedad</h3>
-                                <div className="flex flex-wrap gap-1.5 mb-3.5">
+                            <div className="border-t border-slate-100 pt-3.5">
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-[#2E3330] mb-2.5">2. Categoría y Gravedad</h3>
+                                <div className="flex flex-wrap gap-1.5 mb-2.5">
                                     {CATEGORIAS.map(cat => {
                                         const Icon = cat.icon;
                                         const isSel = categoria === cat.key;
@@ -184,20 +184,20 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                             <button
                                                 key={cat.key}
                                                 onClick={() => setCategoria(cat.key)}
-                                                className={`px-3.5 py-1.5 rounded-full border flex items-center gap-2 transition-all w-fit artisan-pill ${isSel ? 'bg-[#BFC9A6] border-slate-350 text-[#2E3330] shadow-sm' : 'bg-[#FDFBF7] border-slate-300 text-slate-600 hover:bg-[#FAF6F0]'}`}
+                                                className={`px-3 py-1 rounded-full border flex items-center gap-1.5 transition-all w-fit artisan-pill ${isSel ? 'bg-[#BFC9A6] border-slate-350 text-[#2E3330] shadow-sm' : 'bg-[#FDFBF7] border-slate-300 text-slate-600 hover:bg-[#FAF6F0]'}`}
                                             >
-                                                <Icon size={14} className={isSel ? 'text-[#2E3330]' : cat.iconColor} />
-                                                <span className="text-[10px] font-bold uppercase tracking-wider leading-tight">{cat.label}</span>
+                                                <Icon size={13} className={isSel ? 'text-[#2E3330]' : cat.iconColor} />
+                                                <span className="text-[9px] font-bold uppercase tracking-wider leading-tight">{cat.label}</span>
                                             </button>
                                         );
                                     })}
                                 </div>
-                                <div className="w-fit flex bg-[#EAE4DA]/30 p-1 rounded-full border border-[rgba(46,51,48,0.08)] gap-1">
+                                <div className="w-fit flex bg-[#EAE4DA]/30 p-0.5 rounded-full border border-[rgba(46,51,48,0.08)] gap-1">
                                     {(['leve', 'moderada', 'grave'] as const).map((g) => (
                                         <button
                                             key={g}
                                             onClick={() => setGravedad(g)}
-                                            className={`px-3.5 py-1 text-center text-[9px] font-black uppercase tracking-widest rounded-full transition-all w-fit flex-none ${
+                                            className={`px-3 py-0.5 text-center text-[9px] font-black uppercase tracking-widest rounded-full transition-all w-fit flex-none ${
                                                 gravedad === g 
                                                     ? 'bg-[#FDFBF7] text-[#2E3330] shadow-sm border border-[rgba(46,51,48,0.08)]' 
                                                     : 'text-[#5F665E] hover:text-[#2E3330]'
@@ -209,40 +209,40 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                 </div>
                             </div>
 
-                            <div className="border-t border-slate-100 pt-5 space-y-4">
+                            <div className="border-t border-slate-100 pt-3.5 space-y-3">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-[#2E3330]">3. Detalles del Acontecimiento</h3>
                                 <div>
-                                    <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Descripción de los Hechos</label>
+                                    <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Descripción de los Hechos</label>
                                     <textarea
-                                        rows={4}
+                                        rows={3}
                                         placeholder="Describe de forma objetiva lo sucedido..."
-                                        className="w-full p-4 rounded-[20px] border border-slate-300 bg-[#FDFBF7] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20 transition-all resize-none"
+                                        className="w-full p-3 rounded-[15px] border border-slate-300 bg-[#FDFBF7] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20 transition-all resize-none"
                                         value={descripcion}
                                         onChange={(e) => setDescripcion(e.target.value)}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Acuerdos y Compromisos</label>
+                                    <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Acuerdos y Compromisos</label>
                                     <textarea
                                         rows={2}
                                         placeholder="Medidas adoptadas o compromisos del estudiante..."
-                                        className="w-full p-4 rounded-[20px] border border-slate-300 bg-[#FDFBF7] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20 transition-all resize-none"
+                                        className="w-full p-3 rounded-[15px] border border-slate-300 bg-[#FDFBF7] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20 transition-all resize-none"
                                         value={acuerdos}
                                         onChange={(e) => setAcuerdos(e.target.value)}
                                     />
                                 </div>
                             </div>
 
-                            <div className="border-t border-slate-100 pt-5">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-[#2E3330] mb-2.5">4. Acciones Pedagógicas</h3>
-                                <div className="flex flex-wrap gap-1.5 mb-5">
+                            <div className="border-t border-slate-100 pt-3.5">
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-[#2E3330] mb-2">4. Acciones Pedagógicas</h3>
+                                <div className="flex flex-wrap gap-1 mb-3.5">
                                     {ACCIONES.map(accion => {
                                         const active = accionesTomadas.includes(accion);
                                         return (
                                             <button
                                                 key={accion}
                                                 onClick={() => toggleAccion(accion)}
-                                                className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold transition-all border artisan-pill ${
+                                                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border artisan-pill ${
                                                     active
                                                         ? 'bg-[#BFC9A6] border-slate-350 text-[#2E3330]'
                                                         : 'bg-[#FDFBF7] border-slate-300 text-slate-500 hover:bg-[#FAF6F0]'
@@ -257,22 +257,23 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                     onClick={handleSubmit}
                                     disabled={!estIds.length || !descripcion.trim()}
                                     className="w-full rounded-full bg-[#7A8D69] text-white text-xs font-black uppercase tracking-widest hover:bg-[#6C7E5C] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center"
-                                    style={{ height: '36px' }}
+                                    style={{ height: '32px' }}
                                 >
                                     Guardar en Bitácora
                                 </button>
                                 {saved && (
-                                    <div className="flex items-center justify-center gap-2 text-[#7A8D69] text-[10px] font-black uppercase tracking-wider mt-3 animate-in fade-in">
+                                    <div className="flex items-center justify-center gap-2 text-[#7A8D69] text-[10px] font-black uppercase tracking-wider mt-2.5 animate-in fade-in">
                                         <CheckCircle size={14} /> Registro Guardado Correctamente
                                     </div>
                                 )}
                             </div>
                         </div>
-                           <div className="col-span-12 xl:col-span-8 space-y-4">
-                        <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] p-5 shadow-sm flex flex-col gap-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                    </div>
+                    <div className="col-span-12 xl:col-span-8 space-y-3">
+                        <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] p-4 shadow-sm flex flex-col gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                                 <div>
-                                    <h2 className="text-lg font-black text-[#2E3330]">Bitácora de Acontecimientos</h2>
+                                    <h2 className="text-base font-black text-[#2E3330]">Bitácora de Acontecimientos</h2>
                                     <p className="text-[9px] text-[#5F665E] font-bold uppercase tracking-wider mt-0.5">Historial del Año Escolar en Curso</p>
                                 </div>
                                 <div className="w-full sm:w-64 bg-[#FDFBF7] border border-slate-300 rounded-full px-4 flex items-center gap-2.5 artisan-pill" style={{ height: '36px' }}>
@@ -291,20 +292,20 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                 <table className="w-full border-collapse text-left text-xs text-[#2E3330]">
                                     <thead className="bg-[#FAF6F0]/50 text-[9px] font-bold uppercase tracking-wider text-[#2E3330] border-b border-[rgba(46,51,48,0.08)]">
                                         <tr>
-                                            <th scope="col" className="px-5 py-3">Estudiante</th>
-                                            <th scope="col" className="px-5 py-3">Categoría</th>
-                                            <th scope="col" className="px-5 py-3">Gravedad</th>
-                                            <th scope="col" className="px-5 py-3">Descripción</th>
-                                            <th scope="col" className="px-5 py-3">Acuerdos</th>
-                                            <th scope="col" className="px-5 py-3">Acciones</th>
-                                            <th scope="col" className="px-5 py-3 text-center">Fecha</th>
-                                            <th scope="col" className="px-3 py-3"></th>
+                                            <th scope="col" className="px-3.5 py-2">Estudiante</th>
+                                            <th scope="col" className="px-3.5 py-2">Categoría</th>
+                                            <th scope="col" className="px-3.5 py-2">Gravedad</th>
+                                            <th scope="col" className="px-3.5 py-2">Descripción</th>
+                                            <th scope="col" className="px-3.5 py-2">Acuerdos</th>
+                                            <th scope="col" className="px-3.5 py-2">Acciones</th>
+                                            <th scope="col" className="px-3.5 py-2 text-center">Fecha</th>
+                                            <th scope="col" className="px-2 py-2"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[rgba(46,51,48,0.08)]">
                                         {histFiltrado.length === 0 ? (
                                             <tr>
-                                                <td colSpan={8} className="px-5 py-10 text-center text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                                                <td colSpan={8} className="px-3.5 py-6 text-center text-slate-400 text-[10px] font-bold uppercase tracking-wider">
                                                     No se han registrado acontecimientos en esta categoría
                                                 </td>
                                             </tr>
@@ -319,16 +320,16 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                                 if (!est) return null;
                                                 return (
                                                     <tr key={incidencia.id} className="hover:bg-[#FAF6F0]/40 transition-colors">
-                                                        <td className="px-5 py-3.5">
+                                                        <td className="px-3.5 py-2">
                                                             <p className="text-xs font-bold text-[#2E3330] leading-tight">{est.nombre} {est.apellido}</p>
                                                             <p className="text-[9px] text-[#5F665E] font-medium tracking-tight mt-0.5">Expediente #0{est.id}</p>
                                                         </td>
-                                                        <td className="px-5 py-3.5">
-                                                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${catBg} text-[#2E3330] border border-[rgba(46,51,48,0.08)]`}>
+                                                        <td className="px-3.5 py-2">
+                                                            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${catBg} text-[#2E3330] border border-[rgba(46,51,48,0.08)]`}>
                                                                 {incidencia.categoria}
                                                             </div>
                                                         </td>
-                                                        <td className="px-5 py-3.5">
+                                                        <td className="px-3.5 py-2">
                                                              <span className={`text-[9px] font-bold uppercase tracking-widest ${
                                                                  incidencia.gravedad === 'grave' 
                                                                      ? 'text-[#EB8847]' 
@@ -339,27 +340,27 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                                                 {GRAVEDAD_LABELS[incidencia.gravedad]}
                                                              </span>
                                                         </td>
-                                                        <td className="px-5 py-3.5">
+                                                        <td className="px-3.5 py-2">
                                                             <p className="max-w-[200px] line-clamp-2 text-[11px] font-medium text-[#2E3330] leading-normal">
                                                                 {incidencia.descripcion}
                                                             </p>
                                                         </td>
-                                                        <td className="px-5 py-3.5">
+                                                        <td className="px-3.5 py-2">
                                                             <p className="max-w-[150px] line-clamp-2 text-[11px] font-normal italic leading-normal text-[#5F665E]">
                                                                 {incidencia.acuerdos || 'Ninguno registrado'}
                                                             </p>
                                                         </td>
-                                                        <td className="px-5 py-3.5">
+                                                        <td className="px-3.5 py-2">
                                                             <p className="whitespace-nowrap text-[11px] font-medium text-[#5F665E]">
                                                                 {incidencia.accionesTomadas.join(', ') || 'Sin acciones'}
                                                             </p>
                                                         </td>
-                                                        <td className="px-5 py-3.5 text-center">
+                                                        <td className="px-3.5 py-2 text-center">
                                                             <span className="whitespace-nowrap text-[10px] font-medium text-slate-400">
                                                                 {incidencia.fecha}
                                                             </span>
                                                         </td>
-                                                        <td className="px-3 py-3.5 text-right">
+                                                        <td className="px-2 py-2 text-right">
                                                             <button
                                                                 onClick={() => {
                                                                     if (onDeleteIncidencia && window.confirm('¿Eliminar esta incidencia?')) {
@@ -379,7 +380,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                 </table>
                             </div>
                         </div>
-                    </div>             </div>
+                    </div>
                 </div>
             </div>
         </div>

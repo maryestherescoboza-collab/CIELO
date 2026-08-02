@@ -63,6 +63,7 @@ export function useEvaluationActions() {
         recs: RecuperacionBC[],
         cursoIdOverride?: number | null,
     ) => {
+        console.log('[DEBUG] 4. saveCalificaciones() se ejecuta transformando los datos. Recs a guardar:', recs.length);
         const cursoId = cursoIdOverride ?? selectedCursoId;
         if (cursoId === null || !session?.user?.id) return;
 
@@ -101,11 +102,18 @@ export function useEvaluationActions() {
 
         const promises = [];
         if (dbCalifs.length > 0) promises.push(supabase.from('calificaciones').upsert(dbCalifs, { onConflict: 'estudiante_id,actividad_id' }));
-        if (dbRecs.length > 0) promises.push(supabase.from('recuperaciones').upsert(dbRecs, { onConflict: 'estudiante_id,curso_id,bc,periodo,asignatura' }));
+        if (dbRecs.length > 0) {
+            console.log('[DEBUG] 5. Ejecutando upsert() en tabla recuperaciones:', dbRecs);
+            // FIX: Removed "asignatura" from onConflict to match the primary key
+            promises.push(supabase.from('recuperaciones').upsert(dbRecs, { onConflict: 'estudiante_id,curso_id,bc,periodo' }));
+        }
         
         if (promises.length > 0) {
+            console.log('[DEBUG] Esperando respuesta de Supabase...');
             await Promise.all(promises);
+            console.log('[DEBUG] 6. Supabase responde exitosamente (upsert resuelto).');
             setState(s => {
+                console.log('[DEBUG] 7. Actualizando estado global de Zustand con las recuperaciones...');
                 const nextCalifs = [...s.calificaciones];
                 califs.forEach(newC => {
                     const idx = nextCalifs.findIndex(oc => oc.estudianteId === newC.estudianteId && oc.actividadId === newC.actividadId);

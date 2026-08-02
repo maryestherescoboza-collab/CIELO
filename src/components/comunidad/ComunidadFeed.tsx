@@ -23,10 +23,10 @@ const getTipoLabel = (tipo: Post['tipo']) => {
 
 const getTagStyles = (tipo: Post['tipo']) => {
     switch (tipo) {
-        case 'rubrica': return 'bg-[#FEE2E2] text-[#C81E1E] border-[#FCA5A5]';
-        case 'cotejo': return 'bg-[#FEF3C7] text-[#B45309] border-[#FCD34D]';
-        case 'secuencia': return 'bg-[#D1FAE5] text-[#065F46] border-[#6EE7B7]';
-        default: return 'bg-slate-100 text-slate-600 border-slate-300';
+        case 'rubrica': return 'bg-red-100/80 text-red-800 border-red-400 font-black shadow-sm';
+        case 'cotejo': return 'bg-amber-100/80 text-amber-800 border-amber-400 font-black shadow-sm';
+        case 'secuencia': return 'bg-[#BFC9A6]/30 text-[#475438] border-[#BFC9A6] font-black shadow-sm';
+        default: return 'bg-[#EAE4DA] text-[#2E3330] border-[#2E3330]/20 font-black shadow-sm';
     }
 };
 

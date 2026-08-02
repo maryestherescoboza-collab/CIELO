@@ -671,8 +671,8 @@ export default function Rubrica({
                 </aside>
             )}
 
-            <main className="flex-1 overflow-y-auto px-6 py-5 md:px-12 scroll-smooth scrollbar-hide">
-                <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both space-y-3">
+            <main className="flex-1 overflow-y-auto px-3 py-3 md:px-5 scroll-smooth scrollbar-hide">
+                <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both space-y-1.5">
                     <div className="flex flex-wrap items-center justify-between gap-6 pb-3">
                         <div>
                             <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2.5 font-notion-title">
