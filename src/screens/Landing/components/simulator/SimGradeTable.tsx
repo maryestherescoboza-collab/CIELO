@@ -1,9 +1,9 @@
 import React from 'react';
 import { Plus, Trash2, Target } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import GradeCell from './GradeCell';
-import type { BCKey, Actividad } from '../../types';
-import { getCompetenciaDisplay } from '../../types';
+import GradeCell from './SimGradeCell';
+import type { BCKey, Actividad } from '../../../../types';
+import { getCompetenciaDisplay } from '../../../../types';
 
 
 

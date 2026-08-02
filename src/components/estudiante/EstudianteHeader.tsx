@@ -17,19 +17,19 @@ const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
 }) => {
     return (
         <>
-            <div className="w-[92%] max-w-7xl flex justify-between items-center mb-10 px-4 mt-2">
-                <button onClick={onBack} className="text-slate-400 font-bold hover:text-golden-orange-base flex items-center gap-2 transition-all text-[13px] uppercase tracking-[0.2em]">
+            <div className="w-[92%] max-w-7xl flex justify-between items-center mb-8 px-4 mt-2">
+                <button onClick={onBack} className="text-[#5F665E] font-semibold hover:text-[#2E3330] flex items-center gap-2 transition-all text-[11px] uppercase tracking-[0.08em] hover:bg-[#F8F3ED] px-4 py-2 rounded-full">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
                     </svg>
-                    Volver al Registro
+                    VOLVER AL REGISTRO
                 </button>
-                <div className="flex bg-[#e8e4db] p-1 rounded-xl border border-slate-200/50">
+                <div className="flex bg-[#F8F3ED] p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
                     {['P1', 'P2', 'P3', 'P4'].map(p => (
                         <button 
                             key={p} 
                             onClick={() => setPeriodo(p)} 
-                            className={`px-5 py-2 rounded-lg text-[14px] font-black tracking-widest transition-all ${periodo === p ? 'bg-white text-golden-orange-base shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`px-[18px] py-[8px] min-h-[36px] leading-none rounded-full text-xs font-semibold tracking-[0.08em] transition-all ${periodo === p ? 'bg-white text-[#2E3330] shadow-sm border border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330]'}`}
                         >
                             {p}
                         </button>
@@ -37,15 +37,15 @@ const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
                 </div>
             </div>
 
-            <div className="w-[92%] max-w-7xl flex items-end px-4 gap-1 transform translate-y-px">
+            <div className="w-[98%] max-w-310 flex items-end px-4 gap-2 transform translate-y-px">
                 {(['Perfil', 'Evaluación'] as const).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`px-8 sm:px-12 py-3.5 text-[14px] font-black uppercase tracking-[0.2em] rounded-t-2xl border-x border-t border-slate-200/60 transition-all ${
+                        className={`px-8 sm:px-12 py-3.5 text-xs font-semibold uppercase tracking-[0.08em] rounded-t-[16px] border-x border-t transition-all ${
                             activeTab === tab 
-                            ? 'bg-[#fdfcf9] border-bottom-color-[#fdfcf9] z-10 font-800 text-golden-orange-base shadow-[-5px_-5px_10px_rgba(0,0,0,0.01)]' 
-                            : 'bg-[#e8e4db] border-bottom-color-transparent z-0 color-[#8a8475] hover:bg-[#ece8df] hover:color-[#5d584e]'
+                            ? 'bg-[#FDFBF7] border-[rgba(46,51,48,0.08)] border-b-[#FDFBF7] z-10 text-[#2E3330] shadow-sm' 
+                            : 'bg-[#F8F3ED] border-transparent border-b-transparent z-0 text-[#5F665E] hover:bg-[#F0EBE3] hover:text-[#2E3330]'
                         }`}
                     >
                         {tab}

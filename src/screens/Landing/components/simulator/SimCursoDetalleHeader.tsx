@@ -1,16 +1,13 @@
 import React from 'react';
 import {
-    ChevronLeft,
     Save,
-    Maximize2,
-    Minimize2,
     Search,
     UserMinus,
     Layout,
     Loader2,
     Check
 } from 'lucide-react';
-import type { Curso } from '../../types';
+import type { Curso } from '../../../../types';
 
 interface CursoDetalleHeaderProps {
     curso: Curso | undefined;
@@ -19,9 +16,7 @@ interface CursoDetalleHeaderProps {
     isDirty: boolean;
     isSaving: boolean;
     onSave: () => void;
-    isFullScreen: boolean;
-    onToggleFullScreen: () => void;
-    onBack: () => void;
+    // removed props
     showRecoveryOnly: boolean;
     setShowRecoveryOnly: (val: boolean) => void;
     isPointMode: boolean;
@@ -42,9 +37,6 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     isDirty,
     isSaving,
     onSave,
-    isFullScreen,
-    onToggleFullScreen,
-    onBack,
     showRecoveryOnly,
     setShowRecoveryOnly,
     isPointMode,
@@ -60,13 +52,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     return (
         <div className="flex flex-col gap-6 p-6 md:p-8 bg-white border-b border-[rgba(46,51,48,0.08)] shadow-sm relative z-20">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-6">
-                    <button
-                        onClick={onBack}
-                        className="p-3 hover:bg-[#F8F3ED] text-[#5F665E] hover:text-[#2E3330] transition-all rounded-full border border-transparent hover:border-[rgba(46,51,48,0.08)] group"
-                    >
-                        <ChevronLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
-                    </button>
+                <div className="flex items-center gap-3">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <span className="px-[14px] py-[4px] min-h-[24px] leading-none bg-[#7A8D69] text-white text-[10px] font-semibold uppercase tracking-[0.08em] rounded-full flex items-center justify-center">CURSO ACTIVO</span>
@@ -110,12 +96,6 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         {isSaving ? 'GUARDANDO...' : isDirty ? 'GUARDAR AHORA' : 'GUARDADO'}
                     </button>
 
-                    <button
-                        onClick={onToggleFullScreen}
-                        className="w-10 h-10 flex items-center justify-center bg-white border border-[rgba(46,51,48,0.08)] text-[#5F665E] hover:text-[#2E3330] hover:border-[rgba(46,51,48,0.15)] transition-all rounded-full shadow-sm active:scale-95"
-                    >
-                        {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-                    </button>
                 </div>
             </div>
 

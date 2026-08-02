@@ -118,13 +118,13 @@ export default function Estudiante() {
                 const isRecovered = recVal !== undefined && (avgVal === undefined || avgVal < 70);
 
                 return (
-                    <td key={`${p}-${bc}`} className="px-3 py-4 text-center border border-slate-200">
+                    <td key={`${p}-${bc}`} className="px-3 py-4 text-center border border-[rgba(46,51,48,0.08)]">
                         {finalVal !== undefined ? (
-                            <span className={`text-[13px] font-black ${isRecovered ? 'text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100' : 'text-slate-800'}`}>
+                            <span className={`text-[13px] font-black ${isRecovered ? 'text-[#B87449] bg-[#FDFBF7] px-1.5 py-0.5 rounded border border-[#B87449]/20' : 'text-[#2E3330]'}`}>
                                 {finalVal}
                             </span>
                         ) : (
-                            <span className="text-[12px] font-bold text-slate-300">-</span>
+                            <span className="text-[12px] font-bold text-[#5F665E]/40">-</span>
                         )}
                     </td>
                 );
@@ -142,7 +142,7 @@ export default function Estudiante() {
     }
 
     return (
-        <div className="flex flex-col items-center w-full min-h-screen bg-[#FDFBF7] text-slate-700 pb-16">
+        <div className="flex flex-col items-center w-full min-h-screen bg-[#FDFBF7] text-[#2E3330] pb-16">
             <EstudianteHeader 
                 periodo={periodo} 
                 setPeriodo={setPeriodo} 
@@ -168,12 +168,12 @@ export default function Estudiante() {
 
                 {activeTab === 'Evaluación' && (
                     <div className="space-y-6 animate-in fade-in duration-500">
-                        <div className="flex justify-between items-center border-b pb-5 border-slate-100">
+                        <div className="flex justify-between items-center border-b pb-5 border-[rgba(46,51,48,0.08)]">
                             <div>
                                 <h2 className="text-xl font-black text-[#2E3330] tracking-tight">REGISTRO ANUAL</h2>
                                 <p className="text-[10px] font-bold text-[#5F665E] uppercase tracking-widest">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
                             </div>
-                            <button onClick={() => window.print()} className="flex items-center gap-2 px-6 py-2 bg-[#7A8D69] text-white rounded-full font-bold text-xs hover:bg-[#6C7E5C] transition-all uppercase tracking-widest shadow-sm artisan-pill" style={{ height: '36px' }}>
+                            <button onClick={() => window.print()} className="flex items-center gap-2 px-[18px] py-[8px] min-h-[36px] leading-none bg-[#7A8D69] text-white rounded-full font-semibold text-xs hover:bg-[#6C7E5C] transition-all uppercase tracking-[0.08em] shadow-sm">
                                 <Printer size={15} /> Imprimir
                             </button>
                         </div>
@@ -185,9 +185,9 @@ export default function Estudiante() {
                 )}
             </div>
 
-            <footer className="w-[92%] max-w-7xl mt-16 text-center py-10 opacity-30 select-none">
-                <p className="text-slate-400 text-[14px] font-bold uppercase tracking-[0.5em] mb-2">Plataforma Educativa Noether</p>
-                <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <footer className="w-[92%] max-w-7xl mt-16 text-center py-10 opacity-40 select-none">
+                <p className="text-[#5F665E] text-[14px] font-bold uppercase tracking-[0.5em] mb-2">Plataforma Educativa Noether</p>
+                <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#5F665E]/70">
                     <School size={14} />
                     <span>Registro Oficial Validado</span>
                 </div>

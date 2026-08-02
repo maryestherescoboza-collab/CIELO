@@ -1,5 +1,85 @@
 import { motion } from 'framer-motion';
-import { BookOpen, Users, ShieldAlert, BarChart3, BrainCircuit } from 'lucide-react';
+import { BookOpen, Users, ShieldAlert, BarChart3, BrainCircuit, FileCheck2 } from 'lucide-react';
+
+import cursoDetalleImage from '../assets/features/curso-detalle.png';
+import rubricaImage from '../assets/features/rubrica.png';
+import incidenciasImage from '../assets/features/incidencias.png';
+import comunidadImage from '../assets/features/comunidad.png';
+import portafolioImage from '../assets/features/portafolio-docente.png';
+import boletinesImage from '../assets/features/boletines.png';
+
+const features = [
+  {
+    title: "Evaluación por Competencias",
+    description: "Olvida las notas tradicionales. Evalúa utilizando rúbricas estandarizadas, listas de cotejo y descriptores alineados al currículo nacional, con cálculos automáticos que alimentan el boletín en tiempo real.",
+    image: cursoDetalleImage,
+    icon: BrainCircuit,
+    colSpan: "md:col-span-2",
+    theme: "bg-[#FDFBF7]",
+    titleColor: "text-[#2E3330]",
+    descColor: "text-slate-500",
+    iconColor: "text-[#7A8D69]",
+    glow: "bg-[#86A792]"
+  },
+  {
+    title: "Registro Anecdótico",
+    description: "Documenta incidencias, acuerdos y medidas pedagógicas en segundos. Un historial blindado del comportamiento escolar.",
+    image: incidenciasImage,
+    icon: ShieldAlert,
+    colSpan: "md:col-span-1",
+    theme: "bg-[#2E3330]",
+    titleColor: "text-white",
+    descColor: "text-slate-400",
+    iconColor: "text-[#E88C6B]",
+    glow: "bg-[#E88C6B]",
+    dark: true
+  },
+  {
+    title: "Rúbricas Inteligentes",
+    description: "Diseña y aplica rúbricas de evaluación en tiempo real, adaptables a cualquier indicador y con retroalimentación inmediata.",
+    image: rubricaImage,
+    icon: FileCheck2,
+    colSpan: "md:col-span-1",
+    theme: "bg-white",
+    titleColor: "text-[#2E3330]",
+    descColor: "text-slate-500",
+    iconColor: "text-[#2E3330]"
+  },
+  {
+    title: "Comunidad Escolar",
+    description: "Muro interactivo, anuncios y publicaciones con la estética visual más limpia del mercado.",
+    image: comunidadImage,
+    icon: Users,
+    colSpan: "md:col-span-2",
+    theme: "bg-white",
+    titleColor: "text-[#2E3330]",
+    descColor: "text-slate-500",
+    iconColor: "text-[#2E3330]"
+  },
+  {
+    title: "Portafolio Docente",
+    description: "Centraliza tus planificaciones, secuencias didácticas y recursos en tu espacio personal seguro.",
+    image: portafolioImage,
+    icon: BookOpen,
+    colSpan: "md:col-span-2",
+    theme: "bg-[#FDFBF7]",
+    titleColor: "text-[#2E3330]",
+    descColor: "text-slate-500",
+    iconColor: "text-[#2E3330]",
+    glow: "bg-[#7A8D69]"
+  },
+  {
+    title: "Boletines y Reportes",
+    description: "Genera boletines listos para imprimir con un clic, cruzando datos de PC, RC y promedios finales.",
+    image: boletinesImage,
+    icon: BarChart3,
+    colSpan: "md:col-span-1",
+    theme: "bg-white",
+    titleColor: "text-[#2E3330]",
+    descColor: "text-slate-500",
+    iconColor: "text-[#2E3330]"
+  }
+];
 
 export function LandingFeatures() {
   const containerVariants = {
@@ -34,62 +114,39 @@ export function LandingFeatures() {
           viewport={{ once: true, margin: "-100px" }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
-          {/* Bento Box 1: Large */}
-          <motion.div variants={itemVariants} className="md:col-span-2 bg-[#FDFBF7] rounded-[32px] p-8 md:p-12 border border-[rgba(46,51,48,0.08)] relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#86A792]/10 rounded-full blur-[80px] -z-10 group-hover:bg-[#86A792]/20 transition-colors duration-700" />
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 mb-8 text-[#7A8D69]">
-              <BrainCircuit size={28} />
-            </div>
-            <h3 className="text-2xl font-black text-[#2E3330] mb-4">Evaluación por Competencias Pura</h3>
-            <p className="text-slate-500 font-medium leading-relaxed max-w-md">
-              Olvida las notas tradicionales. Evalúa utilizando rúbricas estandarizadas, listas de cotejo y descriptores alineados al currículo nacional, con cálculos automáticos que alimentan el boletín en tiempo real.
-            </p>
-          </motion.div>
+          {features.map((feature, idx) => (
+            <motion.div 
+              key={idx}
+              variants={itemVariants} 
+              className={`${feature.colSpan} ${feature.theme} rounded-[32px] p-8 md:p-10 border ${feature.dark ? 'border-slate-800' : 'border-[rgba(46,51,48,0.08)]'} relative overflow-hidden group hover:-translate-y-1 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-500 flex flex-col`}
+            >
+              {feature.glow && (
+                <div className={`absolute ${feature.dark ? 'bottom-0 left-0 w-48 h-48' : 'top-0 right-0 w-64 h-64'} ${feature.glow}/10 rounded-full blur-[80px] -z-10 group-hover:${feature.glow}/20 group-hover:scale-110 transition-all duration-700`} />
+              )}
+              
+              <div className="flex flex-col flex-1 z-10 h-full">
+                <div className={`w-12 h-12 ${feature.dark ? 'bg-white/10 border-white/5' : 'bg-white border-slate-100 shadow-sm'} rounded-2xl flex items-center justify-center border mb-6 ${feature.iconColor}`}>
+                  <feature.icon size={24} />
+                </div>
+                
+                <h3 className={`text-2xl font-black ${feature.titleColor} mb-3`}>{feature.title}</h3>
+                
+                <p className={`${feature.descColor} font-medium leading-relaxed mb-8 max-w-lg flex-1`}>
+                  {feature.description}
+                </p>
 
-          {/* Bento Box 2: Tall */}
-          <motion.div variants={itemVariants} className="bg-[#2E3330] rounded-[32px] p-8 md:p-12 border border-slate-800 relative overflow-hidden group">
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#E88C6B]/20 rounded-full blur-[60px] -z-10 group-hover:scale-150 transition-transform duration-700" />
-            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/5 mb-8 text-[#E88C6B]">
-              <ShieldAlert size={28} />
-            </div>
-            <h3 className="text-2xl font-black text-white mb-4">Registro Anecdótico</h3>
-            <p className="text-slate-400 font-medium leading-relaxed">
-              Documenta incidencias, acuerdos y medidas pedagógicas en segundos. Un historial blindado del comportamiento escolar.
-            </p>
-          </motion.div>
-
-          {/* Bento Box 3: Standard */}
-          <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 border border-[rgba(46,51,48,0.08)] shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-1 transition-transform duration-500">
-            <div className="w-12 h-12 bg-[#FDFBF7] rounded-2xl flex items-center justify-center border border-slate-100 mb-6 text-[#2E3330]">
-              <Users size={24} />
-            </div>
-            <h3 className="text-xl font-black text-[#2E3330] mb-3">Comunidad Escolar</h3>
-            <p className="text-slate-500 text-sm font-medium leading-relaxed">
-              Muro interactivo, anuncios y publicaciones con la estética visual más limpia del mercado.
-            </p>
-          </motion.div>
-
-          {/* Bento Box 4: Standard */}
-          <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 border border-[rgba(46,51,48,0.08)] shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-1 transition-transform duration-500">
-            <div className="w-12 h-12 bg-[#FDFBF7] rounded-2xl flex items-center justify-center border border-slate-100 mb-6 text-[#2E3330]">
-              <BookOpen size={24} />
-            </div>
-            <h3 className="text-xl font-black text-[#2E3330] mb-3">Portafolio Docente</h3>
-            <p className="text-slate-500 text-sm font-medium leading-relaxed">
-              Centraliza tus planificaciones, secuencias didácticas y recursos en tu espacio personal seguro.
-            </p>
-          </motion.div>
-
-          {/* Bento Box 5: Standard */}
-          <motion.div variants={itemVariants} className="bg-white rounded-[32px] p-8 border border-[rgba(46,51,48,0.08)] shadow-[0_8px_30px_rgb(0,0,0,0.04)] group hover:-translate-y-1 transition-transform duration-500">
-            <div className="w-12 h-12 bg-[#FDFBF7] rounded-2xl flex items-center justify-center border border-slate-100 mb-6 text-[#2E3330]">
-              <BarChart3 size={24} />
-            </div>
-            <h3 className="text-xl font-black text-[#2E3330] mb-3">Boletines y Reportes</h3>
-            <p className="text-slate-500 text-sm font-medium leading-relaxed">
-              Genera boletines listos para imprimir con un clic, cruzando datos de PC, RC y promedios finales.
-            </p>
-          </motion.div>
+                {/* Contenedor de la captura PNG */}
+                <div className="mt-auto w-full bg-slate-100 rounded-2xl overflow-hidden border border-black/5 shadow-inner relative aspect-[16/9] group-hover:shadow-lg transition-all duration-700">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent z-10 pointer-events-none" />
+                  <img
+                    src={feature.image}
+                    alt={feature.title}
+                    className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
       </div>
     </section>

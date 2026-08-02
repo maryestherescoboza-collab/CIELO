@@ -1,5 +1,5 @@
 import React from 'react';
-import FlameIcon from '../ui/FlameIcon';
+import FlameIcon from '../../../../components/ui/FlameIcon';
 
 interface GradeCellProps {
     estId: number;

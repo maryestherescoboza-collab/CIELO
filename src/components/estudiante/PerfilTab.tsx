@@ -135,7 +135,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
 
     return (
         <div className="w-full space-y-10 animate-in fade-in duration-300 pb-6">
-            <div className="flex items-center justify-between border-b pb-4 border-slate-100">
+            <div className="flex items-center justify-between border-b pb-4 border-[rgba(46,51,48,0.08)]">
                 <div className="flex items-center gap-6">
                     <div
                         className="w-14 h-14 rounded-full flex items-center justify-center text-white text-[24px] font-black shadow-inner border-2 border-white"
@@ -146,11 +146,11 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                     <div className="relative">
                         {parseFloat(promedioPeriodo) < 70 && (
                             <div className="absolute -top-6 -right-20">
-                                <div className="border-[3px] border-double border-rose-700 px-2 py-1 rounded text-rose-700 font-black text-[10px] uppercase rotate-[-10deg] opacity-60">Riesgo Académico</div>
+                                <div className="border-[3px] border-double border-[#B87449] px-2 py-1 rounded text-[#B87449] font-black text-[10px] uppercase rotate-[-10deg] opacity-60">Riesgo Académico</div>
                             </div>
                         )}
-                        <h1 className="text-[26px] font-black text-slate-900 tracking-tight">{est.nombre} {est.apellido}</h1>
-                        <div className="flex gap-4 text-[14px] font-bold text-slate-400 uppercase tracking-widest">
+                        <h1 className="text-[26px] font-black text-[#2E3330] tracking-tight">{est.nombre} {est.apellido}</h1>
+                        <div className="flex gap-4 text-[14px] font-bold text-[#5F665E] uppercase tracking-widest">
                             <span>{getAsignaturaNombre(curso?.asignatura)}</span>
                             <span>•</span>
                             <span>Periodo {periodo}</span>
@@ -160,37 +160,37 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                     </div>
                 </div>
                 <div className="text-right no-print">
-                    <p className="text-[13px] font-black text-slate-300 uppercase tracking-[0.2em]">Expediente Digital</p>
-                    <button onClick={() => window.print()} className="text-[14px] font-bold text-golden-orange-base hover:underline mt-1 uppercase">Imprimir Registro</button>
+                    <p className="text-[13px] font-black text-[#5F665E]/40 uppercase tracking-[0.2em]">Expediente Digital</p>
+                    <button onClick={() => window.print()} className="text-[14px] font-bold text-[#7A8D69] hover:underline mt-1 uppercase">Imprimir Registro</button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100/50 min-h-22.5">
-                <div className="col-span-3 border-r border-slate-200 pr-4 flex items-center gap-6">
+            <div className="grid grid-cols-12 gap-4 items-center bg-[#F8F3ED] p-4 rounded-[16px] border border-[rgba(46,51,48,0.04)] min-h-22.5">
+                <div className="col-span-3 border-r border-[rgba(46,51,48,0.08)] pr-4 flex items-center gap-6">
                     <div>
-                        <p className="text-[12px] font-black text-slate-400 uppercase mb-1">Promedio</p>
-                        <p className="text-2xl font-black text-golden-orange-base">{promedioPeriodo}%</p>
+                        <p className="text-[12px] font-black text-[#5F665E] uppercase mb-1">Promedio</p>
+                        <p className="text-2xl font-black text-[#7A8D69]">{promedioPeriodo}%</p>
                     </div>
                     <div>
-                        <p className="text-[12px] font-black text-slate-400 uppercase mb-1">Ranking</p>
-                        <p className="text-[24px] font-black text-slate-700">{rankingPeriodo}</p>
+                        <p className="text-[12px] font-black text-[#5F665E] uppercase mb-1">Ranking</p>
+                        <p className="text-[24px] font-black text-[#2E3330]">{rankingPeriodo}</p>
                     </div>
                 </div>
                 <div className="col-span-9 flex flex-wrap items-center gap-2">
-                    <p className="text-[12px] font-black text-slate-400 uppercase mr-4">Atributos:</p>
+                    <p className="text-[12px] font-black text-[#5F665E] uppercase mr-4">Atributos:</p>
                     {studentHabilidades.length > 0 ? studentHabilidades.slice(0, 8).map((hab, i) => (
-                        <span key={i} className="text-[13px] font-bold text-slate-600 px-2 py-1 bg-white border border-slate-200 rounded-md shadow-sm">
+                        <span key={i} className="text-[13px] font-bold text-[#2E3330] px-2 py-1 bg-white border border-[rgba(46,51,48,0.08)] rounded-md shadow-sm">
                             {hab.text}
                         </span>
-                    )) : <span className="text-[13px] italic text-slate-400">Sin atributos registrados</span>}
+                    )) : <span className="text-[13px] italic text-[#5F665E]/60">Sin atributos registrados</span>}
                 </div>
             </div>
 
-            <section className="space-y-6 bg-slate-50/20 p-6 rounded-2xl border border-slate-100">
-                <h3 className="text-[13px] font-black uppercase tracking-[0.3em] text-slate-400 text-center">Itinerario Académico</h3>
-                <div className="overflow-x-auto rounded-2xl border border-slate-200/60 bg-white shadow-sm">
-                    <table className="w-full border-collapse text-left text-sm text-slate-700">
-                        <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wider text-slate-500 border-b border-slate-200">
+            <section className="space-y-6 bg-transparent p-0 mt-6">
+                <h3 className="text-[13px] font-black uppercase tracking-[0.3em] text-[#5F665E] text-center">Itinerario Académico</h3>
+                <div className="overflow-x-auto rounded-[16px] border border-[rgba(46,51,48,0.08)] bg-white shadow-sm">
+                    <table className="w-full border-collapse text-left text-sm text-[#2E3330]">
+                        <thead className="bg-[#F8F3ED] text-[11px] font-black uppercase tracking-wider text-[#2E3330] border-b border-[rgba(46,51,48,0.08)]">
                             <tr>
                                 <th scope="col" className="px-6 py-4">Actividad</th>
                                 <th scope="col" className="px-6 py-4">Competencia Evaluada</th>
@@ -198,7 +198,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                 <th scope="col" className="px-6 py-4 w-1/2">Indicador de Logro</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-[rgba(46,51,48,0.04)]">
                             {actividadesPeriodo.length > 0 ? (
                                 actividadesPeriodo.map((act) => {
                                     const calif = state.calificaciones.find(
@@ -209,17 +209,17 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                     const descriptors = getDescriptorTexts(est.id, act.id);
 
                                     return (
-                                        <tr key={act.id} className="hover:bg-slate-50/50 transition-colors duration-150">
+                                        <tr key={act.id} className="hover:bg-[#F8F3ED] transition-colors duration-150 border-b border-[rgba(46,51,48,0.04)]">
                                             <td className="px-6 py-4">
-                                                <div className="font-bold text-slate-900 text-[14px]">{act.nombre}</div>
-                                                <div className="text-[11px] font-black text-slate-400 uppercase mt-0.5">{act.fecha}</div>
+                                                <div className="font-bold text-[#2E3330] text-[14px]">{act.nombre}</div>
+                                                <div className="text-[11px] font-black text-[#5F665E] uppercase mt-0.5">{act.fecha}</div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {(act.bcAsignados || ['BC1']).map((bc: string) => (
                                                         <span 
                                                             key={bc} 
-                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider bg-sky-50 text-sky-700 border border-sky-100"
+                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider bg-[#FDFBF7] text-[#7A8D69] border border-[rgba(46,51,48,0.08)]"
                                                             title={bc}
                                                         >
                                                             {getCompetenciaDisplay(bc)}
@@ -231,33 +231,33 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                                 {isEvaluated ? (
                                                     <span className={`inline-flex items-center justify-center font-black text-[14px] px-2.5 py-1 rounded-lg ${
                                                         score! >= 90 
-                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                                                            ? 'bg-[#FDFBF7] text-[#7A8D69] border border-[#7A8D69]/20' 
                                                             : score! >= 70 
-                                                            ? 'bg-amber-50 text-amber-700 border border-amber-100' 
-                                                            : 'bg-rose-50 text-rose-700 border border-rose-100'
+                                                            ? 'bg-[#FDFBF7] text-[#EB8847] border border-[#EB8847]/20' 
+                                                            : 'bg-[#FDFBF7] text-[#B87449] border border-[#B87449]/20'
                                                     }`}>
                                                         {score}%
                                                     </span>
                                                 ) : (
-                                                    <span className="text-slate-300 font-bold text-[13px]">-</span>
+                                                    <span className="text-[#5F665E]/40 font-bold text-[13px]">-</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-slate-600 whitespace-normal wrap-break-word leading-relaxed text-[13px] font-medium">
+                                            <td className="px-6 py-4 text-[#5F665E] whitespace-normal wrap-break-word leading-relaxed text-[13px] font-medium">
                                                 {isEvaluated && descriptors.length > 0 ? (
                                                     <div className="space-y-1">
                                                         {descriptors.map((desc, idx) => {
                                                             const isHeader = desc === 'Cumple:' || desc === 'No cumple:';
                                                             return isHeader ? (
-                                                                <div key={idx} className="font-bold text-slate-800 pt-1.5 first:pt-0">{desc}</div>
+                                                                <div key={idx} className="font-bold text-[#2E3330] pt-1.5 first:pt-0">{desc}</div>
                                                             ) : (
                                                                 <div key={idx} className="pl-3">{desc}</div>
                                                             );
                                                         })}
                                                     </div>
                                                 ) : isEvaluated ? (
-                                                    <span className="text-slate-400 italic">Sin descriptores registrados</span>
+                                                    <span className="text-[#5F665E]/60 italic">Sin descriptores registrados</span>
                                                 ) : (
-                                                    <span className="text-amber-600/80 font-semibold italic bg-amber-50/50 px-2 py-0.5 rounded border border-amber-100/50 text-[12px]">
+                                                    <span className="text-[#EB8847] font-semibold italic bg-[#FDFBF7] px-2 py-0.5 rounded border border-[#EB8847]/20 text-[12px]">
                                                         Pendiente de evaluación
                                                     </span>
                                                 )}
@@ -267,7 +267,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-slate-400 text-[13px] font-bold uppercase tracking-wider bg-slate-50/10">
+                                    <td colSpan={4} className="px-6 py-12 text-center text-[#5F665E] text-[13px] font-bold uppercase tracking-wider bg-[#F8F3ED]">
                                         Sin actividades registradas en este periodo
                                     </td>
                                 </tr>
@@ -277,31 +277,31 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 </div>
             </section>
 
-            <div className="grid grid-cols-12 gap-8 pt-6 border-t border-slate-100">
+            <div className="grid grid-cols-12 gap-8 pt-6 border-t border-[rgba(46,51,48,0.08)]">
                 <div className="col-span-6 space-y-4 min-h-65">
-                    <h3 className="text-[13px] font-black uppercase tracking-widest text-slate-400">Bitácora de Convivencia</h3>
+                    <h3 className="text-[13px] font-black uppercase tracking-widest text-[#5F665E]">Bitácora de Convivencia</h3>
                     <div className="space-y-2.5 pr-1 max-h-55 overflow-y-auto no-scrollbar">
                         {incidenciasEstudiante.length > 0 ? incidenciasEstudiante.map((inc, i) => (
-                            <div key={i} className="bg-slate-50/50 p-3.5 rounded-xl border border-slate-100 flex gap-4 items-start">
+                            <div key={i} className="bg-[#F8F3ED] p-3.5 rounded-[12px] border border-[rgba(46,51,48,0.04)] flex gap-4 items-start">
                                 <div className="text-center min-w-15">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase">{inc.fecha}</p>
-                                    <span className="text-[12px] font-black text-golden-orange-base uppercase">{inc.categoria}</span>
+                                    <p className="text-[9px] font-black text-[#5F665E] uppercase">{inc.fecha}</p>
+                                    <span className="text-[12px] font-black text-[#EB8847] uppercase">{inc.categoria}</span>
                                 </div>
-                                <div className="flex-1 border-l border-slate-200 pl-4">
-                                    <p className="text-[13px] text-slate-700 leading-tight font-medium italic">"{inc.descripcion}"</p>
+                                <div className="flex-1 border-l border-[rgba(46,51,48,0.08)] pl-4">
+                                    <p className="text-[13px] text-[#2E3330] leading-tight font-medium italic">"{inc.descripcion}"</p>
                                 </div>
                             </div>
                         )) : (
-                            <p className="text-[14px] text-slate-300 italic py-4">No existen registros de convivencia para este periodo.</p>
+                            <p className="text-[14px] text-[#5F665E]/60 italic py-4">No existen registros de convivencia para este periodo.</p>
                         )}
                     </div>
                 </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-50 flex justify-between items-center opacity-40 select-none">
-                <p className="text-[12px] font-black uppercase text-slate-300 tracking-[0.3em]">Registro Oficial Noether Academia v3.2</p>
-                <div className="w-20 h-0.5 bg-slate-100"></div>
-                <p className="text-[12px] font-black uppercase text-slate-300 tracking-[0.3em]">Validación: {new Date().toLocaleDateString()}</p>
+            <div className="pt-4 border-t border-[rgba(46,51,48,0.04)] flex justify-between items-center opacity-40 select-none">
+                <p className="text-[12px] font-black uppercase text-[#5F665E] tracking-[0.3em]">Registro Oficial Noether Academia v3.2</p>
+                <div className="w-20 h-0.5 bg-[rgba(46,51,48,0.08)]"></div>
+                <p className="text-[12px] font-black uppercase text-[#5F665E] tracking-[0.3em]">Validación: {new Date().toLocaleDateString()}</p>
             </div>
         </div>
     );

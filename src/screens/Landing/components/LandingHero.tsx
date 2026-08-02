@@ -26,7 +26,7 @@ export function LandingHero() {
       {/* Background ambient glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#E88C6B]/10 rounded-full blur-[120px] pointer-events-none -z-10" />
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#86A792]/10 rounded-full blur-[100px] pointer-events-none -z-10" />
-      
+
       <div className="max-w-7xl mx-auto px-6 text-center z-10 w-full relative">
         <motion.div
           variants={containerVariants}
@@ -43,22 +43,21 @@ export function LandingHero() {
             </div>
           </motion.div>
 
-          <motion.h1 
+          <motion.h1
             variants={itemVariants}
             className="text-4xl sm:text-5xl md:text-7xl lg:text-[5rem] font-black text-[#2E3330] tracking-tighter leading-[1.1] mb-6 md:mb-8"
           >
-            Evaluación inteligente para{' '}
+            Evaluación por competencias para{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7A8D69] to-[#6C7E5C]">
               instituciones de vanguardia.
             </span>
           </motion.h1>
 
-          <motion.p 
+          <motion.p
             variants={itemVariants}
             className="text-slate-500 font-medium text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            CIELO transforma la gestión académica y el registro anecdótico en una experiencia fluida, 
-            centrada en el aprendizaje real y el desarrollo de competencias.
+            La evaluación por competencias ya forma parte del modelo educativo, pero muchos docentes aún carecen de las herramientas necesarias para aplicarla correctamente. CIELO nació para cerrar esa brecha.
           </motion.p>
 
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -73,7 +72,7 @@ export function LandingHero() {
       </div>
 
       {/* Grid Pattern Overlay */}
-      <div 
+      <div
         className="absolute inset-0 pointer-events-none opacity-20 -z-20"
         style={{
           backgroundImage: `linear-gradient(rgba(46,51,48,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(46,51,48,0.1) 1px, transparent 1px)`,

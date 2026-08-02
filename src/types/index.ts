@@ -23,9 +23,9 @@ export interface PresenceUser {
 
 export const COMPETENCIAS_LABEL = {
   BC1: "Comunicativa",
-  BC2: "Pensamiento lógico, creativo y crítico; resolución de problemas",
-  BC3: "Científica y tecnológica; ambiental y de la salud",
-  BC4: "Desarrollo personal y espiritual; ética y ciudadana",
+  BC2: "Científica y tecnológica; ambiental y de la salud",
+  BC3: "Desarrollo personal y espiritual; ética y ciudadana",
+  BC4: "Pensamiento lógico, creativo y crítico; resolución de problemas",
 } as const;
 
 export type Competencia = keyof typeof COMPETENCIAS_LABEL;
