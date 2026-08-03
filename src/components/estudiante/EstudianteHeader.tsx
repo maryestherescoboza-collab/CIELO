@@ -6,6 +6,7 @@ interface EstudianteHeaderProps {
     activeTab: 'Perfil' | 'Evaluación';
     setActiveTab: (t: 'Perfil' | 'Evaluación') => void;
     onBack: () => void;
+    isTutor?: boolean;
 }
 
 const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
@@ -13,7 +14,8 @@ const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
     setPeriodo,
     activeTab,
     setActiveTab,
-    onBack
+    onBack,
+    isTutor = false
 }) => {
     return (
         <>
@@ -38,7 +40,7 @@ const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
             </div>
 
             <div className="w-[98%] max-w-310 flex items-end px-4 gap-2 transform translate-y-px">
-                {(['Perfil', 'Evaluación'] as const).map((tab) => (
+                {(['Perfil', ...(isTutor ? ['Evaluación'] : [])] as const).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}

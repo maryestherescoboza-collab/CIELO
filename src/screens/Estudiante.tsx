@@ -19,6 +19,11 @@ export default function Estudiante() {
     } = useAppStore();
     const selectedId = Number(id) || selectedEstudianteId || (state.estudiantes && state.estudiantes.length > 0 ? state.estudiantes[0].id : 0);
 
+    const estBase = state.estudiantes.find(e => e.id === selectedId);
+    const cursoBase = estBase ? state.cursos.find(c => c.id === estBase.cursoId) : null;
+    const currentCourseRole = state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoBase?.id && cd.userId === session?.user?.id);
+    const isTutor = !currentCourseRole || currentCourseRole.rol === 'tutor' || currentCourseRole.esTutor;
+
     const {
         periodo,
         setPeriodo,
@@ -31,9 +36,17 @@ export default function Estudiante() {
         rankingPeriodo,
         actividadesPeriodo,
         incidenciasEstudiante
-    } = useEstudianteData({ state, selectedId });
+    } = useEstudianteData({ 
+        state, 
+        selectedId, 
+        currentCourseRole,
+        currentUserId: session?.user?.id
+    });
 
-    const currentCourseRole = state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === curso?.id && cd.userId === session?.user?.id);
+    // Enforce role restrictions on tabs
+    if (!isTutor && activeTab === 'Evaluación') {
+        setActiveTab('Perfil');
+    }
 
 
     // ── Optimized: Pre-calculate all grades and recuperations for O(1) table cell rendering ──
@@ -192,6 +205,7 @@ export default function Estudiante() {
                 activeTab={activeTab} 
                 setActiveTab={setActiveTab} 
                 onBack={() => navigate('/cursos')} 
+                isTutor={isTutor}
             />
 
             <div className="w-[98%] max-w-310 bg-[#FDFBF7] shadow-sm border border-[rgba(46,51,48,0.08)] rounded-[20px] p-6 relative">
@@ -206,10 +220,11 @@ export default function Estudiante() {
                         actividadesPeriodo={actividadesPeriodo}
                         incidenciasEstudiante={incidenciasEstudiante}
                         state={state}
+                        currentAsignatura={currentCourseRole?.asignatura || curso?.asignatura}
                     />
                 )}
 
-                {activeTab === 'Evaluación' && (
+                {activeTab === 'Evaluación' && isTutor && (
                     <div className="space-y-6 animate-in fade-in duration-500">
                         <div className="flex justify-between items-center border-b pb-5 border-[rgba(46,51,48,0.08)]">
                             <div>

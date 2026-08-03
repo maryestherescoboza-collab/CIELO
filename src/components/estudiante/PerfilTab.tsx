@@ -13,6 +13,7 @@ interface PerfilTabProps {
     actividadesPeriodo: any[];
     incidenciasEstudiante: any[];
     state: AppState;
+    currentAsignatura?: string;
 }
 
 const PerfilTab: React.FC<PerfilTabProps> = ({
@@ -24,7 +25,8 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
     studentHabilidades,
     actividadesPeriodo,
     incidenciasEstudiante,
-    state
+    state,
+    currentAsignatura
 }) => {
     // Helper to get descriptors dynamically based on evaluation type
     const getDescriptorTexts = (studentId: number, actividadId: number): string[] => {
@@ -151,7 +153,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                         )}
                         <h1 className="text-[26px] font-black text-[#2E3330] tracking-tight">{est.nombre} {est.apellido}</h1>
                         <div className="flex gap-4 text-[14px] font-bold text-[#5F665E] uppercase tracking-widest">
-                            <span>{getAsignaturaNombre(curso?.asignatura)}</span>
+                            <span>{getAsignaturaNombre(currentAsignatura || curso?.asignatura)}</span>
                             <span>•</span>
                             <span>Periodo {periodo}</span>
                             <span>•</span>
