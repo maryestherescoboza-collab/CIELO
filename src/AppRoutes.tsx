@@ -19,6 +19,7 @@ import CalificacionesAnuales from './screens/CalificacionesAnuales';
 import ProfileSettings from './screens/ProfileSettings';
 import ResetPassword from './screens/ResetPassword';
 import PrintBoletines from './screens/PrintBoletines';
+import Suscripcion from './screens/Suscripcion';
 import { BookOpen } from 'lucide-react';
 
 const CourseDetailRouteWrapper: React.FC<{
@@ -304,6 +305,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           centro={currentUserProfile?.centro}
         />
       } />
+      <Route path="/suscripcion" element={<Suscripcion />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={
         <div className="p-8 text-center bg-amber-50 border border-amber-200 rounded-3xl text-amber-800">

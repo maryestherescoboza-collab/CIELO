@@ -1,20 +1,30 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '../../../store/appStore';
+import { usePremiumAccess } from '../hooks/usePremiumAccess';
+import { Loader2 } from 'lucide-react';
 
-export function LandingPricing() {
-  const navigate = useNavigate();
-  const { session } = useAppStore();
+export default function Suscripcion() {
+  const { hasPremium, isDirector, suscripcionActual } = usePremiumAccess();
+  const [docentes, setDocentes] = useState<number>(25);
+  const [loadingPlan, setLoadingPlan] = useState<'docente' | 'institucion' | null>(null);
 
-  const handlePlanSelection = (plan: 'individual' | 'institucional') => {
-    if (session) {
-      navigate(`/suscripcion?plan=${plan}`);
-    } else {
-      navigate(`/auth?plan=${plan}`);
+  const handleSubscribe = async (plan: 'docente' | 'institucion') => {
+    setLoadingPlan(plan);
+    try {
+      // Aquí se integraría la llamada real a la API de Tilopay para generar el link de pago
+      // Tilopay devuelve un URL, al cual redirigimos al usuario.
+      
+      // Simulando llamada a API...
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      alert(`Redirigiendo a pasarela de pago Tilopay para el plan ${plan.toUpperCase()}...`);
+    } catch (error) {
+      console.error(error);
+      alert('Hubo un error al procesar la solicitud.');
+    } finally {
+      setLoadingPlan(null);
     }
   };
-  const [docentes, setDocentes] = useState<number>(25);
 
   const planDocente = {
     name: 'Docente Independiente',
@@ -51,16 +61,65 @@ export function LandingPricing() {
   const anual = mensual * 12;
 
   return (
-    <section className="py-12 md:py-16 bg-[#FCFBFA] relative">
-      <div className="w-[90%] max-w-250 mx-auto relative z-10">
+    <div className="min-h-screen bg-[#FCFBFA] pt-6 pb-20 px-4 md:px-8">
+      {hasPremium && suscripcionActual ? (
+        <div className="max-w-4xl mx-auto mb-8 bg-green-50 border border-green-200 rounded-2xl p-6 flex items-start gap-4">
+          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+            <span className="text-green-600 font-bold text-xl">✓</span>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-green-900 mb-1">
+              Acceso Premium Activo ({suscripcionActual.tipo === 'institucional' ? 'Institucional' : 'Individual'})
+            </h3>
+            {suscripcionActual.tipo === 'institucional' ? (
+              <p className="text-green-700 text-sm">
+                Tienes acceso completo provisto por tu centro educativo.
+              </p>
+            ) : (
+              <p className="text-green-700 text-sm">
+                Tu plan de Docente Independiente está activo. Disfrutas de todas las herramientas avanzadas.
+              </p>
+            )}
+            <div className="mt-4 flex gap-3">
+              <button className="px-4 py-2 bg-white border border-green-200 text-green-700 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-green-50">
+                Gestionar Suscripción
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : suscripcionActual && suscripcionActual.estado === 'pendiente' ? (
+        <div className="max-w-4xl mx-auto mb-8 bg-yellow-50 border border-yellow-200 rounded-2xl p-6 flex items-start gap-4">
+          <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center shrink-0">
+            <span className="text-yellow-600 font-bold text-xl">!</span>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-yellow-900 mb-1">
+              Suscripción Pendiente de Pago
+            </h3>
+            <p className="text-yellow-700 text-sm">
+              Tienes una suscripción {suscripcionActual.tipo} iniciada. Completa el pago para activar tu cuenta premium.
+            </p>
+            <div className="mt-4 flex gap-3">
+              <button 
+                onClick={() => handleSubscribe(suscripcionActual.tipo === 'institucional' ? 'institucion' : 'docente')}
+                disabled={loadingPlan !== null}
+                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+              >
+                {loadingPlan !== null ? <Loader2 size={14} className="animate-spin" /> : 'Pagar Ahora (Tilopay)'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
+      <div className="w-full max-w-5xl mx-auto relative z-10">
         {/* Header Section */}
         <div className="text-center mb-8 max-w-2xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-light text-zinc-900 tracking-tight mb-2">
             Planes diseñados para tu realidad.
           </h2>
-          <p className="text-zinc-500 text-xs">
-            Empieza a evaluar por competencias hoy mismo, ya sea de forma individual o institucional.
+          <p className="text-zinc-500 text-sm">
+            Elige el plan ideal para continuar utilizando todas las funcionalidades avanzadas de evaluación por competencias.
           </p>
         </div>
 
@@ -113,9 +172,19 @@ export function LandingPricing() {
                 <p className="text-[10px] text-zinc-400 italic leading-relaxed mb-4">
                   {planDocente.secondary}
                 </p>
-                <button onClick={() => handlePlanSelection('individual')} className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 text-xs font-medium tracking-widest uppercase hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] transition-all duration-200">
-                  Comenzar ahora
-                </button>
+                {hasPremium && suscripcionActual?.tipo === 'individual' ? (
+                  <button disabled className="w-full py-2.5 px-4 bg-green-50 border border-green-200 text-green-600 text-xs font-medium tracking-widest uppercase">
+                    Plan Actual
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => handleSubscribe('docente')}
+                    disabled={loadingPlan !== null || hasPremium}
+                    className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 text-xs font-medium tracking-widest uppercase hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] transition-all duration-200 flex justify-center items-center gap-2 disabled:opacity-50"
+                  >
+                    {loadingPlan === 'docente' ? <Loader2 size={16} className="animate-spin" /> : 'Comprar Plan'}
+                  </button>
+                )}
               </div>
             </motion.div>
 
@@ -161,8 +230,6 @@ export function LandingPricing() {
 
               {/* Bottom part: Calculator, Secondary & Button */}
               <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-
-                {/* Calculadora Integrada */}
                 <div className="border border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/80 rounded p-3 mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-medium text-zinc-500">Número de docentes</span>
@@ -174,7 +241,6 @@ export function LandingPricing() {
                       className="w-14 px-1.5 py-0.5 bg-white border border-dashed border-[rgba(120,135,110,0.3)] rounded text-right text-[11px] font-semibold text-zinc-800 focus:outline-none"
                     />
                   </div>
-
                   <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-[rgba(120,135,110,0.2)]">
                     <div>
                       <span className="text-[9px] text-zinc-400 uppercase tracking-wider block">Mensual</span>
@@ -191,33 +257,28 @@ export function LandingPricing() {
                   {planInst.secondary}
                 </p>
 
-                <button onClick={() => handlePlanSelection('institucional')} className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 text-xs font-medium tracking-widest uppercase hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] transition-all duration-200">
-                  Comenzar ahora
-                </button>
+                {hasPremium && suscripcionActual?.tipo === 'institucional' ? (
+                  <button disabled className="w-full py-2.5 px-4 bg-green-50 border border-green-200 text-green-600 text-xs font-medium tracking-widest uppercase">
+                    Plan Actual
+                  </button>
+                ) : isDirector ? (
+                  <button 
+                    onClick={() => handleSubscribe('institucion')}
+                    disabled={loadingPlan !== null}
+                    className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 text-xs font-medium tracking-widest uppercase hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] transition-all duration-200 flex justify-center items-center gap-2"
+                  >
+                    {loadingPlan === 'institucion' ? <Loader2 size={16} className="animate-spin" /> : 'Pagar Institucional'}
+                  </button>
+                ) : (
+                  <button disabled className="w-full py-2.5 px-4 bg-slate-50 border border-dashed border-slate-200 text-slate-400 text-xs font-medium tracking-widest uppercase">
+                    Solo para Directores
+                  </button>
+                )}
               </div>
             </motion.div>
-
           </div>
-
-          {/* Footer Area inside the grid */}
-          <div className="border-t border-dashed border-[rgba(120,135,110,0.25)] p-6 bg-[#FCFAF7]/40 text-center">
-            <span className="inline-block border border-dashed border-[rgba(120,135,110,0.35)] text-zinc-500 text-[9px] uppercase tracking-widest px-2.5 py-0.5 rounded-full mb-3">
-              Precio de Lanzamiento
-            </span>
-            <p className="text-[10px] text-zinc-400 leading-relaxed mb-1.5 max-w-2xl mx-auto">
-              Los precios actuales corresponden a la etapa inicial del proyecto. CIELO continuará evolucionando mediante actualizaciones constantes, nuevas funcionalidades y mejoras continuas.
-            </p>
-            <p className="text-[10px] text-zinc-400 leading-relaxed mb-2.5 max-w-2xl mx-auto">
-              Los usuarios que se registren durante esta etapa conservarán permanentemente el precio vigente al momento de su suscripción.
-            </p>
-            <p className="text-[10px] font-medium text-zinc-600">
-              El valor del servicio podría aumentar un 75 % si decides comprar en el futuro.
-            </p>
-          </div>
-
         </div>
-
       </div>
-    </section>
+    </div>
   );
 }

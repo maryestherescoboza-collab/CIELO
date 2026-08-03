@@ -311,6 +311,7 @@ export default function Layout({
                 saveBio={saveBio}
                 bioSaving={bioSaving}
                 onOpenSettings={onOpenSettings}
+                onOpenSuscripcion={() => navigate('/suscripcion')}
                 setShowResetModal={setShowResetModal}
                 onLogout={onLogout}
                 logros={logrosPedagogicos}

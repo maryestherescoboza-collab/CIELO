@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Mail, Lock, Loader2, User, Building2, BookOpen, Check, ArrowRight } from 'lucide-react';
-import type { Curso } from '../types';
+import { Mail, Lock, Loader2, User, ArrowRight } from 'lucide-react';
 import logo from '../assets/logo.png';
-import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
 
 interface AuthProps {
   onAuthSuccess: () => void;
@@ -11,16 +9,12 @@ interface AuthProps {
 
 // Lista removida, se usa ASIGNATURAS_CATALOGO importado
 
-export default function Auth({ onAuthSuccess }: AuthProps) {
+const Auth = ({ onAuthSuccess }: AuthProps) => {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nombreDocente, setNombreDocente] = useState('');
-  const [institucion, setInstitucion] = useState('');
-  const [tipoInstitucion, setTipoInstitucion] = useState<'publica' | 'privada' | ''>('publica');
-  const [asignaturasSeleccionadas, setAsignaturasSeleccionadas] = useState<string[]>([]);
-  const [showAsignaturas, setShowAsignaturas] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Password recovery states
@@ -28,111 +22,15 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
 
-  // New state for institution and course linking
-  const [existingCourses, setExistingCourses] = useState<Curso[]>([]);
-  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
-  const [asignaturasPorCurso] = useState<Record<number, string[]>>({});
-  const [institucionesDisponibles, setInstitucionesDisponibles] = useState<string[]>([]);
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const linkId = params.get('vincular');
-    if (linkId) {
+    const plan = params.get('plan');
+    if (plan) {
       setIsSignUp(true);
-      setSelectedCourseId(Number(linkId));
-
-      // Fetch the institution for this course and auto-fill it
-      supabase.from('cursos').select('user_id').eq('id', linkId).single().then(({ data }) => {
-        if (data && data.user_id) {
-          supabase.from('perfiles').select('institucion, tipo_institucion').eq('user_id', data.user_id).single().then(({ data: profileData }) => {
-            if (profileData) {
-              if (profileData.institucion) setInstitucion(profileData.institucion);
-              if (profileData.tipo_institucion) setTipoInstitucion(profileData.tipo_institucion as any);
-            }
-          });
-        }
-      });
+      // Guardar el plan en localStorage temporalmente para recogerlo tras registrarse
+      localStorage.setItem('onboardingPlan', plan);
     }
   }, []);
-
-  useEffect(() => {
-    if (isSignUp && institucionesDisponibles.length === 0) {
-      Promise.all([
-        supabase.from('centros').select('nombre'),
-        supabase.from('perfiles').select('instituto, institucion')
-      ]).then(([{ data: instData }, { data: perfData }]) => {
-        const names = new Set<string>();
-        if (instData) {
-          instData.forEach(i => { if (i.nombre) names.add(i.nombre.trim()); });
-        }
-        if (perfData) {
-          perfData.forEach(p => {
-            if (p.instituto) names.add(p.instituto.trim());
-            if (p.institucion) names.add(p.institucion.trim());
-          });
-        }
-        setInstitucionesDisponibles(Array.from(names).filter(Boolean));
-      }).catch(err => {
-        console.error('Error fetching institutions:', err);
-      });
-    }
-  }, [isSignUp, institucionesDisponibles.length]);
-
-  useEffect(() => {
-    if (isSignUp && institucion.trim().length > 3) {
-      const timer = setTimeout(() => {
-        checkInstitution(institucion.trim());
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setExistingCourses([]);
-      if (!new URLSearchParams(window.location.search).get('vincular')) {
-        setSelectedCourseId(null);
-      }
-    }
-  }, [institucion, isSignUp]);
-
-  const checkInstitution = async (name: string) => {
-    try {
-      const { data: profiles, error: profileErr } = await supabase
-        .from('perfiles')
-        .select('user_id, institucion')
-        .ilike('institucion', name);
-
-      if (profileErr) throw profileErr;
-
-      if (profiles && profiles.length > 0) {
-        const userIds = profiles.map(p => p.user_id);
-        const { data: courses, error: courseErr } = await supabase
-          .from('cursos')
-          .select('*')
-          .in('user_id', userIds);
-
-        if (courseErr) throw courseErr;
-
-        const mappedCourses: Curso[] = (courses || []).map((c: any) => ({
-          ...c,
-          diasSemana: c.dias_semana || [],
-          configuracionEvaluacion: c.configuracion_evaluacion
-        }));
-
-        setExistingCourses(mappedCourses);
-      } else {
-        setExistingCourses([]);
-      }
-    } catch (err) {
-      console.error("Error checking institution:", err);
-    } finally {
-      // isVerifying check removed
-    }
-  };
-
-  const toggleAsignatura = (asig: string) => {
-    setAsignaturasSeleccionadas(prev =>
-      prev.includes(asig) ? prev.filter(a => a !== asig) : [...prev, asig]
-    );
-  };
-
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,28 +39,14 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
 
     try {
       if (isSignUp) {
-        // Validaciones previas requeridas
         if (!nombreDocente.trim()) throw new Error('Por favor ingresa tu nombre completo.');
-        if (!institucion.trim()) throw new Error('Por favor ingresa el nombre de tu centro educativo.');
-        if (!tipoInstitucion) throw new Error('Por favor selecciona el tipo de institución.');
-        if (asignaturasSeleccionadas.length === 0) throw new Error('Por favor selecciona al menos una asignatura.');
 
-        // Evitar duplicados ignorando mayúsculas, minúsculas y espacios múltiples
-        const normalizedInput = institucion.trim().replace(/\s+/g, ' ');
-        const existingMatch = institucionesDisponibles.find(
-          name => name.trim().replace(/\s+/g, ' ').toLowerCase() === normalizedInput.toLowerCase()
-        );
-        const finalInstitucionName = existingMatch ? existingMatch : normalizedInput;
-
-        // 1. Crear el usuario en Auth (Supabase maneja la unicidad del email internamente)
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
             data: {
-              nombre_docente: nombreDocente.trim(),
-              institucion: finalInstitucionName,
-              tipo_institucion: tipoInstitucion
+              nombre_docente: nombreDocente.trim()
             }
           }
         });
@@ -170,61 +54,18 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
         if (signUpError) throw signUpError;
         if (!authData.user) throw new Error('No se pudo crear el usuario.');
 
-        // 2. Registrar o buscar el Centro Educativo en la tabla centros
-        let finalCentroId: string | null = null;
-        try {
-          const { data: matchedCentros } = await supabase.from('centros').select('id, nombre');
-          const existingCentroMatch = matchedCentros?.find(
-            c => c.nombre.trim().replace(/\s+/g, ' ').toLowerCase() === finalInstitucionName.toLowerCase()
-          );
-
-          if (existingCentroMatch) {
-            finalCentroId = existingCentroMatch.id;
-          } else {
-            const { data: newCentro } = await supabase.from('centros').insert({
-              nombre: finalInstitucionName,
-              tanda: 'Jornada Extendida',
-              created_by: authData.user.id
-            }).select('id').single();
-            if (newCentro) finalCentroId = newCentro.id;
-          }
-        } catch (cErr) {
-          console.error("Error al registrar centro educativo:", cErr);
-        }
-
-        // 3. Insertar el Perfil linking to centro_id
+        // Insertar el Perfil inicial sin centro_id
         const { error: profileError } = await supabase.from('perfiles').upsert({
           user_id: authData.user.id,
           id: authData.user.id,
-          nombre: nombreDocente.trim(), // Campo canónico
-          nombre_docente: nombreDocente.trim(), // Campo heredado/redundante en uso
-          centro_id: finalCentroId,
-          tipo_institucion: tipoInstitucion,
-          asignaturas: asignaturasSeleccionadas,
-          avatar_color: '#3b82f6' // Color base sin lógica visual innecesaria
+          nombre: nombreDocente.trim(),
+          nombre_docente: nombreDocente.trim(),
+          avatar_color: '#3b82f6'
         }, { onConflict: 'user_id' });
 
         if (profileError) {
-          throw new Error(`Error al crear el perfil de usuario: ${profileError.message}`);
-        }
-
-        // 4. Vincular a curso como co-docente si corresponde
-        if (selectedCourseId) {
-          const course = existingCourses.find(c => c.id === selectedCourseId);
-          if (course) {
-            const subjects = asignaturasPorCurso[selectedCourseId] || asignaturasSeleccionadas;
-
-            const { error: linkError } = await supabase.from('curso_docentes').insert([{
-              curso_id: selectedCourseId,
-              docente_id: authData.user.id,
-              rol: 'co-docente',
-              asignatura: subjects.join(', ') || 'General'
-            }]);
-
-            if (linkError) {
-              console.warn("Error vinculando docente al curso:", linkError.message);
-            }
-          }
+          console.error("Error profile:", profileError);
+          // Ignoramos el error si el trigger handle_new_user ya lo creó
         }
 
         alert('¡Registro exitoso! Ya puedes iniciar sesión con tu cuenta.');
@@ -307,7 +148,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
             <img alt="Brand Logo" className="app-logo w-full h-full" src={logo} />
           </div>
           <div className="text-center">
-            <p className="text-xs font-bold tracking-tight text-[#716868] max-w-[280px] mx-auto">
+            <p className="text-xs font-bold tracking-tight text-[#716868] max-w-70 mx-auto">
               Portafolio docente enfocado en la evaluación por competencias
             </p>
           </div>
@@ -418,67 +259,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Centro educativo</label>
-                      <div className="relative">
-                        <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3E3838]/40" />
-                        <input
-                          type="text" required value={institucion} onChange={(e) => setInstitucion(e.target.value)}
-                          list="instituciones-registradas"
-                          className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none text-xs font-semibold text-[#3E3838] transition-all"
-                          placeholder="Nombre del centro educativo"
-                        />
-                        <datalist id="instituciones-registradas">
-                          {institucionesDisponibles.map(inst => (
-                            <option key={inst} value={inst} />
-                          ))}
-                        </datalist>
-                        {institucion.trim() && !institucionesDisponibles.some(name => name.trim().replace(/\s+/g, ' ').toLowerCase() === institucion.trim().replace(/\s+/g, ' ').toLowerCase()) && (
-                          <p className="text-[8px] font-bold text-[#689C63] uppercase tracking-widest ml-1 mt-1">
-                            Nuevo centro: "{institucion.trim()}"
-                          </p>
-                        )}
-                      </div>
-                    </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Asignaturas</label>
-                      <button type="button" onClick={() => setShowAsignaturas(!showAsignaturas)} className="w-full text-left px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-[#689C63] flex items-center justify-between">
-                        <span className="truncate">{asignaturasSeleccionadas.length === 0 ? 'Elegir asignaturas...' : `${asignaturasSeleccionadas.length} seleccionadas`}</span>
-                        <BookOpen size={14} className="text-[#3E3838]/30" />
-                      </button>
-                      {showAsignaturas && (
-                        <div className="grid grid-cols-1 gap-1 max-h-36 overflow-y-auto p-1.5 bg-slate-50 border border-slate-100 rounded-xl">
-                          {ASIGNATURAS_CATALOGO.map(asig => (
-                            <button key={asig.id} type="button" onClick={() => toggleAsignatura(asig.id)} className={`flex items-center gap-2 p-1.5 rounded-lg text-[10px] font-bold transition-all ${asignaturasSeleccionadas.includes(asig.id) ? 'bg-white text-[#689C63] shadow-sm' : 'text-[#3E3838]/50 hover:bg-white/50'}`}>
-                              <div className={`w-3 h-3 rounded border flex items-center justify-center ${asignaturasSeleccionadas.includes(asig.id) ? 'bg-[#689C63] border-[#689C63]' : 'border-slate-300'}`}>
-                                {asignaturasSeleccionadas.includes(asig.id) && <Check size={8} className="text-white" />}
-                              </div>
-                              {asig.nombre}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {existingCourses.length > 0 && (
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Curso a Vincular (Opcional)</label>
-                        <div className="relative">
-                          <BookOpen className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3E3838]/40" />
-                          <select
-                            className="w-full appearance-none pl-10 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none text-xs font-semibold text-[#3E3838] transition-all"
-                            value={selectedCourseId || ''}
-                            onChange={e => setSelectedCourseId(e.target.value ? parseInt(e.target.value, 10) : null)}
-                          >
-                            <option value="">No vincular a ningún curso</option>
-                            {existingCourses.map(c => (
-                              <option key={c.id} value={c.id}>{c.nombre} - {c.asignatura}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -552,4 +333,6 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
       />
     </div>
   );
-}
+};
+
+export default Auth;

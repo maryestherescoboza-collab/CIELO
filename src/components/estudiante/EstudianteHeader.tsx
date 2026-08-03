@@ -29,7 +29,7 @@ const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
                         <button 
                             key={p} 
                             onClick={() => setPeriodo(p)} 
-                            className={`px-[18px] py-[8px] min-h-[36px] leading-none rounded-full text-xs font-semibold tracking-[0.08em] transition-all ${periodo === p ? 'bg-white text-[#2E3330] shadow-sm border border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330]'}`}
+                            className={`px-4.5 py-2 min-h-9 leading-none rounded-full text-xs font-semibold tracking-[0.08em] transition-all ${periodo === p ? 'bg-white text-[#2E3330] shadow-sm border border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330]'}`}
                         >
                             {p}
                         </button>

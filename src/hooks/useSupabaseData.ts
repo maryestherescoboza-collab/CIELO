@@ -67,6 +67,8 @@ export function useSupabaseData() {
                 supabase.from('registros_anecdoticos').select('*').order('fecha', { ascending: false }),
                 supabase.from('registro_imagenes').select('*'),
                 supabase.from('historial_colaboradores').select('*'),
+                supabase.from('suscripciones').select('*'),
+                supabase.from('centro_roles').select('*'),
             ]);
 
             // Nombres de tabla para logging de errores
@@ -76,7 +78,8 @@ export function useSupabaseData() {
                 'docentes', 'evaluaciones_rubrica', 'evaluaciones_cotejo', 'criterios_cotejo',
                 'descriptores_rubrica', 'niveles_puntaje', 'plantillas', 'curso_detalle',
                 'post_likes', 'notificaciones', 'curso_docentes', 'grupos',
-                'registros_anecdoticos', 'registro_imagenes', 'historial_colaboradores'
+                'registros_anecdoticos', 'registro_imagenes', 'historial_colaboradores',
+                'suscripciones', 'centro_roles'
             ];
 
             // Detectar y reportar errores de consulta sin silenciarlos
@@ -117,6 +120,8 @@ export function useSupabaseData() {
             const registrosAnecdoticos = results[22].data;
             const registroImagenes = results[23].data;
             const historialColaboradores = results[24].data;
+            const suscripciones = results[25].data;
+            const centroRoles = results[26].data;
 
             const userLikedPostIds = new Set((postLikes || []).map((l: Record<string, unknown>) => l.post_id as number));
             const mappedPerfiles = (perfiles || []).map((p: Record<string, unknown>): UserProfile => {
@@ -156,6 +161,27 @@ export function useSupabaseData() {
                     publicacionesRealizadas: hist ? (hist.publicaciones_realizadas as number) : 0
                 };
             });
+
+            // Compute current subscription and role
+            const currentUserProfile = mappedPerfiles.find(p => p.userId === session.user.id);
+            const userCentroId = currentUserProfile?.centro_id;
+
+            let resolvedSuscripcionActual = undefined;
+            if (suscripciones && suscripciones.length > 0) {
+                const institucionales = suscripciones.filter(s => s.centro_id === userCentroId && s.tipo === 'institucional' && s.estado === 'activa');
+                const individuales = suscripciones.filter(s => s.user_id === session.user.id && s.tipo === 'individual' && s.estado === 'activa');
+                const promocionales = suscripciones.filter(s => s.user_id === session.user.id && s.tipo === 'promocional' && s.estado === 'activa');
+                
+                if (institucionales.length > 0) {
+                    resolvedSuscripcionActual = institucionales[0];
+                } else if (individuales.length > 0) {
+                    resolvedSuscripcionActual = individuales[0];
+                } else if (promocionales.length > 0) {
+                    resolvedSuscripcionActual = promocionales[0];
+                }
+            }
+            
+            const resolvedCentroRolActual = (centroRoles || []).find((cr: any) => cr.user_id === session.user.id && cr.centro_id === userCentroId);
 
             setState(prev => {
                 const mappedPosts = (posts || []).map((p: Record<string, unknown>): Post => {
@@ -428,6 +454,9 @@ export function useSupabaseData() {
                     imagenUrl: ri.imagen_url as string,
                     createdAt: ri.created_at as string
                 })),
+                
+                suscripcionActual: resolvedSuscripcionActual,
+                centroRolActual: resolvedCentroRolActual
             };});
         } catch (error) {
             console.error('Error fetching data from Supabase:', error);

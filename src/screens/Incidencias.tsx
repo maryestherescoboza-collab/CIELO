@@ -131,15 +131,15 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                 <div className="max-w-full mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both space-y-3">
                     <div className="grid grid-cols-12 gap-3">
                     <div className="col-span-12 space-y-3 xl:col-span-4">
-                        <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] p-4 shadow-sm space-y-4.5">
+                        <div className="bg-white border border-[rgba(46,51,48,0.08)] rounded-[20px] p-4 shadow-sm space-y-4.5">
                             <div>
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-[#2E3330] mb-3">1. Estudiantes Vinculados</h3>
-                                <div className="flex items-center gap-3 px-5 rounded-full bg-[#FDFBF7] border border-slate-300 focus-within:border-[#7A8D69] focus-within:ring-2 focus-within:ring-[#7A8D69]/20 transition-all artisan-pill">
-                                    <Search size={16} className="text-slate-400" />
+                                <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white border border-[#7A8D69]/35 focus-within:border-[#7A8D69] transition-all artisan-pill">
+                                    <Search size={14} className="text-[#7D847A]" />
                                     <input
                                         type="text"
                                         placeholder="Buscar estudiante..."
-                                        className="bg-transparent border-none outline-none font-bold text-[#2E3330] text-xs w-full"
+                                        className="bg-transparent border-none outline-none font-bold text-[#2E3330] placeholder:text-[#7D847A] text-xs w-full"
                                         value={buscarEst}
                                         onChange={(e) => setBuscarEst(e.target.value)}
                                     />
@@ -184,7 +184,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                             <button
                                                 key={cat.key}
                                                 onClick={() => setCategoria(cat.key)}
-                                                className={`px-3 py-1 rounded-full border flex items-center gap-1.5 transition-all w-fit artisan-pill ${isSel ? 'bg-[#BFC9A6] border-slate-350 text-[#2E3330] shadow-sm' : 'bg-[#FDFBF7] border-slate-300 text-slate-600 hover:bg-[#FAF6F0]'}`}
+                                                className={`px-3 py-1 rounded-full border flex items-center gap-1.5 transition-all w-fit artisan-pill ${isSel ? 'bg-[#BFC9A6] border-[#7A8D69] text-[#2E3330] shadow-sm' : 'bg-white border-[#7A8D69]/35 text-[#5F665E] hover:bg-[#F9F8F6] hover:border-[#7A8D69]'}`}
                                             >
                                                 <Icon size={13} className={isSel ? 'text-[#2E3330]' : cat.iconColor} />
                                                 <span className="text-[9px] font-bold uppercase tracking-wider leading-tight">{cat.label}</span>
@@ -216,7 +216,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                     <textarea
                                         rows={3}
                                         placeholder="Describe de forma objetiva lo sucedido..."
-                                        className="w-full p-3 rounded-[15px] border border-slate-300 bg-[#FDFBF7] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20 transition-all resize-none"
+                                        className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#7A8D69]/35 bg-white text-[#2E3330] placeholder:text-[#7D847A] text-xs font-medium outline-none focus:border-[#7A8D69] transition-all resize-none"
                                         value={descripcion}
                                         onChange={(e) => setDescripcion(e.target.value)}
                                     />
@@ -226,7 +226,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                     <textarea
                                         rows={2}
                                         placeholder="Medidas adoptadas o compromisos del estudiante..."
-                                        className="w-full p-3 rounded-[15px] border border-slate-300 bg-[#FDFBF7] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20 transition-all resize-none"
+                                        className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#7A8D69]/35 bg-white text-[#2E3330] placeholder:text-[#7D847A] text-xs font-medium outline-none focus:border-[#7A8D69] transition-all resize-none"
                                         value={acuerdos}
                                         onChange={(e) => setAcuerdos(e.target.value)}
                                     />
@@ -244,8 +244,8 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                                 onClick={() => toggleAccion(accion)}
                                                 className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border artisan-pill ${
                                                     active
-                                                        ? 'bg-[#BFC9A6] border-slate-350 text-[#2E3330]'
-                                                        : 'bg-[#FDFBF7] border-slate-300 text-slate-500 hover:bg-[#FAF6F0]'
+                                                        ? 'bg-[#BFC9A6] border-[#7A8D69] text-[#2E3330]'
+                                                        : 'bg-white border-[#7A8D69]/35 text-[#5F665E] hover:bg-[#F9F8F6] hover:border-[#7A8D69]'
                                                 }`}
                                             >
                                                 {accion}
@@ -270,18 +270,18 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                         </div>
                     </div>
                     <div className="col-span-12 xl:col-span-8 space-y-3">
-                        <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] p-4 shadow-sm flex flex-col gap-3">
+                        <div className="bg-white border border-[rgba(46,51,48,0.08)] rounded-[20px] p-4 shadow-sm flex flex-col gap-3">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                                 <div>
                                     <h2 className="text-base font-black text-[#2E3330]">Bitácora de Acontecimientos</h2>
                                     <p className="text-[9px] text-[#5F665E] font-bold uppercase tracking-wider mt-0.5">Historial del Año Escolar en Curso</p>
                                 </div>
-                                <div className="w-full sm:w-64 bg-[#FDFBF7] border border-slate-300 rounded-full px-4 flex items-center gap-2.5 artisan-pill" style={{ height: '36px' }}>
-                                    <Search size={14} className="text-slate-400" />
+                                <div className="w-full sm:w-64 bg-white border border-[#7A8D69]/35 focus-within:border-[#7A8D69] rounded-full px-3.5 flex items-center gap-2 transition-all artisan-pill" style={{ height: '32px' }}>
+                                    <Search size={14} className="text-[#7D847A]" />
                                     <input
                                         type="text"
                                         placeholder="Buscar por estudiante..."
-                                        className="bg-transparent border-none outline-none font-bold text-[#2E3330] text-[10px] w-full uppercase tracking-[0.08em]"
+                                        className="bg-transparent border-none outline-none font-bold text-[#2E3330] placeholder:text-[#7D847A] text-[10px] w-full uppercase tracking-[0.08em]"
                                         value={buscarHist}
                                         onChange={(e) => setBuscarHist(e.target.value)}
                                     />

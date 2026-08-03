@@ -69,7 +69,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     </button>
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <span className="px-[14px] py-[4px] min-h-[24px] leading-none bg-[#7A8D69] text-white text-[10px] font-semibold uppercase tracking-[0.08em] rounded-full flex items-center justify-center">CURSO ACTIVO</span>
+                            <span className="px-3.5 py-1 min-h-6 leading-none bg-[#7A8D69] text-white text-[10px] font-semibold uppercase tracking-[0.08em] rounded-full flex items-center justify-center">CURSO ACTIVO</span>
                             <h1 className="text-3xl font-black text-[#2E3330] tracking-tighter uppercase italic">{curso?.grado} {curso?.seccion}</h1>
                         </div>
                         <p className="text-[#5F665E] font-semibold text-sm uppercase tracking-widest flex items-center gap-2">
@@ -84,7 +84,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <input
                             type="text"
                             placeholder="BUSCAR ESTUDIANTE..."
-                            className="pl-12 pr-6 py-[10px] min-h-[40px] bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-[#7A8D69]/10 focus:bg-white focus:border-[#7A8D69]/30 transition-all w-64 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
+                            className="pl-12 pr-6 py-2.5 min-h-10 bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-[#7A8D69]/10 focus:bg-white focus:border-[#7A8D69]/30 transition-all w-64 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
                             value={buscar}
                             onChange={(e) => setBuscar(e.target.value)}
                         />
@@ -93,7 +93,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     <button
                         onClick={onSave}
                         disabled={!isDirty || isSaving}
-                        className={`flex items-center gap-3 px-[18px] py-[8px] min-h-[40px] leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all border ${isSaving
+                        className={`flex items-center gap-3 px-4.5 py-2 min-h-10 leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all border ${isSaving
                                 ? 'bg-[#EB8847] border-[#EB8847] text-white cursor-wait shadow-sm'
                                 : isDirty
                                     ? 'bg-[#7A8D69] border-[#7A8D69] text-white hover:bg-[#6C7E5C] shadow-sm'
@@ -125,7 +125,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <button
                             key={p}
                             onClick={() => onPeriodoChange(p)}
-                            className={`px-[18px] py-[8px] min-h-[36px] leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all ${selectedPeriodo === p ? 'bg-white text-[#2E3330] shadow-sm border border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330] border border-transparent'}`}
+                            className={`px-4.5 py-2 min-h-9 leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all ${selectedPeriodo === p ? 'bg-white text-[#2E3330] shadow-sm border border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330] border border-transparent'}`}
                         >
                             {p}
                         </button>
@@ -134,18 +134,18 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 border-r border-[rgba(46,51,48,0.08)] pr-4 mr-2">
-                        <button onClick={onAddActividad} className="flex items-center gap-2 px-[18px] py-[8px] min-h-[36px] leading-none bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] hover:bg-[#F8F3ED] hover:text-[#2E3330] transition-all">
+                        <button onClick={onAddActividad} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] hover:bg-[#F8F3ED] hover:text-[#2E3330] transition-all">
                             + AGREGAR ACTIVIDAD
                         </button>
                         <button
                             onClick={() => setShowRecoveryOnly(!showRecoveryOnly)}
-                            className={`flex items-center gap-2 px-[18px] py-[8px] min-h-[36px] leading-none rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] transition-all border ${showRecoveryOnly ? 'bg-[#EB8847]/10 text-[#EB8847] border-[#EB8847]/30' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
+                            className={`flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] transition-all border ${showRecoveryOnly ? 'bg-[#EB8847]/10 text-[#EB8847] border-[#EB8847]/30' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
                         >
                             {showRecoveryOnly ? 'VER TODOS' : 'VER RIESGO'}
                         </button>
                         <button
                             onClick={() => setIsPointMode(!isPointMode)}
-                            className={`flex items-center gap-2 px-[18px] py-[8px] min-h-[36px] leading-none rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] transition-all border ${isPointMode ? 'bg-[#2E3330] text-white border-[#2E3330]' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
+                            className={`flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] transition-all border ${isPointMode ? 'bg-[#2E3330] text-white border-[#2E3330]' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
                         >
                             MODO PINCEL
                         </button>
@@ -186,10 +186,10 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button onClick={onShowVincular} className="flex items-center gap-2 px-[18px] py-[8px] min-h-[36px] leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330] transition-all shadow-sm active:scale-95">
+                        <button onClick={onShowVincular} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330] transition-all shadow-sm active:scale-95">
                             CARGA
                         </button>
-                        <button onClick={onShowEliminarEstudiantes} className="flex items-center gap-2 px-[18px] py-[8px] min-h-[36px] leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] text-[#EB8847] hover:border-[#EB8847]/30 hover:bg-[#EB8847]/10 transition-all shadow-sm active:scale-95">
+                        <button onClick={onShowEliminarEstudiantes} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] text-[#EB8847] hover:border-[#EB8847]/30 hover:bg-[#EB8847]/10 transition-all shadow-sm active:scale-95">
                             <UserMinus size={14} /> LIMPIAR
                         </button>
                     </div>

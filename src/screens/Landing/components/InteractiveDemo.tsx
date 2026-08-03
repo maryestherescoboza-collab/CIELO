@@ -22,7 +22,10 @@ export function InteractiveDemo() {
         </div>
 
         {/* Demo App Container */}
-        <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl border border-[rgba(46,51,48,0.08)] overflow-hidden flex flex-col h-[500px] md:h-[600px] w-full max-w-5xl mx-auto">
+        <div 
+          className="bg-white rounded-2xl md:rounded-3xl shadow-2xl border border-[rgba(46,51,48,0.08)] overflow-hidden flex flex-col w-full max-w-450 mx-auto"
+          style={{ transform: 'scale(0.92)', transformOrigin: 'top center' }}
+        >
           {/* Table Area / Simulator */}
           <div className="flex-1 overflow-hidden relative">
             <SimCursoDetalleComponent />

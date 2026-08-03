@@ -3,6 +3,7 @@ import { BookOpen, Calendar, ChevronDown, Maximize2, Minimize2, Plus, Trash2, X,
 import blueBookIcon from '../assets/book-blue.png';
 import purpleBookIcon from '../assets/book-purple.png';
 import type { Curso, Secuencia } from '../types';
+import { getPlanificacionDiariaTemplate } from '../templates/planificacion-diaria';
 
 import { useAppStore } from '../store/appStore';
 
@@ -35,6 +36,7 @@ function getDotCount(estado: Secuencia['estado']) {
 
 export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecuencia, onDeleteSecuencia, readOnly, initialDatos }: Props) {
     const state = useAppStore((s) => s.state);
+    const session = useAppStore((s) => s.session);
 
     if (readOnly && initialDatos) {
         return (
@@ -85,7 +87,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
     const [cursoSel, setCursoSel] = useState(state.cursos[0]?.id ?? 0);
     const [showModal, setShowModal] = useState(false);
-    const [importStep, setImportStep] = useState<'select' | 'html-form'>('select');
+    const [importStep, setImportStep] = useState<'select' | 'html-form' | 'select-template' | 'template-editor'>('select');
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [form, setForm] = useState<{
         titulo: string;
@@ -376,6 +378,23 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                     <span>{isPresenting ? 'Salir' : 'Presentar'}</span>
                                 </button>
 
+                                {viewerSeq.contenidoHtml?.includes('contenteditable="true"') && onUpdateSecuencia && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const container = document.getElementById('viewer-content-container');
+                                            if (container && onUpdateSecuencia) {
+                                                onUpdateSecuencia({ ...viewerSeq, contenidoHtml: container.innerHTML });
+                                                void handleCloseViewer();
+                                            }
+                                        }}
+                                        className="px-4.5 rounded-full bg-turf-green-base text-white text-[9px] font-bold uppercase tracking-[0.08em] shadow-sm hover:bg-turf-green-base/90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-turf-green-base/50 flex items-center gap-1.5 artisan-pill"
+                                        style={{ height: '36px' }}
+                                    >
+                                        Guardar
+                                    </button>
+                                )}
+
                                 {onDeleteSecuencia && (
                                     <button
                                         type="button"
@@ -406,6 +425,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                 <div className="w-full max-w-4xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-14">
                                     {viewerSeq.contenidoHtml ? (
                                         <div
+                                            id="viewer-content-container"
                                             className="prose prose-slate prose-lg mx-auto max-w-none text-slate-800 prose-headings:font-extrabold prose-headings:tracking-tight prose-headings:text-slate-900 prose-p:text-slate-600 prose-strong:text-slate-900 prose-code:text-emerald-600"
                                             dangerouslySetInnerHTML={{ __html: viewerSeq.contenidoHtml }}
                                         />
@@ -429,10 +449,11 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                 </div>
             )}
 
-            {showModal && (
-                <div className="fixed inset-0 z-120 flex items-center justify-center bg-slate-900/60 px-4 py-5 backdrop-blur-sm sm:p-8">
-                     <div className="w-full max-w-3xl overflow-hidden rounded-none border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200">
-                         <div className="flex items-center justify-between border-b border-slate-100 bg-white px-8 py-6">
+            {showModal && importStep !== 'template-editor' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm sm:p-6">
+                    <div className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+                        {/* Header del Modal */}
+                        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-8 py-6">
                              <div>
                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                                      Centro de Planificación
@@ -489,6 +510,21 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                          </h3>
                                          <p className="mt-2 text-xs font-medium text-slate-500 leading-relaxed">
                                              Diseñe y configure la secuencia estructurando manualmente el título, curso asignado y contenido HTML de la clase.
+                                         </p>
+                                     </button>
+
+                                     <button
+                                         onClick={() => {
+                                             setErrorMsg(null);
+                                             setImportStep('select-template');
+                                         }}
+                                         className="w-full text-left p-6 rounded-2xl border border-slate-200 bg-white hover:border-turf-green-base hover:bg-slate-50/50 transition-all cursor-pointer group"
+                                     >
+                                         <h3 className="text-sm font-black uppercase tracking-wider text-[#1E293B] group-hover:text-turf-green-base transition-colors">
+                                             Usar una plantilla
+                                         </h3>
+                                         <p className="mt-2 text-xs font-medium text-slate-500 leading-relaxed">
+                                             Seleccione una plantilla predefinida y deje que CIELO autocomplete su información para comenzar.
                                          </p>
                                      </button>
 
@@ -586,7 +622,129 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                  </div>
                              </>
                          )}
+
+                         {importStep === 'select-template' && (
+                             <div className="p-8 space-y-4">
+                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">
+                                     Plantillas Disponibles
+                                 </p>
+                                 <div className="grid gap-4">
+                                     <button
+                                         onClick={() => {
+                                             const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                             const centroNombre = session?.user?.user_metadata?.centro_nombre || 'Mi Centro'; // Simplified fallback
+                                             const codigoCentro = session?.user?.user_metadata?.codigo_centro || '';
+                                             const docenteNombre = session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
+                                             
+                                             const htmlContent = getPlanificacionDiariaTemplate({
+                                                 centro: centroNombre,
+                                                 codigoCentro: codigoCentro,
+                                                 docente: docenteNombre,
+                                                 asignatura: curso?.asignatura || '',
+                                                 grado: curso?.grado || '',
+                                                 seccion: curso?.seccion || '',
+                                                 fecha: form.fechaInicio
+                                             });
+
+                                             setForm(prev => ({
+                                                 ...prev,
+                                                 titulo: 'Planificación - ' + (curso?.asignatura || 'Clase'),
+                                                 contenidoHtml: htmlContent
+                                             }));
+                                             setImportStep('template-editor');
+                                         }}
+                                         className="w-full text-left p-6 rounded-2xl border border-slate-200 bg-white hover:border-turf-green-base hover:bg-slate-50/50 transition-all cursor-pointer group flex items-start gap-4"
+                                     >
+                                         <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 border border-blue-100">
+                                            <BookOpen size={24} className="text-blue-500" />
+                                         </div>
+                                         <div>
+                                            <h3 className="text-sm font-black uppercase tracking-wider text-[#1E293B] group-hover:text-turf-green-base transition-colors">
+                                                Planificación de Clase Diaria
+                                            </h3>
+                                            <p className="mt-1 text-xs font-medium text-slate-500 leading-relaxed">
+                                                Formato estándar MINERD para planificar el día a día, con secciones de inicio, desarrollo, cierre e indicadores de logro.
+                                            </p>
+                                         </div>
+                                     </button>
+                                 </div>
+                                 <div className="mt-6 pt-6 border-t border-slate-100 flex justify-start">
+                                     <button
+                                         type="button"
+                                         onClick={() => setImportStep('select')}
+                                         className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all"
+                                     >
+                                         Volver
+                                     </button>
+                                 </div>
+                             </div>
+                         )}
                      </div>
+                </div>
+            )}
+
+            {showModal && importStep === 'template-editor' && (
+                <div className="fixed inset-0 z-[100] bg-slate-50 flex flex-col w-full h-full">
+                    <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0 shadow-sm">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Título de la Planificación</label>
+                            <input 
+                                className="px-3 py-2 text-sm font-bold border border-slate-200 rounded-lg outline-none focus:border-turf-green-base w-72 transition-colors"
+                                value={form.titulo}
+                                onChange={e => setForm(prev => ({...prev, titulo: e.target.value}))}
+                                placeholder="Ej. Unidad 1 - Comprensión lectora"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Curso Vinculado</label>
+                            <select 
+                                className="px-3 py-2 text-sm font-bold border border-slate-200 rounded-lg outline-none focus:border-turf-green-base w-64 transition-colors"
+                                value={form.cursoId}
+                                onChange={e => setForm(prev => ({...prev, cursoId: Number(e.target.value)}))}
+                            >
+                                {state.cursos.map(c => <option key={c.id} value={c.id}>{getCursoLabel(c)}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setImportStep('select-template')}
+                                className="px-6 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                            >
+                                Volver
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const container = document.getElementById('template-editor-container');
+                                    if (container) {
+                                        setForm(prev => ({ ...prev, contenidoHtml: container.innerHTML }));
+                                        onAddSecuencia({ ...form, contenidoHtml: container.innerHTML, estado: 'Pendiente', cursoId: form.cursoId });
+                                        setShowModal(false);
+                                        setForm({
+                                           titulo: '',
+                                           cursoId: state.cursos[0]?.id ?? 0,
+                                           fechaInicio: new Date().toISOString().split('T')[0],
+                                           contenidoHtml: '',
+                                        });
+                                    }
+                                }}
+                                className="px-6 py-2.5 rounded-xl bg-turf-green-base text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-turf-green-base/20 hover:bg-turf-green-base/90 hover:-translate-y-0.5 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-turf-green-base/50"
+                            >
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-100/50 flex justify-center">
+                        <div className="w-full max-w-6xl bg-white shadow-xl border border-slate-200 p-8 rounded-xl shrink-0">
+                            <div 
+                                id="template-editor-container"
+                                className="prose prose-slate max-w-none prose-sm w-full"
+                                dangerouslySetInnerHTML={{ __html: form.contenidoHtml }}
+                            />
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

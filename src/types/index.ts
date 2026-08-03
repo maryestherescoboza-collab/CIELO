@@ -163,6 +163,41 @@ export interface Centro {
     createdBy?: string;
     createdAt?: string;
     updatedAt?: string;
+    estado?: 'pendiente' | 'activo' | 'suspendido' | 'cancelado';
+    afiliado?: boolean;
+}
+
+export interface CentroRol {
+    id: string;
+    centro_id: string;
+    user_id: string;
+    rol: 'director' | 'administrador' | 'docente';
+    created_at?: string;
+}
+
+export interface CodigoAccesoCentro {
+    id: string;
+    centro_id: string;
+    codigo: string;
+    usos_restantes?: number | null;
+    valido_hasta?: string | null;
+    created_by?: string;
+    created_at?: string;
+    estado?: 'activo' | 'inactivo' | 'expirado';
+}
+
+export interface Suscripcion {
+    id: string;
+    tipo: 'individual' | 'institucional' | 'promocional';
+    estado: 'activa' | 'pendiente' | 'vencida' | 'cancelada';
+    user_id?: string;
+    centro_id?: string;
+    fecha_inicio?: string;
+    fecha_fin?: string;
+    tilopay_customer_id?: string;
+    tilopay_subscription_id?: string;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface UserProfile {
@@ -332,6 +367,9 @@ export interface AppState {
     grupos: Grupo[];
     registrosAnecdoticos: RegistroAnecdotico[];
     registroImagenes: RegistroImagen[];
+    
+    suscripcionActual?: Suscripcion;
+    centroRolActual?: CentroRol;
 }
 
 export interface RegistroAnecdotico {

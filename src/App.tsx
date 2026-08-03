@@ -4,6 +4,8 @@ import './index.css';
 import Layout from './components/Layout';
 import Auth from './screens/Auth';
 import ResetPassword from './screens/ResetPassword';
+import RegistroCentro from './screens/Registration/RegistroCentro';
+import RegistroDocente from './screens/Registration/RegistroDocente';
 import AppRoutes from './AppRoutes';
 import Landing from './screens/Landing';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -105,12 +107,22 @@ export default function App() {
     </div>
   );
 
-  if (!session) {
+  const needsOnboarding = session && currentUserProfile && !currentUserProfile.centro_id;
+
+  if (!session || needsOnboarding || window.location.pathname.startsWith('/registro/')) {
     if (window.location.pathname === '/') {
       return <Landing />;
     }
     if (window.location.pathname === '/reset-password') {
       return <ResetPassword />;
+    }
+    const onboardingPlan = localStorage.getItem('onboardingPlan');
+
+    if (window.location.pathname === '/registro/centro' || (needsOnboarding && onboardingPlan === 'institucional')) {
+      return <RegistroCentro onAuthSuccess={() => actions.refresh()} />;
+    }
+    if (window.location.pathname === '/registro/docente' || needsOnboarding) {
+      return <RegistroDocente onAuthSuccess={() => actions.refresh()} />;
     }
     return <Auth onAuthSuccess={() => actions.refresh()} />;
   }

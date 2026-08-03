@@ -22,8 +22,9 @@ interface ProfileSidebarProps {
     localBio: string;
     setLocalBio: (val: string) => void;
     saveBio: () => void;
-    bioSaving: boolean;
+    bioSaving?: boolean;
     onOpenSettings?: () => void;
+    onOpenSuscripcion?: () => void;
     setShowResetModal: (val: boolean) => void;
     onLogout?: () => void;
     logros?: {
@@ -40,7 +41,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     activeProfile, isOwnProfile, getAvatarSrc,
     uploadingAvatar, fileInputRef, handleAvatarChange,
     editingProfile, setEditingProfile, localBio, setLocalBio,
-    saveBio, bioSaving, onOpenSettings, setShowResetModal, onLogout,
+    saveBio, bioSaving, onOpenSettings, onOpenSuscripcion, setShowResetModal, onLogout,
     logros
 }) => {
     if (!showProfile || !activeProfile) return null;
@@ -145,6 +146,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                             <button onClick={() => { setShowProfile(false); onOpenSettings(); }} className="w-full py-3 bg-white border border-[#2E3330]/20 rounded-[4px] text-sm font-bold text-[#2E3330] hover:bg-slate-50 flex items-center justify-center gap-2 transition-all">
                                 <Settings size={18} />
                                 Configuración
+                            </button>
+                        )}
+                        {onOpenSuscripcion && (
+                            <button onClick={() => { setShowProfile(false); onOpenSuscripcion(); }} className="w-full py-3 bg-[#7A8D69] border border-[#6C7E5C] rounded-[4px] text-sm font-bold text-white hover:bg-[#6C7E5C] flex items-center justify-center gap-2 transition-all">
+                                Planes y Suscripción
                             </button>
                         )}
                         <button

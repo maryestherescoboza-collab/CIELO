@@ -28,11 +28,11 @@ const RubricModal: React.FC<RubricModalProps> = ({
             <div className="w-full max-w-7xl bg-white border border-slate-200 flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
                 <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                     <div>
-                        <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter italic leading-none">Acta de Recuperación de Competencias</h2>
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-2">Estudiante: {targetEst.displayName} — {selectedPeriodo}</p>
+                        <h2 className="text-[8px] font-black text-slate-800 uppercase tracking-tighter italic leading-none">Acta de Recuperación de Competencias</h2>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-2">Estudiante: {targetEst.displayName} — {selectedPeriodo}</p>
                     </div>
                     <button onClick={onClose} className="p-3 hover:bg-slate-50 transition-colors rounded-full text-slate-400">
-                        <X size={24} />
+                        <X size={12} />
                     </button>
                 </div>
 
@@ -60,7 +60,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                                                     {BC_ICONS[v.bc as BCKey]}
                                                 </div>
                                                 <div>
-                                                    <span className="block text-xs font-black text-slate-800 uppercase leading-none">{v.bc}</span>
+                                                    <span className="block text-[8px] font-black text-slate-800 uppercase leading-none">{v.bc}</span>
                                                 </div>
                                                 <div className="ml-auto">
                                                     <span className={`text-[11px] font-black px-2 py-0.5 rounded border ${v.avg !== null && v.avg < 70 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
@@ -102,8 +102,8 @@ const RubricModal: React.FC<RubricModalProps> = ({
                 </div>
 
                 <div className="p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        <AlertCircle size={14} />
+                    <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                        <AlertCircle size={10} />
                         Solo las competencias con BC inferior a 70 son habilitadas para acta de recuperación.
                     </div>
                     <button

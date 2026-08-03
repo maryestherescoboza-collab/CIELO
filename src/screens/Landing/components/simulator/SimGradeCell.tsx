@@ -64,7 +64,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
                             const duration = `${(1.5 + Math.abs(randomSeed1 % 1)).toFixed(2)}s`;
                             const delay = `${(idx * 120 + Math.abs(randomSeed2 % 1) * 80).toFixed(0)}ms`;
 
-                            const sizes = ['text-sm', 'text-base', 'text-lg', 'text-xl'];
+                            const sizes = ['text-sm', 'text-base', 'text-sm', 'text-xl'];
                             const sizeClass = sizes[Math.abs(Math.floor(randomSeed3)) % 4];
 
                             return (
@@ -91,14 +91,14 @@ const GradeCell: React.FC<GradeCellProps> = ({
 
                 {isRecoveryAct ? (
                     hasLowBc ? (
-                        <FlameIcon size={16} className="text-[#EB8847]" />
+                        <FlameIcon size={10} className="text-[#EB8847]" />
                     ) : (
                         <div className="flex flex-col items-center gap-1 opacity-40">
                             <div className="w-3 h-3 rounded-full border-2 bg-[rgba(46,51,48,0.08)] border-transparent" />
                         </div>
                     )
                 ) : isPointMode ? (
-                    <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === 100 ? 'w-6 h-6 bg-[#7A8D69]' : score === 85 ? 'w-6 h-6 bg-[#EB8847]' : score === 70 ? 'w-6 h-6 bg-[#B87449]' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : 'w-2 h-2 bg-[rgba(46,51,48,0.08)]'}`} />
+                    <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === 100 ? 'w-4 h-4 bg-[#7A8D69]' : score === 85 ? 'w-4 h-4 bg-[#EB8847]' : score === 70 ? 'w-4 h-4 bg-[#B87449]' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : 'w-2 h-2 bg-[rgba(46,51,48,0.08)]'}`} />
                 ) : (
                     <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)}`}>
                         {score ?? '-'}
