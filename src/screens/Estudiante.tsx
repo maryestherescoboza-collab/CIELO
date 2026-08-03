@@ -44,16 +44,19 @@ export default function Estudiante() {
         // 1. Get all activities for the course/shared course and current user/role
         const visibleActs = state.actividades.filter(a => {
             const actCurso = state.cursos.find(c => c.id === a.cursoId);
-            const isMatch = actCurso?.sharedCourseId === curso.sharedCourseId || a.cursoId === curso.id;
+            const isMatch = (curso.sharedCourseId && actCurso?.sharedCourseId === curso.sharedCourseId) || a.cursoId === curso.id;
             const isRecur = a.nombre === 'Recuperación';
-            const matchesRole = !currentCourseRole || currentCourseRole.rol === 'tutor' || a.asignatura === currentCourseRole.asignatura;
+            const actAsignatura = a.asignatura || actCurso?.asignatura || '';
+            const matchesRole = !currentCourseRole || currentCourseRole.rol === 'tutor' || actAsignatura === currentCourseRole.asignatura;
             return isMatch && !isRecur && matchesRole;
         });
 
         // Group activities by: `${normAsignatura}-${periodo}-${bc}`
         const actsGroup = new Map<string, typeof visibleActs>();
         visibleActs.forEach(a => {
-            const normAsignatura = normalizeArea(a.asignatura);
+            const actCurso = state.cursos.find(c => c.id === a.cursoId);
+            const actAsignatura = a.asignatura || actCurso?.asignatura || '';
+            const normAsignatura = normalizeArea(actAsignatura);
             const assignedBCs = (a.bcAsignados && a.bcAsignados.length > 0) ? a.bcAsignados : ['BC1'];
             
             assignedBCs.forEach(bc => {
@@ -68,34 +71,44 @@ export default function Estudiante() {
         actsGroup.forEach((acts, groupKey) => {
             const scores = acts.map(a => {
                 const calif = state.calificaciones.find(c => c.estudianteId === est.id && c.actividadId === a.id);
-                return calif?.puntaje ?? 0;
-            });
-            const avg = Math.round(scores.reduce((sum, score) => sum + score, 0) / acts.length);
-            resultMap.set(`${curso.id}-${groupKey}`, avg);
+                return calif?.puntaje;
+            }).filter((s): s is number => s !== undefined && s !== null);
+            
+            if (scores.length > 0) {
+                const avg = Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+                const sharedId = curso.sharedCourseId || String(curso.id);
+                resultMap.set(`${sharedId}-${groupKey}`, avg);
+            }
         });
 
         return resultMap;
     }, [est, curso, state.actividades, state.cursos, state.calificaciones, currentCourseRole]);
 
     const recuperacionesMap = useMemo(() => {
-        if (!est) return new Map<string, number>();
+        if (!est || !curso) return new Map<string, number>();
         const rMap = new Map<string, number>();
         state.recuperaciones.forEach((r: RecuperacionBC) => {
             if (r.estudianteId !== est.id || r.puntaje === null) return;
             const normAsignatura = normalizeArea(r.asignatura || '');
             const bcStr = typeof r.bc === 'string' ? r.bc : `BC${r.bc}`;
-            rMap.set(`${r.cursoId || r.sharedCourseId}-${normAsignatura}-${r.periodo}-${bcStr}`, r.puntaje);
+            const sharedId = curso.sharedCourseId || String(curso.id);
+            // Verify match based on sharedCourseId
+            const isMatch = r.sharedCourseId === sharedId || r.cursoId === curso.id;
+            if (isMatch) {
+                rMap.set(`${sharedId}-${normAsignatura}-${r.periodo}-${bcStr}`, r.puntaje);
+            }
         });
         return rMap;
-    }, [est, state.recuperaciones]);
+    }, [est, curso, state.recuperaciones]);
 
     const allSubjects = useMemo(() => {
         if (!curso) return [];
         const subjectsSet = new Set<string>();
         state.actividades.forEach((act: Actividad) => {
             const actCurso = state.cursos.find((c: Curso) => c.id === act.cursoId);
-            if (actCurso?.sharedCourseId === curso.sharedCourseId || act.cursoId === curso.id) {
-                subjectsSet.add(act.asignatura || '');
+            const isMatch = (curso.sharedCourseId && actCurso?.sharedCourseId === curso.sharedCourseId) || act.cursoId === curso.id;
+            if (isMatch) {
+                subjectsSet.add(act.asignatura || actCurso?.asignatura || '');
             }
         });
         return Array.from(subjectsSet).sort();
@@ -106,16 +119,24 @@ export default function Estudiante() {
         const normSubject = normalizeArea(subject);
         const periods = ['P1', 'P2', 'P3', 'P4'];
         const competencies: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
+        const sharedId = curso.sharedCourseId || String(curso.id);
 
-        return competencies.map(bc => {
+        let sumFinals = 0;
+        let countFinals = 0;
+
+        const cells = competencies.map(bc => {
             return periods.map(p => {
-                const courseKey = curso.id;
-                const mapKey = `${courseKey}-${normSubject}-${p}-${bc}`;
+                const mapKey = `${sharedId}-${normSubject}-${p}-${bc}`;
                 const avgVal = gradesMap.get(mapKey);
                 const recVal = recuperacionesMap.get(mapKey);
 
                 const finalVal = (recVal !== undefined && (avgVal === undefined || avgVal < 70)) ? recVal : avgVal;
                 const isRecovered = recVal !== undefined && (avgVal === undefined || avgVal < 70);
+
+                if (finalVal !== undefined) {
+                    sumFinals += finalVal;
+                    countFinals++;
+                }
 
                 return (
                     <td key={`${p}-${bc}`} className="px-3 py-4 text-center border border-[rgba(46,51,48,0.08)]">
@@ -130,6 +151,28 @@ export default function Estudiante() {
                 );
             });
         });
+
+        // Add the extra columns so the table renders correctly without breaking markup
+        const promedioGrupo = countFinals > 0 ? Math.round(sumFinals / countFinals) : null;
+        const completiva = null; // placeholders for missing logic
+        const extraordinaria = null; // placeholders
+        const especial = null; // placeholders
+        const sitA = promedioGrupo !== null && promedioGrupo >= 70 ? '✓' : '';
+        const sitR = promedioGrupo !== null && promedioGrupo < 70 ? '✗' : '';
+
+        return (
+            <>
+                {cells}
+                <td className="px-2 font-black text-[13px] text-[#2E3330] bg-[#FDFBF7] border-x-2 border-[rgba(46,51,48,0.08)]">
+                    {promedioGrupo !== null ? promedioGrupo : <span className="text-[#5F665E]/40">-</span>}
+                </td>
+                <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
+                <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
+                <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
+                <td className="px-2 text-[#7A8D69] font-black text-[14px] bg-[#FDFBF7] border-x border-[rgba(46,51,48,0.08)]">{sitA}</td>
+                <td className="px-2 text-[#B87449] font-black text-[14px] bg-[#FDFBF7] border-r border-[rgba(46,51,48,0.08)]">{sitR}</td>
+            </>
+        );
     }, [curso, gradesMap, recuperacionesMap]);
 
     if (!est) {

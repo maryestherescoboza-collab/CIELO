@@ -34,6 +34,10 @@ export function CourseCard({
     onOpenLinkModal
 }: Props) {
     const isTutor = currentUserId === curso.userId;
+    const myLink = state.cursoDocentes?.find(cd => cd.cursoId === curso.id && cd.userId === currentUserId);
+    const displayAsignatura = myLink ? myLink.asignatura : curso.asignatura;
+    const displayDiasSemana = myLink ? myLink.diasSemana : (curso.diasSemana || []);
+
     return (
         <div className={`group flex flex-col h-full bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${isSelected ? 'ring-2 ring-[#7A8D69]' : 'hover:border-slate-350'}`}>
             <div className="p-6 flex-1">
@@ -65,7 +69,7 @@ export function CourseCard({
                 <div className="inline-flex items-center gap-2 mb-5">
                     {editingAsignaturaId === curso.id ? (
                         <select
-                            value={curso.asignatura || ''}
+                            value={displayAsignatura || ''}
                             onChange={(e) => {
                                 e.stopPropagation();
                                 onSaveAsignatura(curso, e.target.value);
@@ -91,7 +95,7 @@ export function CourseCard({
                             className="px-3 py-1 rounded-full text-[9px] font-bold tracking-[0.08em] text-[#2E3330] bg-[#BFC9A6] border border-[rgba(46,51,48,0.08)] hover:bg-[#7A8D69] hover:text-white transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50"
                             title="Modificar asignatura"
                         >
-                            {getAsignaturaNombre(curso.asignatura)}
+                            {getAsignaturaNombre(displayAsignatura)}
                         </button>
                     )}
                 </div>
@@ -120,7 +124,7 @@ export function CourseCard({
                                                     e.stopPropagation();
                                                     onSaveDias(curso, d);
                                                 }}
-                                                className={`px-3 py-1.5 text-[10px] rounded-lg font-bold uppercase transition-all border outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 ${curso.diasSemana.includes(d) ? 'bg-[#2E3330] border-[#2E3330] text-white shadow-sm' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'}`}
+                                                className={`px-3 py-1.5 text-[10px] rounded-lg font-bold uppercase transition-all border outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 ${displayDiasSemana.includes(d) ? 'bg-[#2E3330] border-[#2E3330] text-white shadow-sm' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-350'}`}
                                             >
                                                 {d}
                                             </button>
@@ -130,7 +134,7 @@ export function CourseCard({
                                 </div>
                             ) : (
                                 <button onClick={(e) => { e.stopPropagation(); onEditDias(curso.id); }} className="text-[#2E3330] border-b border-dotted border-slate-350 hover:border-[#7A8D69] hover:text-[#7A8D69] transition-all font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 rounded-sm">
-                                    {curso.diasSemana.length ? curso.diasSemana.join(', ') : 'Click para asignar días'}
+                                    {displayDiasSemana.length ? displayDiasSemana.join(', ') : 'Click para asignar días'}
                                 </button>
                             )}
                         </div>

@@ -225,15 +225,16 @@ export function useSupabaseData() {
                 perfiles: mappedPerfiles,
                 cursos: (cursos || []).map((c: Record<string, unknown>): Curso | null => {
                     const myLink = (cursoDocentes || []).find((cd: any) => cd.curso_id === c.id && String(cd.docente_id) === session.user.id);
-                    if (!myLink) return null;
+                    const isCreator = String(c.user_id) === session.user.id;
+                    if (!myLink && !isCreator) return null;
                     return {
                         id: c.id as number,
                         nombre: c.nombre as string,
-                        asignatura: myLink.asignatura as string,
+                        asignatura: myLink ? (myLink.asignatura as string) : (c.asignatura as string),
                         grado: c.grado as string,
                         seccion: c.seccion as string,
                         periodo: c.periodo as string,
-                        diasSemana: myLink.dias_semana as string[] || [],
+                        diasSemana: myLink ? (myLink.dias_semana as string[] || []) : [],
                         color: c.color as string,
                         isTutorOficial: c.is_tutor_oficial as boolean,
                         userId: c.user_id as string,

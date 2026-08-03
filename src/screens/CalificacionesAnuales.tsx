@@ -166,7 +166,7 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                         <div>
                             <h1 className="text-2xl font-black text-(--ink) tracking-tight">{curso.nombre}</h1>
                             <div className="flex items-center gap-3 mt-1">
-                                <p className="text-sm font-semibold text-(--ink-soft) uppercase tracking-widest">{getAsignaturaNombre(curso.asignatura)} · Reporte Anual</p>
+                                <p className="text-sm font-semibold text-(--ink-soft) uppercase tracking-widest">{getAsignaturaNombre(currentCourseRole?.asignatura || curso.asignatura)} · Reporte Anual</p>
                                 {currentCourseRole && (
                                     <>
                                         <span className="w-1 h-1 rounded-full bg-(--line)"></span>
