@@ -162,6 +162,7 @@ export default function CursoDetalle(props: Props) {
                 selectedPeriodo={selectedPeriodo}
                 onPeriodoChange={setSelectedPeriodo}
                 onAddActividad={onAddActividad}
+                isTutor={!currentCourseRole || currentCourseRole.rol === 'tutor'}
             />
 
             <GradeTable 

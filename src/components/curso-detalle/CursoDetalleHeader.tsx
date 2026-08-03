@@ -33,6 +33,7 @@ interface CursoDetalleHeaderProps {
     selectedPeriodo: string;
     onPeriodoChange: (p: string) => void;
     onAddActividad: () => void;
+    isTutor?: boolean;
 }
 
 const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
@@ -55,7 +56,8 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     onShowEliminarEstudiantes,
     selectedPeriodo,
     onPeriodoChange,
-    onAddActividad
+    onAddActividad,
+    isTutor = true
 }) => {
     return (
         <div className="flex flex-col gap-6 p-6 md:p-8 bg-white border-b border-[rgba(46,51,48,0.08)] shadow-sm relative z-20">
@@ -185,14 +187,16 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         })}
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <button onClick={onShowVincular} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330] transition-all shadow-sm active:scale-95">
-                            CARGA
-                        </button>
-                        <button onClick={onShowEliminarEstudiantes} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] text-[#EB8847] hover:border-[#EB8847]/30 hover:bg-[#EB8847]/10 transition-all shadow-sm active:scale-95">
-                            <UserMinus size={14} /> LIMPIAR
-                        </button>
-                    </div>
+                    {isTutor && (
+                        <div className="flex items-center gap-3">
+                            <button onClick={onShowVincular} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330] transition-all shadow-sm active:scale-95">
+                                CARGA
+                            </button>
+                            <button onClick={onShowEliminarEstudiantes} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] text-[#EB8847] hover:border-[#EB8847]/30 hover:bg-[#EB8847]/10 transition-all shadow-sm active:scale-95">
+                                <UserMinus size={14} /> LIMPIAR
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

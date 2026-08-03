@@ -19,7 +19,7 @@ interface Props {
 }
 
 export default function Dashboard({ docenteNombre }: Props) {
-  const { state, session } = useAppStore(useShallow(s => ({ state: s.state, session: s.session })));
+  const { state, session, setState } = useAppStore(useShallow(s => ({ state: s.state, session: s.session, setState: s.setAppState })));
   const navigate = useNavigate();
   const [selectedCursoId, setSelectedCursoId] = useState<string>(
     state.cursos.length > 0 ? String(state.cursos[0].id) : 'all'
@@ -181,25 +181,21 @@ export default function Dashboard({ docenteNombre }: Props) {
   };
 
   const handleDeleteRecord = async (recordId: number) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar este registro anecdótico? Esta acción no se puede deshacer.")) return;
+    if (!confirm("¿Estás seguro de que deseas archivar este registro anecdótico?")) return;
     try {
-      const images = state.registroImagenes?.filter(img => img.registroId === recordId) || [];
-      const storagePaths = images.map(img => {
-        const parts = img.imagenUrl.split('/registros/');
-        return parts.length > 1 ? parts[1] : null;
-      }).filter(Boolean) as string[];
-
-      const { error } = await supabase.from('registros_anecdoticos').delete().eq('id', recordId);
+      // Logical deactivation instead of physical delete
+      const { error } = await supabase.from('registros_anecdoticos').update({ activo: false }).eq('id', recordId);
       if (error) {
-        console.error("Error deleting record:", error);
+        console.error("Error archiving record:", error);
         return;
       }
-
-      if (storagePaths.length > 0) {
-        await supabase.storage.from('registros').remove(storagePaths);
-      }
+      // Update local state to remove from view
+      setState(s => ({
+        ...s,
+        registrosAnecdoticos: s.registrosAnecdoticos.filter(r => r.id !== recordId)
+      }));
     } catch (err) {
-      console.error("Error in delete flow:", err);
+      console.error("Error in archive flow:", err);
     }
   };
 

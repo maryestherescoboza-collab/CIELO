@@ -53,6 +53,7 @@ export interface Curso {
     userId?: string;
     grupoId: number;
     sharedCourseId?: string;
+    centroId?: string;
     configuracionEvaluacion?: Record<string, unknown>;
     createdAt?: string;
 }
@@ -331,7 +332,9 @@ export interface CursoDocente {
     cursoId: number;
     userId: string;
     rol: 'tutor' | 'co-docente';
+    esTutor?: boolean;
     asignatura: string;
+    diasSemana?: string[];
     createdAt?: string;
 }
 

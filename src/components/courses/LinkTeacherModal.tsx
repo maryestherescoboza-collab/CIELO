@@ -24,7 +24,8 @@ export function LinkTeacherModal({
     if (!courseId) return null;
 
     const copyLink = () => {
-        const url = `${window.location.origin}/?vincular=${courseId}`;
+        const expires = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 días de validez
+        const url = `${window.location.origin}/?vincular=${courseId}&exp=${expires}`;
         navigator.clipboard.writeText(url);
         alert('Enlace copiado al portapapeles: ' + url);
     };

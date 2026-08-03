@@ -29,7 +29,11 @@ const GRAVEDAD_LABELS: Record<'leve' | 'moderada' | 'grave', string> = {
     grave: 'Persistente',
 };
 
+import { useAppStore } from '../store/appStore';
+
 export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia }: Props) {
+    const session = useAppStore((s) => s.session);
+    const currentUserId = session?.user?.id;
     const [buscarEst, setBuscarEst] = useState('');
     const [estIds, setEstIds] = useState<number[]>([]);
     const [categoria, setCategoria] = useState<Incidencia['categoria']>('Conducta');
@@ -92,6 +96,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
 
     const histFiltrado = state.incidencias
         .filter((incidencia) => filtro === 'Todas' || incidencia.categoria === filtro)
+        .filter((incidencia) => incidencia.userId === currentUserId || !incidencia.userId)
         .filter((incidencia) => {
             const isRelated = sharedCourseIds.has(incidencia.sharedCourseId || '');
             if (!isRelated) return false;

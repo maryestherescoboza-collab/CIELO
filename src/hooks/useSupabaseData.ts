@@ -43,12 +43,12 @@ export function useSupabaseData() {
             const results = await Promise.all([
                 supabase.from('perfiles').select('*, centros!perfiles_centro_id_fkey(*)'),
                 supabase.from('cursos').select('*'),
-                supabase.from('estudiantes').select('*'),
-                supabase.from('actividades').select('*'),
-                supabase.from('calificaciones').select('*'),
-                supabase.from('recuperaciones').select('*'),
-                supabase.from('secuencias').select('*'),
-                supabase.from('incidencias').select('*'),
+                supabase.from('estudiantes').select('*').eq('activo', true),
+                supabase.from('actividades').select('*').eq('activo', true),
+                supabase.from('calificaciones').select('*').eq('activo', true),
+                supabase.from('recuperaciones').select('*').eq('activo', true),
+                supabase.from('secuencias').select('*').eq('activo', true),
+                supabase.from('incidencias').select('*').eq('activo', true),
                 supabase.from('eventos').select('*'),
                 supabase.from('posts').select('*, profiles:perfiles(nombre_docente, avatar_url, bio)').order('id', { ascending: false }),
                 supabase.from('docentes').select('*'),
@@ -57,14 +57,14 @@ export function useSupabaseData() {
                 supabase.from('criterios_cotejo').select('*'),
                 supabase.from('descriptores_rubrica').select('*'),
                 supabase.from('niveles_puntaje').select('*'),
-                supabase.from('plantillas').select('*').order('created_at', { ascending: false }),
+                supabase.from('plantillas').select('*').eq('archivado', false).order('created_at', { ascending: false }),
                 supabase.from('curso_detalle').select('*'),
                 supabase.from('post_likes').select('post_id').eq('user_id', session.user.id),
                 supabase.from('notificaciones').select('*').eq('leida', false).order('created_at', { ascending: false }),
 
-                supabase.from('curso_docentes').select('*'),
+                supabase.from('curso_docentes').select('*').eq('activo', true),
                 supabase.from('grupos').select('*'),
-                supabase.from('registros_anecdoticos').select('*').order('fecha', { ascending: false }),
+                supabase.from('registros_anecdoticos').select('*').eq('activo', true).order('fecha', { ascending: false }),
                 supabase.from('registro_imagenes').select('*'),
                 supabase.from('historial_colaboradores').select('*'),
                 supabase.from('suscripciones').select('*'),
@@ -223,22 +223,27 @@ export function useSupabaseData() {
                 return {
                 ...prev,
                 perfiles: mappedPerfiles,
-                cursos: (cursos || []).map((c: Record<string, unknown>): Curso => ({
-                    id: c.id as number,
-                    nombre: c.nombre as string,
-                    asignatura: c.asignatura as string,
-                    grado: c.grado as string,
-                    seccion: c.seccion as string,
-                    periodo: c.periodo as string,
-                    diasSemana: c.dias_semana as string[] || [],
-                    color: c.color as string,
-                    isTutorOficial: c.is_tutor_oficial as boolean,
-                    userId: c.user_id as string,
-                    grupoId: c.grupo_id as number,
-                    sharedCourseId: (c.shared_course_id as string) || (c.grupo_id ? `group_${c.grupo_id}` : String(c.id)),
-                    configuracionEvaluacion: c.configuracion_evaluacion as Record<string, unknown> || {},
-                    createdAt: c.created_at as string
-                })),
+                cursos: (cursos || []).map((c: Record<string, unknown>): Curso | null => {
+                    const myLink = (cursoDocentes || []).find((cd: any) => cd.curso_id === c.id && String(cd.docente_id) === session.user.id);
+                    if (!myLink) return null;
+                    return {
+                        id: c.id as number,
+                        nombre: c.nombre as string,
+                        asignatura: myLink.asignatura as string,
+                        grado: c.grado as string,
+                        seccion: c.seccion as string,
+                        periodo: c.periodo as string,
+                        diasSemana: myLink.dias_semana as string[] || [],
+                        color: c.color as string,
+                        isTutorOficial: c.is_tutor_oficial as boolean,
+                        userId: c.user_id as string,
+                        grupoId: c.grupo_id as number,
+                        sharedCourseId: (c.shared_course_id as string) || (c.grupo_id ? `group_${c.grupo_id}` : String(c.id)),
+                        centroId: c.centro_id as string,
+                        configuracionEvaluacion: c.configuracion_evaluacion as Record<string, unknown> || {},
+                        createdAt: c.created_at as string
+                    };
+                }).filter((x): x is Curso => x !== null),
                 estudiantes: (estudiantes || []).map((e: Record<string, unknown>): Estudiante => ({
                     id: e.id as number,
                     nombre: e.nombre as string,
@@ -428,7 +433,9 @@ export function useSupabaseData() {
                     cursoId: cd.curso_id as number,
                     userId: String(cd.docente_id),
                     rol: cd.rol as 'tutor' | 'co-docente',
+                    esTutor: cd.es_tutor as boolean,
                     asignatura: cd.asignatura as string,
+                    diasSemana: cd.dias_semana as string[] || [],
                     createdAt: cd.created_at as string
                 })),
                 grupos: (grupos || []).map((g: Record<string, unknown>): Grupo => ({
@@ -528,7 +535,8 @@ export function useSupabaseData() {
     const syncDelete = useCallback(async (table: string, idOrFilter: number | string | Record<string, unknown>) => {
         if (!session?.user?.id) return;
 
-        let query = supabase.from(table).delete();
+        // Logical soft-delete: set activo = false instead of physical DELETE
+        let query = supabase.from(table).update({ activo: false });
 
         if (typeof idOrFilter === 'object' && idOrFilter !== null) {
             const toSnakeCase = (obj: Record<string, unknown>) => {
@@ -546,7 +554,7 @@ export function useSupabaseData() {
         }
 
         const { error } = await query;
-        if (error) console.error('Error syncing delete to ' + table + ':', error);
+        if (error) console.error('Error syncing soft-delete to ' + table + ':', error);
     }, [session]);
 
     return {

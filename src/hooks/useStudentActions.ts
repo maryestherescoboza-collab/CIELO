@@ -148,7 +148,8 @@ export function useStudentActions() {
     }, [session, state.estudiantes, setState, setGenericToast]);
 
     const handleDeleteEstudiante = useCallback(async (id: number) => {
-        const { error } = await supabase.from('estudiantes').delete().eq('id', id);
+        // Logical deactivation instead of physical delete
+        const { error } = await supabase.from('estudiantes').update({ activo: false }).eq('id', id);
         if (!error) {
             setState(s => ({ ...s, estudiantes: s.estudiantes.filter(e => e.id !== id) }));
         }

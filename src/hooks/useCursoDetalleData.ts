@@ -35,9 +35,9 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
     const [bcSel, setBcSel] = useState<Record<number, Set<BCKey>>>({});
 
     useEffect(() => {
-        const currentActs = state.actividades.filter(a => a.id && (a.cursoId === cursoId || (curso?.sharedCourseId && a.sharedCourseId === curso.sharedCourseId)) && (a.userId === currentUserId || !a.userId));
-        setLocalCalifs(state.calificaciones.filter(c => currentActs.some(a => a.id === c.actividadId)));
-        setLocalRecs(state.recuperaciones.filter(r => (r.cursoId === cursoId || (curso?.sharedCourseId && state.cursos.find(cx => cx.id === r.cursoId)?.sharedCourseId === curso.sharedCourseId)) && (r.userId === currentUserId || !r.userId)));
+        const currentActs = state.actividades.filter(a => a.id && a.cursoId === cursoId && (!a.asignatura || a.asignatura === myAsignatura));
+        setLocalCalifs(state.calificaciones.filter(c => c.cursoId === cursoId && (!c.asignatura || c.asignatura === myAsignatura)));
+        setLocalRecs(state.recuperaciones.filter(r => r.cursoId === cursoId && (!r.asignatura || r.asignatura === myAsignatura)));
         
         const nextBc: Record<number, Set<BCKey>> = {};
         currentActs.forEach(a => {
@@ -45,7 +45,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
             nextBc[a.id] = new Set(initial as BCKey[]);
         });
         setBcSel(nextBc);
-    }, [state.calificaciones, state.recuperaciones, state.actividades, state.cursos, cursoId, curso?.sharedCourseId, currentUserId]);
+    }, [state.calificaciones, state.recuperaciones, state.actividades, state.cursos, cursoId, myAsignatura, currentUserId]);
 
     // Auto-save logic with 1 second debounce
     useEffect(() => {

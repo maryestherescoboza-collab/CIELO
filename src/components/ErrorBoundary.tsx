@@ -1,12 +1,12 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 
-export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
     constructor(props: { children: React.ReactNode }) {
         super(props);
-        this.state = { hasError: false };
+        this.state = { hasError: false, error: null };
     }
-    static getDerivedStateFromError() { return { hasError: true }; }
+    static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         console.error("[ErrorBoundary] Error caught:", error, errorInfo);
     }
@@ -19,6 +19,11 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
                     </div>
                     <h2 className="text-xl font-bold text-rose-800">Ups, algo salió mal</h2>
                     <p className="text-rose-600 max-w-md mt-2">Ha ocurrido un error inesperado al renderizar este módulo.</p>
+                    {this.state.error && (
+                        <div className="mt-4 p-3 bg-rose-100 text-rose-800 text-xs text-left w-full max-w-lg rounded-xl overflow-auto font-mono">
+                            {this.state.error.message}
+                        </div>
+                    )}
                     <button onClick={() => window.location.reload()} className="mt-6 px-6 py-2 bg-rose-600 text-white rounded-xl font-bold hover:scale-105 transition-transform">
                         Recargar Aplicación
                     </button>

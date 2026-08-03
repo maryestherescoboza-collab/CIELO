@@ -10,6 +10,7 @@ import AppRoutes from './AppRoutes';
 import Landing from './screens/Landing';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import NotificationsOverlay from './components/NotificationsOverlay';
+import InvitationModal from './components/courses/InvitationModal';
 import { FloatingRubricManager } from './components/FloatingRubricManager';
 import { useSupabaseData } from './hooks/useSupabaseData';
 import { supabase } from './lib/supabase';
@@ -107,7 +108,7 @@ export default function App() {
     </div>
   );
 
-  const needsOnboarding = session && currentUserProfile && !currentUserProfile.centro_id;
+  const needsOnboarding = session && (!currentUserProfile || !currentUserProfile.centro_id);
 
   if (!session || needsOnboarding || window.location.pathname.startsWith('/registro/')) {
     if (window.location.pathname === '/') {
@@ -192,6 +193,12 @@ export default function App() {
       />
 
       <FloatingRubricManager />
+
+      <InvitationModal 
+        session={session}
+        currentUserProfile={currentUserProfile || null}
+        onRefresh={() => actions.refresh()}
+      />
     </Layout>
   );
 }

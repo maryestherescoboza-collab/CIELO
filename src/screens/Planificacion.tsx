@@ -152,7 +152,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
         e.target.value = ''; // Reset input to allow choosing again
     };
 
-    const secuenciasCurso = state.secuencias.filter((secuencia) => secuencia.cursoId === cursoSel);
+    const secuenciasCurso = state.secuencias.filter((secuencia) => secuencia.cursoId === cursoSel && (secuencia.userId === session?.user?.id || !secuencia.userId));
     useEffect(() => {
         function handleFullscreenChange() {
             setIsPresenting(document.fullscreenElement === viewerRef.current);

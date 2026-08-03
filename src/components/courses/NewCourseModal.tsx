@@ -10,7 +10,7 @@ interface Props {
     onConfirm: () => void;
 }
 
-const COLORS = ['#0f172a', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'];
+
 
 export function NewCourseModal({
     show,
@@ -43,41 +43,14 @@ export function NewCourseModal({
                 </div>
 
                 <div className="p-10 space-y-8">
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
-                            <Hash size={12} /> Título del Curso
-                        </label>
-                        <input
-                            className="w-full bg-slate-100 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-400"
-                            placeholder="Ej: 3ro de Secundaria - Sección B"
-                            value={form.nombre}
-                            onChange={e => setForm((f: any) => ({ ...f, nombre: e.target.value }))}
-                        />
-                    </div>
-
                     <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                <Layers size={12} /> Asignatura
-                            </label>
-                            <div className="relative">
-                                <select
-                                    className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
-                                    value={form.asignatura}
-                                    onChange={e => setForm((f: any) => ({ ...f, asignatura: e.target.value }))}
-                                >
-                                    {ASIGNATURAS_CATALOGO.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-                                </select>
-                                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
-                            </div>
-                        </div>
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
                                 <GraduationCap size={12} /> Grado Escolar
                             </label>
                             <div className="relative">
                                 <select
-                                    className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
+                                    className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-[#7A8D69] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
                                     value={form.grado}
                                     onChange={e => setForm((f: any) => ({ ...f, grado: e.target.value }))}
                                 >
@@ -86,44 +59,45 @@ export function NewCourseModal({
                                 <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
                             </div>
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
                                 <Hash size={12} /> Sección
                             </label>
                             <input
-                                className="w-full bg-slate-100 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all uppercase placeholder:text-slate-400"
+                                className="w-full bg-slate-100 border-2 border-transparent focus:border-[#7A8D69] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all uppercase placeholder:text-slate-400"
                                 placeholder="A"
                                 maxLength={2}
                                 value={form.seccion}
                                 onChange={e => setForm((f: any) => ({ ...f, seccion: e.target.value.toUpperCase() }))}
                             />
                         </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                <Clock size={12} /> Período Lectivo
-                            </label>
-                            <div className="relative">
-                                <select
-                                    className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
-                                    value={form.periodo}
-                                    onChange={e => setForm((f: any) => ({ ...f, periodo: e.target.value }))}
-                                >
-                                    {['P1', 'P2', 'P3', 'P4'].map(p => <option key={p}>{p}</option>)}
-                                </select>
-                                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
-                            </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
+                            <Layers size={12} /> Asignatura
+                        </label>
+                        <div className="relative">
+                            <select
+                                className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-[#7A8D69] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
+                                value={form.asignatura}
+                                onChange={e => setForm((f: any) => ({ ...f, asignatura: e.target.value }))}
+                            >
+                                {ASIGNATURAS_CATALOGO.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                            </select>
+                            <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
                         </div>
                     </div>
 
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Frecuencia de Clases</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
+                            <Clock size={12} /> Días de clase
+                        </label>
                         <div className="flex gap-2 flex-wrap">
                             {['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb'].map(d => (
                                 <button key={d} onClick={() => toggleDia(d)}
-                                    className={`px-5 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest border-2 transition-all ${form.diasSemana.includes(d) ? 'bg-slate-900 text-white border-slate-900 shadow-md translate-y-[-2px]' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'}`}>
+                                    className={`px-5 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest border-2 transition-all ${form.diasSemana.includes(d) ? 'bg-[#2E3330] text-white border-[#2E3330] shadow-md translate-y-[-2px]' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-350'}`}>
                                     {d}
                                 </button>
                             ))}
@@ -132,25 +106,12 @@ export function NewCourseModal({
 
                     <div className="pt-2">
                         <label className="inline-flex items-center gap-3 cursor-pointer group">
-                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${form.isTutorOficial ? 'bg-emerald-500 border-emerald-500 shadow-sm' : 'bg-slate-50 border-slate-200 group-hover:border-slate-300'}`}>
+                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${form.isTutorOficial ? 'bg-[#7A8D69] border-[#7A8D69] shadow-sm' : 'bg-slate-50 border-slate-200 group-hover:border-slate-300'}`}>
                                 {form.isTutorOficial && <X size={14} className="text-white rotate-45" />}
                                 <input type="checkbox" className="hidden" checked={form.isTutorOficial} onChange={(e) => setForm((f: any) => ({ ...f, isTutorOficial: e.target.checked }))} />
                             </div>
                             <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900 transition-colors">Soy el Tutor Oficial de este curso</span>
                         </label>
-                    </div>
-
-                    <div className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Identidad Visual</label>
-                        <div className="grid grid-cols-6 gap-3">
-                            {COLORS.map(col => (
-                                <button key={col} onClick={() => setForm((f: any) => ({ ...f, color: col }))}
-                                    className={`w-full aspect-square rounded-2xl transition-all duration-300 relative group overflow-hidden ${form.color === col ? 'ring-4 ring-emerald-500 ring-offset-2 scale-110 shadow-lg' : 'hover:scale-105 opacity-60 hover:opacity-100'}`}
-                                    style={{ background: col }}>
-                                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </button>
-                            ))}
-                        </div>
                     </div>
                 </div>
 

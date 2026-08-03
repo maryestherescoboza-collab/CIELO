@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Target } from 'lucide-react';
+import { Plus, EyeOff, Target } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import GradeCell from './GradeCell';
 import type { BCKey, Actividad } from '../../types';
@@ -106,7 +106,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                     <div key={col.id} className="px-2 py-6 border-r border-[rgba(46,51,48,0.08)] relative group flex flex-col items-center justify-center box-border" style={style}>
                                         <div className="flex flex-col items-center gap-4 w-full">
                                             <div className="flex items-center gap-2 w-full justify-center px-1">
-                                                <button onClick={() => onDeleteActividad(act.id)} className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-[#EB8847] rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><Trash2 size={12} /></button>
+                                                <button onClick={() => onDeleteActividad(act.id)} title="Desactivar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-[#EB8847] rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><EyeOff size={12} /></button>
                                                 <input 
                                                     defaultValue={act.nombre.replace(/^Actividad\s+/i, 'ACTIV. ')}
                                                     onFocus={(e) => { e.target.value = act.nombre; }}

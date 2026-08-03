@@ -22,6 +22,22 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
 
+  // Email verification states
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    let interval: any;
+    if (resendCooldown > 0) {
+      interval = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const plan = params.get('plan');
@@ -36,15 +52,22 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setResendSuccess(null);
+    setNeedsEmailConfirmation(false);
 
     try {
       if (isSignUp) {
         if (!nombreDocente.trim()) throw new Error('Por favor ingresa tu nombre completo.');
 
+        const redirectUrl = window.location.hostname === "localhost" 
+          ? "http://localhost:5173" // Vite default local port
+          : "https://evaluacielo.com";
+
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
+            emailRedirectTo: redirectUrl,
             data: {
               nombre_docente: nombreDocente.trim()
             }
@@ -57,7 +80,6 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         // Insertar el Perfil inicial sin centro_id
         const { error: profileError } = await supabase.from('perfiles').upsert({
           user_id: authData.user.id,
-          id: authData.user.id,
           nombre: nombreDocente.trim(),
           nombre_docente: nombreDocente.trim(),
           avatar_color: '#3b82f6'
@@ -68,7 +90,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           // Ignoramos el error si el trigger handle_new_user ya lo creó
         }
 
-        alert('¡Registro exitoso! Ya puedes iniciar sesión con tu cuenta.');
+        alert('¡Registro exitoso! Por favor, revisa tu correo electrónico para confirmar tu cuenta.');
+        setNeedsEmailConfirmation(true);
         setIsSignUp(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
@@ -79,6 +102,9 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       if (err instanceof Error) {
         if (err.message.includes('already registered')) {
           setError('El correo electrónico ya se encuentra registrado.');
+        } else if (err.message.toLowerCase().includes('email not confirmed') || err.message.includes('Email not confirmed')) {
+          setError('Debes confirmar tu correo electrónico antes de iniciar sesión.');
+          setNeedsEmailConfirmation(true);
         } else {
           setError(err.message);
         }
@@ -86,6 +112,9 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         const msg = String((err as any).message);
         if (msg.includes('already registered')) {
           setError('El correo electrónico ya se encuentra registrado.');
+        } else if (msg.toLowerCase().includes('email not confirmed') || msg.includes('Email not confirmed')) {
+          setError('Debes confirmar tu correo electrónico antes de iniciar sesión.');
+          setNeedsEmailConfirmation(true);
         } else {
           setError(msg);
         }
@@ -94,6 +123,37 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    if (resendCooldown > 0 || !email.trim()) return;
+    
+    setResendLoading(true);
+    setError(null);
+    setResendSuccess(null);
+    
+    try {
+      const redirectUrl = window.location.hostname === "localhost" 
+        ? "http://localhost:5173" 
+        : "https://evaluacielo.com";
+        
+      const { error: resendErr } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: {
+          emailRedirectTo: redirectUrl,
+        }
+      });
+      
+      if (resendErr) throw resendErr;
+      
+      setResendSuccess('Se ha reenviado el correo de verificación. Revisa tu bandeja de entrada o spam.');
+      setResendCooldown(60);
+    } catch (err: any) {
+      setError(err.message || 'No se pudo reenviar el correo.');
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -107,7 +167,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setError(null);
     setForgotSuccess(null);
 
-    const API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3001';
+    const API_URL = import.meta.env.VITE_AUTH_API_URL || (window.location.hostname === "localhost" ? 'http://localhost:3001' : 'https://evaluacielo.com');
     console.log(`[Auth.tsx] Intentando enviar solicitud de recuperación a: ${API_URL}/api/auth/forgot-password`);
 
     try {
@@ -244,6 +304,13 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                     {error}
                   </div>
                 )}
+                
+                {resendSuccess && (
+                  <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-[10px] font-bold text-[#689C63] flex items-center gap-2">
+                    <span className="w-1 h-1 bg-[#689C63] rounded-full"></span>
+                    {resendSuccess}
+                  </div>
+                )}
 
                 {isSignUp && (
                   <div className="space-y-3.5 animate-fade-in">
@@ -294,15 +361,32 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                   className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                 >
                   {loading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <>
-                      {isSignUp ? 'Crear mi cuenta' : 'Ingresar al sistema'}
-                      <ArrowRight size={12} />
-                    </>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        {isSignUp ? 'CREAR MI CUENTA' : 'ENTRAR AL ESPACIO DOCENTE'}
+                        <ArrowRight size={12} />
+                      </>
+                    )}
+                  </button>
+
+                  {needsEmailConfirmation && (
+                    <button
+                      type="button"
+                      onClick={handleResendEmail}
+                      disabled={resendLoading || resendCooldown > 0}
+                      className="w-full mt-2 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-[9px] tracking-widest transition-all disabled:opacity-50 flex items-center justify-center uppercase shadow-sm active:scale-[0.98]"
+                    >
+                      {resendLoading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : resendCooldown > 0 ? (
+                        `Esperar ${resendCooldown}s para reenviar`
+                      ) : (
+                        'Reenviar enlace de verificación'
+                      )}
+                    </button>
                   )}
-                </button>
-              </form>
+                </form>
 
               <footer className="mt-5 pt-4 border-t border-slate-100 text-center flex flex-col gap-2">
                 {!isSignUp && (

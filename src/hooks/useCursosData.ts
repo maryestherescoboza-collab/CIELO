@@ -10,24 +10,18 @@ export function useCursosData(state: AppState) {
     const [isSaving, setIsSaving] = useState(false);
 
     const [form, setForm] = useState({
-        nombre: '',
         asignatura: ASIGNATURAS_CATALOGO[0].id,
         grado: '1ro',
         seccion: 'A',
-        periodo: 'P1',
-        color: '#0f172a',
         diasSemana: ['Lun'],
         isTutorOficial: false
     });
 
     const resetForm = useCallback(() => {
         setForm({
-            nombre: '',
             asignatura: ASIGNATURAS_CATALOGO[0].id,
             grado: '1ro',
             seccion: 'A',
-            periodo: 'P1',
-            color: '#0f172a',
             diasSemana: ['Lun'],
             isTutorOficial: false
         });

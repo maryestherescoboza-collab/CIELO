@@ -87,6 +87,8 @@ interface AppRoutesProps {
   deleteCurso: any;
   saveCurso: any;
   toggleDocenteCurso: any;
+  updateDocenteAsignatura: any;
+  updateDocenteDias: any;
   addEstudiante: any;
   updateEstudiante: any;
   deleteEstudiante: any;
@@ -125,7 +127,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   currentCourseRole, visibleActividades, visibleCalificaciones,
   onlineUsers, currentUserProfile,
   addActividad, updateActividad, deleteActividad, saveCalificaciones,
-  addCurso, deleteCurso, saveCurso, toggleDocenteCurso,
+  addCurso, deleteCurso, saveCurso, toggleDocenteCurso, updateDocenteAsignatura, updateDocenteDias,
   addEstudiante, updateEstudiante, deleteEstudiante,
   addIncidencia, deleteIncidencia,
   addSecuencia, updateSecuencia, deleteSecuencia,
@@ -202,7 +204,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           onDeleteCurso={deleteCurso} 
           selectedCursoId={selectedCursoId}
           onSelectCurso={setSelectedCursoId}
-          onSaveCurso={saveCurso}
+          onSaveAsignatura={updateDocenteAsignatura}
+          onSaveDias={updateDocenteDias}
           onToggleDocenteCurso={(cId, tUid, r, a) => toggleDocenteCurso(cId, tUid, r, a, sendNotification, syncDelete)}
         />
       } />

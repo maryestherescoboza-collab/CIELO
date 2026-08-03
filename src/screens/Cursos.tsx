@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Plus, BookOpen } from 'lucide-react';
 import type { Curso } from '../types';
 import { useAppStore } from '../store/appStore';
@@ -13,7 +13,8 @@ interface Props {
     onDeleteCurso: (id: number) => void;
     selectedCursoId: number | null;
     onSelectCurso: (id: number) => void;
-    onSaveCurso?: (c: Curso) => void;
+    onSaveAsignatura?: (cursoId: number, asignatura: string) => void;
+    onSaveDias?: (cursoId: number, dias: string[]) => void;
     onToggleDocenteCurso?: (cursoId: number, userId: string, rol: 'tutor' | 'co-docente', asignatura: string) => void;
 }
 
@@ -22,11 +23,14 @@ export default function Cursos({
     onDeleteCurso,
     selectedCursoId,
     onSelectCurso,
-    onSaveCurso,
+    onSaveAsignatura,
+    onSaveDias,
     onToggleDocenteCurso
 }: Props) {
     const state = useAppStore(s => s.state);
+    const session = useAppStore(s => s.session);
     const navigate = useNavigate();
+    const [editingAsignaturaId, setEditingAsignaturaId] = useState<number | null>(null);
     
     const {
         showModal,
@@ -47,10 +51,21 @@ export default function Cursos({
     } = useCursosData(state);
 
     const handleCreate = useCallback(async () => {
-        if (!form.nombre.trim() || isSaving) return;
+        if (!form.seccion.trim() || isSaving) return;
         setIsSaving(true);
         try {
-            const result = await onAddCurso({ ...form });
+            const generatedNombre = `${form.grado} de Secundaria - Sección ${form.seccion}`;
+            const result = await onAddCurso({
+                nombre: generatedNombre,
+                grado: form.grado,
+                seccion: form.seccion,
+                asignatura: form.asignatura,
+                diasSemana: form.diasSemana,
+                isTutorOficial: form.isTutorOficial,
+                periodo: 'P1',
+                color: '#7A8D69',
+                configuracionEvaluacion: {}
+            });
             if (result) {
                 setShowModal(false);
                 resetForm();
@@ -68,12 +83,17 @@ export default function Cursos({
     }, [onSelectCurso, navigate]);
 
     const handleSaveDias = useCallback((curso: Curso, d: string) => {
-        if (!onSaveCurso) return;
+        if (!onSaveDias) return;
         const newDias = curso.diasSemana.includes(d)
             ? curso.diasSemana.filter(x => x !== d)
             : [...curso.diasSemana, d];
-        onSaveCurso({ ...curso, diasSemana: newDias });
-    }, [onSaveCurso]);
+        onSaveDias(curso.id, newDias);
+    }, [onSaveDias]);
+
+    const handleSaveAsignatura = useCallback((curso: Curso, newAsignatura: string) => {
+        if (!onSaveAsignatura) return;
+        onSaveAsignatura(curso.id, newAsignatura);
+    }, [onSaveAsignatura]);
 
     const handleToggleLinkTeacher = useCallback((cursoId: number, userId: string, teacherSubject: string) => {
         if (onToggleDocenteCurso) {
@@ -129,10 +149,14 @@ export default function Cursos({
                                     isSelected={c.id === selectedCursoId}
                                     state={state}
                                     editingDiasId={editingDiasId}
-                                    onDelete={onDeleteCurso}
+                                    editingAsignaturaId={editingAsignaturaId}
+                                    currentUserId={session?.user?.id}
+                                    onHide={onDeleteCurso}
                                     onSelect={handleSelectCurso}
                                     onEditDias={setEditingDiasId}
+                                    onEditAsignatura={setEditingAsignaturaId}
                                     onSaveDias={handleSaveDias}
+                                    onSaveAsignatura={handleSaveAsignatura}
                                     onOpenLinkModal={setLinkingCourseId}
                                 />
                             ))}

@@ -103,9 +103,8 @@ export function useEvaluationActions() {
         const promises = [];
         if (dbCalifs.length > 0) promises.push(supabase.from('calificaciones').upsert(dbCalifs, { onConflict: 'estudiante_id,actividad_id' }));
         if (dbRecs.length > 0) {
-            console.log('[DEBUG] 5. Ejecutando upsert() en tabla recuperaciones:', dbRecs);
-            // FIX: Removed "asignatura" from onConflict to match the primary key
-            promises.push(supabase.from('recuperaciones').upsert(dbRecs, { onConflict: 'estudiante_id,curso_id,bc,periodo' }));
+            // FIX: Include asignatura in onConflict to match new primary key
+            promises.push(supabase.from('recuperaciones').upsert(dbRecs, { onConflict: 'estudiante_id,curso_id,bc,periodo,asignatura' }));
         }
         
         if (promises.length > 0) {
@@ -444,7 +443,8 @@ export function useEvaluationActions() {
     }, [session, state.plantillas, setState]);
 
     const deletePlantilla = useCallback(async (id: number) => {
-        await supabase.from('plantillas').delete().eq('id', id);
+        // Logical archive instead of physical delete
+        await supabase.from('plantillas').update({ archivado: true }).eq('id', id);
         setState(s => ({ ...s, plantillas: s.plantillas.filter(p => p.id !== id) }));
     }, [setState]);
 
@@ -488,7 +488,8 @@ export function useEvaluationActions() {
     }, [session, state.actividades, setState]);
 
     const deleteActividad = useCallback(async (id: number) => {
-        const { error } = await supabase.from('actividades').delete().eq('id', id);
+        // Logical deactivation instead of physical delete
+        const { error } = await supabase.from('actividades').update({ activo: false }).eq('id', id);
         if (!error) {
             setState(s => ({ ...s, actividades: s.actividades.filter(a => a.id !== id) }));
         }

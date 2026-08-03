@@ -1,16 +1,20 @@
-import { Trash2, GraduationCap, Users, Clock, Plus, Layers, ChevronRight, Search, FileText } from 'lucide-react';
+import { EyeOff, GraduationCap, Users, Clock, Plus, Layers, ChevronRight, Search, FileText } from 'lucide-react';
 import type { Curso, AppState } from '../../types';
-import { getAsignaturaNombre } from '../../constants/asignaturas';
+import { getAsignaturaNombre, ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
 
 interface Props {
     curso: any; // Extended with count and docentesVinculadosRel
     isSelected: boolean;
     state: AppState;
     editingDiasId: number | null;
-    onDelete: (id: number) => void;
+    editingAsignaturaId: number | null;
+    currentUserId?: string;
+    onHide: (id: number) => void;
     onSelect: (id: number, path?: string) => void;
     onEditDias: (id: number | null) => void;
+    onEditAsignatura: (id: number | null) => void;
     onSaveDias: (c: Curso, d: string) => void;
+    onSaveAsignatura: (c: Curso, newAsignatura: string) => void;
     onOpenLinkModal: (id: number) => void;
 }
 
@@ -19,12 +23,17 @@ export function CourseCard({
     isSelected,
     state,
     editingDiasId,
-    onDelete,
+    editingAsignaturaId,
+    currentUserId,
+    onHide,
     onSelect,
     onEditDias,
+    onEditAsignatura,
     onSaveDias,
+    onSaveAsignatura,
     onOpenLinkModal
 }: Props) {
+    const isTutor = currentUserId === curso.userId;
     return (
         <div className={`group flex flex-col h-full bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${isSelected ? 'ring-2 ring-[#7A8D69]' : 'hover:border-slate-350'}`}>
             <div className="p-6 flex-1">
@@ -44,17 +53,47 @@ export function CourseCard({
                     </div>
                     <button
                         className="opacity-0 group-hover:opacity-100 p-2 rounded-xl text-slate-300 hover:text-[#EB8847] hover:bg-[#EB8847]/5 transition-all duration-200 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EB8847]/50"
-                        onClick={(e) => { e.stopPropagation(); onDelete(curso.id); }}>
-                        <Trash2 size={15} />
+                        onClick={(e) => { e.stopPropagation(); onHide(curso.id); }}
+                        title="Ocultar curso"
+                    >
+                        <EyeOff size={15} />
                     </button>
                 </div>
 
                 <h3 className="text-lg font-black text-[#2E3330] tracking-tight leading-snug group-hover:text-[#7A8D69] transition-colors mb-3 font-notion-title">{curso.nombre}</h3>
 
                 <div className="inline-flex items-center gap-2 mb-5">
-                    <span className="px-3 py-1 rounded-full text-[9px] font-bold tracking-[0.08em] text-[#2E3330] bg-[#BFC9A6] border border-[rgba(46,51,48,0.08)]">
-                        {getAsignaturaNombre(curso.asignatura)}
-                    </span>
+                    {editingAsignaturaId === curso.id ? (
+                        <select
+                            value={curso.asignatura || ''}
+                            onChange={(e) => {
+                                e.stopPropagation();
+                                onSaveAsignatura(curso, e.target.value);
+                                onEditAsignatura(null);
+                            }}
+                            onBlur={() => onEditAsignatura(null)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-3 py-1.5 text-[9px] rounded-lg font-bold bg-white border border-[#7A8D69] text-[#2E3330] outline-none focus:ring-2 focus:ring-[#7A8D69]/50 transition-all"
+                            autoFocus
+                        >
+                            {ASIGNATURAS_CATALOGO.map(asig => (
+                                <option key={asig.id} value={asig.id}>
+                                    {asig.nombre}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEditAsignatura(curso.id);
+                            }}
+                            className="px-3 py-1 rounded-full text-[9px] font-bold tracking-[0.08em] text-[#2E3330] bg-[#BFC9A6] border border-[rgba(46,51,48,0.08)] hover:bg-[#7A8D69] hover:text-white transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50"
+                            title="Modificar asignatura"
+                        >
+                            {getAsignaturaNombre(curso.asignatura)}
+                        </button>
+                    )}
                 </div>
 
                 <div className="space-y-3.5">
@@ -123,16 +162,20 @@ export function CourseCard({
                                     )}
                                 </div>
                             </div>
-                            <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="text-[#2E3330] hover:bg-[#D4CCBE] bg-[#EAE4DA] px-3 py-1.5 rounded-full text-[9px] font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 transition-colors border border-[rgba(46,51,48,0.08)]">
-                                Modificar
-                            </button>
+                            {isTutor && (
+                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="text-[#2E3330] hover:bg-[#D4CCBE] bg-[#EAE4DA] px-3 py-1.5 rounded-full text-[9px] font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 transition-colors border border-[rgba(46,51,48,0.08)]">
+                                    Modificar
+                                </button>
+                            )}
                         </div>
                     ) : (
-                        <div className="mt-4 pt-4 border-t border-slate-100">
-                            <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-slate-250 rounded-xl text-slate-400 hover:text-[#7A8D69] hover:border-[#7A8D69]/30 hover:bg-[#7A8D69]/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 focus-visible:ring-offset-2">
-                                <Plus size={14} /> <span className="text-[9px] font-bold uppercase tracking-widest">Añadir Co-docentes</span>
-                            </button>
-                        </div>
+                        isTutor && (
+                            <div className="mt-4 pt-4 border-t border-slate-100">
+                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-slate-250 rounded-xl text-slate-400 hover:text-[#7A8D69] hover:border-[#7A8D69]/30 hover:bg-[#7A8D69]/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 focus-visible:ring-offset-2">
+                                    <Plus size={14} /> <span className="text-[9px] font-bold uppercase tracking-widest">Añadir Co-docentes</span>
+                                </button>
+                            </div>
+                        )
                     )}
                 </div>
             </div>

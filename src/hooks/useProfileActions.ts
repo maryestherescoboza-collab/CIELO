@@ -132,7 +132,6 @@ export function useProfileActions() {
 
         await supabase.from('perfiles').upsert({ 
             user_id: session.user.id, 
-            id: session.user.id, 
             centro_id: finalCentroId, 
             tipo_institucion: tipo, 
             asignaturas 
@@ -274,7 +273,6 @@ export function useProfileActions() {
         });
 
         await supabase.from('perfiles').upsert({ 
-            id: session.user.id,
             user_id: session.user.id, 
             nombre_docente: nombreDocente, 
             centro_id: finalCentroId,
@@ -293,7 +291,7 @@ export function useProfileActions() {
             });
             return { ...s, perfilAvatarColor: color, perfiles: updatedPerfiles };
         });
-        await supabase.from('perfiles').upsert({ user_id: session.user.id, id: session.user.id, avatar_color: color });
+        await supabase.from('perfiles').upsert({ user_id: session.user.id, avatar_color: color });
     }, [session, setState]);
 
     const handleUpdateInstitutoName = useCallback(async (nombre: string) => {
@@ -358,7 +356,6 @@ export function useProfileActions() {
             }
 
             await supabase.from('perfiles').upsert({
-                id: session.user.id,
                 user_id: session.user.id,
                 centro_id: finalCentroId
             });

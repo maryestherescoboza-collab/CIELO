@@ -26,7 +26,7 @@ export default function ResetPassword() {
   const isStrong = matchesLength && hasUppercase && hasLowercase && hasNumber;
   const matchesConfirm = password === confirmPassword && confirmPassword !== '';
 
-  const API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3001';
+  const API_URL = import.meta.env.VITE_AUTH_API_URL || (window.location.hostname === "localhost" ? 'http://localhost:3001' : 'https://evaluacielo.com');
 
   useEffect(() => {
     if (!token) {

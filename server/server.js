@@ -205,7 +205,7 @@ app.post('/api/auth/forgot-password', forgotPasswordLimiter, async (req, res) =>
     const nombreDocente = profile?.nombre || profile?.nombre_docente || 'Docente';
 
     // 6. Enviar Correo
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://evaluacielo.com'}/reset-password?token=${token}`;
     const emailHtml = getEmailHtml(resetUrl, nombreDocente);
 
     if (smtpConfigured) {
