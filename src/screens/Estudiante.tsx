@@ -6,8 +6,8 @@ import { useEstudianteData } from '../hooks/useEstudianteData';
 import EstudianteHeader from '../components/estudiante/EstudianteHeader';
 import PerfilTab from '../components/estudiante/PerfilTab';
 import AnnualGradesTable from '../components/estudiante/AnnualGradesTable';
-import type { BCKey, CursoDocente, Curso, RecuperacionBC, Actividad } from '../types';
-import { normalizeArea } from '../utils/academic';
+import type { BCKey, CursoDocente, Curso, Actividad } from '../types';
+import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
 
 export default function Estudiante() {
     const { id } = useParams();
@@ -48,72 +48,6 @@ export default function Estudiante() {
         setActiveTab('Perfil');
     }
 
-
-    // ── Optimized: Pre-calculate all grades and recuperations for O(1) table cell rendering ──
-    const gradesMap = useMemo(() => {
-        if (!est || !curso) return new Map<string, number>();
-        const resultMap = new Map<string, number>();
-
-        // 1. Get all activities for the course/shared course and current user/role
-        const visibleActs = state.actividades.filter(a => {
-            const actCurso = state.cursos.find(c => c.id === a.cursoId);
-            const isMatch = (curso.sharedCourseId && actCurso?.sharedCourseId === curso.sharedCourseId) || a.cursoId === curso.id;
-            const isRecur = a.nombre === 'Recuperación';
-            const actAsignatura = a.asignatura || actCurso?.asignatura || '';
-            const matchesRole = !currentCourseRole || currentCourseRole.rol === 'tutor' || actAsignatura === currentCourseRole.asignatura;
-            return isMatch && !isRecur && matchesRole;
-        });
-
-        // Group activities by: `${normAsignatura}-${periodo}-${bc}`
-        const actsGroup = new Map<string, typeof visibleActs>();
-        visibleActs.forEach(a => {
-            const actCurso = state.cursos.find(c => c.id === a.cursoId);
-            const actAsignatura = a.asignatura || actCurso?.asignatura || '';
-            const normAsignatura = normalizeArea(actAsignatura);
-            const assignedBCs = (a.bcAsignados && a.bcAsignados.length > 0) ? a.bcAsignados : ['BC1'];
-            
-            assignedBCs.forEach(bc => {
-                const groupKey = `${normAsignatura}-${a.periodo}-${bc}`;
-                const list = actsGroup.get(groupKey) || [];
-                list.push(a);
-                actsGroup.set(groupKey, list);
-            });
-        });
-
-        // Calculate average grade per group
-        actsGroup.forEach((acts, groupKey) => {
-            const scores = acts.map(a => {
-                const calif = state.calificaciones.find(c => c.estudianteId === est.id && c.actividadId === a.id);
-                return calif?.puntaje;
-            }).filter((s): s is number => s !== undefined && s !== null);
-            
-            if (scores.length > 0) {
-                const avg = Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
-                const sharedId = curso.sharedCourseId || String(curso.id);
-                resultMap.set(`${sharedId}-${groupKey}`, avg);
-            }
-        });
-
-        return resultMap;
-    }, [est, curso, state.actividades, state.cursos, state.calificaciones, currentCourseRole]);
-
-    const recuperacionesMap = useMemo(() => {
-        if (!est || !curso) return new Map<string, number>();
-        const rMap = new Map<string, number>();
-        state.recuperaciones.forEach((r: RecuperacionBC) => {
-            if (r.estudianteId !== est.id || r.puntaje === null) return;
-            const normAsignatura = normalizeArea(r.asignatura || '');
-            const bcStr = typeof r.bc === 'string' ? r.bc : `BC${r.bc}`;
-            const sharedId = curso.sharedCourseId || String(curso.id);
-            // Verify match based on sharedCourseId
-            const isMatch = r.sharedCourseId === sharedId || r.cursoId === curso.id;
-            if (isMatch) {
-                rMap.set(`${sharedId}-${normAsignatura}-${r.periodo}-${bcStr}`, r.puntaje);
-            }
-        });
-        return rMap;
-    }, [est, curso, state.recuperaciones]);
-
     const allSubjects = useMemo(() => {
         if (!curso) return [];
         const subjectsSet = new Set<string>();
@@ -128,32 +62,91 @@ export default function Estudiante() {
     }, [curso, state.actividades, state.cursos]);
 
     const renderGradesCellsForSubject = useCallback((subject: string) => {
-        if (!curso) return null;
-        const normSubject = normalizeArea(subject);
-        const periods = ['P1', 'P2', 'P3', 'P4'];
-        const competencies: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
-        const sharedId = curso.sharedCourseId || String(curso.id);
+        if (!curso || !est) return null;
+        
+        const asig = ASIGNATURAS_CATALOGO.find(a => a.nombre === subject || a.id === subject);
+        if (!asig) return null;
 
-        let sumFinals = 0;
-        let countFinals = 0;
+        const periods: ('P1' | 'P2' | 'P3' | 'P4')[] = ['P1', 'P2', 'P3', 'P4'];
+        const bcs: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
+        const cursoId = curso.id;
 
-        const cells = competencies.map(bc => {
+        const pGrades: Record<string, Record<BCKey, number | null>> = {
+            P1: { BC1: null, BC2: null, BC3: null, BC4: null },
+            P2: { BC1: null, BC2: null, BC3: null, BC4: null },
+            P3: { BC1: null, BC2: null, BC3: null, BC4: null },
+            P4: { BC1: null, BC2: null, BC3: null, BC4: null },
+        };
+
+        const pcAverages: Record<BCKey, number | null> = {
+            BC1: null, BC2: null, BC3: null, BC4: null
+        };
+
+        // Filter activities, qualifications, and recoveries for this subject using the exact same logic as PrintBoletines.tsx
+        const activities = state.actividades.filter(a => 
+            (a.cursoId === cursoId || (curso?.sharedCourseId && state.cursos.find(cx => cx.id === a.cursoId)?.sharedCourseId === curso.sharedCourseId)) &&
+            a.asignatura === asig.id
+        );
+
+        const qualifications = state.calificaciones.filter(c => 
+            c.estudianteId === est.id && 
+            c.asignatura === asig.id
+        );
+
+        const recoveries = state.recuperaciones.filter(r => 
+            r.estudianteId === est.id && 
+            r.asignatura === asig.id
+        );
+
+        periods.forEach(p => {
+            bcs.forEach((bc, bcIdx) => {
+                const bcNum = (bcIdx + 1) as 1 | 2 | 3 | 4;
+                const periodBCActs = activities.filter(a => 
+                    a.periodo === p && 
+                    a.nombre !== 'Recuperación' && 
+                    a.bcAsignados?.includes(bc)
+                );
+
+                const rawScores = periodBCActs
+                    .map(a => qualifications.find(q => q.actividadId === a.id)?.puntaje ?? 0);
+
+                const avg = periodBCActs.length ? Math.round(rawScores.reduce((sum, val) => sum + val, 0) / periodBCActs.length) : null;
+                const rec = recoveries.find(r => r.periodo === p && Number(r.bc) === bcNum)?.puntaje ?? null;
+
+                const finalBCScore = (rec !== null && (avg === null || avg < 70)) ? rec : avg;
+                pGrades[p][bc] = finalBCScore;
+            });
+        });
+
+        // Calculate group competency averages
+        bcs.forEach(bc => {
+            const hasAllPeriods = periods.every(p => pGrades[p][bc] !== null);
+            if (hasAllPeriods) {
+                const periodScores = periods.map(p => pGrades[p][bc] as number);
+                pcAverages[bc] = Math.round(periodScores.reduce((sum, val) => sum + val, 0) / periodScores.length);
+            } else {
+                pcAverages[bc] = null;
+            }
+        });
+
+        const hasAllPcAverages = bcs.every(bc => pcAverages[bc] !== null);
+        const finalGrade = hasAllPcAverages 
+            ? Math.round(bcs.map(bc => pcAverages[bc] as number).reduce((sum, val) => sum + val, 0) / bcs.length) 
+            : null;
+
+        // Render the cells!
+        const cells = bcs.map(bc => {
             return periods.map(p => {
-                const mapKey = `${sharedId}-${normSubject}-${p}-${bc}`;
-                const avgVal = gradesMap.get(mapKey);
-                const recVal = recuperacionesMap.get(mapKey);
-
-                const finalVal = (recVal !== undefined && (avgVal === undefined || avgVal < 70)) ? recVal : avgVal;
-                const isRecovered = recVal !== undefined && (avgVal === undefined || avgVal < 70);
-
-                if (finalVal !== undefined) {
-                    sumFinals += finalVal;
-                    countFinals++;
-                }
+                const finalVal = pGrades[p][bc];
+                // Check if this cell was recovered
+                const bcNum = (bcs.indexOf(bc) + 1);
+                const rec = recoveries.find(r => r.periodo === p && Number(r.bc) === bcNum)?.puntaje ?? null;
+                const avgVal = activities.filter(a => a.periodo === p && a.nombre !== 'Recuperación' && a.bcAsignados?.includes(bc)).length ? Math.round(activities.filter(a => a.periodo === p && a.nombre !== 'Recuperación' && a.bcAsignados?.includes(bc)).map(a => qualifications.find(q => q.actividadId === a.id)?.puntaje ?? 0).reduce((sum, val) => sum + val, 0) / activities.filter(a => a.periodo === p && a.nombre !== 'Recuperación' && a.bcAsignados?.includes(bc)).length) : null;
+                const isRecovered = rec !== null && (avgVal === null || avgVal < 70);
 
                 return (
                     <td key={`${p}-${bc}`} className="px-3 py-4 text-center border border-[rgba(46,51,48,0.08)]">
-                        {finalVal !== undefined ? (
+                        {finalVal !== null && finalVal !== undefined ? (
                             <span className={`text-[13px] font-black ${isRecovered ? 'text-[#B87449] bg-[#FDFBF7] px-1.5 py-0.5 rounded border border-[#B87449]/20' : 'text-[#2E3330]'}`}>
                                 {finalVal}
                             </span>
@@ -165,17 +158,15 @@ export default function Estudiante() {
             });
         });
 
-        // Add the extra columns so the table renders correctly without breaking markup
-        const promedioGrupo = countFinals > 0 ? Math.round(sumFinals / countFinals) : null;
-        // placeholders for missing logic: completiva, extraordinaria, especial
-        const sitA = promedioGrupo !== null && promedioGrupo >= 70 ? '✓' : '';
-        const sitR = promedioGrupo !== null && promedioGrupo < 70 ? '✗' : '';
+        // sitA/sitR
+        const sitA = finalGrade !== null && finalGrade >= 70 ? '✓' : '';
+        const sitR = finalGrade !== null && finalGrade < 70 ? '✗' : '';
 
         return (
             <>
                 {cells}
                 <td className="px-2 font-black text-[13px] text-[#2E3330] bg-[#FDFBF7] border-x-2 border-[rgba(46,51,48,0.08)]">
-                    {promedioGrupo !== null ? promedioGrupo : <span className="text-[#5F665E]/40">-</span>}
+                    {finalGrade !== null ? finalGrade : <span className="text-[#5F665E]/40">-</span>}
                 </td>
                 <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
                 <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
@@ -184,7 +175,7 @@ export default function Estudiante() {
                 <td className="px-2 text-[#B87449] font-black text-[14px] bg-[#FDFBF7] border-r border-[rgba(46,51,48,0.08)]">{sitR}</td>
             </>
         );
-    }, [curso, gradesMap, recuperacionesMap]);
+    }, [curso, est, state.actividades, state.calificaciones, state.recuperaciones, state.cursos]);
 
     if (!est) {
         return (
