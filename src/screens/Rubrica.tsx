@@ -201,6 +201,68 @@ export default function Rubrica({
         setShowImportArea(false);
     }
 
+    async function handlePaste() {
+        if (!contextMenu) return;
+        try {
+            const text = await navigator.clipboard.readText();
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            
+            const rows = lines.map(line => {
+                if (line.includes('|')) {
+                    const cells = line.split('|').map(c => c.trim());
+                    if (cells[0] === '') cells.shift();
+                    if (cells[cells.length - 1] === '') cells.pop();
+                    return cells;
+                } else {
+                    return line.split('\t').map(c => c.trim());
+                }
+            });
+
+            const cleanRows = rows.filter(row => {
+                if (row.length === 0) return false;
+                const isDivider = row.every(cell => /^[:-]+$/.test(cell));
+                return !isDivider;
+            });
+
+            if (cleanRows.length === 0) return;
+
+            let startIndex = 0;
+            const firstRowStr = cleanRows[0].join(' ').toLowerCase();
+            const hasHeaderKeywords = ['competencia', 'estrateg', 'auton', 'resol', 'recept'].some(keyword => firstRowStr.includes(keyword));
+
+            if (hasHeaderKeywords || cleanRows.length > 1) {
+                startIndex = 1;
+            }
+
+            const targetIndex = localDescriptors.findIndex(d => d.id === contextMenu.descId);
+            if (targetIndex === -1) return;
+
+            setLocalDescriptors((prev) => {
+                const next = [...prev];
+                for (let i = startIndex; i < cleanRows.length; i++) {
+                    const row = cleanRows[i];
+                    const targetOffset = i - startIndex;
+                    const destIndex = targetIndex + targetOffset;
+                    if (destIndex < next.length) {
+                        const desc = next[destIndex];
+                        next[destIndex] = {
+                            ...desc,
+                            estrategico: row[1] !== undefined ? row[1] : desc.estrategico,
+                            autonomo: row[2] !== undefined ? row[2] : desc.autonomo,
+                            resolutivo: row[3] !== undefined ? row[3] : desc.resolutivo,
+                            receptivo: row[4] !== undefined ? row[4] : desc.receptivo,
+                        };
+                    }
+                }
+                return next;
+            });
+        } catch (err) {
+            console.error('Failed to read clipboard: ', err);
+        } finally {
+            setContextMenu(null);
+        }
+    }
+
     // Initialize descriptors/levels in store
     useEffect(() => {
         if (localDescriptors.length === 0 || readOnly) {
@@ -625,30 +687,6 @@ export default function Rubrica({
                                             >
                                                 Guardar como Plantilla
                                             </button>
-                                            <button
-                                                onClick={() => setShowImportArea(!showImportArea)}
-                                                className="w-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-[10px] py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 mt-2 shadow-sm artisan-pill artisan-btn-white"
-                                            >
-                                                {showImportArea ? 'Cancelar Importación' : 'Pegar tabla de rúbrica'}
-                                            </button>
-
-                                            {showImportArea && (
-                                                <div className="mt-3 p-3 border border-slate-200 rounded-xl bg-white space-y-2">
-                                                    <label className="text-[9px] font-bold text-slate-500 uppercase block text-left">Pegar tabla Markdown</label>
-                                                    <textarea
-                                                        className="w-full bg-[#FDFBF7] border border-slate-200 rounded-lg p-2 text-[10px] font-mono min-h-24 outline-none focus-visible:border-turf-green-base text-left"
-                                                        placeholder="| Competencia | Estratégico... |"
-                                                        value={importText}
-                                                        onChange={e => setImportText(e.target.value)}
-                                                    />
-                                                    <button
-                                                        onClick={() => handleImportMarkdown(importText)}
-                                                        className="w-full bg-turf-green-base text-white font-black uppercase tracking-widest text-[10px] py-2.5 rounded-lg hover:bg-turf-green-base/90 transition-all cursor-pointer"
-                                                    >
-                                                        Importar a la rúbrica
-                                                    </button>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -965,6 +1003,13 @@ export default function Rubrica({
                     >
                         <span className="material-symbols-outlined text-[16px] text-slate-400">open_in_new</span>
                         <span>Abrir evaluación PiP</span>
+                    </button>
+                    <button
+                        onClick={handlePaste}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 font-bold text-slate-700 flex items-center gap-2 border-t border-slate-100"
+                    >
+                        <span className="material-symbols-outlined text-[16px] text-slate-400">content_paste</span>
+                        <span>Pegar</span>
                     </button>
                 </div>
             )}

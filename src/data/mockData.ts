@@ -41,7 +41,12 @@ export const MOCK_STATE: AppState = {
     eventos: [],
     posts: [],
     descriptoresRubrica: [],
-    nivelesPuntaje: [],
+    nivelesPuntaje: [
+        { nivel: 4, nombre: 'Estratégico', puntaje: 100, color: '#22c55e', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
+        { nivel: 3, nombre: 'Autónomo', puntaje: 85, color: '#eab308', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
+        { nivel: 2, nombre: 'Resolutivo', puntaje: 70, color: '#f97316', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
+        { nivel: 1, nombre: 'Receptivo', puntaje: 55, color: '#94a3b8', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' },
+    ],
     evaluacionesRubrica: [],
     criteriosCotejo: [],
     evaluacionesCotejo: [],

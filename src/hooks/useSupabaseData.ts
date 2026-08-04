@@ -21,6 +21,43 @@ const parseObservaciones = (val: any): string[] => {
     return [];
 };
 
+const sanitizeNivelesPuntaje = (fetchedNiveles: any[] | null | undefined): NivelPuntaje[] => {
+    const defaults: Record<number, { puntaje: number; nombre: string; color: string; description: string }> = {
+        4: { puntaje: 100, nombre: 'Estratégico', color: '#22c55e', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
+        3: { puntaje: 85, nombre: 'Autónomo', color: '#eab308', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
+        2: { puntaje: 70, nombre: 'Resolutivo', color: '#f97316', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
+        1: { puntaje: 55, nombre: 'Receptivo', color: '#94a3b8', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' }
+    };
+
+    const result: NivelPuntaje[] = [];
+    const rawList = fetchedNiveles || [];
+
+    for (let nivel = 1; nivel <= 4; nivel++) {
+        const found = rawList.find(n => Number(n.nivel) === nivel);
+        const defaultVal = defaults[nivel];
+        if (found) {
+            const currentPuntaje = found.puntaje !== null && found.puntaje !== undefined ? Number(found.puntaje) : 0;
+            result.push({
+                nivel: nivel as 1 | 2 | 3 | 4,
+                nombre: found.nombre || defaultVal.nombre,
+                puntaje: (!currentPuntaje || currentPuntaje === 0) ? defaultVal.puntaje : currentPuntaje,
+                color: found.color || defaultVal.color,
+                description: found.descripcion || found.description || defaultVal.description
+            });
+        } else {
+            result.push({
+                nivel: nivel as 1 | 2 | 3 | 4,
+                nombre: defaultVal.nombre,
+                puntaje: defaultVal.puntaje,
+                color: defaultVal.color,
+                description: defaultVal.description
+            });
+        }
+    }
+
+    return result.sort((a, b) => b.nivel - a.nivel);
+};
+
 export function useSupabaseData() {
     const { state, setAppState: setState, loading, setLoading, session, setSession } = useAppStore();
 
@@ -391,7 +428,7 @@ export function useSupabaseData() {
                     receptivo: dr.receptivo as string,
                     plantillaId: dr.plantilla_id ? Number(dr.plantilla_id) : null
                 })),
-                nivelesPuntaje: nivelesPuntaje as NivelPuntaje[] || [],
+                nivelesPuntaje: sanitizeNivelesPuntaje(nivelesPuntaje),
                 plantillas: (plantillas || []).map((p): Plantilla => ({
                     id: p.id,
                     tipo: p.tipo,

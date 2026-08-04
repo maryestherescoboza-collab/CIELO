@@ -228,6 +228,138 @@ export default function Cotejo({
         }
     }
 
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+    useEffect(() => {
+        const handleCloseMenu = () => setContextMenu(null);
+        window.addEventListener('click', handleCloseMenu);
+        return () => window.removeEventListener('click', handleCloseMenu);
+    }, []);
+
+    useEffect(() => {
+        if (readOnly) return;
+        const handleGlobalPaste = (e: ClipboardEvent) => {
+            const activeEl = document.activeElement;
+            const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+            const text = e.clipboardData?.getData('text') || '';
+            if (!text) return;
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            if (isInput && lines.length <= 1 && !text.includes('\t') && !text.includes('|')) {
+                return;
+            }
+            e.preventDefault();
+            const rows = lines.map(line => {
+                if (line.includes('|')) {
+                    const cells = line.split('|').map(c => c.trim());
+                    if (cells[0] === '') cells.shift();
+                    if (cells[cells.length - 1] === '') cells.pop();
+                    return cells;
+                } else {
+                    return line.split('\t').map(c => c.trim());
+                }
+            });
+            const cleanRows = rows.filter(row => {
+                if (row.length === 0) return false;
+                const isDivider = row.every(cell => /^[:-]+$/.test(cell));
+                return !isDivider;
+            });
+            if (cleanRows.length === 0) return;
+            let startIndex = 0;
+            const isTable = cleanRows.some(r => r.length > 1);
+            if (isTable) {
+                startIndex = 1;
+            }
+            const newIndicators: string[] = [];
+            for (let i = startIndex; i < cleanRows.length; i++) {
+                const row = cleanRows[i];
+                const textContent = row[0];
+                if (textContent) {
+                    newIndicators.push(textContent);
+                }
+            }
+            if (newIndicators.length > 0) {
+                setLocalCriterios(prev => {
+                    let maxId = Math.max(0, ...prev.map(c => c.id));
+                    const added = newIndicators.map(text => {
+                        maxId++;
+                        return { id: maxId, titulo: text, descripcion: text };
+                    });
+                    return [...prev, ...added];
+                });
+            }
+        };
+        window.addEventListener('paste', handleGlobalPaste);
+        return () => window.removeEventListener('paste', handleGlobalPaste);
+    }, [readOnly]);
+
+    function handleInsertRowAfter(critId: number) {
+        setLocalCriterios(prev => {
+            const index = prev.findIndex(c => c.id === critId);
+            if (index === -1) return prev;
+            const newId = Math.max(0, ...prev.map(c => c.id)) + 1;
+            const newCrit = { id: newId, titulo: '', descripcion: '' };
+            const next = [...prev];
+            next.splice(index + 1, 0, newCrit);
+            return next;
+        });
+    }
+
+    async function handlePaste() {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (!text) return;
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            const rows = lines.map(line => {
+                if (line.includes('|')) {
+                    const cells = line.split('|').map(c => c.trim());
+                    if (cells[0] === '') cells.shift();
+                    if (cells[cells.length - 1] === '') cells.pop();
+                    return cells;
+                } else {
+                    return line.split('\t').map(c => c.trim());
+                }
+            });
+
+            const cleanRows = rows.filter(row => {
+                if (row.length === 0) return false;
+                const isDivider = row.every(cell => /^[:-]+$/.test(cell));
+                return !isDivider;
+            });
+
+            if (cleanRows.length === 0) return;
+
+            let startIndex = 0;
+            const isTable = cleanRows.some(r => r.length > 1);
+            if (isTable) {
+                startIndex = 1;
+            }
+
+            const newIndicators: string[] = [];
+            for (let i = startIndex; i < cleanRows.length; i++) {
+                const row = cleanRows[i];
+                const textContent = row[0];
+                if (textContent) {
+                    newIndicators.push(textContent);
+                }
+            }
+
+            if (newIndicators.length > 0) {
+                setLocalCriterios(prev => {
+                    let maxId = Math.max(0, ...prev.map(c => c.id));
+                    const added = newIndicators.map(text => {
+                        maxId++;
+                        return { id: maxId, titulo: text, descripcion: text };
+                    });
+                    return [...prev, ...added];
+                });
+            }
+        } catch (err) {
+            console.error('Failed to paste indicators:', err);
+        } finally {
+            setContextMenu(null);
+        }
+    }
+
     return (
         <div className="flex flex-1 h-full overflow-hidden bg-[#FDFBF7]">
             {!readOnly && (
@@ -484,45 +616,45 @@ export default function Cotejo({
 
                                 <div className="w-full bg-white rounded-3xl p-2 border border-slate-200 shadow-sm">
                                     <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide py-1 px-2.5">
-                                    {sortedEsts.map((est, idx) => {
-                                        const isSel = selectedEstId === est.id;
-                                        const numInvolved = multiEvaluations[est.id] ? Object.keys(multiEvaluations[est.id]).length : 0;
-                                        const isInActiveCell = activeCell ? multiEvaluations[est.id]?.[activeCell.critId] === activeCell.val : false;
+                                        {sortedEsts.map((est, idx) => {
+                                            const isSel = selectedEstId === est.id;
+                                            const numInvolved = multiEvaluations[est.id] ? Object.keys(multiEvaluations[est.id]).length : 0;
+                                            const isInActiveCell = activeCell ? multiEvaluations[est.id]?.[activeCell.critId] === activeCell.val : false;
 
-                                        return (
-                                            <button
-                                                key={est.id}
-                                                onClick={() => handleAvatarClick(est.id)}
-                                                className="flex min-w-12 flex-col items-center gap-1.5 outline-none group relative"
-                                            >
-                                                <div
-                                                    className={`flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-black text-white transition-all ring-offset-2 ${isSel
-                                                        ? 'scale-105 ring-2 ring-turf-green-base shadow-lg'
-                                                        : 'opacity-50 grayscale hover:scale-105 hover:opacity-100 hover:grayscale-0'
-                                                        } ${isInActiveCell ? 'ring-2 ring-turf-green-base opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
-                                                    style={{ background: est.avatarColor }}
+                                            return (
+                                                <button
+                                                    key={est.id}
+                                                    onClick={() => handleAvatarClick(est.id)}
+                                                    className="flex min-w-12 flex-col items-center gap-1.5 outline-none group relative"
                                                 >
-                                                    {est.nombre[0]}
-                                                    {numInvolved > 0 && (
-                                                        <div className="absolute -top-1 -right-1 bg-green-500 text-white text-[7px] h-3.5 w-3.5 rounded-full flex items-center justify-center font-black border border-white">
-                                                            {numInvolved}
-                                                        </div>
-                                                    )}
-                                                    {isInActiveCell && (
-                                                        <div className="absolute -bottom-1 -right-1 bg-turf-green-base text-white h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white shadow-sm">
-                                                            <CheckCircle size={9} />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <span
-                                                    className={`text-center text-[8px] font-black uppercase tracking-[0.14em] transition-colors ${isSel || isInActiveCell ? 'text-[#1E293B]' : 'text-slate-400'
-                                                        }`}
-                                                >
-                                                    {idx + 1}. {est.nombre.split(' ')[0]}
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
+                                                    <div
+                                                        className={`flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-black text-white transition-all ring-offset-2 ${isSel
+                                                            ? 'scale-105 ring-2 ring-turf-green-base shadow-lg'
+                                                            : 'opacity-50 grayscale hover:scale-105 hover:opacity-100 hover:grayscale-0'
+                                                            } ${isInActiveCell ? 'ring-2 ring-turf-green-base opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
+                                                        style={{ background: est.avatarColor }}
+                                                    >
+                                                        {est.nombre[0]}
+                                                        {numInvolved > 0 && (
+                                                            <div className="absolute -top-1 -right-1 bg-green-500 text-white text-[7px] h-3.5 w-3.5 rounded-full flex items-center justify-center font-black border border-white">
+                                                                {numInvolved}
+                                                            </div>
+                                                        )}
+                                                        {isInActiveCell && (
+                                                            <div className="absolute -bottom-1 -right-1 bg-turf-green-base text-white h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white shadow-sm">
+                                                                <CheckCircle size={9} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <span
+                                                        className={`text-center text-[8px] font-black uppercase tracking-[0.14em] transition-colors ${isSel || isInActiveCell ? 'text-[#1E293B]' : 'text-slate-400'
+                                                            }`}
+                                                    >
+                                                        {idx + 1}. {est.nombre.split(' ')[0]}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
@@ -530,7 +662,17 @@ export default function Cotejo({
                     )}
 
                     <div className="w-full rounded-[24px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50 overflow-hidden">
-                        <table className="table-compact w-full border-collapse font-['Inter',sans-serif] text-[16px]">
+                        <table
+                            onContextMenu={(e) => {
+                                if (readOnly) return;
+                                e.preventDefault();
+                                setContextMenu({
+                                    x: e.clientX,
+                                    y: e.clientY
+                                });
+                            }}
+                            className="table-compact w-full border-collapse font-['Inter',sans-serif] text-[16px]"
+                        >
                             <thead>
                                 <tr className="border-b border-slate-200 bg-[#1E293B] text-white">
                                     <th className="w-[76%] border-r border-white/30 px-4 py-1.5 text-left align-middle text-[16px] font-bold">
@@ -552,17 +694,26 @@ export default function Cotejo({
                                             </th>
                                         );
                                     })}
-                                    {!readOnly && <th className="w-[4%] border-l border-white/30"></th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {localCriterios.length === 0 ? (
                                     <tr>
-                                        <td colSpan={localNiveles.length + (readOnly ? 1 : 2)} className="py-20 text-center">
-                                            <div className="flex flex-col items-center gap-3 opacity-30">
-                                                <Plus size={40} className="text-slate-500" />
-                                                <p className="text-sm font-black uppercase tracking-widest">No hay criterios definidos</p>
-                                            </div>
+                                        <td colSpan={localNiveles.length + 1} className="py-20 text-center">
+                                            <button
+                                                onClick={() => {
+                                                    if (readOnly) return;
+                                                    const id = Math.max(0, ...localCriterios.map(c => c.id)) + 1;
+                                                    setLocalCriterios([{ id, titulo: '', descripcion: '' }]);
+                                                }}
+                                                className="flex flex-col items-center gap-2 mx-auto focus:outline-none hover:opacity-85 transition-all select-none cursor-pointer group"
+                                            >
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500 group-hover:bg-slate-200 transition-all shadow-sm">
+                                                    <Plus size={24} />
+                                                </div>
+                                                <p className="text-[16px] font-bold text-slate-700 mt-2">No hay criterios definidos</p>
+                                                <p className="text-xs text-slate-400">Haga clic para crear una fila.</p>
+                                            </button>
                                         </td>
                                     </tr>
                                 ) : localCriterios.map(crit => (
@@ -574,9 +725,19 @@ export default function Cotejo({
                                                         <p className="text-[16px] font-medium text-[#1E293B]">{crit.descripcion}</p>
                                                     </div>
                                                 ) : (
-                                                    <div className="space-y-2 table-stack-tight">
+                                                    <div className="flex items-center gap-2 relative w-full">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleInsertRowAfter(crit.id);
+                                                            }}
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#7C9672] hover:text-[#7C9672]/80 text-xl font-bold select-none px-1"
+                                                            title="Insertar indicador"
+                                                        >
+                                                            +
+                                                        </button>
                                                         <textarea
-                                                            className="w-full bg-transparent outline-none text-[16px] font-medium text-[#1E293B] resize-none h-12 scrollbar-hide text-left"
+                                                            className="flex-1 bg-transparent outline-none text-[16px] font-medium text-[#1E293B] resize-none h-12 scrollbar-hide text-left"
                                                             placeholder="Descripción del indicador..."
                                                             value={crit.descripcion}
                                                             onChange={e => {
@@ -584,6 +745,16 @@ export default function Cotejo({
                                                                 setLocalCriterios(prev => prev.map(c => c.id === crit.id ? { ...c, titulo: descVal, descripcion: descVal } : c));
                                                             }}
                                                         />
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setLocalCriterios(p => p.filter(c => c.id !== crit.id));
+                                                            }}
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#CB4834] hover:text-[#CB4834]/80 text-xl font-bold select-none px-1"
+                                                            title="Eliminar indicador"
+                                                        >
+                                                            ×
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>
@@ -594,7 +765,7 @@ export default function Cotejo({
                                             const studentsInCell = sortedEsts.map((s, i) => ({ s, i: i + 1 }))
                                                 .filter(({ s }) => multiEvaluations[s.id]?.[crit.id] === n.val);
                                             const colors = COTEJO_COLORES[n.val] || { headerBg: '', cellBg: '' };
- 
+
                                             return (
                                                 <td
                                                     key={n.val}
@@ -637,16 +808,7 @@ export default function Cotejo({
                                                 </td>
                                             );
                                         })}
-                                        {!readOnly && (
-                                            <td className="px-1 text-center align-middle border-l border-slate-100">
-                                                <button
-                                                    onClick={() => setLocalCriterios(p => p.filter(c => c.id !== crit.id))}
-                                                    className="text-slate-400 opacity-0 group-hover:opacity-100 transition-all p-1.5 hover:bg-red-50 hover:text-red-500 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:opacity-100"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </td>
-                                        )}
+
                                     </tr>
                                 ))}
                             </tbody>
@@ -665,12 +827,12 @@ export default function Cotejo({
                         <div className="p-6 space-y-5">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Descripción del Criterio</label>
-                                <textarea 
-                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-[#1E293B] min-h-25 outline-none transition-all focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50" 
-                                    placeholder="Detalle el criterio de observación..." 
-                                    value={newCrit.descripcion} 
-                                    onChange={e => setNewCrit({ ...newCrit, descripcion: e.target.value })} 
-                                    />
+                                <textarea
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-[#1E293B] min-h-25 outline-none transition-all focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50"
+                                    placeholder="Detalle el criterio de observación..."
+                                    value={newCrit.descripcion}
+                                    onChange={e => setNewCrit({ ...newCrit, descripcion: e.target.value })}
+                                />
                             </div>
                         </div>
                         <div className="p-6 bg-slate-50 flex gap-4 border-t border-slate-100">
@@ -685,6 +847,21 @@ export default function Cotejo({
                             }}>Confirmar</button>
                         </div>
                     </div>
+                </div>
+            )}
+            {contextMenu && (
+                <div
+                    className="fixed z-200 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 min-w-48 font-sans text-xs"
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={handlePaste}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 font-bold text-slate-700 flex items-center gap-2"
+                    >
+                        <span className="material-symbols-outlined text-[16px] text-slate-400">content_paste</span>
+                        <span>Pegar indicadores</span>
+                    </button>
                 </div>
             )}
         </div>

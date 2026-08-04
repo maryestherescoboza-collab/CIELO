@@ -41,10 +41,10 @@ const RubricModal: React.FC<RubricModalProps> = ({
                         <thead>
                             <tr className="bg-slate-50 text-[11px] font-black uppercase text-slate-500 tracking-wider">
                                 <th className="border border-slate-200 p-4 text-left w-1/3">Competencia Deficiente</th>
-                                <th className="border border-slate-200 p-4 text-center">Estratégico: Muestra dominio de la competencia (90)</th>
-                                <th className="border border-slate-200 p-4 text-center">Autónomo: Aplica la competencia con independencia (80)</th>
+                                <th className="border border-slate-200 p-4 text-center">Estratégico: Muestra dominio de la competencia (100)</th>
+                                <th className="border border-slate-200 p-4 text-center">Autónomo: Aplica la competencia con independencia (85)</th>
                                 <th className="border border-slate-200 p-4 text-center">Resolutivo: Aplica la competencia con ayuda (70)</th>
-                                <th className="border border-slate-200 p-4 text-center">Receptivo: No evidencia desarrollo de la competencia (BC)</th>
+                                <th className="border border-slate-200 p-4 text-center">Receptivo: No evidencia desarrollo de la competencia (55)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -69,12 +69,12 @@ const RubricModal: React.FC<RubricModalProps> = ({
                                                 </div>
                                             </div>
                                         </td>
-                                        {[90, 80, 70, v.avg || 0].map((score, sIdx) => {
+                                        {[100, 85, 70, 55].map((score, sIdx) => {
                                             const isSelected = v.rec === score;
                                             const isReceptivo = sIdx === 3;
                                             const bgColors = [
-                                                'bg-[#7C9672]', // 90 -> Estratégico
-                                                'bg-[#D8B55A]', // 80 -> Autónomo
+                                                'bg-[#7C9672]', // 100 -> Estratégico
+                                                'bg-[#D8B55A]', // 85 -> Autónomo
                                                 'bg-[#CB4834]', // 70 -> Resolutivo
                                                 'bg-[#3F3C36]'  // Receptivo
                                             ];
