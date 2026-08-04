@@ -40,10 +40,10 @@ const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
             </div>
 
             <div className="w-[98%] max-w-310 flex items-end px-4 gap-2 transform translate-y-px">
-                {(['Perfil', ...(isTutor ? ['Evaluación'] : [])] as const).map((tab) => (
+                {(isTutor ? ['Perfil', 'Evaluación'] : ['Perfil']).map((tab) => (
                     <button
                         key={tab}
-                        onClick={() => setActiveTab(tab)}
+                        onClick={() => setActiveTab(tab as 'Perfil' | 'Evaluación')}
                         className={`px-8 sm:px-12 py-3.5 text-xs font-semibold uppercase tracking-[0.08em] rounded-t-[16px] border-x border-t transition-all ${
                             activeTab === tab 
                             ? 'bg-[#FDFBF7] border-[rgba(46,51,48,0.08)] border-b-[#FDFBF7] z-10 text-[#2E3330] shadow-sm' 

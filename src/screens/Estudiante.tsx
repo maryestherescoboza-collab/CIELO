@@ -167,9 +167,7 @@ export default function Estudiante() {
 
         // Add the extra columns so the table renders correctly without breaking markup
         const promedioGrupo = countFinals > 0 ? Math.round(sumFinals / countFinals) : null;
-        const completiva = null; // placeholders for missing logic
-        const extraordinaria = null; // placeholders
-        const especial = null; // placeholders
+        // placeholders for missing logic: completiva, extraordinaria, especial
         const sitA = promedioGrupo !== null && promedioGrupo >= 70 ? '✓' : '';
         const sitR = promedioGrupo !== null && promedioGrupo < 70 ? '✗' : '';
 
