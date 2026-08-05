@@ -122,8 +122,8 @@ WHERE lower(u.email) = 'administrador@cielo.test';
 -- NOTAS / PENDIENTES
 --  A) La política "Gestión de códigos por director" (migration_suscripciones
 --     tilopay.sql) solo permite leer codigos_acceso_centro a directores.
---     El flujo de RegistroDocente (unirse con código) consulta esa tabla,
---     por lo que un docente normal no vería el código. Para habilitarlo,
+--     El flujo de vinculación de docentes a un centro (unirse con código) consulta
+--     esa tabla, por lo que un docente normal no vería el código. Para habilitarlo,
 --     descomenta la política siguiente (cambia una política RLS, no la
 --     lógica del sistema):
 --

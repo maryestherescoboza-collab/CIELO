@@ -4,8 +4,6 @@ import './index.css';
 import Layout from './components/Layout';
 import Auth from './screens/Auth';
 import ResetPassword from './screens/ResetPassword';
-import RegistroCentro from './screens/Registration/RegistroCentro';
-import RegistroDocente from './screens/Registration/RegistroDocente';
 import AppRoutes from './AppRoutes';
 import Landing from './screens/Landing';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -27,6 +25,7 @@ import { useTareaActions } from './hooks/useTareaActions';
 import CentroPanel from './screens/CentroPanel';
 import { useAppStore } from './store/appStore';
 import { useAppInitialization } from './hooks/useAppInitialization';
+import { usePendingCentro } from './hooks/usePendingCentro';
 import { useShallow } from 'zustand/react/shallow';
 
 export default function App() {
@@ -65,6 +64,7 @@ export default function App() {
   const { DOCENTE, currentUserProfile, onlineUsers } = useAppInitialization({ 
     state, session 
   });
+  usePendingCentro(session, () => actions.refresh());
 
   const currentCourseRole = useMemo(() => {
     if (!selectedCursoId || !session?.user?.id) return null;
@@ -112,15 +112,6 @@ export default function App() {
   );
 
   const pathname = window.location.pathname;
-  const isRegistroPath = pathname.startsWith('/registro/');
-  const onboardingPlan = localStorage.getItem('onboardingPlan');
-
-  if (isRegistroPath) {
-    if (pathname === '/registro/centro' || onboardingPlan === 'institucional') {
-      return <RegistroCentro onAuthSuccess={() => actions.refresh()} />;
-    }
-    return <RegistroDocente onAuthSuccess={() => actions.refresh()} />;
-  }
 
   if (!session) {
     if (pathname === '/') {
