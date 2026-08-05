@@ -17,8 +17,10 @@
 --      y que el panel del centro funcione).
 --   B) Crear la cuenta administrador@cielo.test con contraseña Cielo2026*
 --      desde el dashboard (Authentication > Users > Add user) o registrándote
---      en la app. El script vincula al usuario por email; si no existe,
---      avisa y puedes volver a ejecutarlo después de crearla.
+--      en la app. Es un correo de prueba: NO requiere confirmación de email;
+--      el propio script la marca como confirmada automáticamente.
+--      El script vincula al usuario por email; si no existe, avisa y puedes
+--      volver a ejecutarlo después de crearla.
 --
 -- IDEMPOTENTE: puede ejecutarse varias veces sin errores.
 -- ═══════════════════════════════════════════════════════════════════
@@ -73,6 +75,12 @@ BEGIN
     IF v_user_id IS NULL THEN
         RAISE NOTICE 'El usuario administrador@cielo.test aún no existe. Créalo desde Authentication > Users > Add user (contraseña Cielo2026*) y vuelve a ejecutar este script para vincularlo al centro.';
     ELSE
+        -- Correo de prueba: marcar como confirmado para que pueda iniciar sesión
+        -- sin necesidad de verificar el email.
+        UPDATE auth.users
+        SET email_confirmed_at = COALESCE(email_confirmed_at, now())
+        WHERE id = v_user_id;
+
         INSERT INTO public.centro_roles (centro_id, user_id, rol)
         VALUES (v_centro_id, v_user_id, 'director')
         ON CONFLICT (centro_id, user_id) DO UPDATE SET rol = 'director';
@@ -102,8 +110,8 @@ FROM public.codigos_acceso_centro cac
 JOIN public.centros c ON c.id = cac.centro_id
 WHERE cac.codigo = 'CIELO-001';
 
--- Administrador (rol + perfil)
-SELECT u.email, cr.rol, p.nombre_docente, p.centro_id
+-- Administrador (rol + perfil + email confirmado)
+SELECT u.email, u.email_confirmed_at, cr.rol, p.nombre_docente, p.centro_id
 FROM auth.users u
 LEFT JOIN public.centro_roles cr ON cr.user_id = u.id
 LEFT JOIN public.perfiles p      ON p.user_id = u.id
