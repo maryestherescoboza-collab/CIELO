@@ -8,10 +8,11 @@ interface NotificationDropdownProps {
     tasks: { id: number; text: string; done: boolean }[];
     toggleTask: (id: number) => void;
     onMarkNotifyRead?: (id: number) => void;
+    onCompleteTarea?: (tareaId: number) => void;
 }
 
 const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
-    showNotifs, notificaciones, tasks, toggleTask, onMarkNotifyRead
+    showNotifs, notificaciones, tasks, toggleTask, onMarkNotifyRead, onCompleteTarea
 }) => {
     if (!showNotifs) return null;
 
@@ -35,21 +36,22 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                         <div className="space-y-1.5">
                             {notificaciones.slice(0, 10).map(n => {
                                 const isVinculacion = n.tipo === 'solicitud_vinculacion';
+                                const isTarea = n.tipo === 'tarea' && !!n.tareaId;
                                 return (
                                     <div 
                                         key={n.id} 
-                                        onClick={() => onMarkNotifyRead?.(n.id)}
+                                        onClick={() => !isTarea && onMarkNotifyRead?.(n.id)}
                                         className={`p-3 rounded-xl transition-all border cursor-pointer hover:shadow-sm group ${
                                             !n.leida 
-                                                ? (isVinculacion ? 'bg-amber-50 border-amber-100 shadow-sm' : 'bg-emerald-50/50 border-emerald-100') 
+                                                ? (isVinculacion ? 'bg-amber-50 border-amber-100 shadow-sm' : isTarea ? 'bg-sky-50/60 border-sky-200 shadow-sm' : 'bg-emerald-50/50 border-emerald-100') 
                                                 : 'bg-slate-50/30 border-transparent text-slate-400'
                                         }`}
                                     >
                                         <div className="flex gap-3">
                                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                                                isVinculacion ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                                                isVinculacion ? 'bg-amber-100 text-amber-600' : isTarea ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-600'
                                             }`}>
-                                                {isVinculacion ? <Link size={14} /> : <Bell size={14} />}
+                                                {isVinculacion ? <Link size={14} /> : isTarea ? <SquareCheck size={14} /> : <Bell size={14} />}
                                             </div>
                                             <div className="min-w-0">
                                                 <div className="flex items-center justify-between gap-2">
@@ -58,6 +60,18 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                                                 </div>
                                                 <p className={`text-[11px] leading-relaxed mt-0.5 ${!n.leida ? 'text-slate-600' : 'text-slate-400'}`}>{n.mensaje}</p>
                                                 <p className="text-[9px] font-medium text-slate-400 mt-1 uppercase tracking-tighter">{new Date(n.createdAt).toLocaleDateString()}</p>
+                                                {isTarea && onCompleteTarea && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onCompleteTarea(n.tareaId!);
+                                                            onMarkNotifyRead?.(n.id);
+                                                        }}
+                                                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#7A8D69] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#6C7E5C] transition-colors"
+                                                    >
+                                                        <SquareCheck size={12} /> Completar tarea
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

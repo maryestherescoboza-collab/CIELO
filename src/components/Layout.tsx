@@ -16,6 +16,7 @@ interface Props {
     onUploadAvatar: (file: File) => Promise<string | null>;
     onOpenSettings?: () => void;
     onMarkNotifyRead?: (id: number) => Promise<void> | void;
+    onCompleteTarea?: (tareaId: number) => void;
     onSelectSearchResult: (type: 'estudiante' | 'curso' | 'actividad', id: number) => void;
 }
 
@@ -23,7 +24,7 @@ export default function Layout({
     onResetSchoolYear, onLogout,
     onUpdateBio, onUploadAvatar,
     onOpenSettings, onSelectSearchResult,
-    onMarkNotifyRead,
+    onMarkNotifyRead, onCompleteTarea,
     children
 }: Props & { children: React.ReactNode }) {
     const navigate = useNavigate();
@@ -284,6 +285,7 @@ export default function Layout({
                 tasks={tasks}
                 toggleTask={toggleTask}
                 onMarkNotifyRead={onMarkNotifyRead}
+                onCompleteTarea={onCompleteTarea}
             />
 
             <main className="app-main">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Send, FileText } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
 import type { AppState, Post } from '../types';
 
@@ -42,7 +42,7 @@ export default function PostComposer({ state, onAddPost }: Props) {
     return (
         <div className={`w-full bg-white transition-all duration-300 ${isExpanded ? '' : ''}`}>
             <div className="flex flex-col gap-3">
-                <div className="relative flex items-center bg-slate-50 rounded-[10px] p-3 border border-slate-200 group focus-within:border-turf-green-base focus-within:ring-2 focus-within:ring-turf-green-base/20 transition-all">
+                <div className="relative flex items-center bg-white rounded-[10px] p-3 border border-slate-300 group focus-within:border-turf-green-base focus-within:ring-2 focus-within:ring-turf-green-base/20 transition-all">
                     <textarea
                         placeholder="Escribir publicación..."
                         value={form.contenido}
@@ -50,15 +50,6 @@ export default function PostComposer({ state, onAddPost }: Props) {
                         onFocus={() => setIsExpanded(true)}
                         className="w-full bg-transparent border-none outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 min-h-11 max-h-40 resize-none py-1 scrollbar-hide"
                     />
-
-                    <div className="flex items-center gap-2 ml-4 shrink-0 transition-opacity">
-                        <button className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-slate-400">
-                            <Image size={20} className="stroke-[1.5]" />
-                        </button>
-                        <button className="p-2 rounded-lg text-slate-400 hover:text-red-ochre-base hover:bg-white transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-red-ochre-base/50">
-                            <FileText size={20} className="stroke-[1.5]" />
-                        </button>
-                    </div>
                 </div>
 
                 {isExpanded && (

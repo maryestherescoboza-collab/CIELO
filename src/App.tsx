@@ -23,6 +23,8 @@ import { useNotificationActions } from './hooks/useNotificationActions';
 import { useIncidenciaActions } from './hooks/useIncidenciaActions';
 import { useSecuenciaActions } from './hooks/useSecuenciaActions';
 import { usePostActions } from './hooks/usePostActions';
+import { useTareaActions } from './hooks/useTareaActions';
+import CentroPanel from './screens/CentroPanel';
 import { useAppStore } from './store/appStore';
 import { useAppInitialization } from './hooks/useAppInitialization';
 import { useShallow } from 'zustand/react/shallow';
@@ -55,6 +57,7 @@ export default function App() {
     ...useSecuenciaActions(),
     ...usePostActions(),
     ...useNotificationActions(),
+    ...useTareaActions(),
     ...useSupabaseData()
   };
 
@@ -108,27 +111,41 @@ export default function App() {
     </div>
   );
 
-  const needsOnboarding = session && (!currentUserProfile || !currentUserProfile.centro_id);
+  const pathname = window.location.pathname;
+  const isRegistroPath = pathname.startsWith('/registro/');
+  const onboardingPlan = localStorage.getItem('onboardingPlan');
 
-  if (!session || needsOnboarding || window.location.pathname.startsWith('/registro/')) {
-    if (window.location.pathname === '/') {
-      return <Landing />;
-    }
-    if (window.location.pathname === '/reset-password') {
-      return <ResetPassword />;
-    }
-    const onboardingPlan = localStorage.getItem('onboardingPlan');
-
-    if (window.location.pathname === '/registro/centro' || (needsOnboarding && onboardingPlan === 'institucional')) {
+  if (isRegistroPath) {
+    if (pathname === '/registro/centro' || onboardingPlan === 'institucional') {
       return <RegistroCentro onAuthSuccess={() => actions.refresh()} />;
     }
-    if (window.location.pathname === '/registro/docente' || needsOnboarding) {
-      return <RegistroDocente onAuthSuccess={() => actions.refresh()} />;
+    return <RegistroDocente onAuthSuccess={() => actions.refresh()} />;
+  }
+
+  if (!session) {
+    if (pathname === '/') {
+      return <Landing />;
+    }
+    if (pathname === '/reset-password') {
+      return <ResetPassword />;
     }
     return <Auth onAuthSuccess={() => actions.refresh()} />;
   }
 
   const isPrintView = window.location.pathname.startsWith('/print-boletines');
+
+  // Entorno independiente para usuarios con ROL: CENTRO (director/administrador)
+  const esUsuarioCentro = !!state.centroRolActual &&
+    ['director', 'administrador'].includes(state.centroRolActual.rol) &&
+    !!currentUserProfile?.centro_id;
+
+  if (esUsuarioCentro) {
+    return (
+      <ErrorBoundary>
+        <CentroPanel onLogout={() => supabase.auth.signOut()} />
+      </ErrorBoundary>
+    );
+  }
 
   if (isPrintView) {
     return (
@@ -159,6 +176,7 @@ export default function App() {
       onUpdateBio={actions.updateBio}
       onUploadAvatar={actions.uploadAvatar}
       onMarkNotifyRead={actions.markAsRead}
+      onCompleteTarea={actions.completeTarea}
       onOpenSettings={() => navigate('/ajustes')}
       onSelectSearchResult={(type, id) => {
         setSearchQuery('');

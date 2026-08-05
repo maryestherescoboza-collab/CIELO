@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, EvaluacionRubrica, EvaluacionCotejo, CriterioCotejo, DescriptorRubrica, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, Nivel, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen } from '../types';
+import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, EvaluacionRubrica, EvaluacionCotejo, CriterioCotejo, DescriptorRubrica, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, Nivel, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, Tarea, TareaAsignacion } from '../types';
 import { useAppStore } from '../store/appStore';
 
 const parseObservaciones = (val: any): string[] => {
@@ -106,6 +106,8 @@ export function useSupabaseData() {
                 supabase.from('historial_colaboradores').select('*'),
                 supabase.from('suscripciones').select('*'),
                 supabase.from('centro_roles').select('*'),
+                supabase.from('tareas').select('*').eq('activo', true),
+                supabase.from('tarea_asignaciones').select('*').eq('activo', true),
             ]);
 
             // Nombres de tabla para logging de errores
@@ -116,7 +118,7 @@ export function useSupabaseData() {
                 'descriptores_rubrica', 'niveles_puntaje', 'plantillas', 'curso_detalle',
                 'post_likes', 'notificaciones', 'curso_docentes', 'grupos',
                 'registros_anecdoticos', 'registro_imagenes', 'historial_colaboradores',
-                'suscripciones', 'centro_roles'
+                'suscripciones', 'centro_roles', 'tareas', 'tarea_asignaciones'
             ];
 
             // Detectar y reportar errores de consulta sin silenciarlos
@@ -159,6 +161,8 @@ export function useSupabaseData() {
             const historialColaboradores = results[24].data;
             const suscripciones = results[25].data;
             const centroRoles = results[26].data;
+            const tareas = results[27].data;
+            const tareaAsignaciones = results[28].data;
 
             const userLikedPostIds = new Set((postLikes || []).map((l: Record<string, unknown>) => l.post_id as number));
             const mappedPerfiles = (perfiles || []).map((p: Record<string, unknown>): UserProfile => {
@@ -263,7 +267,10 @@ export function useSupabaseData() {
                 cursos: (cursos || []).map((c: Record<string, unknown>): Curso | null => {
                     const myLink = (cursoDocentes || []).find((cd: any) => cd.curso_id === c.id && String(cd.docente_id) === session.user.id);
                     const isCreator = String(c.user_id) === session.user.id;
-                    if (!myLink && !isCreator) return null;
+                    const isCentroAdmin = !!resolvedCentroRolActual &&
+                        ['director', 'administrador'].includes(resolvedCentroRolActual.rol) &&
+                        !!c.centro_id && c.centro_id === resolvedCentroRolActual.centro_id;
+                    if (!myLink && !isCreator && !isCentroAdmin) return null;
                     return {
                         id: c.id as number,
                         nombre: c.nombre as string,
@@ -459,6 +466,7 @@ export function useSupabaseData() {
                     leida: n.leida as boolean,
                     tipo: n.tipo as string,
                     postId: n.post_id as number,
+                    tareaId: n.tarea_id as number,
                     grado: n.grado as string,
                     seccion: n.seccion as string,
                     estado: n.estado as 'pendiente' | 'resuelto',
@@ -499,6 +507,29 @@ export function useSupabaseData() {
                     imagenUrl: ri.imagen_url as string,
                     createdAt: ri.created_at as string
                 })),
+
+                tareas: (tareas || []).map((t: Record<string, unknown>): Tarea => ({
+                    id: t.id as number,
+                    centroId: t.centro_id as string,
+                    titulo: t.titulo as string,
+                    descripcion: (t.descripcion as string) || '',
+                    fechaLimite: (t.fecha_limite as string) || '',
+                    estado: t.estado as 'pendiente' | 'completada' | 'cancelada',
+                    userId: t.created_by as string,
+                    createdAt: t.created_at as string,
+                    updatedAt: t.updated_at as string,
+                    asignaciones: (tareaAsignaciones || [])
+                        .filter((ta: Record<string, unknown>) => ta.tarea_id === t.id)
+                        .map((ta: Record<string, unknown>): TareaAsignacion => ({
+                            id: ta.id as number,
+                            tareaId: ta.tarea_id as number,
+                            userId: ta.user_id as string,
+                            estado: ta.estado as 'pendiente' | 'completada',
+                            fechaCompletado: ta.fecha_completado as string,
+                            activo: ta.activo as boolean,
+                            createdAt: ta.created_at as string
+                        }))
+                })),
                 
                 suscripcionActual: resolvedSuscripcionActual,
                 centroRolActual: resolvedCentroRolActual
@@ -532,6 +563,8 @@ export function useSupabaseData() {
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'grupos' }, () => fetchData(true))
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'registros_anecdoticos', filter: `profile_id=eq.${session.user.id}` }, () => fetchData(true))
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'registro_imagenes' }, () => fetchData(true))
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tareas' }, () => fetchData(true))
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tarea_asignaciones' }, () => fetchData(true))
                 .subscribe();
 
             return () => {

@@ -88,6 +88,7 @@ export const simulatorData: AppState = {
     grupos: [],
     registrosAnecdoticos: [],
     registroImagenes: [],
+    tareas: [],
     instituto: 'Noether Academia',
     incidencias: [],
 };

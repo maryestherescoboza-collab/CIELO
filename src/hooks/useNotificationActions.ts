@@ -11,6 +11,7 @@ export function useNotificationActions() {
         mensaje: string, 
         tipo?: string, 
         postId?: number, 
+        tareaId?: number,
         grado?: string, 
         seccion?: string, 
         estado?: 'pendiente' | 'resuelto' 
@@ -23,6 +24,7 @@ export function useNotificationActions() {
             mensaje: n.mensaje,
             tipo: n.tipo || 'info',
             post_id: n.postId,
+            tarea_id: n.tareaId,
             grado: n.grado,
             seccion: n.seccion,
             estado: n.estado || 'pendiente',

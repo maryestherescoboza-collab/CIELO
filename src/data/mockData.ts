@@ -61,6 +61,7 @@ export const MOCK_STATE: AppState = {
     grupos: [],
     registrosAnecdoticos: [],
     registroImagenes: [],
+    tareas: [],
 };
 
 export const initialState: AppState = {
@@ -247,4 +248,5 @@ export const initialState: AppState = {
     ],
     registrosAnecdoticos: [],
     registroImagenes: [],
+    tareas: [],
 };
