@@ -70,14 +70,14 @@ export default function CentroPanel({ onLogout }: Props) {
         return (
             <div className="min-h-screen bg-[#F8F9FA] text-[#3F3C36] flex items-center justify-center p-6">
                 <div className="bg-[#F9F8F6] border border-[#E6E1D8] rounded-2xl p-10 text-center max-w-md shadow-[0_12px_32px_rgba(0,0,0,0.06)]">
-                    <Building2 size={32} className="mx-auto text-[#6F94AF] mb-4" />
+                    <Building2 size={32} className="mx-auto text-cielo-blue mb-4" />
                     <h2 className="text-lg font-semibold text-[#3F3C36] mb-1">Panel no disponible</h2>
                     <p className="text-sm text-[#6B7280]">
                         No estás vinculado a un centro educativo. Contacta al administrador.
                     </p>
                     <button
                         onClick={onLogout}
-                        className="mt-6 inline-flex items-center gap-2 bg-[#6F94AF] text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-[#5F839E] transition-colors"
+                        className="mt-6 inline-flex items-center gap-2 bg-cielo-blue text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-[#5F839E] transition-colors"
                     >
                         <LogOut size={14} /> Cerrar sesión
                     </button>
@@ -91,7 +91,7 @@ export default function CentroPanel({ onLogout }: Props) {
             return (
                 <div className="min-h-screen bg-[#F8F9FA] text-[#3F3C36] flex items-center justify-center p-6">
                     <div className="flex items-center gap-3 text-[#6B7280]">
-                        <span className="h-5 w-5 rounded-full border-2 border-[#6F94AF] border-t-transparent animate-spin" />
+                        <span className="h-5 w-5 rounded-full border-2 border-cielo-blue border-t-transparent animate-spin" />
                         <p className="text-sm font-medium">Cargando la información del centro…</p>
                     </div>
                 </div>
@@ -107,7 +107,7 @@ export default function CentroPanel({ onLogout }: Props) {
                     </p>
                     <button
                         onClick={() => setIntentoCentro(n => n + 1)}
-                        className="mt-6 inline-flex items-center gap-2 bg-[#6F94AF] text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-[#5F839E] transition-colors"
+                        className="mt-6 inline-flex items-center gap-2 bg-cielo-blue text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-[#5F839E] transition-colors"
                     >
                         <Building2 size={14} /> Reintentar
                     </button>
@@ -126,7 +126,7 @@ export default function CentroPanel({ onLogout }: Props) {
             <div className="flex-1 min-w-0 flex flex-col">
                 {/* ── Barra superior fija ─────────────────────────────── */}
                 <header className="sticky top-0 z-40 bg-[#F8F9FA]/90 backdrop-blur-md border-b border-[#E6E1D8]">
-                    <div className="max-w-[1600px] mx-auto px-4 lg:px-6 h-14 flex items-center justify-between gap-3">
+                    <div className="max-w-400 mx-auto px-4 lg:px-6 h-14 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                             <div className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center shadow-sm shrink-0">
                                 <img src={logo} alt="CIELO" className="w-5 h-5 object-contain" />
@@ -152,7 +152,7 @@ export default function CentroPanel({ onLogout }: Props) {
                 </header>
 
                 {/* ── Contenido dinámico según la sección activa ──────── */}
-                <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 lg:px-6 py-4">
+                <main className="flex-1 w-full max-w-400 mx-auto px-4 lg:px-6 py-4">
                     {activeSection === 'inicio' && <CentroInicio centroId={centroId} centro={centro} />}
                     {activeSection === 'tareas' && <CentroTareas centroId={centroId} />}
                     {activeSection === 'boletines' && <CentroBoletines centroId={centroId} centroNombre={centro.nombre} />}
