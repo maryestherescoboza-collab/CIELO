@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { GraduationCap, Users, ClipboardList, AlertTriangle, type LucideIcon } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import type { Centro } from '../../types';
+import CentroCompartirId from './CentroCompartirId';
 
 interface Props {
     centroId: string;
@@ -70,7 +71,11 @@ export default function CentroInicio({ centroId, centro }: Props) {
                 </div>
             </header>
 
-            <div className="px-5 py-3.5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <div className="px-5 py-3.5">
+                <CentroCompartirId centroId={centroId} />
+            </div>
+
+            <div className="px-5 pb-3.5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                 {cards.map(card => {
                     const Icon = card.icon;
                     return (
