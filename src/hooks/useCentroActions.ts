@@ -162,5 +162,64 @@ export function useCentroActions() {
         return { codigos: (data || []) as CodigoAccesoCentro[], error: null };
     }, []);
 
-    return { loadCentro, updateCentro, createCentro, updateInstitutoName, loadCodigosAcceso, syncCentroEnPerfil };
+    /**
+     * Cambia el centro educativo al que el docente está vinculado.
+     * La validación y la persistencia ocurren en Supabase a través de la
+     * función RPC `cambiar_centro_vinculado` (SECURITY DEFINER): valida la
+     * sesión, la existencia del centro y su disponibilidad para docentes,
+     * actualiza `perfiles.centro_id`, registra el rol 'docente' en
+     * `centro_roles` (sin permisos administrativos) y desvincula los cursos
+     * del centro anterior. NUNCA otorga 'director'/'administrador' en el
+     * centro de destino.
+     */
+    const mapCambioCentroError = (rawMessage?: string | null): string => {
+        const msg = (rawMessage || '').toLowerCase();
+        if (msg.includes('invalid input') || msg.includes('invalid_text_representation') || msg.includes('22p02')) {
+            return 'El ID ingresado no tiene un formato válido de centro educativo.';
+        }
+        if (msg.includes('permission') || msg.includes('row level security') || msg.includes('42501')) {
+            return 'No tienes permisos para cambiar la vinculación a ese centro.';
+        }
+        if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('fetch')) {
+            return 'Error de conexión. Revisa tu internet e inténtalo de nuevo.';
+        }
+        return rawMessage || 'Error inesperado al cambiar de centro.';
+    };
+
+    const cambiarCentro = useCallback(async (nuevoCentroId: string): Promise<{ ok: boolean; error?: string; message?: string }> => {
+        if (!session?.user?.id) {
+            return { ok: false, error: 'Tu sesión expiró. Cierra sesión y vuelve a entrar.' };
+        }
+
+        const { data, error } = await supabase.rpc('cambiar_centro_vinculado', {
+            p_centro_id: nuevoCentroId
+        });
+
+        if (error) {
+            console.error('[useCentroActions] Error al cambiar de centro:', error);
+            return { ok: false, error: mapCambioCentroError(error.message) };
+        }
+
+        const r = (data || {}) as { ok?: boolean; message?: string; error?: string; centro_id?: string; centro_nombre?: string };
+        if (!r.ok) {
+            if (r.error === 'ya_vinculado') {
+                return { ok: false, error: 'Ya estás vinculado a este centro educativo.' };
+            }
+            return { ok: false, error: r.message || 'No se pudo completar el cambio de centro.' };
+        }
+
+        // Refrescar el perfil en memoria con el nuevo centro antes de
+        // que el entorno se recargue por completo.
+        if (r.centro_id) {
+            try {
+                await loadCentro(r.centro_id);
+            } catch (e) {
+                console.error('[useCentroActions] No se pudo precargar el nuevo centro:', e);
+            }
+        }
+
+        return { ok: true, message: r.message || 'Centro educativo actualizado correctamente.' };
+    }, [session?.user?.id, loadCentro]);
+
+    return { loadCentro, updateCentro, createCentro, cambiarCentro, updateInstitutoName, loadCodigosAcceso, syncCentroEnPerfil };
 }

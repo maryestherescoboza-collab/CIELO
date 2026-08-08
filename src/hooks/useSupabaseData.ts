@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, EvaluacionRubrica, EvaluacionCotejo, CriterioCotejo, DescriptorRubrica, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, Nivel, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, Tarea, TareaAsignacion, Centro } from '../types';
 import { useAppStore } from '../store/appStore';
+import { esRolAdministrador } from '../utils/autorizacion';
 
 const parseObservaciones = (val: any): string[] => {
     if (!val) return [];
@@ -195,6 +196,7 @@ export function useSupabaseData() {
                     instituto: resolvedCentro?.nombre || '',
                     centro_id: p.centro_id as string || undefined,
                     centro: resolvedCentro,
+                    rol: (p.rol as UserProfile['rol']) || undefined,
                     lastSeen: p.last_seen as string,
                     currentModule: p.current_module as string,
                     publicacionesRealizadas: hist ? (hist.publicaciones_realizadas as number) : 0
@@ -220,11 +222,22 @@ export function useSupabaseData() {
                 }
             }
             
+            // La ÚNICA fuente de verdad es perfiles.rol. 'administrador' => gestión
+            // de Centro. Cualquiera de los roles administrativos (incluidos los
+            // 4 del modelo: administrador, administrador_centro, administrador_global y
+            // el heredado director) habilita el rol del centro activo; los demás
+            // valores (docente, NULL, desconocidos) no son administrativos y se
+            // resuelven mediante el flujo normal de docente.
             const resolvedCentroRolActual = (() => {
+                if (!esRolAdministrador(currentUserProfile?.rol)) return undefined;
                 const userCentroRoles = (centroRoles || []).filter((cr: any) => cr.user_id === session.user.id);
-                if (userCentroRoles.length === 0) return undefined;
-                return userCentroRoles.find((cr: any) => cr.centro_id === userCentroId)
-                    || userCentroRoles.find((cr: any) => ['director', 'administrador'].includes(cr.rol));
+                const rolDelCentroActual = userCentroRoles.find((cr: any) => cr.centro_id === userCentroId);
+                return {
+                    id: rolDelCentroActual?.id || (currentUserProfile?.userId || '') || '',
+                    centro_id: userCentroId || rolDelCentroActual?.centro_id || (userCentroRoles[0]?.centro_id ?? '') || '',
+                    user_id: session.user.id,
+                    rol: 'administrador' as const,
+                };
             })();
 
             setState(prev => {
@@ -269,8 +282,12 @@ export function useSupabaseData() {
                     const myLink = (cursoDocentes || []).find((cd: any) => cd.curso_id === c.id && String(cd.docente_id) === session.user.id);
                     const isCreator = String(c.user_id) === session.user.id;
                     const isCentroAdmin = !!resolvedCentroRolActual &&
-                        ['director', 'administrador'].includes(resolvedCentroRolActual.rol) &&
+                        resolvedCentroRolActual.rol === 'administrador' &&
                         !!c.centro_id && c.centro_id === resolvedCentroRolActual.centro_id;
+                    // Aislamiento entre centros: un curso creado por el docente en
+                    // OTRO centro (diferente al que está vinculado ahora) no debe
+                    // seguir apareciendo en su entorno tras un cambio de centro.
+                    if (isCreator && !isCentroAdmin && userCentroId && c.centro_id && c.centro_id !== userCentroId) return null;
                     if (!myLink && !isCreator && !isCentroAdmin) return null;
                     return {
                         id: c.id as number,

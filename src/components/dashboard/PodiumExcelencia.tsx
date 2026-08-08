@@ -19,50 +19,6 @@ interface Props {
   periods: PodiumPeriod[];
 }
 
-/* Trayectoria curva (cúbica de Bézier) por periodo.
-   El bandaje vertical queda centrado con amplios márgenes internos para
-   ningún círculo toque los bordes del área. */
-const VIEW_W = 764;
-const VIEW_H = 58;
-
-const curveDef = () => ({
-  p0: { x: 26, y: 28 },
-  c1: { x: 225, y: 20 },
-  c2: { x: 540, y: 40 },
-  p1: { x: 738, y: 28 },
-});
-
-const pathDFor = () => {
-  const { p0, c1, c2, p1 } = curveDef();
-  return `M ${p0.x} ${p0.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${p1.x} ${p1.y}`;
-};
-
-const pointAt = (cur: ReturnType<typeof curveDef>, t: number) => {
-  const { p0, c1, c2, p1 } = cur;
-  const u = 1 - t;
-  const tt = t * t;
-  const uu = u * u;
-  return {
-    x: uu * u * p0.x + 3 * uu * t * c1.x + 3 * u * tt * c2.x + tt * t * p1.x,
-    y: uu * u * p0.y + 3 * uu * t * c1.y + 3 * u * tt * c2.y + tt * t * p1.y,
-  };
-};
-
-// Distribución ligeramente irregular (sensación orgánica, no de cuadrícula)
-const OFFSETS = [0.0, 0.1, 0.2, 0.31, 0.42, 0.52, 0.62, 0.73, 0.85, 0.96];
-
-// Tamaño sutil según rendimiento: mayor promedio = ligera mayor presencia
-const radiusFor = (avg?: number | null) => {
-  const clamped = Math.max(50, Math.min(100, avg ?? 50));
-  return 8 + ((clamped - 50) / 50) * 4; // 8 → 12 (diferencias elegantes y compactas)
-};
-
-const RANK_STYLE: Record<number, { stroke: string; width: number }> = {
-  1: { stroke: '#F5BC5D', width: 2.5 },
-  2: { stroke: '#B8CADC', width: 2 },
-  3: { stroke: '#EB8847', width: 2 },
-};
-
 export default function PodiumExcelencia({ periods }: Props) {
   const navigate = useNavigate();
   const visible = useMemo(() => periods.filter(p => p.top10.length > 0), [periods]);
@@ -77,113 +33,131 @@ export default function PodiumExcelencia({ periods }: Props) {
           Podium de excelencia
         </h3>
         <p className="text-[9px] font-bold text-[#5F665E] uppercase tracking-widest mt-0.5">
-          La trayectoria de progreso de tus estudiantes, periodo a periodo
+          Top 3 de estudiantes destacados por periodo
         </p>
       </div>
 
-      {/* Única superficie continua para toda la sección (sin cards por periodo) */}
-      <div className="bg-[#FDFBF7]/70 rounded-[20px] border border-[rgba(46,51,48,0.05)] pt-2 pb-1 pr-1 pl-4">
-        <div className="flex flex-col gap-1">
+      {/* Contenedor Ultra Compacto en Fila Horizontal */}
+      <div className="w-full bg-[#FDFBF7]/70 rounded-[20px] border border-[rgba(46,51,48,0.05)] p-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {visible.map((podium, pIdx) => {
             const periodNum = podium.periodo.replace(/^\D+/g, '') || String(pIdx + 1);
-            const cur = curveDef();
-            const pathD = pathDFor();
-            return (
-              <div key={podium.periodo} className="flex items-center gap-3 sm:gap-5">
-                {/* Etiqueta cápsula del periodo */}
-                <span className="shrink-0 inline-flex items-center justify-center min-w-11 h-6 px-3 rounded-full bg-[#EAE4DA]/70 border border-[rgba(46,51,48,0.10)] text-[#2E3330] font-black text-[10px] tracking-wide">
-                  P{periodNum}
-                </span>
+            const top3 = podium.top10.slice(0, 3);
+            if (top3.length === 0) return null;
 
-                {/* Trayectoria curva con avatares */}
-                <div className="flex-1 min-w-0">
+            const p1 = top3[0];
+            const p2 = top3[1];
+            const p3 = top3[2];
+
+            return (
+              <div
+                key={podium.periodo}
+                className="relative bg-white/60 rounded-xl border border-[rgba(46,51,48,0.05)] pt-7 pb-1 px-1 flex flex-col justify-end min-h-[90px]"
+              >
+                {/* Etiqueta del periodo (Absoluta para ahorrar espacio) */}
+                <div className="absolute top-2 left-2 px-2 py-0.5 bg-[#EAE4DA]/50 rounded-full text-[#2E3330] font-black text-[9px] tracking-widest z-10">
+                  P{periodNum}
+                </div>
+
+                <div className="w-full relative mt-auto">
                   <svg
-                    viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+                    viewBox="0 0 240 100"
                     preserveAspectRatio="xMidYMid meet"
-                    className="w-full h-auto block"
+                    className="w-full h-auto drop-shadow-sm block"
                     role="img"
-                    aria-label={`Ranking de estudiantes del periodo ${periodNum}`}
+                    aria-label={`Top 3 del periodo ${periodNum}`}
                   >
                     <defs>
-                      <linearGradient id={`podium-${periodNum}-grad`} x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#BFC9A6" stopOpacity="0.9" />
-                        <stop offset="55%" stopColor="#7A8D69" stopOpacity="0.7" />
-                        <stop offset="100%" stopColor="#BFC9A6" stopOpacity="0.9" />
+                      <linearGradient id={`grad-${periodNum}`} x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#BFC9A6" stopOpacity="0.3" />
+                        <stop offset="50%" stopColor="#7A8D69" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#BFC9A6" stopOpacity="0.3" />
                       </linearGradient>
                     </defs>
 
-                    {/* Camino de progreso sutil */}
+                    {/* Trayectoria curva suave (fondo) */}
                     <path
-                      d={pathD}
+                      d="M 25 68 C 65 68 85 32 120 32 C 155 32 175 68 215 68"
                       fill="none"
-                      stroke={`url(#podium-${periodNum}-grad)`}
-                      strokeWidth={2}
+                      stroke={`url(#grad-${periodNum})`}
+                      strokeWidth="2"
                       strokeLinecap="round"
                     />
 
-                    {podium.top10.map((est, index) => {
-                      const rank = index + 1;
-                      const t = OFFSETS[index] ?? index / Math.max(1, podium.top10.length - 1);
-                      const pt = pointAt(cur, t);
-                      const r = radiusFor(est.periodAvg);
-                      const initials = `${est.nombre?.[0] ?? ''}${est.apellido?.[0] ?? ''}`.toUpperCase();
-                      const ring = RANK_STYLE[rank];
-
+                    {/* Posiciones 2, 1, 3 */}
+                    {[
+                      { s: p2, cx: 55, cy: 52, r: 12.8, rank: 2, color: '#B8CADC' },
+                      { s: p1, cx: 120, cy: 36, r: 16.8, rank: 1, color: '#F5BC5D' },
+                      { s: p3, cx: 185, cy: 56, r: 12.8, rank: 3, color: '#EB8847' },
+                    ].map((pos) => {
+                      if (!pos.s) return null;
+                      const initials = `${pos.s.nombre?.[0] ?? ''}${pos.s.apellido?.[0] ?? ''}`.toUpperCase();
+                      const name = pos.s.nombre.split(' ')[0];
+                      
                       return (
                         <g
-                          key={est.id}
-                          onClick={() => navigate(`/estudiante/${est.id}`)}
+                          key={pos.rank}
+                          onClick={() => navigate(`/estudiante/${pos.s.id}`)}
                           className="cursor-pointer podium-student"
                         >
-                          {/* Halo suave para el liderazgo */}
-                          {ring && <circle cx={pt.x} cy={pt.y} r={r + 4} fill={ring.stroke} opacity={0.13} />}
-
-                          <circle
-                            cx={pt.x}
-                            cy={pt.y}
-                            r={r}
-                            fill={est.avatarColor || '#7A8D69'}
-                            stroke={ring ? ring.stroke : 'rgba(255,255,255,0.7)'}
-                            strokeWidth={ring ? ring.width : 1.25}
-                          />
+                          {/* Aura */}
+                          <circle cx={pos.cx} cy={pos.cy} r={pos.r + 3} fill={pos.color} opacity="0.15" />
+                          
+                          {/* Avatar */}
+                          <circle cx={pos.cx} cy={pos.cy} r={pos.r} fill={pos.s.avatarColor || '#7A8D69'} />
                           <text
-                            x={pt.x}
-                            y={pt.y}
+                            x={pos.cx}
+                            y={pos.cy}
                             textAnchor="middle"
                             dominantBaseline="central"
                             fill="#FFFFFF"
-                            fontSize={r * 0.82}
-                            fontWeight={800}
+                            fontSize={pos.rank === 1 ? 11.2 : 8.8}
+                            fontWeight="800"
+                            fontFamily="sans-serif"
                             letterSpacing="0.02em"
                           >
                             {initials || '?'}
                           </text>
 
-                          {/* Posición (arriba, con resguardo del borde superior) */}
-                          <text
-                            x={pt.x}
-                            y={pt.y - r - 3}
-                            textAnchor="middle"
-                            fill="#A9B2AA"
-                            fontSize={7.5}
-                            fontWeight={700}
-                          >
-                            {rank}
-                          </text>
+                          {/* Coronas y Medallas sutiles */}
+                          {pos.rank === 1 ? (
+                            <path
+                              d={`M ${pos.cx - 5.5} ${pos.cy - pos.r - 8} L ${pos.cx - 3} ${pos.cy - pos.r - 2} L ${pos.cx} ${pos.cy - pos.r - 9.5} L ${pos.cx + 3} ${pos.cy - pos.r - 2} L ${pos.cx + 5.5} ${pos.cy - pos.r - 8} L ${pos.cx + 4} ${pos.cy - pos.r - 1} L ${pos.cx - 4} ${pos.cy - pos.r - 1} Z`}
+                              fill="#F5BC5D"
+                            />
+                          ) : (
+                            <g>
+                              <circle cx={pos.cx} cy={pos.cy - pos.r - 5} r="4.8" fill={pos.color} />
+                              <text x={pos.cx} y={pos.cy - pos.r - 5} textAnchor="middle" dominantBaseline="central" fill="#FFF" fontSize="5.6" fontWeight="900" fontFamily="sans-serif">{pos.rank}</text>
+                            </g>
+                          )}
 
-                          {/* Porcentaje (debajo, respetando el borde inferior) */}
+                          {/* Nombre */}
                           <text
-                            x={pt.x}
-                            y={pt.y + r + 3}
+                            x={pos.cx}
+                            y={pos.cy + pos.r + 11.2}
                             textAnchor="middle"
                             fill="#5F665E"
-                            fontSize={8}
-                            fontWeight={700}
+                            fontSize="8.8"
+                            fontWeight="800"
+                            fontFamily="sans-serif"
+                            letterSpacing="0.03em"
                           >
-                            {est.periodAvg ?? 0}%
+                            {name}
                           </text>
 
-                          <title>{`${est.displayName || `${est.nombre} ${est.apellido}`} · ${est.periodAvg ?? 0}%`}</title>
+                          {/* Porcentaje */}
+                          <text
+                            x={pos.cx}
+                            y={pos.cy + pos.r + 20.8}
+                            textAnchor="middle"
+                            fill="#7A8D69"
+                            fontSize="8.8"
+                            fontWeight="900"
+                            fontFamily="sans-serif"
+                          >
+                            {pos.s.periodAvg ?? 0}%
+                          </text>
                         </g>
                       );
                     })}
@@ -195,21 +169,9 @@ export default function PodiumExcelencia({ periods }: Props) {
         </div>
       </div>
 
-      {/* Leyenda: lectura del camino */}
-      <div className="mt-1.5 flex items-center justify-end gap-3">
-        <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-[#5F665E] uppercase tracking-widest">
-          <span className="w-2 h-2 rounded-full bg-[#BFC9A6]"></span>
-          promedio
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-[#5F665E] uppercase tracking-widest">
-          <span className="w-2 h-2 rounded-full bg-[#F5BC5D]"></span>
-          liderazgo
-        </span>
-      </div>
-
       <style>{`
-        .podium-student { transition: transform 0.2s ease; }
-        .podium-student:hover { cursor: pointer; transform: translateY(-2px) scale(1.05); }
+        .podium-student { transition: transform 0.2s ease, opacity 0.2s ease; }
+        .podium-student:hover { opacity: 0.85; }
       `}</style>
     </section>
   );

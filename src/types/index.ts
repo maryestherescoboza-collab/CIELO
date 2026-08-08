@@ -190,11 +190,13 @@ export interface Centro {
     afiliado?: boolean;
 }
 
+export type RolAdministrativoRaw = 'administrador' | 'administrador_centro' | 'administrador_global' | 'director';
+
 export interface CentroRol {
     id: string;
     centro_id: string;
     user_id: string;
-    rol: 'director' | 'administrador' | 'docente';
+    rol: 'docente' | RolAdministrativoRaw;
     created_at?: string;
 }
 
@@ -238,6 +240,7 @@ export interface UserProfile {
     instituto?: string;
     centro_id?: string;
     centro?: Centro;
+    rol?: 'docente' | RolAdministrativoRaw;
 }
 
 export interface Notification {

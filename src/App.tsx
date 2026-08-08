@@ -29,6 +29,7 @@ import { useAppStore } from './store/appStore';
 import { useAppInitialization } from './hooks/useAppInitialization';
 import { usePendingCentro } from './hooks/usePendingCentro';
 import { useShallow } from 'zustand/react/shallow';
+import { analizarRolAcceso } from './utils/autorizacion';
 
 export default function App() {
   const { 
@@ -129,11 +130,12 @@ export default function App() {
 
   const isPrintView = window.location.pathname.startsWith('/print-boletines');
 
-  // Entorno independiente para usuarios con ROL: CENTRO (director/administrador)
-  // El rol de administrador (creado al registrar el centro) determina el acceso;
-  // estos usuarios solo acceden a Centro Panel y nunca al panel general de docente.
-  const esUsuarioCentro = !!state.centroRolActual &&
-    ['director', 'administrador', 'administrador_centro', 'administrador_global'].includes(state.centroRolActual.rol);
+  // Entorno independiente para usuarios con ROL administrativo ('administrador').
+  // Modelo binario: la ÚNICA fuente de verdad es perfiles.rol. el rol se deduce
+  // EXCLUSIVAMENTE de perfiles.rol === 'administrador'; NUNCA de la presencia
+  // de centro_id y NUNCA de centro_roles. Un rol inválido o ausente se trata
+  // como no administrativo (flujo docente por defecto).
+  const esUsuarioCentro = analizarRolAcceso({ perfil: currentUserProfile })?.rol === 'administrador';
 
   if (esUsuarioCentro) {
     return (

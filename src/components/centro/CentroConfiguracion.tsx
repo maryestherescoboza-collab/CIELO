@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, MapPin, AlertTriangle, Save, CheckCircle2, XCircle } from 'lucide-react';
+import { Building2, MapPin, AlertTriangle, Save, CheckCircle2, XCircle, Eye, EyeOff, Check, Copy } from 'lucide-react';
 import { useCentroActions } from '../../hooks/useCentroActions';
 import { ESTADO_CENTRO_COLORS, ESTADO_CENTRO_LABELS, centroToForm, inputCls, formatFechaCorta } from './centroUi';
 import { Campo } from './Campo';
@@ -17,6 +17,8 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
     const [formCentro, setFormCentro] = useState(() => centroToForm(centro));
     const [guardandoCentro, setGuardandoCentro] = useState(false);
     const [msgConfig, setMsgConfig] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+    const [mostrarIdCentro, setMostrarIdCentro] = useState(false);
+    const [idCentroCopiado, setIdCentroCopiado] = useState(false);
 
     const setCampoCentro = (campo: keyof typeof formCentro, valor: string) => {
         setFormCentro(prev => ({ ...prev, [campo]: valor }));
@@ -54,6 +56,34 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
         }
     };
 
+    const idCentro = centro.codigoCentro?.trim() || '';
+
+    const copiarIdCentro = async () => {
+        if (!idCentro) return;
+        const fallback = () => {
+            const textarea = document.createElement('textarea');
+            textarea.value = idCentro;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return ok;
+        };
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(idCentro);
+            } else if (!fallback()) {
+                throw new Error('Clipboard no disponible');
+            }
+            setIdCentroCopiado(true);
+            setTimeout(() => setIdCentroCopiado(false), 2000);
+        } catch (err) {
+            console.error('[CentroConfiguracion] Error al copiar el ID del centro:', err);
+        }
+    };
+
     const estadoCentroVisual = formCentro.estado || 'activo';
 
     return (
@@ -82,6 +112,43 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
                     <div className="flex items-center gap-2 mb-3">
                         <Building2 size={14} className="text-[#6F94AF]" />
                         <h3 className="text-[13px] font-semibold text-[#3F3C36]">Información general</h3>
+                    </div>
+                    {/* Bloque · ID del centro (solo lectura, compartible con docentes) */}
+                    <div className="mb-3 rounded-xl bg-[#FAF9F7] border border-[#E6E1D8] p-3.5">
+                        <div className="flex items-center justify-between gap-3">
+                            <label className="block text-[12px] font-semibold text-[#3F3C36]">
+                                ID del centro
+                            </label>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setMostrarIdCentro(v => !v)}
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[#E6E1D8] bg-white text-[#6F94AF] hover:border-[#6F94AF] hover:text-[#5B7F99] transition-colors"
+                                    title={mostrarIdCentro ? 'Ocultar ID' : 'Mostrar ID'}
+                                >
+                                    {mostrarIdCentro ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={copiarIdCentro}
+                                    disabled={!idCentro}
+                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                        idCentroCopiado
+                                            ? 'bg-[#188038]/10 border-[#188038]/30 text-[#188038]'
+                                            : 'bg-white border-[#E6E1D8] text-[#6F94AF] hover:border-[#6F94AF]'
+                                    }`}
+                                >
+                                    {idCentroCopiado ? <Check size={12} /> : <Copy size={12} />}
+                                    {idCentroCopiado ? 'ID copiado' : 'Copiar'}
+                                </button>
+                            </div>
+                        </div>
+                        <p className="mt-1.5 font-mono text-[15px] font-semibold tracking-[0.06em] text-[#3F3C36] break-all">
+                            {mostrarIdCentro ? idCentro || '—' : '••••••••'}
+                        </p>
+                        <p className="mt-1 text-[11px] text-[#6B7280]">
+                            Comparte este ID con los docentes que quieras vincular a este centro.
+                        </p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         <Campo label="Nombre del centro" required>

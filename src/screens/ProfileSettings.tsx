@@ -5,6 +5,7 @@ import {
   CheckCircle, AlertCircle, Loader2, LogOut
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAppStore } from '../store/appStore';
 import type { Session } from '@supabase/supabase-js';
 // ── Types ──
 interface ProfileSettingsProps {
@@ -23,8 +24,11 @@ interface ProfileSettingsProps {
   onUpdateAvatarColor: (color: string) => Promise<void>;
   perfilAvatarColor: string;
   onResetSchoolYear: () => void;
+  onChangeCentro?: (nuevoCentroId: string) => Promise<{ ok: boolean; error?: string; message?: string }>;
   onClose: () => void;
   centro?: any;
+  centroId?: string;
+  centroNombre?: string;
 }
 
 type SectionId = 'perfil' | 'profesional' | 'seguridad' | 'apariencia';
@@ -51,8 +55,11 @@ export default function ProfileSettings({
   onUpdateAvatarColor,
   perfilAvatarColor,
   onResetSchoolYear,
+  onChangeCentro,
   onClose,
-  centro
+  centro,
+  centroId,
+  centroNombre,
 }: ProfileSettingsProps) {
   const [activeSection, setActiveSection] = useState<SectionId>('perfil');
   const contentRef = useRef<HTMLDivElement>(null);
@@ -176,7 +183,11 @@ export default function ProfileSettings({
                 )}
                 
                 {activeSection === 'seguridad' && (
-                  <SeguridadTab />
+                  <SeguridadTab 
+                    centroId={centroId}
+                    centroNombre={centroNombre}
+                    onChangeCentro={onChangeCentro}
+                  />
                 )}
                 
                 {activeSection === 'apariencia' && (
@@ -238,8 +249,8 @@ const Sidebar = React.memo(function Sidebar({
   };
 
   return (
-    <aside className="w-full md:w-70 shrink-0 flex flex-col bg-[#DDD5C8] border-b md:border-b-0 md:border-r border-[rgba(46,51,48,0.08)]">
-      <div className="p-6 border-b border-[rgba(46,51,48,0.08)] flex items-center gap-4 bg-[#DDD5C8]/25">
+    <aside className="w-full md:w-70 shrink-0 flex flex-col bg-[#F9F8F6] border-b md:border-b-0 md:border-r border-[rgba(46,51,48,0.08)]">
+      <div className="p-6 border-b border-[rgba(46,51,48,0.08)] flex items-center gap-4 bg-[#F9F8F6]/25">
          <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-sm" style={{ background: avatarColor || 'white' }}>
             {!avatarColor ? (
               <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
@@ -262,7 +273,7 @@ const Sidebar = React.memo(function Sidebar({
         <NavItem id="apariencia" label="Apariencia" icon={<Palette size={16} />} />
       </nav>
 
-      <div className="p-4 border-t border-[rgba(46,51,48,0.08)] bg-[#DDD5C8]/10 space-y-3">
+      <div className="p-4 border-t border-[rgba(46,51,48,0.08)] bg-[#F9F8F6]/10 space-y-3">
          <button
             onClick={() => {
               if (window.confirm('¿Estás SEGURO de que deseas reiniciar tu año escolar? Esta acción es irreversible.')) {
@@ -611,13 +622,39 @@ function DatosProfesionalesTab({
   );
 }
 
-function SeguridadTab() {
+interface SeguridadTabProps {
+  centroId?: string;
+  centroNombre?: string;
+  onChangeCentro?: (nuevoCentroId: string) => Promise<{ ok: boolean; error?: string; message?: string }>;
+}
+
+interface CentroEncontrado {
+  id: string;
+  nombre: string;
+  estado: string | null;
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const MASKED_ID = '••••••••••';
+
+function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabProps) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Estado del flujo de cambio de centro
+  const [showCentroId, setShowCentroId] = useState(false);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [nuevoCentroId, setNuevoCentroId] = useState('');
+  const [buscando, setBuscando] = useState(false);
+  const [cambiando, setCambiando] = useState(false);
+  const [cambioExitoso, setCambioExitoso] = useState(false);
+  const [centroEncontrado, setCentroEncontrado] = useState<CentroEncontrado | null>(null);
+  const [centroError, setCentroError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setMessage(null);
@@ -627,8 +664,6 @@ function SeguridadTab() {
     }
     setSaving(true);
     try {
-      // Assuming supabase is available in global scope or imported
-      // @ts-ignore
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       setMessage({ type: 'success', text: '¡Contraseña actualizada con éxito!' });
@@ -645,8 +680,88 @@ function SeguridadTab() {
     }
   };
 
+  const buscarCentro = async () => {
+    setCentroError(null);
+    setCentroEncontrado(null);
+    const id = nuevoCentroId.trim();
+    if (!id) {
+      setCentroError('Ingresa el ID del centro.');
+      return;
+    }
+    if (!UUID_REGEX.test(id)) {
+      setCentroError('El ID ingresado no tiene el formato válido de un centro educativo.');
+      return;
+    }
+    setBuscando(true);
+    try {
+      const { data, error } = await supabase
+        .from('centros')
+        .select('id, nombre, estado')
+        .eq('id', id)
+        .maybeSingle();
+      if (error) {
+        console.error('[SeguridadTab] Error buscando centro:', error);
+        setCentroError('No se pudo validar el centro. Revisa tu conexión e inténtalo de nuevo.');
+        return;
+      }
+      if (!data) {
+        setCentroError('No se encontró ningún centro educativo con ese ID.');
+        return;
+      }
+      if (data.estado === 'suspendido' || data.estado === 'cancelado') {
+        setCentroError('Este centro no está disponible para vincular docentes en este momento.');
+        return;
+      }
+      setCentroEncontrado({ id: data.id, nombre: data.nombre as string, estado: data.estado as string | null });
+    } catch (err: unknown) {
+      console.error('[SeguridadTab] Error buscando centro:', err);
+      setCentroError('Error de conexión. Inténtalo de nuevo.');
+    } finally {
+      setBuscando(false);
+    }
+  };
+
+  const confirmarCambio = async () => {
+    if (!onChangeCentro || !centroEncontrado) return;
+    setCentroError(null);
+    setCambiando(true);
+    try {
+      const res = await onChangeCentro(centroEncontrado.id);
+      if (!res.ok) {
+        setCentroError(res.error || 'No se pudo completar el cambio de centro.');
+        return;
+      }
+      // Cambio persistido en Supabase: limpiamos el contexto y recargamos
+      // el entorno por completo para garantizar el aislamiento entre centros.
+      setCambioExitoso(true);
+      setMessage({ type: 'success', text: res.message || 'Centro educativo cambiado correctamente.' });
+      useAppStore.getState().setSelectedCursoId(null);
+      useAppStore.getState().setSelectedEstudianteId(null);
+      useAppStore.getState().setSelectedActividadId(null);
+      try {
+        localStorage.removeItem('terra-cognita-storage');
+      } catch {
+        // No bloqueamos el flujo si el almacenamiento local falla.
+      }
+      setTimeout(() => window.location.replace('/'), 1800);
+    } catch (err: unknown) {
+      console.error('[SeguridadTab] Error confirmando cambio de centro:', err);
+      setCentroError('No se pudo iniciar el cambio. Revisa tu conexión e inténtalo de nuevo.');
+    } finally {
+      setCambiando(false);
+    }
+  };
+
+  const resetFormularioCentro = () => {
+    setMostrarFormulario(false);
+    setNuevoCentroId('');
+    setCentroEncontrado(null);
+    setCentroError(null);
+  };
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {/* ── Cambiar contraseña ── */}
       <div className="space-y-4">
           <SimplePasswordField label="Nueva Contraseña" value={newPassword} onChange={setNewPassword} show={showNewPw} onToggle={() => setShowNewPw(!showNewPw)} />
           <SimplePasswordField label="Confirmar Contraseña" value={confirmPassword} onChange={setConfirmPassword} show={showConfirmPw} onToggle={() => setShowConfirmPw(!showConfirmPw)} />
@@ -659,7 +774,7 @@ function SeguridadTab() {
           )}
       </div>
 
-      <div className="pt-2">
+      <div>
           <button 
             onClick={handleSubmit}
             disabled={saving || !newPassword || newPassword !== confirmPassword}
@@ -667,6 +782,133 @@ function SeguridadTab() {
           >
             {saving ? "Actualizando Seguridad..." : "Cambiar Contraseña"}
           </button>
+      </div>
+
+      <div className="border-t border-slate-100 pt-8" />
+
+      {/* ── Centro educativo vinculado ── */}
+      <div className="space-y-4">
+        <div>
+          <h4 className="text-sm font-black uppercase tracking-widest text-slate-500">Centro educativo vinculado</h4>
+          <p className="text-xs text-slate-400 mt-1">
+            El centro determina con qué cursos e información trabajas dentro de la plataforma.
+          </p>
+        </div>
+
+        {centroId ? (
+          <>
+            <div className="p-4 rounded-xl border border-slate-200 bg-[#F9F8F6]">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">ID del centro</p>
+                  <p className="font-mono text-sm font-bold text-slate-800 break-all mt-0.5">
+                    {showCentroId ? centroId : MASKED_ID}
+                  </p>
+                  {centroNombre && (
+                    <p className="text-xs font-semibold text-cielo-blue mt-1 truncate">{centroNombre}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowCentroId(v => !v)}
+                  className="shrink-0 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                  aria-label={showCentroId ? "Ocultar ID del centro" : "Mostrar ID del centro"}
+                >
+                  {showCentroId ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {!mostrarFormulario ? (
+              <button
+                onClick={() => { setMostrarFormulario(true); setCentroError(null); setCentroEncontrado(null); }}
+                className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-sm font-bold text-slate-600 hover:border-cielo-blue hover:text-cielo-blue transition-colors"
+              >
+                Cambiar centro educativo
+              </button>
+            ) : (
+              <div className="p-4 rounded-xl border border-cielo-blue/20 bg-cielo-blue/5 space-y-3 mt-1">
+                <div className="flex items-start gap-2 text-xs font-medium text-slate-600">
+                  <AlertCircle size={15} className="text-cielo-blue shrink-0 mt-0.5" />
+                  <p>
+                    Al cambiar de centro dejarás de trabajar con los cursos e información del centro
+                    anterior. Tus datos históricos se conservan, solo pierdes acceso a ellos.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-500">Nuevo ID del centro</label>
+                  <input
+                    value={nuevoCentroId}
+                    onChange={(e) => { setNuevoCentroId(e.target.value); setCentroEncontrado(null); setCentroError(null); }}
+                    placeholder="00000000-0000-0000-0000-000000000000"
+                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-white focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-mono"
+                  />
+                </div>
+
+                {centroError && (
+                  <div className="p-3 rounded-xl bg-cielo-terracotta/5 border border-cielo-terracotta/20 text-cielo-terracotta text-xs font-bold leading-5 flex items-start gap-2">
+                    <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                    {centroError}
+                  </div>
+                )}
+
+                {cambioExitoso && (
+                  <div className="p-3 rounded-xl bg-cielo-olive/5 border border-cielo-olive/20 text-cielo-olive text-xs font-bold leading-5 flex items-start gap-2">
+                    <CheckCircle size={15} className="shrink-0 mt-0.5" />
+                    Centro educativo cambiado correctamente. Reiniciando tu entorno...
+                  </div>
+                )}
+
+                {centroEncontrado && !cambioExitoso && (
+                  <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={16} className="text-cielo-olive shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-black text-slate-700">Centro encontrado</p>
+                        <p className="text-sm font-bold text-slate-800 truncate">{centroEncontrado.nombre}</p>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-5">
+                      Se cambiará tu vinculación a este centro. No se elimina ni se modifica
+                      información del centro anterior: solo dejas de tenerla disponible en tu entorno.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-1">
+                  <button
+                    onClick={resetFormularioCentro}
+                    disabled={cambiando}
+                    className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  {!centroEncontrado ? (
+                    <button
+                      onClick={buscarCentro}
+                      disabled={buscando || cambiando}
+                      className="flex-1 py-2.5 rounded-xl bg-cielo-blue text-white text-sm font-semibold hover:bg-cielo-blue/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {buscando ? (<><Loader2 size={14} className="animate-spin" /> Buscando...</>) : 'Buscar centro'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={confirmarCambio}
+                      disabled={cambiando || cambioExitoso}
+                      className="flex-1 py-2.5 rounded-xl bg-cielo-olive text-white text-sm font-semibold hover:bg-cielo-olive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {cambiando ? (<><Loader2 size={14} className="animate-spin" /> Cambiando...</>) : 'Confirmar cambio'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="p-4 rounded-xl border border-slate-200 bg-[#F9F8F6] text-sm text-slate-500">
+            Todavía no estás vinculado a ningún centro educativo.
+          </div>
+        )}
       </div>
     </div>
   );

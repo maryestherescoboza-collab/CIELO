@@ -21,6 +21,7 @@ import ResetPassword from './screens/ResetPassword';
 import PrintBoletines from './screens/PrintBoletines';
 import Suscripcion from './screens/Suscripcion';
 import { BookOpen } from 'lucide-react';
+import { esRolAdministrador } from './utils/autorizacion';
 
 const CourseDetailRouteWrapper: React.FC<{
   setSelectedCursoId: (id: number | null) => void;
@@ -110,6 +111,7 @@ interface AppRoutesProps {
   updatePerfilProfesional: any;
   updateCentro: any;
   createCentro: any;
+  cambiarCentro: any;
   updateInstitutoName: any;
   resetSchoolYear: any;
   saveRubrica: any;
@@ -135,11 +137,29 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   addPost, reportPost, importResource, deletePost,
   refresh, syncDelete, sendNotification,
   uploadAvatar, updateFullProfile, updateAvatarColor, updatePerfilProfesional,
-  updateCentro, createCentro, updateInstitutoName, resetSchoolYear,
+  updateCentro, createCentro, cambiarCentro, updateInstitutoName, resetSchoolYear,
   saveRubrica, updateDescriptor, updateNivelesPuntaje,
   saveCotejo, updateCriterios, savePlantilla, deletePlantilla
 }) => {
   const navigate = useNavigate();
+
+  // Defensa en profundidad: un rol administrativo nunca debe renderizar el
+  // entorno docente, aunque se acceda por URL directa. App.tsx ya redirige a
+  // CentroPanel; esto evita cualquier ruta que se abra saltando el Layout.
+  // Modelo binario: SOLO 'administrador' en perfiles.rol confiere rol; el
+  // resto (docente, roles legados, ausente) se trata como docente.
+  const esAdministrador = esRolAdministrador(currentUserProfile?.rol);
+  if (esAdministrador) {
+    return (
+      <div className="p-12 text-center bg-white rounded-3xl border-2 border-dashed border-rose-200 max-w-md mx-auto mt-10">
+        <h2 className="text-xl font-bold text-rose-800">Acceso restringido</h2>
+        <p className="text-slate-600 mt-2">
+          Tu perfil tiene un rol administrativo del centro. Los módulos docentes 
+          no están disponibles; gestiona el centro desde Centro Panel.
+        </p>
+      </div>
+    );
+  }
 
   const handleNavigate = (s: Screen, extra?: NavExtra) => {
     if (extra?.cursoId !== undefined) setSelectedCursoId(extra.cursoId as number);
@@ -302,12 +322,15 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
               onUpdatePerfilProfesional={updatePerfilProfesional}
               onUpdateCentro={updateCentro}
               onCreateCentro={createCentro}
+              onChangeCentro={cambiarCentro}
               onUpdateFullProfile={updateFullProfile} 
               onUpdateAvatarColor={updateAvatarColor} 
               perfilAvatarColor={currentUserProfile?.avatarColor || '#2D3436'} 
               onResetSchoolYear={resetSchoolYear} 
               onClose={() => navigate(-1)} 
               centro={currentUserProfile?.centro}
+              centroId={currentUserProfile?.centro_id}
+              centroNombre={currentUserProfile?.centro?.nombre}
             />
       } />
       <Route path="/suscripcion" element={<Suscripcion />} />

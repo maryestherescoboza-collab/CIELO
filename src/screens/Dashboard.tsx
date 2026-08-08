@@ -5,7 +5,7 @@ import { useAppStore } from '../store/appStore';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { SmoothLineChart, StudentPopulationChart, DonutChart } from './DashboardCharts';
-import PodiumTop10 from '../components/dashboard/PodiumTop10';
+import PodiumExcelencia from '../components/dashboard/PodiumExcelencia';
 import { TC_Flux } from '../components/icons/TerraCognitaIcons';
 
 interface EnhancedStudent extends Estudiante {
@@ -245,6 +245,17 @@ export default function Dashboard({ docenteNombre }: Props) {
     return group;
   }, [filteredCalificaciones]);
 
+  // ── Optimized: Pre-grouped grades by student AND period ──
+  const gradesByStudentAndPeriod = useMemo(() => {
+    const group = new Map<string, any[]>();
+    filteredCalificaciones.forEach(c => {
+      const key = `${c.estudianteId}-${c.periodo}`;
+      if (!group.has(key)) group.set(key, []);
+      group.get(key)?.push(c);
+    });
+    return group;
+  }, [filteredCalificaciones]);
+
   // ── Computed: Enhanced students with real averages ──
   const enhancedStudents = useMemo<EnhancedStudent[]>(() => {
     return filteredEstudiantes.map((est: Estudiante) => {
@@ -295,6 +306,42 @@ export default function Dashboard({ docenteNombre }: Props) {
       };
     });
   }, [enhancedStudents]);
+
+  // ── 4 Podiums by Period ──
+  const podiumsByPeriod = useMemo(() => {
+    const periodsSet = new Set(filteredCalificaciones.map(c => c.periodo).filter(Boolean));
+    let periods = Array.from(periodsSet).sort();
+    if (periods.length === 0) {
+      periods = ['Período 1', 'Período 2', 'Período 3', 'Período 4'];
+    } else if (periods.length > 4) {
+      periods = periods.slice(0, 4);
+    }
+    
+    while (periods.length < 4) {
+      periods.push(`Período ${periods.length + 1}`);
+    }
+
+    return periods.map(periodo => {
+      const studentsAvg = filteredEstudiantes.map(est => {
+        const studentPeriodCalifs = gradesByStudentAndPeriod.get(`${est.id}-${periodo}`) || [];
+        const califs = studentPeriodCalifs.filter(c => c.puntaje !== null);
+        const avg = califs.length > 0
+          ? Math.round(califs.reduce((s: number, c: any) => s + (c.puntaje as number), 0) / califs.length)
+          : null;
+        return {
+          ...est,
+          periodAvg: avg,
+          displayName: `${est.nombre} ${est.apellido}`,
+        };
+      }).filter(est => est.periodAvg !== null);
+      
+      const top10 = studentsAvg.sort((a, b) => (b.periodAvg as number) - (a.periodAvg as number)).slice(0, 10);
+      return {
+        periodo,
+        top10
+      };
+    });
+  }, [filteredEstudiantes, filteredCalificaciones, gradesByStudentAndPeriod]);
 
   // ── Population Chart Data ──
   const populationData = useMemo(() => {
@@ -504,8 +551,8 @@ export default function Dashboard({ docenteNombre }: Props) {
           </div>
         </div>
 
-        {/* ═══ PODIUM TOP 10 (GLOBAL · OBJETO CURVA ORGÁNICA) ═══ */}
-        <PodiumTop10 students={enhancedStudents} />
+        {/* ═══ PODIUM POR PERIODOS (P1, P2, P3, P4) ═══ */}
+        <PodiumExcelencia periods={podiumsByPeriod} />
 
         {/* ═══ CHARTS SECTION ═══ */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
