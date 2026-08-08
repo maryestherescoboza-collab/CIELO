@@ -77,32 +77,32 @@ export const useAppStore = create<AppStore>()(
         activeRubricNiveles: [],
 
         // Actions
-        setAppState: (updater) => set((prev) => ({
+        setAppState: (updater: AppState | ((prev: AppState) => AppState)) => set((prev: AppStore) => ({
             state: typeof updater === 'function' ? updater(prev.state) : updater
         })),
-        setState: (updater) => set((prev) => ({
+        setState: (updater: AppState | ((prev: AppState) => AppState)) => set((prev: AppStore) => ({
             state: typeof updater === 'function' ? updater(prev.state) : updater
         })),
-        setSession: (session) => set({ session }),
-        setLoading: (loading) => set({ loading }),
-        setDarkMode: (updater) => set((prev) => ({
+        setSession: (session: Session | null) => set({ session }),
+        setLoading: (loading: boolean) => set({ loading }),
+        setDarkMode: (updater: boolean | ((prev: boolean) => boolean)) => set((prev: AppStore) => ({
             darkMode: typeof updater === 'function' ? updater(prev.darkMode) : updater
         })),
-        setSelectedCursoId: (selectedCursoId) => set({ selectedCursoId }),
-        setSelectedEstudianteId: (selectedEstudianteId) => set({ selectedEstudianteId }),
-        setSelectedActividadId: (selectedActividadId) => set({ selectedActividadId }),
-        setSearchQuery: (searchQuery) => set({ searchQuery }),
-        setShowProfileSettings: (showProfileSettings) => set({ showProfileSettings }),
+        setSelectedCursoId: (selectedCursoId: number | null) => set({ selectedCursoId }),
+        setSelectedEstudianteId: (selectedEstudianteId: number | null) => set({ selectedEstudianteId }),
+        setSelectedActividadId: (selectedActividadId: number | null) => set({ selectedActividadId }),
+        setSearchQuery: (searchQuery: string) => set({ searchQuery }),
+        setShowProfileSettings: (showProfileSettings: boolean) => set({ showProfileSettings }),
 
-        setGenericToast: (genericToast) => set({ genericToast }),
+        setGenericToast: (genericToast: { message: string; type: 'success' | 'warning' | 'info' | 'error' } | null) => set({ genericToast }),
         setSearchResults: (searchResults: SearchResults | null) => set({ searchResults }),
 
-        addFloatingRubric: (descriptorId, cursoId, actividadId) => set((state) => {
+        addFloatingRubric: (descriptorId: string, cursoId: number, actividadId: number) => set((state: AppStore) => {
             const id = `float-comp-${descriptorId}`;
-            const existing = state.floatingRubrics.find(w => w.id === id);
+            const existing = state.floatingRubrics.find((w: FloatingRubricWindow) => w.id === id);
             if (existing) {
                 // Bring to front by moving it to the end of the array
-                const filtered = state.floatingRubrics.filter(w => w.id !== id);
+                const filtered = state.floatingRubrics.filter((w: FloatingRubricWindow) => w.id !== id);
                 return { floatingRubrics: [...filtered, existing] };
             }
             const newWindow: FloatingRubricWindow = {
@@ -114,11 +114,11 @@ export const useAppStore = create<AppStore>()(
             };
             return { floatingRubrics: [...state.floatingRubrics, newWindow] };
         }),
-        removeFloatingRubric: (id) => set((state) => ({
-            floatingRubrics: state.floatingRubrics.filter(w => w.id !== id)
+        removeFloatingRubric: (id: string) => set((state: AppStore) => ({
+            floatingRubrics: state.floatingRubrics.filter((w: FloatingRubricWindow) => w.id !== id)
         })),
-        updateFloatingRubric: (id, updates) => set((state) => ({
-            floatingRubrics: state.floatingRubrics.map(w => w.id === id ? { ...w, ...updates } : w)
+        updateFloatingRubric: (id: string, updates: Partial<FloatingRubricWindow>) => set((state: AppStore) => ({
+            floatingRubrics: state.floatingRubrics.map((w: FloatingRubricWindow) => w.id === id ? { ...w, ...updates } : w)
         })),
     }),
     {
