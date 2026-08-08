@@ -77,10 +77,9 @@ export default function Layout({
     const onNavigate = useCallback((s: Screen) => navigate(s === 'inicio' ? '/' : `/${s}`), [navigate]);
 
     const currentUserProfile = useMemo(() => state.perfiles.find(p => p.userId === session?.user?.id), [state.perfiles, session]);
-    const docenteNombre = useMemo(() => state.nombreDocente || session?.user?.email?.split('@')[0] || 'Docente', [state.nombreDocente, session]);
+    const docenteNombre = useMemo(() => state.nombreDocente || currentUserProfile?.nombreDocente || session?.user?.email?.split('@')[0] || 'Docente', [state.nombreDocente, currentUserProfile, session]);
     const perfilBio = state.perfilBio || currentUserProfile?.bio || '';
     const perfilAvatarUrl = state.perfilAvatarUrl || currentUserProfile?.avatarUrl || '';
-    const totalLikes = currentUserProfile?.totalCorazones || 0;
     
     const [showNotifs, setShowNotifs] = useState(false);
     const [tasks, setTasks] = useState([
@@ -91,7 +90,7 @@ export default function Layout({
     const [showProfile, setShowProfile] = useState(false);
     const [localBio, setLocalBio] = useState(perfilBio);
     const [editingProfile, setEditingProfile] = useState(false);
-    const [activeProfile, setActiveProfile] = useState<{ userId?: string; nombre: string; avatar?: string; materias?: string; descripcion?: string; stats?: { cursos?: string; manzanas: string }; isOwn?: boolean } | null>(null);
+    const [activeProfile, setActiveProfile] = useState<{ userId?: string; nombre: string; avatar?: string; materias?: string; descripcion?: string; stats?: { cursos?: string }; isOwn?: boolean } | null>(null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [bioSaving, setBioSaving] = useState(false);
     const [localAvatarUrl, setLocalAvatarUrl] = useState(perfilAvatarUrl);
@@ -107,7 +106,7 @@ export default function Layout({
         if (t) setTasks(JSON.parse(t));
 
         const handleShowProfile = (e: CustomEvent) => {
-            const d = (e as CustomEvent).detail as { userId?: string; nombre?: string; avatar?: string; materias?: string; descripcion?: string; stats?: { cursos?: string; manzanas: string } };
+            const d = (e as CustomEvent).detail as { userId?: string; nombre?: string; avatar?: string; materias?: string; descripcion?: string; stats?: { cursos?: string } };
             const clickedUserId = d?.userId;
             
             if (clickedUserId && clickedUserId !== session?.user?.id) {
@@ -119,7 +118,6 @@ export default function Layout({
                         avatar: userProfile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.nombreDocente || '')}&background=f8fafc&color=0f172a&bold=true&size=128`,
                         materias: userProfile.asignatura || 'Docente',
                         descripcion: userProfile.bio || 'Docente innovador comprometido con el desarrollo pedagógico.',
-                        stats: { manzanas: (userProfile.totalCorazones || 0).toString() },
                         isOwn: false
                     });
                 }
@@ -140,7 +138,6 @@ export default function Layout({
                     avatar: localAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(docenteNombre)}&background=f8fafc&color=0f172a&bold=true&size=128`,
                     materias: 'Docente Titular',
                     descripcion: localBio || 'Docente innovador comprometido con el desarrollo de competencias transversales.',
-                    stats: { manzanas: totalLikes.toString() },
                     isOwn: true,
                 });
             }
@@ -160,7 +157,7 @@ export default function Layout({
             window.removeEventListener('keydown', handleEsc);
             window.removeEventListener('show-profile', handleShowProfile as EventListener);
         };
-    }, [docenteNombre, localBio, localAvatarUrl, totalLikes]);
+    }, [docenteNombre, localBio, localAvatarUrl]);
 
     const toggleTask = (id: number) => {
         const nextTasks = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);

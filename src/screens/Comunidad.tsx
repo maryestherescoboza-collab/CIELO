@@ -13,16 +13,15 @@ import { useCommunityData } from '../hooks/useCommunityData';
 interface Props {
     onRefresh: () => void;
     onAddPost: (post: { contenido: string; tipo: Post['tipo']; asignatura: string; recursoId?: number }) => Promise<number | undefined>;
-    onToggleLike: (postId: number) => void;
     onReportPost: (postId: number, razon: string, comentario?: string) => Promise<void>;
-    onImportResource: (tipo: Post['tipo'], resourceData: ResourceData) => void;
+    onImportResource: (tipo: Post['tipo'], resourceData: ResourceData, recursoId?: number) => void;
     onViewProfile: (e: React.MouseEvent, userId?: string) => void;
     onlineUsers: PresenceUser[];
     onDeletePost?: (postId: number) => Promise<boolean>;
 }
 
 export default function Comunidad({
-    onAddPost, onToggleLike, onReportPost,
+    onAddPost, onReportPost,
     onImportResource, onViewProfile, onlineUsers,
     onDeletePost
 }: Props) {
@@ -100,7 +99,6 @@ export default function Comunidad({
                         <div className="pt-2">
                             <ComunidadFeed
                                 posts={filteredPosts}
-                                onToggleLike={onToggleLike}
                                 onViewProfile={onViewProfile}
                                 setUiState={setUiState}
                                 onDeletePost={handleDeleteConfirm}

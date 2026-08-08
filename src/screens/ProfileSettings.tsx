@@ -16,17 +16,10 @@ interface ProfileSettingsProps {
   tipoInstitucion?: 'publica' | 'privada';
   asignaturas: string[];
   onUploadAvatar: (file: File) => Promise<string | null>;
-  onUpdateProfessionalProfile: (data: { instituto: string; tipoInstitucion: 'publica' | 'privada'; asignaturas: string[] }) => Promise<void>;
-  onUpdateFullProfile?: (nombreDocente: string, bioJson: string, centroData: {
-    nombre: string;
-    codigoCentro: string;
-    tanda: string;
-    telefono: string;
-    distritoEducativo: string;
-    regionalEducacion: string;
-    provincia: string;
-    municipio: string;
-  }) => Promise<void>;
+  onUpdateCentro: (centroId: string, data: any) => Promise<any>;
+  onCreateCentro: (data: any) => Promise<any>;
+  onUpdatePerfilProfesional: (tipoInstitucion: 'publica' | 'privada', asignaturas: string[], centroId?: string | null) => Promise<void>;
+  onUpdateFullProfile?: (nombreDocente: string, bio: string) => Promise<void>;
   onUpdateAvatarColor: (color: string) => Promise<void>;
   perfilAvatarColor: string;
   onResetSchoolYear: () => void;
@@ -51,7 +44,9 @@ export default function ProfileSettings({
   tipoInstitucion,
   asignaturas,
   onUploadAvatar,
-  onUpdateProfessionalProfile,
+  onUpdateCentro,
+  onCreateCentro,
+  onUpdatePerfilProfesional,
   onUpdateFullProfile,
   onUpdateAvatarColor,
   perfilAvatarColor,
@@ -62,54 +57,22 @@ export default function ProfileSettings({
   const [activeSection, setActiveSection] = useState<SectionId>('perfil');
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const parsedBio = useMemo(() => {
+  const extractedBio = useMemo(() => {
     try {
       if (perfilBio && perfilBio.startsWith('{')) {
-        return {
-          bio: '',
-          codigoCentro: '',
-          tanda: 'Jornada Extendida',
-          telefonoCentro: '',
-          distrito: '',
-          regional: '',
-          provincia: '',
-          municipio: '',
-          ...JSON.parse(perfilBio)
-        };
+        const parsed = JSON.parse(perfilBio);
+        return parsed.bio || '';
       }
     } catch (e) {
       // ignore
     }
-    return {
-      bio: perfilBio || '',
-      codigoCentro: '',
-      tanda: 'Jornada Extendida',
-      telefonoCentro: '',
-      distrito: '',
-      regional: '',
-      provincia: '',
-      municipio: ''
-    };
+    return perfilBio || '';
   }, [perfilBio]);
 
   const handleSaveInformacionGeneral = useCallback(async (nombreDocente: string, newBio: string) => {
     if (!onUpdateFullProfile) return;
-    const currentCentroData = {
-      nombre: centro?.nombre || instituto || '',
-      codigoCentro: centro?.codigoCentro || parsedBio.codigoCentro || '',
-      tanda: centro?.tanda || parsedBio.tanda || 'Jornada Extendida',
-      telefono: centro?.telefono || parsedBio.telefonoCentro || '',
-      distritoEducativo: centro?.distritoEducativo || parsedBio.distrito || '',
-      regionalEducacion: centro?.regionalEducacion || parsedBio.regional || '',
-      provincia: centro?.provincia || parsedBio.provincia || '',
-      municipio: centro?.municipio || parsedBio.municipio || ''
-    };
-    const updatedBioJson = JSON.stringify({
-      ...parsedBio,
-      bio: newBio
-    });
-    await onUpdateFullProfile(nombreDocente, updatedBioJson, currentCentroData);
-  }, [parsedBio, centro, instituto, onUpdateFullProfile]);
+    await onUpdateFullProfile(nombreDocente, newBio);
+  }, [onUpdateFullProfile]);
 
   const handleSaveDatosProfesionales = useCallback(async (formData: {
     instituto: string;
@@ -122,30 +85,43 @@ export default function ProfileSettings({
     provincia: string;
     municipio: string;
   }) => {
-    if (onUpdateFullProfile) {
-      const updatedBioJson = JSON.stringify({
-        ...parsedBio
-      });
-      await onUpdateFullProfile(docenteNombre, updatedBioJson, {
-        nombre: formData.instituto,
-        codigoCentro: formData.codigoCentro,
-        tanda: formData.tanda,
-        telefono: formData.telefonoCentro,
-        distritoEducativo: formData.distrito,
-        regionalEducacion: formData.regional,
-        provincia: formData.provincia,
-        municipio: formData.municipio
-      });
+    let currentCentroId = centro?.id || null;
+    
+    // Primero, si el nombre del centro cambió o hay datos nuevos, intentamos actualizar el centro
+    const normalizedInput = formData.instituto.trim().replace(/\s+/g, ' ');
+    if (currentCentroId && centro?.nombre === normalizedInput) {
+        // Mismo centro, solo actualizamos sus datos adicionales
+        await onUpdateCentro(currentCentroId, {
+            nombre: normalizedInput,
+            codigo_centro: formData.codigoCentro,
+            tanda: formData.tanda,
+            telefono: formData.telefonoCentro,
+            distrito_educativo: formData.distrito,
+            regional_educacion: formData.regional,
+            provincia: formData.provincia,
+            municipio: formData.municipio
+        });
+    } else {
+        // Es un centro nuevo o el usuario le cambió el nombre por completo, forzamos creación
+        // En una implementación real más compleja buscaríamos si existe, pero createCentro resuelve el flujo de creación.
+        const newCentro = await onCreateCentro({
+            nombre: normalizedInput,
+            codigo_centro: formData.codigoCentro,
+            tanda: formData.tanda,
+            telefono: formData.telefonoCentro,
+            distrito_educativo: formData.distrito,
+            regional_educacion: formData.regional,
+            provincia: formData.provincia,
+            municipio: formData.municipio
+        });
+        if (newCentro) {
+            currentCentroId = newCentro.id;
+        }
     }
 
-    if (onUpdateProfessionalProfile) {
-      await onUpdateProfessionalProfile({
-        instituto: formData.instituto,
-        tipoInstitucion: formData.tipoInstitucion,
-        asignaturas: asignaturas
-      });
-    }
-  }, [docenteNombre, parsedBio, asignaturas, onUpdateFullProfile, onUpdateProfessionalProfile]);
+    // Segundo, guardamos los datos exclusivos del perfil del profesor
+    await onUpdatePerfilProfesional(formData.tipoInstitucion, asignaturas, currentCentroId);
+  }, [asignaturas, centro, onUpdateCentro, onCreateCentro, onUpdatePerfilProfesional]);
 
   const handleSectionChange = useCallback((id: SectionId) => {
     setActiveSection(id);
@@ -185,7 +161,7 @@ export default function ProfileSettings({
                   <InformacionGeneralTab 
                     docenteNombre={docenteNombre} 
                     userEmail={session?.user?.email || ''} 
-                    parsedBio={parsedBio}
+                    bio={extractedBio}
                     onSave={handleSaveInformacionGeneral}
                   />
                 )}
@@ -194,7 +170,6 @@ export default function ProfileSettings({
                   <DatosProfesionalesTab 
                     instituto={instituto}
                     tipoInstitucion={tipoInstitucion}
-                    parsedBio={parsedBio}
                     centro={centro}
                     onSave={handleSaveDatosProfesionales}
                   />
@@ -340,15 +315,13 @@ function Header({ activeSection, onClose }: { activeSection: SectionId; onClose:
 interface InformacionGeneralTabProps {
   docenteNombre: string;
   userEmail: string;
-  parsedBio: {
-    bio: string;
-  };
+  bio: string;
   onSave: (nombreDocente: string, bio: string) => Promise<void>;
 }
 
-function InformacionGeneralTab({ docenteNombre, userEmail, parsedBio, onSave }: InformacionGeneralTabProps) {
+function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSave }: InformacionGeneralTabProps) {
   const [nombreDocente, setNombreDocente] = useState(docenteNombre || '');
-  const [bio, setBio] = useState(parsedBio.bio || '');
+  const [bio, setBio] = useState(initialBio || '');
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -442,15 +415,6 @@ function InformacionGeneralTab({ docenteNombre, userEmail, parsedBio, onSave }: 
 interface DatosProfesionalesTabProps {
   instituto: string;
   tipoInstitucion?: 'publica' | 'privada';
-  parsedBio: {
-    codigoCentro: string;
-    tanda: string;
-    telefonoCentro: string;
-    distrito: string;
-    regional: string;
-    provincia: string;
-    municipio: string;
-  };
   centro?: any;
   onSave: (data: {
     instituto: string;
@@ -468,20 +432,19 @@ interface DatosProfesionalesTabProps {
 function DatosProfesionalesTab({
   instituto,
   tipoInstitucion,
-  parsedBio,
   centro,
   onSave
 }: DatosProfesionalesTabProps) {
   const [form, setForm] = useState({
     instituto: centro?.nombre || instituto || '',
-    codigoCentro: centro?.codigoCentro || parsedBio.codigoCentro || '',
+    codigoCentro: centro?.codigoCentro || '',
     tipoInstitucion: tipoInstitucion || 'publica',
-    tanda: centro?.tanda || parsedBio.tanda || 'Jornada Extendida',
-    telefonoCentro: centro?.telefono || parsedBio.telefonoCentro || '',
-    distrito: centro?.distritoEducativo || parsedBio.distrito || '',
-    regional: centro?.regionalEducacion || parsedBio.regional || '',
-    provincia: centro?.provincia || parsedBio.provincia || '',
-    municipio: centro?.municipio || parsedBio.municipio || ''
+    tanda: centro?.tanda || 'Jornada Extendida',
+    telefonoCentro: centro?.telefono || '',
+    distrito: centro?.distritoEducativo || '',
+    regional: centro?.regionalEducacion || '',
+    provincia: centro?.provincia || '',
+    municipio: centro?.municipio || ''
   });
 
   const [saving, setSaving] = useState(false);

@@ -98,7 +98,6 @@ interface AppRoutesProps {
   updateSecuencia: any;
   deleteSecuencia: any;
   addPost: any;
-  togglePostLike: any;
   importResource: any;
   reportPost: any;
   deletePost: any;
@@ -106,9 +105,11 @@ interface AppRoutesProps {
   syncDelete: any;
   sendNotification: any;
   uploadAvatar: any;
-  updateProfessionalProfile: any;
   updateFullProfile: any;
   updateAvatarColor: any;
+  updatePerfilProfesional: any;
+  updateCentro: any;
+  createCentro: any;
   updateInstitutoName: any;
   resetSchoolYear: any;
   saveRubrica: any;
@@ -131,10 +132,10 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   addEstudiante, updateEstudiante, deleteEstudiante,
   addIncidencia, deleteIncidencia,
   addSecuencia, updateSecuencia, deleteSecuencia,
-  addPost, togglePostLike, reportPost, importResource, deletePost,
+  addPost, reportPost, importResource, deletePost,
   refresh, syncDelete, sendNotification,
-  uploadAvatar, updateProfessionalProfile, updateFullProfile, updateAvatarColor,
-  updateInstitutoName, resetSchoolYear,
+  uploadAvatar, updateFullProfile, updateAvatarColor, updatePerfilProfesional,
+  updateCentro, createCentro, updateInstitutoName, resetSchoolYear,
   saveRubrica, updateDescriptor, updateNivelesPuntaje,
   saveCotejo, updateCriterios, savePlantilla, deletePlantilla
 }) => {
@@ -217,7 +218,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/comunidad" element={
         <Comunidad
           onAddPost={addPost}
-          onToggleLike={togglePostLike}
           onReportPost={reportPost}
           onDeletePost={deletePost}
           onRefresh={refresh}
@@ -290,23 +290,25 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         />
       } />
       <Route path="/ajustes" element={
-        <ProfileSettings
-          session={session}
-          docenteNombre={docenteNombre}
-          perfilBio={currentUserProfile?.bio || ''}
-          perfilAvatarUrl={currentUserProfile?.avatarUrl || ''}
-          perfilAvatarColor={currentUserProfile?.avatarColor || ''}
-          instituto={state.instituto || ''}
-          tipoInstitucion={state.tipoInstitucion || 'publica'}
-          asignaturas={state.asignaturas || []}
-          onUploadAvatar={uploadAvatar}
-          onUpdateProfessionalProfile={updateProfessionalProfile}
-          onUpdateFullProfile={updateFullProfile}
-          onUpdateAvatarColor={updateAvatarColor}
-          onResetSchoolYear={resetSchoolYear}
-          onClose={() => navigate('/')}
-          centro={currentUserProfile?.centro}
-        />
+            <ProfileSettings 
+              session={session} 
+              docenteNombre={docenteNombre} 
+              perfilBio={currentUserProfile?.bio || currentUserProfile?.perfilBio || ''} 
+              perfilAvatarUrl={currentUserProfile?.avatarUrl || ''} 
+              instituto={state.instituto} 
+              tipoInstitucion={state.tipoInstitucion} 
+              asignaturas={state.asignaturas} 
+              onUploadAvatar={uploadAvatar} 
+              onUpdatePerfilProfesional={updatePerfilProfesional}
+              onUpdateCentro={updateCentro}
+              onCreateCentro={createCentro}
+              onUpdateFullProfile={updateFullProfile} 
+              onUpdateAvatarColor={updateAvatarColor} 
+              perfilAvatarColor={currentUserProfile?.avatarColor || '#2D3436'} 
+              onResetSchoolYear={resetSchoolYear} 
+              onClose={() => navigate(-1)} 
+              centro={currentUserProfile?.centro}
+            />
       } />
       <Route path="/suscripcion" element={<Suscripcion />} />
       <Route path="/reset-password" element={<ResetPassword />} />

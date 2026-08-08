@@ -10,6 +10,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import NotificationsOverlay from './components/NotificationsOverlay';
 import InvitationModal from './components/courses/InvitationModal';
 import { FloatingRubricManager } from './components/FloatingRubricManager';
+import LoadingMessage from './components/LoadingMessage';
 import { useSupabaseData } from './hooks/useSupabaseData';
 import { supabase } from './lib/supabase';
 import logo from './assets/logo.png';
@@ -22,6 +23,7 @@ import { useIncidenciaActions } from './hooks/useIncidenciaActions';
 import { useSecuenciaActions } from './hooks/useSecuenciaActions';
 import { usePostActions } from './hooks/usePostActions';
 import { useTareaActions } from './hooks/useTareaActions';
+import { useCentroActions } from './hooks/useCentroActions';
 import CentroPanel from './screens/CentroPanel';
 import { useAppStore } from './store/appStore';
 import { useAppInitialization } from './hooks/useAppInitialization';
@@ -57,6 +59,7 @@ export default function App() {
     ...usePostActions(),
     ...useNotificationActions(),
     ...useTareaActions(),
+    ...useCentroActions(),
     ...useSupabaseData()
   };
 
@@ -101,13 +104,14 @@ export default function App() {
         }
       }
     }
-    return state.instituto || 'Instituto Central';
+    const inst = state.instituto || 'Instituto Central';
+    return typeof inst === 'string' ? inst : 'Instituto Central';
   }, [selectedCursoId, state.cursoDocentes, state.cursos, state.perfiles, state.instituto]);
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-(--paper)">
       <img src={logo} alt="Logo" className="app-logo w-44 h-44 mb-8 animate-pulse" />
-      <h2 className="text-2xl font-black text-(--ink)">Preparando tu espacio de trabajo</h2>
+      <LoadingMessage />
     </div>
   );
 
@@ -126,9 +130,10 @@ export default function App() {
   const isPrintView = window.location.pathname.startsWith('/print-boletines');
 
   // Entorno independiente para usuarios con ROL: CENTRO (director/administrador)
+  // El rol de administrador (creado al registrar el centro) determina el acceso;
+  // estos usuarios solo acceden a Centro Panel y nunca al panel general de docente.
   const esUsuarioCentro = !!state.centroRolActual &&
-    ['director', 'administrador'].includes(state.centroRolActual.rol) &&
-    !!currentUserProfile?.centro_id;
+    ['director', 'administrador', 'administrador_centro', 'administrador_global'].includes(state.centroRolActual.rol);
 
   if (esUsuarioCentro) {
     return (

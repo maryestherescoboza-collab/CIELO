@@ -45,22 +45,11 @@ export function useNotificationActions() {
     }, [session, setState]);
 
     const markAsRead = useCallback(async (id: number) => {
-        const currentNotifications = useAppStore.getState().state.notificaciones;
-        const notif = currentNotifications.find(n => n.id === id);
-
-        if (notif && notif.tipo === 'like') {
-            setState(s => ({
-                ...s,
-                notificaciones: s.notificaciones.filter(n => n.id !== id)
-            }));
-            await supabase.from('notificaciones').delete().eq('id', id);
-        } else {
-            setState(s => ({
-                ...s,
-                notificaciones: s.notificaciones.filter(n => n.id !== id)
-            }));
-            await supabase.from('notificaciones').update({ leida: true, fecha_lectura: new Date().toISOString() }).eq('id', id);
-        }
+        setState(s => ({
+            ...s,
+            notificaciones: s.notificaciones.filter(n => n.id !== id)
+        }));
+        await supabase.from('notificaciones').update({ leida: true, fecha_lectura: new Date().toISOString() }).eq('id', id);
     }, [setState]);
 
     return {

@@ -79,11 +79,6 @@ export default function FeaturedSection({ featuredPosts, setUiState }: Props) {
 
                             {/* Card Footer */}
                             <div className="flex items-center justify-between pt-6 border-t border-slate-50 mt-auto">
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-100/50">
-                                    <span className="text-sm">🍎</span>
-                                    <span className="text-xs font-black text-rose-600">{post.likes}</span>
-                                </div>
-                                
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={() => setUiState({ activeModal: 'preview', selectedPostId: post.id })}

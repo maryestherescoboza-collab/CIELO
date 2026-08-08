@@ -6,7 +6,7 @@ import type { Post, UserProfile } from '../types';
 export function useCommunityData() {
     const session = useAppStore(s => s.session);
     const globalState = useAppStore(s => s.state);
-    const [posts, setPosts] = useState<Post[]>([]);
+    const setAppState = useAppStore(s => s.setState);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
     const [topColaboradores, setTopColaboradores] = useState<UserProfile[]>([]);
@@ -18,22 +18,17 @@ export function useCommunityData() {
         console.log("[Community] Loading posts...");
 
         try {
-            const [postsRes, likesRes, histRes] = await Promise.all([
+            const [postsRes, histRes] = await Promise.all([
                 supabase.from('posts')
                     .select('*, profiles:perfiles(nombre_docente, avatar_url, bio)')
                     .order('id', { ascending: false }),
-                supabase.from('post_likes')
-                    .select('post_id')
-                    .eq('user_id', session.user.id),
                 supabase.from('historial_colaboradores')
                     .select('*')
             ]);
 
             if (postsRes.error) throw postsRes.error;
-            if (likesRes.error) throw likesRes.error;
             if (histRes.error) throw histRes.error;
 
-            const userLikedPostIds = new Set((likesRes.data || []).map(l => l.post_id as number));
             const secuencias = globalState.secuencias || [];
             const plantillas = globalState.plantillas || [];
 
@@ -57,8 +52,6 @@ export function useCommunityData() {
                     contenido: p.contenido as string,
                     tiempo: p.tiempo as string || 'Hace un momento',
                     fechaPublicacion: p.fecha_publicacion as string,
-                    likes: p.likes as number,
-                    likedByMe: userLikedPostIds.has(p.id as number),
                     tipo: p.tipo as 'rubrica' | 'secuencia' | 'general' | 'cotejo',
                     asignatura: p.asignatura as string,
                     userId: p.user_id as string,
@@ -79,19 +72,30 @@ export function useCommunityData() {
             });
 
             const topColabs = [...profilesWithHist]
+                .filter((usuario) => {
+                    const total = usuario.publicacionesRealizadas;
+                    return typeof total === 'number' && Number.isFinite(total) && total > 0;
+                })
                 .sort((a, b) => (b.publicacionesRealizadas || 0) - (a.publicacionesRealizadas || 0))
                 .slice(0, 5);
 
-            setPosts(mappedPosts);
+            const optimisticPosts = (useAppStore.getState().state.posts || []).filter(p =>
+                p.isOptimistic && !mappedPosts.some(mp => mp.id === p.id)
+            );
+
             setTopColaboradores(topColabs);
-            console.log("[Community] Posts loaded successfully.");
+            setAppState(prev => ({
+                ...prev,
+                posts: [...optimisticPosts, ...mappedPosts]
+            }));
+            console.log("[Community] Posts loaded and written to global store.");
         } catch (err: any) {
             console.error("[Community] Error fetching community data:", err);
             setError(err instanceof Error ? err : new Error(String(err)));
         } finally {
             setLoading(false);
         }
-    }, [session?.user?.id, globalState.secuencias, globalState.plantillas, globalState.perfiles]);
+    }, [session?.user?.id, globalState.secuencias, globalState.plantillas, globalState.perfiles, setAppState]);
 
     useEffect(() => {
         if (!session?.user?.id) return;
@@ -117,7 +121,7 @@ export function useCommunityData() {
     }, [session?.user?.id, fetchCommunityData]);
 
     return {
-        posts,
+        posts: globalState.posts,
         loading,
         error,
         topColaboradores,

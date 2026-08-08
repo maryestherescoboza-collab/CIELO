@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Lock, Loader2, Check, X, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import logo from '../assets/logo.png';
 
 export default function ResetPassword() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get('token');
 
   const [isValidating, setIsValidating] = useState(true);
   const [tokenError, setTokenError] = useState<string | null>(null);
@@ -26,50 +25,45 @@ export default function ResetPassword() {
   const isStrong = matchesLength && hasUppercase && hasLowercase && hasNumber;
   const matchesConfirm = password === confirmPassword && confirmPassword !== '';
 
-  const API_URL = import.meta.env.VITE_AUTH_API_URL || (window.location.hostname === "localhost" ? 'http://localhost:3001' : 'https://evaluacielo.com');
-
   useEffect(() => {
-    if (!token) {
-      setTokenError('El enlace de recuperación es inválido porque falta el token de seguridad.');
-      setIsValidating(false);
-      return;
-    }
-
-    const validateToken = async () => {
-      console.log(`[ResetPassword.tsx] Validando token con el backend en: ${API_URL}/api/auth/validate-token`);
-      try {
-        const response = await fetch(`${API_URL}/api/auth/validate-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token })
+    let authListener: any;
+    
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        setIsValidating(false);
+        setDocenteNombre(session.user.user_metadata?.nombre_docente || 'Docente');
+      } else {
+        const { data: authSubscription } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+            if (session) {
+              setDocenteNombre(session.user.user_metadata?.nombre_docente || 'Docente');
+              setIsValidating(false);
+            }
+          }
         });
         
-        console.log(`[ResetPassword.tsx] Respuesta de validación de token recibida. Status: ${response.status}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'El token no es válido o ha expirado.');
-        }
-
-        if (data.valid) {
-          setDocenteNombre(data.nombreDocente);
-        } else {
-          setTokenError('El enlace de recuperación ha expirado, ya fue utilizado o es inválido.');
-        }
-      } catch (err: any) {
-        console.error("[ResetPassword.tsx] Error en validateToken:", err);
-        if (err.name === 'TypeError' || err.message?.toLowerCase().includes('failed to fetch') || err.message?.toLowerCase().includes('fetch failed')) {
-          setTokenError(`Error de Conexión: No se pudo conectar al servidor de autenticación en ${API_URL}. Verifique que el backend esté ejecutándose en el puerto 3001.`);
-        } else {
-          setTokenError(err.message || 'Error al validar el enlace de recuperación.');
-        }
-      } finally {
-        setIsValidating(false);
+        authListener = authSubscription.subscription;
+        
+        setTimeout(async () => {
+          const { data } = await supabase.auth.getSession();
+          if (!data.session) {
+             setTokenError('El enlace de recuperación ha expirado, ya fue utilizado o es inválido.');
+             setIsValidating(false);
+          }
+        }, 3000);
       }
     };
 
-    validateToken();
-  }, [token, API_URL]);
+    checkSession();
+    
+    return () => {
+      if (authListener) {
+        authListener.unsubscribe();
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,31 +80,21 @@ export default function ResetPassword() {
     setError(null);
 
     try {
-      console.log(`[ResetPassword.tsx] Enviando solicitud de cambio de contraseña a: ${API_URL}/api/auth/reset-password`);
-      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password, confirmPassword })
-      });
-      
-      console.log(`[ResetPassword.tsx] Respuesta de restablecimiento de contraseña recibida. Status: ${response.status}`);
-      const data = await response.json();
+      const { error: updateError } = await supabase.auth.updateUser({ password });
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Ocurrió un error al restablecer la contraseña.');
+      if (updateError) {
+        throw updateError;
       }
 
       setSuccess(true);
+      await supabase.auth.signOut();
+      
       setTimeout(() => {
         navigate('/');
       }, 5000);
     } catch (err: any) {
       console.error("[ResetPassword.tsx] Error en handleSubmit (restablecimiento de contraseña):", err);
-      if (err.name === 'TypeError' || err.message?.toLowerCase().includes('failed to fetch') || err.message?.toLowerCase().includes('fetch failed')) {
-        setError(`Error de Conexión: No se pudo conectar al servidor de autenticación en ${API_URL}. Compruebe que el backend esté en línea.`);
-      } else {
-        setError(err.message || 'No se pudo restablecer la contraseña.');
-      }
+      setError(err.message || 'No se pudo restablecer la contraseña.');
     } finally {
       setSubmitting(false);
     }

@@ -31,12 +31,16 @@ export function useComunidadData({ state }: Params) {
 
     const featuredPosts = useMemo(() => {
         return [...processedPosts]
-            .sort((a, b) => b.likes - a.likes)
+            .sort((a, b) => (b.created_at_ts || 0) - (a.created_at_ts || 0))
             .slice(0, 3);
     }, [processedPosts]);
 
     const topColaboradores = useMemo(() => {
         return [...state.perfiles]
+            .filter((usuario) => {
+                const total = usuario.publicacionesRealizadas;
+                return typeof total === 'number' && Number.isFinite(total) && total > 0;
+            })
             .sort((a, b) => (b.publicacionesRealizadas || 0) - (a.publicacionesRealizadas || 0))
             .slice(0, 5);
     }, [state.perfiles]);

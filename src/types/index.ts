@@ -155,7 +155,6 @@ export interface Post {
     id: number; autor: string; cargo: string; avatarUrl?: string; avatarColor?: string;
     contenido: string; tiempo: string; fechaPublicacion: string;
     created_at_ts?: number; // Numeric timestamp for performance
-    likes: number; likedByMe: boolean;
     tipo: 'rubrica' | 'secuencia' | 'general' | 'cotejo'; asignatura: string;
     userId?: string;
     userBio?: string;
@@ -233,7 +232,6 @@ export interface UserProfile {
     asignaturas?: string[];
     lastSeen?: string;
     currentModule?: string;
-    totalCorazones?: number;
     publicacionesRealizadas?: number;
     avatarColor?: string;
     institucion?: string;

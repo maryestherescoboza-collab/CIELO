@@ -5,6 +5,7 @@ import { useAppStore } from '../store/appStore';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { SmoothLineChart, StudentPopulationChart, DonutChart } from './DashboardCharts';
+import PodiumTop10 from '../components/dashboard/PodiumTop10';
 import { TC_Flux } from '../components/icons/TerraCognitaIcons';
 
 interface EnhancedStudent extends Estudiante {
@@ -244,17 +245,6 @@ export default function Dashboard({ docenteNombre }: Props) {
     return group;
   }, [filteredCalificaciones]);
 
-  // ── Optimized: Pre-grouped grades by student AND period ──
-  const gradesByStudentAndPeriod = useMemo(() => {
-    const group = new Map<string, any[]>();
-    filteredCalificaciones.forEach(c => {
-      const key = `${c.estudianteId}-${c.periodo}`;
-      if (!group.has(key)) group.set(key, []);
-      group.get(key)?.push(c);
-    });
-    return group;
-  }, [filteredCalificaciones]);
-
   // ── Computed: Enhanced students with real averages ──
   const enhancedStudents = useMemo<EnhancedStudent[]>(() => {
     return filteredEstudiantes.map((est: Estudiante) => {
@@ -305,42 +295,6 @@ export default function Dashboard({ docenteNombre }: Props) {
       };
     });
   }, [enhancedStudents]);
-
-  // ── 4 Podiums by Period ──
-  const podiumsByPeriod = useMemo(() => {
-    const periodsSet = new Set(filteredCalificaciones.map(c => c.periodo).filter(Boolean));
-    let periods = Array.from(periodsSet).sort();
-    if (periods.length === 0) {
-      periods = ['Período 1', 'Período 2', 'Período 3', 'Período 4'];
-    } else if (periods.length > 4) {
-      periods = periods.slice(0, 4);
-    }
-    
-    while (periods.length < 4) {
-      periods.push(`Período ${periods.length + 1}`);
-    }
-
-    return periods.map(periodo => {
-      const studentsAvg = filteredEstudiantes.map(est => {
-        const studentPeriodCalifs = gradesByStudentAndPeriod.get(`${est.id}-${periodo}`) || [];
-        const califs = studentPeriodCalifs.filter(c => c.puntaje !== null);
-        const avg = califs.length > 0
-          ? Math.round(califs.reduce((s: number, c: any) => s + (c.puntaje as number), 0) / califs.length)
-          : null;
-        return {
-          ...est,
-          periodAvg: avg,
-          displayName: `${est.nombre} ${est.apellido}`,
-        };
-      }).filter(est => est.periodAvg !== null);
-      
-      const top10 = studentsAvg.sort((a, b) => (b.periodAvg as number) - (a.periodAvg as number)).slice(0, 10);
-      return {
-        periodo,
-        top10
-      };
-    });
-  }, [filteredEstudiantes, filteredCalificaciones]);
 
   // ── Population Chart Data ──
   const populationData = useMemo(() => {
@@ -550,90 +504,8 @@ export default function Dashboard({ docenteNombre }: Props) {
           </div>
         </div>
 
-        {/* ═══ 4 PODIUMS BY PERIOD (TOP 10 ROWS - MIMETIZED & MINIMALIST) ═══ */}
-        {podiumsByPeriod.some(p => p.top10.length > 0) && (
-          <div className="mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
-            <div className="mb-2">
-              <h3 className="text-[10px] font-black text-[#2E3330] uppercase tracking-[0.25em]">
-                  Podium de excelencia
-              </h3>
-              <p className="text-[9px] font-bold text-[#5F665E] uppercase tracking-widest mt-0.5">
-                  Top 10 de estudiantes con mejor promedio por período
-              </p>
-            </div>
-            
-            <div className="flex flex-col gap-2.5">
-              {podiumsByPeriod
-                .filter(podium => podium.top10.length > 0)
-                .map((podium, pIdx) => {
-                  const periodNum = podium.periodo.replace(/^\D+/g, '') || String(pIdx + 1);
-                  return (
-                    <div key={podium.periodo} className="flex items-center gap-3 py-1.5 border-b border-[rgba(46,51,48,0.08)] last:border-b-0">
-                      {/* Period Label */}
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#EAE4DA]/50 border border-[rgba(46,51,48,0.08)] text-[#2E3330] font-black text-[10px] shrink-0 shadow-sm">
-                        <span>P{periodNum}</span>
-                      </div>
-
-                      {/* Top 10 List */}
-                      <div className="flex-1 flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
-                        {podium.top10.map((est, index) => {
-                          const rank = index + 1;
-                          
-                          // Border color/thickness & size classes based on ranking hierarchy
-                          let avatarStyle = "rounded-full flex items-center justify-center text-white font-black shadow-sm shrink-0 ";
-                          let avatarBorderColor = {};
-                          
-                          if (rank === 1) {
-                            avatarStyle += "w-8.5 h-8.5 text-[10px] border-[2.5px]";
-                            avatarBorderColor = { borderColor: '#F5BC5D' };
-                          } else if (rank === 2) {
-                            avatarStyle += "w-7.5 h-7.5 text-[9px] border-[2px]";
-                            avatarBorderColor = { borderColor: '#B8CADC' };
-                          } else if (rank === 3) {
-                            avatarStyle += "w-7.5 h-7.5 text-[9px] border-[2px]";
-                            avatarBorderColor = { borderColor: '#EB8847' };
-                          } else {
-                            avatarStyle += "w-7.5 h-7.5 text-[9px] border border-[rgba(46,51,48,0.08)]";
-                          }
-
-                          return (
-                            <div
-                              key={est.id}
-                              onClick={() => navigate(`/estudiante/${est.id}`)}
-                              className="flex items-center gap-2 hover:bg-[#FAF6F0]/40 active:scale-98 transition-all cursor-pointer rounded-xl py-1 px-2.5 shrink-0"
-                            >
-                              {/* Position indicator */}
-                              <span className="text-[10px] font-black text-[#5F665E] shrink-0 min-w-4 text-center">
-                                {rank}
-                              </span>
-
-                              {/* Avatar with styled border */}
-                              <div
-                                  className={avatarStyle}
-                                  style={{ backgroundColor: est.avatarColor, ...avatarBorderColor }}
-                              >
-                                {est.nombre[0]}{est.apellido[0]}
-                              </div>
-
-                              {/* Details */}
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-[10px] font-bold text-[#2E3330] truncate leading-tight">
-                                  {est.nombre} {est.apellido}
-                                </span>
-                                <span className="text-[9px] font-black text-[#7A8D69] mt-0.5">
-                                  {est.periodAvg}%
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        )}
+        {/* ═══ PODIUM TOP 10 (GLOBAL · OBJETO CURVA ORGÁNICA) ═══ */}
+        <PodiumTop10 students={enhancedStudents} />
 
         {/* ═══ CHARTS SECTION ═══ */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">

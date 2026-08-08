@@ -5,7 +5,6 @@ import { Globe } from 'lucide-react';
 
 interface Props {
     posts: Post[];
-    onToggleLike: (postId: number) => void;
     onViewProfile: (e: React.MouseEvent, userId?: string) => void;
     setUiState: React.Dispatch<React.SetStateAction<ComunidadUIState>>;
     onDeletePost?: (postId: number) => void;
@@ -39,7 +38,7 @@ const getRemainingDays = (expiresAt?: string) => {
 };
 
 export default function ComunidadFeed({ 
-    posts, onToggleLike, 
+    posts, 
     onViewProfile, setUiState,
     onDeletePost, currentUserId
 }: Props) {
@@ -53,9 +52,9 @@ export default function ComunidadFeed({
                         <PostCard 
                             key={post.id}
                             post={post}
-                            onToggleLike={onToggleLike}
                             onViewProfile={onViewProfile}
                             onPreview={() => setUiState({ activeModal: 'preview', selectedPostId: post.id })}
+                            onImport={() => setUiState({ activeModal: 'import', selectedPostId: post.id })}
                             onDelete={onDeletePost}
                             currentUserId={currentUserId}
                             getRemainingDays={getRemainingDays}

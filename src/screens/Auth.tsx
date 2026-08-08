@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Mail, Lock, Loader2, User, ArrowRight, Building2, ChevronLeft, Check } from 'lucide-react';
 import logo from '../assets/logo.png';
@@ -29,13 +29,16 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   const [crearCentro, setCrearCentro] = useState<boolean | null>(null);
   const [centroForm, setCentroForm] = useState<CentroFormData>({ nombre: '', codigoCentro: '', telefono: '' });
 
-  // Opciones tras "No, continuar como usuario independiente"
-  const [opcionNo, setOpcionNo] = useState<'codigo' | 'propia' | 'referencia' | null>(null);
+  // Opciones del flujo "No, continuar como usuario" (buscador de centros)
   const [centrosList, setCentrosList] = useState<{ id: string; nombre: string }[]>([]);
   const [centroSel, setCentroSel] = useState('');
   const [codigoAcceso, setCodigoAcceso] = useState('');
   const [codigoValidando, setCodigoValidando] = useState(false);
   const [codigoInfo, setCodigoInfo] = useState<{ valido: boolean; centro: string } | null>(null);
+
+  // Buscador único de centros (flujo "No, continuar como usuario")
+  const [busquedaCentro, setBusquedaCentro] = useState('');
+  const [detectandoSuscripcion, setDetectandoSuscripcion] = useState(false);
 
   // Password recovery states
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -75,11 +78,12 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setRegStep(1);
     setCrearCentro(null);
     setCentroForm({ nombre: '', codigoCentro: '', telefono: '' });
-    setOpcionNo(null);
     setCentrosList([]);
     setCentroSel('');
     setCodigoAcceso('');
     setCodigoInfo(null);
+    setBusquedaCentro('');
+    setDetectandoSuscripcion(false);
     setNeedsEmailConfirmation(false);
     setRegisteredWithCentro(false);
     setError(null);
@@ -125,10 +129,10 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   //   Paso 1: Nombre, Correo, Contraseña
   //   Paso 2: ¿Deseas registrar un centro educativo? (Sí / No)
   //   Paso 3 (solo si Sí): información del centro educativo
-  //   Paso 4: (No) ¿cómo accedes? selección de modalidad
-  //   Paso 5: (No) modalidad "código": centro + código de acceso
-  //   Paso 6: (No) modalidad "propia": centro existente
-  //   Paso 7: (No) modalidad "referencia": registrar centro como referencia
+  //   Paso 4: (No) buscador único de centros
+  //   Paso 5: (No) centro con suscripción institucional → código de acceso
+  //   Paso 6: (No) centro sin suscripción institucional → vincular sin código
+  //   Paso 7: (No) el centro no aparece → registrar centro como referencia
   // ─────────────────────────────────────────────────────────────────
 
   const goToPaso2 = (e: React.FormEvent) => {
@@ -332,6 +336,30 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     }
   };
 
+  // Comprueba si el centro seleccionado posee una suscripción institucional.
+  // Se apoya únicamente en la tabla `suscripciones` (tipo='institucional',
+  // estado='activa') mediante la función SQL centro_tiene_suscripcion_institucional.
+  // Si la función aún no existe (migración pendiente), degrada al caso
+  // "sin suscripción" para no bloquear el registro.
+  const seleccionarCentroBuscador = async (centroId: string) => {
+    setCentroSel(centroId);
+    setCodigoAcceso('');
+    setCodigoInfo(null);
+    setDetectandoSuscripcion(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase.rpc('centro_tiene_suscripcion_institucional', {
+        p_centro_id: centroId
+      });
+      const esInstitucional = !error && data === true;
+      setRegStep(esInstitucional ? 5 : 6);
+    } catch {
+      setRegStep(6);
+    } finally {
+      setDetectandoSuscripcion(false);
+    }
+  };
+
   const handleResendEmail = async () => {
     if (resendCooldown > 0 || !email.trim()) return;
 
@@ -373,37 +401,38 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setError(null);
     setForgotSuccess(null);
 
-    const API_URL = import.meta.env.VITE_AUTH_API_URL || (window.location.hostname === "localhost" ? 'http://localhost:3001' : 'https://evaluacielo.com');
-    console.log(`[Auth.tsx] Intentando enviar solicitud de recuperación a: ${API_URL}/api/auth/forgot-password`);
-
     try {
-      const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail })
+      const redirectUrl = window.location.hostname === "localhost"
+        ? "http://localhost:5173/reset-password"
+        : "https://evaluacielo.com/reset-password";
+
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+        redirectTo: redirectUrl
       });
 
-      console.log(`[Auth.tsx] Respuesta del servidor recibida. Status: ${response.status}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Ocurrió un error al procesar tu solicitud.');
+      if (resetError) {
+        console.error("[Auth.tsx] Error en resetPasswordForEmail:", resetError);
+        throw resetError;
       }
 
-      setForgotSuccess(data.message || 'Si existe una cuenta asociada a este correo electrónico, recibirás instrucciones para restablecer tu contraseña.');
+      setForgotSuccess('Si existe una cuenta asociada a este correo electrónico, recibirás instrucciones para restablecer tu contraseña.');
     } catch (err: any) {
       console.error("[Auth.tsx] Error capturado en handleForgotPassword:", err);
-      if (err.name === 'TypeError' || err.message?.toLowerCase().includes('failed to fetch') || err.message?.toLowerCase().includes('fetch failed')) {
-        setError(`Error de Conexión: No se pudo establecer conexión con el servidor de autenticación en ${API_URL}. Asegúrese de que el backend esté corriendo en el puerto 3001.`);
-      } else {
-        setError(err.message || 'No se pudo enviar la solicitud de recuperación.');
-      }
+      setError(err.message || 'No se pudo enviar la solicitud de recuperación.');
     } finally {
       setLoading(false);
     }
   };
 
   const inputClass = "w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none text-xs font-semibold text-[#3E3838] transition-all";
+
+  const centrosFiltrados = useMemo(() => {
+    const q = busquedaCentro.trim().toLowerCase();
+    if (!q) return centrosList;
+    return centrosList.filter(c => c.nombre.toLowerCase().includes(q));
+  }, [busquedaCentro, centrosList]);
+
+  const centroSelNombre = centrosList.find(c => c.id === centroSel)?.nombre || '';
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white font-sans text-[#3E3838]">
@@ -645,7 +674,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
 <button
                         type="button"
-                        onClick={() => { setCrearCentro(false); setOpcionNo(null); setRegStep(4); }}
+                        onClick={() => { setCrearCentro(false); setBusquedaCentro(''); loadCentros(); setRegStep(4); }}
                         disabled={loading}
                         className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-[9px] tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase shadow-sm active:scale-[0.98]"
                       >
@@ -727,50 +756,66 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       </button>
                     </form>
                   ) : regStep === 4 ? (
-                    /* PASO 4: cómo quieres continuar (no crear centro) */
+                    /* PASO 4: buscador único de centros (No, continuar como usuario) */
                     <div className="animate-fade-in">
                       <div className="flex items-center gap-1 mb-2">
                         <button
                           type="button"
-                          onClick={() => { setOpcionNo(null); setRegStep(2); }}
+                          onClick={() => { setBusquedaCentro(''); setRegStep(2); }}
                           className="text-[#3E3838]/40 hover:text-[#689C63] transition-colors"
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]">¿Cómo quieres continuar?</h3>
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]">Busca tu centro educativo</h3>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => { setOpcionNo('codigo'); loadCentros(); setRegStep(5); }}
-                        className="w-full text-left p-4 rounded-2xl border border-slate-200 bg-white hover:border-[#689C63]/40 hover:bg-[#689C63]/5 transition-all mb-2"
-                      >
-                        <p className="text-[11px] font-black text-[#3E3838] mb-0.5">Mi centro ya tiene suscripción</p>
-                        <p className="text-[9px] font-semibold text-[#3E3838]/60">
-                          Mi centro pagará mi acceso con un código de vinculación.
-                        </p>
-                      </button>
+                      <p className="text-[10px] font-bold text-[#3E3838]/60 mb-3">
+                        Escribe el nombre de tu centro y elígelo de la lista. Tu selección determinará automáticamente cómo te vinculas.
+                      </p>
+
+                      <div className="space-y-1 mb-3">
+                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Centro educativo</label>
+                        <div className="relative">
+                          <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#689C63]" />
+                          <input
+                            type="text" value={busquedaCentro}
+                            onChange={(e) => setBusquedaCentro(e.target.value)}
+                            className={inputClass}
+                            placeholder="Ej. Instituto Politécnico"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="max-h-52 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 mb-3 bg-white">
+                        {centrosFiltrados.length === 0 ? (
+                          <p className="p-3 text-center text-[10px] font-bold text-[#3E3838]/50">
+                            No hay centros que coincidan. Si tu centro no aparece, regístralo abajo.
+                          </p>
+                        ) : centrosFiltrados.map((c) => (
+                          <button
+                            key={c.id} type="button"
+                            onClick={() => seleccionarCentroBuscador(c.id)}
+                            disabled={detectandoSuscripcion}
+                            className="w-full text-left px-4 py-3 hover:bg-[#689C63]/5 transition-colors disabled:opacity-50 flex items-center gap-2"
+                          >
+                            <Building2 className="w-3.5 h-3.5 text-[#689C63] shrink-0" />
+                            <span className="text-[11px] font-bold text-[#3E3838]">{c.nombre}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {detectandoSuscripcion && (
+                        <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-[10px] font-bold text-[#689C63] flex items-center gap-2 mb-3">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verificando la suscripción del centro...
+                        </div>
+                      )}
 
                       <button
                         type="button"
-                        onClick={() => { setOpcionNo('propia'); loadCentros(); setRegStep(6); }}
-                        className="w-full text-left p-4 rounded-2xl border border-slate-200 bg-white hover:border-[#689C63]/40 hover:bg-[#689C63]/5 transition-all mb-2"
+                        onClick={() => setRegStep(7)}
+                        className="w-full text-center text-[9px] font-black text-[#689C63] hover:text-[#689C63]/90 transition-colors uppercase tracking-widest pt-1"
                       >
-                        <p className="text-[11px] font-black text-[#3E3838] mb-0.5">Me vinculo a un centro existente</p>
-                        <p className="text-[9px] font-semibold text-[#3E3838]/60">
-                          Elijo un centro ya registrado y pago mi propia suscripción.
-                        </p>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => { setOpcionNo('referencia'); setRegStep(7); }}
-                        className="w-full text-left p-4 rounded-2xl border border-slate-200 bg-white hover:border-[#689C63]/40 hover:bg-[#689C63]/5 transition-all"
-                      >
-                        <p className="text-[11px] font-black text-[#3E3838] mb-0.5">Mi centro educativo no aparece</p>
-                        <p className="text-[9px] font-semibold text-[#3E3838]/60">
-                          Registro la información de mi centro y pago mi propia suscripción.
-                        </p>
+                        Mi centro educativo no aparece en la lista
                       </button>
                     </div>
                   ) : regStep === 5 ? (
@@ -784,21 +829,12 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]">Mi centro paga mi acceso</h3>
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]">Tu centro paga tu acceso</h3>
                       </div>
 
-                      <div className="space-y-1 mb-3">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Selecciona tu centro</label>
-                        <select
-                          value={centroSel}
-                          onChange={(e) => { setCentroSel(e.target.value); setCodigoInfo(null); }}
-                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none text-xs font-semibold text-[#3E3838] transition-all"
-                        >
-                          <option value="">Selecciona un centro...</option>
-                          {centrosList.map((c) => (
-                            <option key={c.id} value={c.id}>{c.nombre}</option>
-                          ))}
-                        </select>
+                      <div className="p-3 bg-[#EAE4DA]/40 border border-[#EAE4DA] rounded-xl flex items-center gap-2 mb-3">
+                        <Building2 className="w-4 h-4 text-[#689C63] shrink-0" />
+                        <span className="text-[11px] font-bold text-[#3E3838]">{centroSelNombre}</span>
                       </div>
 
                       <div className="space-y-1 mb-3">
@@ -852,18 +888,9 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         Tu cuenta quedará asociada a este centro. Tu suscripción es independiente: pagas tu propio plan.
                       </p>
 
-                      <div className="space-y-1 mb-3">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Selecciona tu centro</label>
-                        <select
-                          value={centroSel}
-                          onChange={(e) => setCentroSel(e.target.value)}
-                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none text-xs font-semibold text-[#3E3838] transition-all"
-                        >
-                          <option value="">Selecciona un centro...</option>
-                          {centrosList.map((c) => (
-                            <option key={c.id} value={c.id}>{c.nombre}</option>
-                          ))}
-                        </select>
+                      <div className="p-3 bg-[#EAE4DA]/40 border border-[#EAE4DA] rounded-xl flex items-center gap-2 mb-3">
+                        <Building2 className="w-4 h-4 text-[#689C63] shrink-0" />
+                        <span className="text-[11px] font-bold text-[#3E3838]">{centroSelNombre}</span>
                       </div>
 
                       <button
@@ -872,7 +899,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         disabled={loading || !centroSel}
                         className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
-                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear mi cuenta y vincularme'}
+                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear mi cuenta y vincularme a este centro'}
                       </button>
                     </div>
                   ) : (
@@ -894,33 +921,13 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       </p>
 
                       <div className="space-y-1 mb-3">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Nombre del Centro</label>
+                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Nombre del centro educativo</label>
                         <input
                           type="text" required value={centroForm.nombre}
                           onChange={(e) => setCentroForm({ ...centroForm, nombre: e.target.value })}
                           className={inputClass}
                           placeholder="Ej. Escuela Primaria Los Robles"
                         />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 mb-3">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Código (Opcional)</label>
-                          <input
-                            type="text" value={centroForm.codigoCentro}
-                            onChange={(e) => setCentroForm({ ...centroForm, codigoCentro: e.target.value.toUpperCase() })}
-                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none text-xs font-semibold text-[#3E3838] transition-all uppercase"
-                            placeholder="CÓDIGO-001"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Teléfono (Opcional)</label>
-                          <input
-                            type="text" value={centroForm.telefono}
-                            onChange={(e) => setCentroForm({ ...centroForm, telefono: e.target.value })}
-                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none text-xs font-semibold text-[#3E3838] transition-all"
-                            placeholder="Opcional"
-                          />
-                        </div>
                       </div>
 
                       <button
@@ -929,7 +936,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         disabled={loading || centroForm.nombre.trim().length < 3}
                         className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
-                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear mi cuenta y continuar'}
+                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear mi cuenta y vincularme'}
                       </button>
                     </div>
                   )}

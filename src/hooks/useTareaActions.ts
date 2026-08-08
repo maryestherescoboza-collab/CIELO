@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
-import type { Tarea } from '../types';
+import type { Tarea, TareaAsignacion } from '../types';
 
 export function useTareaActions() {
     const setState = useAppStore(s => s.setAppState);
@@ -37,14 +37,23 @@ export function useTareaActions() {
             estado: 'pendiente'
         }));
 
+        let asignacionesDb: Record<string, unknown>[] = [];
         if (asignaciones.length > 0) {
-            const { error: aError } = await supabase.from('tarea_asignaciones').insert(asignaciones);
-            if (aError) console.error('Error asignando tarea:', aError);
+            const { data: rows, error: aError } = await supabase
+                .from('tarea_asignaciones')
+                .insert(asignaciones)
+                .select('id, tarea_id, user_id, estado, fecha_completado, created_at');
+            if (aError) {
+                console.error('Error asignando tarea:', aError);
+            } else {
+                asignacionesDb = rows || [];
+            }
         }
 
-        // Notificar a cada docente asignado
-        await Promise.all(input.docenteIds.map(uid =>
-            supabase.from('notificaciones').insert([{
+        // Notificar a cada docente asignado (se capturan fallos individuales
+        // para no asumir que la notificación llegó si RLS/red lo impide)
+        const resultadosNotificacion = await Promise.all(input.docenteIds.map(async uid => {
+            const { error: nError } = await supabase.from('notificaciones').insert([{
                 user_id: uid,
                 actor_id: session.user.id,
                 titulo: 'Nueva tarea asignada',
@@ -53,8 +62,30 @@ export function useTareaActions() {
                 tarea_id: tarea.id,
                 estado: 'pendiente',
                 leida: false
-            }]).select()
-        ));
+            }]);
+            if (nError) {
+                console.error(`[useTareaActions] No se pudo notificar a ${uid}:`, nError);
+                return false;
+            }
+            return true;
+        }));
+        const notificacionesFallidas = resultadosNotificacion.filter(ok => !ok).length;
+
+        const asignacionesMapeadas: TareaAsignacion[] = asignacionesDb.length > 0
+            ? asignacionesDb.map(a => ({
+                id: a.id as number,
+                tareaId: a.tarea_id as number,
+                userId: a.user_id as string,
+                estado: a.estado as 'pendiente' | 'completada',
+                fechaCompletado: a.fecha_completado as string | undefined,
+                createdAt: a.created_at as string,
+            }))
+            : input.docenteIds.map(uid => ({
+                id: -Date.now() - Math.floor(Math.random() * 1000),
+                tareaId: tarea.id,
+                userId: uid,
+                estado: 'pendiente' as const
+            }));
 
         const mapped: Tarea = {
             id: tarea.id,
@@ -65,16 +96,11 @@ export function useTareaActions() {
             estado: tarea.estado,
             userId: tarea.created_by,
             createdAt: tarea.created_at,
-            asignaciones: input.docenteIds.map(uid => ({
-                id: -Date.now() - Math.floor(Math.random() * 1000),
-                tareaId: tarea.id,
-                userId: uid,
-                estado: 'pendiente'
-            }))
+            asignaciones: asignacionesMapeadas
         };
 
         setState(s => ({ ...s, tareas: [mapped, ...s.tareas] }));
-        return mapped;
+        return { tarea: mapped, notificacionesFallidas };
     }, [session, setState]);
 
     const completeTarea = useCallback(async (tareaId: number) => {

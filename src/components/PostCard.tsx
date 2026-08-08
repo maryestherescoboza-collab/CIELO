@@ -4,9 +4,9 @@ import type { Post } from '../types';
 
 interface PostCardProps {
     post: Post;
-    onToggleLike: (postId: number) => void;
     onViewProfile: (e: React.MouseEvent, userId?: string) => void;
     onPreview: (post: Post) => void;
+    onImport?: (post: Post) => void;
     onDelete?: (postId: number) => void;
     currentUserId?: string;
     getRemainingDays: (expiresAt?: string) => number;
@@ -15,7 +15,7 @@ interface PostCardProps {
 }
 
 const PostCard = ({ 
-    post, onToggleLike, onViewProfile, onPreview, 
+    post, onViewProfile, onPreview, onImport,
     onDelete, currentUserId, getRemainingDays, getTipoLabel, getTagStyles 
 }: PostCardProps) => {
     const isAuthor = post.userId && currentUserId && post.userId === currentUserId;
@@ -63,13 +63,6 @@ const PostCard = ({
 
         <div className="flex items-center justify-between pt-3 border-t border-[#EAE4DA] mt-auto">
             <div className="flex items-center gap-1.5">
-                <button
-                    onClick={(e) => { e.stopPropagation(); onToggleLike(post.id); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FAF6F0] border border-[#2E3330]/20 hover:bg-rose-50 hover:border-rose-300 transition-all group/btn outline-none focus-visible:ring-2 focus-visible:ring-rose-250"
-                >
-                    <span className="text-sm scale-110">🍎</span>
-                    <span className="text-xs font-black text-[#5F665E] group-hover/btn:text-rose-600">{post.likes}</span>
-                </button>
                 {isAuthor && onDelete && (
                     <button 
                         onClick={() => onDelete(post.id)}
@@ -91,6 +84,7 @@ const PostCard = ({
                     <span className="text-[9px] font-black uppercase tracking-wider hidden sm:block">Ver</span>
                 </button>
                 <button
+                    onClick={() => onImport?.(post)}
                     className="h-8 w-8 rounded-lg bg-[#EAE4DA]/40 border border-[#2E3330]/20 flex items-center justify-center text-[#2E3330] hover:bg-[#BFC9A6] hover:border-[#9AA77F] hover:text-[#2E3330] transition-all shadow-sm outline-none"
                     title="Añadir"
                 >

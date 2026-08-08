@@ -9,7 +9,7 @@ interface ProfileSidebarProps {
         avatar?: string;
         materias?: string;
         descripcion?: string;
-        stats?: { cursos?: string; manzanas: string };
+        stats?: { cursos?: string };
         isOwn?: boolean;
     } | null;
     isOwnProfile: boolean;
@@ -87,9 +87,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         <div className="flex flex-wrap gap-2 items-center">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[4px] bg-[#BFC9A6]/20 text-[10px] font-black text-[#475438] uppercase tracking-widest border border-[#BFC9A6]/60">
                                 {activeProfile.materias}
-                            </div>
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-rose-100/60 text-[10px] font-black text-rose-800 uppercase tracking-widest border border-rose-300">
-                                🍎 {activeProfile.stats?.manzanas || '0'} {activeProfile.stats?.manzanas === '1' ? 'manzana' : 'manzanas'}
                             </div>
                         </div>
                     </div>

@@ -160,19 +160,19 @@ export const initialState: AppState = {
         {
             id: 1, autor: 'Dr. Aris', cargo: 'Matemáticas', avatarColor: '#3b82f6',
             contenido: 'He diseñado esta rúbrica para evaluar el pensamiento crítico en proyectos de investigación. Incluye criterios sobre análisis de fuentes y síntesis de información.',
-            tiempo: 'Hace 5 min', fechaPublicacion: '2026-03-08', likes: 42, likedByMe: false,
+            tiempo: 'Hace 5 min', fechaPublicacion: '2026-03-08',
             tipo: 'rubrica', asignatura: 'Matemática'
         },
         {
             id: 2, autor: 'Prof. Elena', cargo: 'Pedagogía', avatarColor: '#ec4899',
             contenido: 'He subido una guía completa sobre Aprendizaje Basado en Proyectos (ABP) aplicada a entornos rurales con pocos recursos tecnológicos. Espero les sea de utilidad.',
-            tiempo: 'Hace 20 min', fechaPublicacion: '2026-03-08', likes: 38, likedByMe: true,
+            tiempo: 'Hace 20 min', fechaPublicacion: '2026-03-08',
             tipo: 'secuencia', asignatura: 'Español'
         },
         {
             id: 3, autor: 'Prof. García', cargo: 'Ciencias', avatarColor: '#10b981',
             contenido: '¿Alguien tiene experiencia con rúbricas de evaluación para escritura creativa en secundaria? Estoy diseñando una nueva y me vendría bien orientación.',
-            tiempo: 'Hace 2h', fechaPublicacion: '2026-03-07', likes: 12, likedByMe: false,
+            tiempo: 'Hace 2h', fechaPublicacion: '2026-03-07',
             tipo: 'general', asignatura: 'Ciencias'
         },
     ],

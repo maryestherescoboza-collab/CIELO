@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Post, ComunidadUIState, ResourceData } from '../../types';
 import { CheckCircle2, ShieldAlert, Activity } from 'lucide-react';
 import Rubrica from '../../screens/Rubrica';
 import Cotejo from '../../screens/Cotejo';
 import Planificacion from '../../screens/Planificacion';
+import { supabase } from '../../lib/supabase';
+import { COMPETENCIAS } from '../RubricaRow';
 
 interface Props {
     uiState: ComunidadUIState;
     setUiState: React.Dispatch<React.SetStateAction<ComunidadUIState>>;
     posts: Post[];
-    onImportResource: (tipo: Post['tipo'], resourceData: ResourceData) => void;
+    onImportResource: (tipo: Post['tipo'], resourceData: ResourceData, recursoId?: number) => void;
     onReportPost: (postId: number, razon: string, comentario?: string) => Promise<void>;
     showSuccessToast: boolean;
     setShowSuccessToast: (show: boolean) => void;
@@ -44,6 +46,139 @@ export default function ModalsManager({
     const [reportComment, setReportComment] = useState<string>('');
     const [isReporting, setIsReporting] = useState(false);
 
+    // Live data fetching for preview
+    // Flujo: POST -> post.recurso_id -> recurso real -> datos reales ->
+    //        componente original (Rubrica/Cotejo/Planificacion) en readOnly.
+    const [liveData, setLiveData] = useState<any>(null);
+    const [isLoadingLive, setIsLoadingLive] = useState(false);
+
+    // Desempaqueta el snapshot de recurso_datos (puede venir como JSON string,
+    // como objeto plano del snapshot publicado, o como fila completa de plantillas
+    // con su columna 'datos').
+    const parseSnapshot = (raw: any): any => {
+        if (!raw) return {};
+        let datos = raw;
+        if (typeof raw === 'string') {
+            try { datos = JSON.parse(raw); } catch { return {}; }
+        }
+        if (datos && typeof datos === 'object' && !Array.isArray(datos)
+            && datos.datos && typeof datos.datos === 'object' && !Array.isArray(datos.datos)) {
+            datos = datos.datos;
+        }
+        return datos || {};
+    };
+
+    // Rubrica.tsx (readOnly) ejecuta normalizeDescriptors(descriptors, selectedPlantillaId)
+    // con selectedPlantillaId = null, por lo que SOLO empareja descriptores con
+    // plantillaId falsy. Normalizamos aquí la estructura real del recurso publicado:
+    // 4 competencias (BC1..BC4) con sus textos y plantillaId = null.
+    const normalizeRubricaDescriptors = (descriptors: any[]): any[] => {
+        if (!Array.isArray(descriptors) || descriptors.length === 0) return [];
+        return COMPETENCIAS.map(({ bc }) => {
+            const d = descriptors.find(x => String(x?.bc).toUpperCase() === String(bc).toUpperCase());
+            return {
+                id: d?.id ?? `competencia-${bc}`,
+                bc,
+                indicador: d?.indicador || bc,
+                estrategico: d?.estrategico ?? '',
+                autonomo: d?.autonomo ?? '',
+                resolutivo: d?.resolutivo ?? '',
+                receptivo: d?.receptivo ?? '',
+                plantillaId: null
+            };
+        });
+    };
+
+    // Cotejo.tsx (readOnly) lee crit.descripcion. Normalizamos { id, titulo, descripcion }.
+    const normalizeCotejoCriterios = (criterios: any[]): any[] => {
+        if (!Array.isArray(criterios)) return [];
+        return criterios.map((c, i) => ({
+            id: typeof c?.id === 'number' ? c.id : i + 1,
+            titulo: c?.titulo ?? '',
+            descripcion: c?.descripcion ?? c?.titulo ?? ''
+        }));
+    };
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchLiveData = async () => {
+            if (!selectedPost || uiState.activeModal !== 'preview') return;
+            setIsLoadingLive(true);
+            try {
+                const tipo = selectedPost.tipo;
+                const recursoId = selectedPost.recursoId;
+                const snapshot = parseSnapshot(selectedPost.recursoDatos);
+
+                let fetched: any = null;
+
+                if (tipo === 'rubrica') {
+                    let descriptors: any[] | null = Array.isArray(snapshot?.descriptores) ? snapshot.descriptores : null;
+                    let niveles = snapshot?.niveles;
+
+                    if ((!descriptors || descriptors.length === 0) && recursoId) {
+                        const [descRes, plantRes] = await Promise.all([
+                            supabase.from('descriptores_rubrica').select('*').eq('plantilla_id', recursoId),
+                            supabase.from('plantillas').select('*').eq('id', recursoId).maybeSingle()
+                        ]);
+                        if (descRes.error) console.error('[Comunidad] Error al obtener descriptores_rubrica:', descRes.error);
+                        if (plantRes.error) console.error('[Comunidad] Error al obtener plantilla:', plantRes.error);
+                        if (descRes.data) descriptors = descRes.data as any[];
+                        const plDatos = (plantRes.data as any)?.datos;
+                        if (!niveles && plDatos?.niveles) niveles = plDatos.niveles;
+                    }
+
+                    fetched = {
+                        nombre: snapshot?.nombre || snapshot?.titulo || '',
+                        descriptores: normalizeRubricaDescriptors(descriptors || []),
+                        ...(niveles ? { niveles } : {})
+                    };
+                } else if (tipo === 'cotejo') {
+                    let criterios: any[] | null = Array.isArray(snapshot?.criterios) ? snapshot.criterios : null;
+                    let niveles = snapshot?.niveles;
+
+                    if ((!criterios || criterios.length === 0) && recursoId) {
+                        const plantRes = await supabase.from('plantillas').select('*').eq('id', recursoId).maybeSingle();
+                        if (plantRes.error) console.error('[Comunidad] Error al obtener plantilla cotejo:', plantRes.error);
+                        const plDatos = (plantRes.data as any)?.datos;
+                        const critIds = Array.isArray(plDatos?.criterios) ? plDatos.criterios.map((c: any) => c?.id) : [];
+                        if (critIds.length > 0) {
+                            const critRes = await supabase.from('criterios_cotejo').select('*').in('id', critIds);
+                            if (critRes.error) console.error('[Comunidad] Error al obtener criterios_cotejo:', critRes.error);
+                            if (critRes.data) criterios = critRes.data as any[];
+                        }
+                        if (!niveles && plDatos?.niveles) niveles = plDatos.niveles;
+                    }
+
+                    fetched = {
+                        nombre: snapshot?.nombre || snapshot?.titulo || '',
+                        criterios: normalizeCotejoCriterios(criterios || []),
+                        ...(niveles ? { niveles } : {})
+                    };
+                } else if (tipo === 'secuencia') {
+                    let datos = snapshot?.contenidoHtml ? snapshot : null;
+                    if (!datos && recursoId) {
+                        const seqRes = await supabase.from('secuencias').select('*').eq('id', recursoId).maybeSingle();
+                        if (seqRes.error) console.error('[Comunidad] Error al obtener secuencia:', seqRes.error);
+                        const s = seqRes.data as any;
+                        if (s) datos = { titulo: s.titulo, fechaInicio: s.fecha_inicio, contenidoHtml: s.contenido_html };
+                    }
+                    fetched = datos || snapshot || {};
+                }
+
+                if (isMounted) setLiveData(fetched);
+            } catch (error) {
+                console.error('Error fetching live resource data:', error);
+            } finally {
+                if (isMounted) setIsLoadingLive(false);
+            }
+        };
+
+        setLiveData(null);
+        fetchLiveData();
+
+        return () => { isMounted = false; };
+    }, [selectedPost, uiState.activeModal]);
+
     if (!uiState.activeModal || !selectedPost) return (
         <>
             {showSuccessToast && (
@@ -77,8 +212,8 @@ export default function ModalsManager({
     };
 
     const handleUseResource = () => {
-        if (!selectedPost.recursoDatos) return;
-        onImportResource(selectedPost.tipo, selectedPost.recursoDatos);
+        if (!selectedPost.recursoDatos && !selectedPost.recursoId) return;
+        onImportResource(selectedPost.tipo, selectedPost.recursoDatos as ResourceData, selectedPost.recursoId);
         setUiState({ activeModal: null, selectedPostId: null });
         setShowSuccessToast(true);
         setTimeout(() => setShowSuccessToast(false), 3000);
@@ -100,7 +235,7 @@ export default function ModalsManager({
                                 </div>
                                 <div className="space-y-1">
                                     <h3 className="text-xl font-black text-slate-900 leading-snug">
-                                        {selectedPost.recursoDatos?.nombre || selectedPost.recursoDatos?.titulo || 'Recurso Pedagógico'}
+                                        {(liveData as any)?.nombre || (liveData as any)?.titulo || selectedPost.recursoDatos?.nombre || selectedPost.recursoDatos?.titulo || 'Recurso Pedagógico'}
                                     </h3>
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{getTipoLabel(selectedPost.tipo)}</p>
                                 </div>
@@ -110,23 +245,31 @@ export default function ModalsManager({
                             </button>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto bg-slate-50/30">
-                            {selectedPost.tipo === 'rubrica' && (
+                        <div className="flex-1 overflow-y-auto bg-slate-50/30 relative">
+                            {isLoadingLive && (
+                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="w-6 h-6 border-2 border-turf-green-base border-t-transparent rounded-full animate-spin" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cargando recurso real...</span>
+                                    </div>
+                                </div>
+                            )}
+                            {selectedPost.tipo === 'rubrica' && !isLoadingLive && liveData && (
                                 <Rubrica
                                     readOnly={true}
-                                    initialDatos={selectedPost.recursoDatos as any}
+                                    initialDatos={liveData}
                                 />
                             )}
-                            {selectedPost.tipo === 'cotejo' && (
+                            {selectedPost.tipo === 'cotejo' && !isLoadingLive && liveData && (
                                 <Cotejo
                                     readOnly={true}
-                                    initialDatos={selectedPost.recursoDatos as any}
+                                    initialDatos={liveData}
                                 />
                             )}
-                            {selectedPost.tipo === 'secuencia' && (
+                            {selectedPost.tipo === 'secuencia' && !isLoadingLive && liveData && (
                                 <Planificacion
                                     readOnly={true}
-                                    initialDatos={selectedPost.recursoDatos as any}
+                                    initialDatos={liveData}
                                 />
                             )}
                         </div>

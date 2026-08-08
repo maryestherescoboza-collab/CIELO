@@ -128,6 +128,15 @@ export const useAppStore = create<AppStore>()(
         selectedEstudianteId: state.selectedEstudianteId,
         darkMode: state.darkMode
       }),
+      merge: (persistedState: any, currentState: any) => {
+        // Only merge the keys we explicitly partialize, discarding any legacy corrupted state
+        return {
+          ...currentState,
+          selectedCursoId: persistedState?.selectedCursoId ?? currentState.selectedCursoId,
+          selectedEstudianteId: persistedState?.selectedEstudianteId ?? currentState.selectedEstudianteId,
+          darkMode: persistedState?.darkMode ?? currentState.darkMode,
+        };
+      },
     }
   )
 );

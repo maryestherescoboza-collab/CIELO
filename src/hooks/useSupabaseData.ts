@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, EvaluacionRubrica, EvaluacionCotejo, CriterioCotejo, DescriptorRubrica, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, Nivel, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, Tarea, TareaAsignacion } from '../types';
+import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, EvaluacionRubrica, EvaluacionCotejo, CriterioCotejo, DescriptorRubrica, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, Nivel, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, Tarea, TareaAsignacion, Centro } from '../types';
 import { useAppStore } from '../store/appStore';
 
 const parseObservaciones = (val: any): string[] => {
@@ -96,7 +96,6 @@ export function useSupabaseData() {
                 supabase.from('niveles_puntaje').select('*'),
                 supabase.from('plantillas').select('*').eq('archivado', false).order('created_at', { ascending: false }),
                 supabase.from('curso_detalle').select('*'),
-                supabase.from('post_likes').select('post_id').eq('user_id', session.user.id),
                 supabase.from('notificaciones').select('*').eq('leida', false).order('created_at', { ascending: false }),
 
                 supabase.from('curso_docentes').select('*').eq('activo', true),
@@ -116,7 +115,7 @@ export function useSupabaseData() {
                 'recuperaciones', 'secuencias', 'incidencias', 'eventos', 'posts',
                 'docentes', 'evaluaciones_rubrica', 'evaluaciones_cotejo', 'criterios_cotejo',
                 'descriptores_rubrica', 'niveles_puntaje', 'plantillas', 'curso_detalle',
-                'post_likes', 'notificaciones', 'curso_docentes', 'grupos',
+                'notificaciones', 'curso_docentes', 'grupos',
                 'registros_anecdoticos', 'registro_imagenes', 'historial_colaboradores',
                 'suscripciones', 'centro_roles', 'tareas', 'tarea_asignaciones'
             ];
@@ -152,19 +151,17 @@ export function useSupabaseData() {
             const nivelesPuntaje = results[15].data;
             const plantillas = results[16].data;
             const cursoDetalle = results[17].data;
-            const postLikes = results[18].data;
-            const notificaciones = results[19].data;
-            const cursoDocentes = results[20].data;
-            const grupos = results[21].data;
-            const registrosAnecdoticos = results[22].data;
-            const registroImagenes = results[23].data;
-            const historialColaboradores = results[24].data;
-            const suscripciones = results[25].data;
-            const centroRoles = results[26].data;
-            const tareas = results[27].data;
-            const tareaAsignaciones = results[28].data;
+            const notificaciones = results[18].data;
+            const cursoDocentes = results[19].data;
+            const grupos = results[20].data;
+            const registrosAnecdoticos = results[21].data;
+            const registroImagenes = results[22].data;
+            const historialColaboradores = results[23].data;
+            const suscripciones = results[24].data;
+            const centroRoles = results[25].data;
+            const tareas = results[26].data;
+            const tareaAsignaciones = results[27].data;
 
-            const userLikedPostIds = new Set((postLikes || []).map((l: Record<string, unknown>) => l.post_id as number));
             const mappedPerfiles = (perfiles || []).map((p: Record<string, unknown>): UserProfile => {
                 const cArray = p.centros;
                 const centroObj = (Array.isArray(cArray) ? cArray[0] : cArray) as Record<string, unknown> | undefined;
@@ -180,7 +177,9 @@ export function useSupabaseData() {
                     municipio: centroObj.municipio as string || '',
                     createdBy: centroObj.created_by as string,
                     createdAt: centroObj.created_at as string,
-                    updatedAt: centroObj.updated_at as string
+                    updatedAt: centroObj.updated_at as string,
+                    estado: (centroObj.estado as Centro['estado']) || 'activo',
+                    afiliado: centroObj.afiliado as boolean || false
                 } : undefined;
 
                 const hist = (historialColaboradores || []).find((h: Record<string, unknown>) => h.usuario_id === p.user_id);
@@ -198,7 +197,6 @@ export function useSupabaseData() {
                     centro: resolvedCentro,
                     lastSeen: p.last_seen as string,
                     currentModule: p.current_module as string,
-                    totalCorazones: p.total_corazones as number || 0,
                     publicacionesRealizadas: hist ? (hist.publicaciones_realizadas as number) : 0
                 };
             });
@@ -222,7 +220,12 @@ export function useSupabaseData() {
                 }
             }
             
-            const resolvedCentroRolActual = (centroRoles || []).find((cr: any) => cr.user_id === session.user.id && cr.centro_id === userCentroId);
+            const resolvedCentroRolActual = (() => {
+                const userCentroRoles = (centroRoles || []).filter((cr: any) => cr.user_id === session.user.id);
+                if (userCentroRoles.length === 0) return undefined;
+                return userCentroRoles.find((cr: any) => cr.centro_id === userCentroId)
+                    || userCentroRoles.find((cr: any) => ['director', 'administrador'].includes(cr.rol));
+            })();
 
             setState(prev => {
                 const mappedPosts = (posts || []).map((p: Record<string, unknown>): Post => {
@@ -245,8 +248,6 @@ export function useSupabaseData() {
                         contenido: p.contenido as string,
                         tiempo: p.tiempo as string || 'Hace un momento',
                         fechaPublicacion: p.fecha_publicacion as string,
-                        likes: p.likes as number,
-                        likedByMe: userLikedPostIds.has(p.id as number),
                         tipo: p.tipo as 'rubrica' | 'secuencia' | 'general' | 'cotejo',
                         asignatura: p.asignatura as string,
                         userId: p.user_id as string,
