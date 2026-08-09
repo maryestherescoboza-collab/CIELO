@@ -133,6 +133,9 @@ export default function CentroPanel({ onLogout }: Props) {
                             </div>
                             <div className="min-w-0 leading-tight">
                                 <h1 className="text-[15px] font-semibold text-[#3F3C36] truncate">{centro.nombre}</h1>
+                                <p className="text-[11px] text-[#6B7280] truncate">
+                                    ID del centro: <span className="font-mono">{centro.id}</span>
+                                </p>
                                 <p className="text-[11px] text-[#6B7280] truncate">Panel de dirección · Año escolar {anioEscolar}</p>
                             </div>
                         </div>

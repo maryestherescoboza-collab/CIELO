@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
   User, Briefcase, Shield, Palette,
   X, Camera, Eye, EyeOff,
@@ -48,8 +48,8 @@ export default function ProfileSettings({
   tipoInstitucion,
   asignaturas,
   onUploadAvatar,
-  onUpdateCentro,
-  onCreateCentro,
+  onUpdateCentro: _onUpdateCentro,
+  onCreateCentro: _onCreateCentro,
   onUpdatePerfilProfesional,
   onUpdateFullProfile,
   onUpdateAvatarColor,
@@ -92,43 +92,11 @@ export default function ProfileSettings({
     provincia: string;
     municipio: string;
   }) => {
-    let currentCentroId = centro?.id || null;
-    
-    // Primero, si el nombre del centro cambió o hay datos nuevos, intentamos actualizar el centro
-    const normalizedInput = formData.instituto.trim().replace(/\s+/g, ' ');
-    if (currentCentroId && centro?.nombre === normalizedInput) {
-        // Mismo centro, solo actualizamos sus datos adicionales
-        await onUpdateCentro(currentCentroId, {
-            nombre: normalizedInput,
-            codigo_centro: formData.codigoCentro,
-            tanda: formData.tanda,
-            telefono: formData.telefonoCentro,
-            distrito_educativo: formData.distrito,
-            regional_educacion: formData.regional,
-            provincia: formData.provincia,
-            municipio: formData.municipio
-        });
-    } else {
-        // Es un centro nuevo o el usuario le cambió el nombre por completo, forzamos creación
-        // En una implementación real más compleja buscaríamos si existe, pero createCentro resuelve el flujo de creación.
-        const newCentro = await onCreateCentro({
-            nombre: normalizedInput,
-            codigo_centro: formData.codigoCentro,
-            tanda: formData.tanda,
-            telefono: formData.telefonoCentro,
-            distrito_educativo: formData.distrito,
-            regional_educacion: formData.regional,
-            provincia: formData.provincia,
-            municipio: formData.municipio
-        });
-        if (newCentro) {
-            currentCentroId = newCentro.id;
-        }
-    }
-
-    // Segundo, guardamos los datos exclusivos del perfil del profesor
+    // Para docentes, no permitimos editar ni crear el centro educativo desde esta sección.
+    // La fuente de verdad del centro es public.centros. Guardamos únicamente los datos propios del perfil.
+    const currentCentroId = centro?.id || null;
     await onUpdatePerfilProfesional(formData.tipoInstitucion, asignaturas, currentCentroId);
-  }, [asignaturas, centro, onUpdateCentro, onCreateCentro, onUpdatePerfilProfesional]);
+  }, [asignaturas, centro?.id, onUpdatePerfilProfesional]);
 
   const handleSectionChange = useCallback((id: SectionId) => {
     setActiveSection(id);
@@ -174,13 +142,14 @@ export default function ProfileSettings({
                 )}
                 
                 {activeSection === 'profesional' && (
-                  <DatosProfesionalesTab 
-                    instituto={instituto}
-                    tipoInstitucion={tipoInstitucion}
-                    centro={centro}
-                    onSave={handleSaveDatosProfesionales}
-                  />
-                )}
+                   <DatosProfesionalesTab 
+                     instituto={instituto}
+                     tipoInstitucion={tipoInstitucion}
+                     centro={centro}
+                     centroId={centroId}
+                     onSave={handleSaveDatosProfesionales}
+                   />
+                 )}
                 
                 {activeSection === 'seguridad' && (
                   <SeguridadTab 
@@ -422,11 +391,11 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
     </form>
   );
 }
-
 interface DatosProfesionalesTabProps {
   instituto: string;
   tipoInstitucion?: 'publica' | 'privada';
   centro?: any;
+  centroId?: string;
   onSave: (data: {
     instituto: string;
     codigoCentro: string;
@@ -441,22 +410,79 @@ interface DatosProfesionalesTabProps {
 }
 
 function DatosProfesionalesTab({
-  instituto,
+  instituto: _instituto,
   tipoInstitucion,
   centro,
+  centroId,
   onSave
 }: DatosProfesionalesTabProps) {
+  const [centroReal, setCentroReal] = useState<any>(null);
+  const [loadingCentro, setLoadingCentro] = useState(false);
+
+  useEffect(() => {
+    if (!centroId) {
+      setCentroReal(null);
+      return;
+    }
+    let isMounted = true;
+    const fetchCentro = async () => {
+      setLoadingCentro(true);
+      try {
+        const { data, error } = await supabase
+          .from('centros')
+          .select('*')
+          .eq('id', centroId)
+          .maybeSingle();
+        if (error) {
+          console.error('[DatosProfesionalesTab] Error fetching centro:', error);
+          return;
+        }
+        if (data && isMounted) {
+          setCentroReal(data);
+        }
+      } catch (err) {
+        console.error('[DatosProfesionalesTab] Fetch error:', err);
+      } finally {
+        if (isMounted) setLoadingCentro(false);
+      }
+    };
+    fetchCentro();
+    return () => {
+      isMounted = false;
+    };
+  }, [centroId]);
+
+  const activeCentro = centroReal || centro;
+  const tieneCentro = !!activeCentro;
+
   const [form, setForm] = useState({
-    instituto: centro?.nombre || instituto || '',
-    codigoCentro: centro?.codigoCentro || '',
+    instituto: '',
+    codigoCentro: '',
     tipoInstitucion: tipoInstitucion || 'publica',
-    tanda: centro?.tanda || 'Jornada Extendida',
-    telefonoCentro: centro?.telefono || '',
-    distrito: centro?.distritoEducativo || '',
-    regional: centro?.regionalEducacion || '',
-    provincia: centro?.provincia || '',
-    municipio: centro?.municipio || ''
+    tanda: 'Jornada Extendida',
+    telefonoCentro: '',
+    distrito: '',
+    regional: '',
+    provincia: '',
+    municipio: ''
   });
+
+  useEffect(() => {
+    const c = centroReal || centro;
+    const hasC = !!c;
+    setForm(p => ({
+      ...p,
+      instituto: hasC ? (c.nombre || '') : '',
+      codigoCentro: hasC ? (c.codigo_centro || c.codigoCentro || '') : '',
+      tipoInstitucion: tipoInstitucion || p.tipoInstitucion || 'publica',
+      tanda: hasC ? (c.tanda || 'Jornada Extendida') : 'Jornada Extendida',
+      telefonoCentro: hasC ? (c.telefono || '') : '',
+      distrito: hasC ? (c.distrito_educativo || c.distritoEducativo || '') : '',
+      regional: hasC ? (c.regional_educacion || c.regionalEducacion || '') : '',
+      provincia: hasC ? (c.provincia || '') : '',
+      municipio: hasC ? (c.municipio || '') : ''
+    }));
+  }, [centroReal, centro, tipoInstitucion]);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -464,10 +490,6 @@ function DatosProfesionalesTab({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.instituto.trim()) {
-      setError('El centro educativo es obligatorio');
-      return;
-    }
     setError(null);
     setSaving(true);
     try {
@@ -496,24 +518,31 @@ function DatosProfesionalesTab({
         </div>
       )}
 
+      {loadingCentro && (
+        <div className="flex items-center gap-2 text-xs font-semibold text-cielo-blue animate-pulse">
+          <Loader2 size={14} className="animate-spin" />
+          Cargando datos institucionales reales...
+        </div>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Centro educativo</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.instituto}
-            onChange={e => setForm(p => ({ ...p, instituto: e.target.value }))}
-            placeholder="Nombre del centro educativo"
+            placeholder={tieneCentro ? "Nombre del centro educativo" : "Sin centro vinculado"}
+            disabled={true}
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Código del centro</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.codigoCentro}
-            onChange={e => setForm(p => ({ ...p, codigoCentro: e.target.value }))}
-            placeholder="Código del centro"
+            placeholder={tieneCentro ? "Código del centro" : "Sin centro vinculado"}
+            disabled={true}
           />
         </div>
 
@@ -540,9 +569,9 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Tanda</label>
           <select
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold cursor-pointer"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold cursor-not-allowed"
             value={form.tanda}
-            onChange={e => setForm(p => ({ ...p, tanda: e.target.value }))}
+            disabled={true}
           >
             <option value="Jornada Extendida">Jornada Extendida</option>
             <option value="Matutina">Matutina</option>
@@ -554,50 +583,50 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Teléfono del centro</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.telefonoCentro}
-            onChange={e => setForm(p => ({ ...p, telefonoCentro: e.target.value }))}
-            placeholder="Teléfono del centro"
+            placeholder={tieneCentro ? "Teléfono del centro" : "Sin centro vinculado"}
+            disabled={true}
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Distrito educativo</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.distrito}
-            onChange={e => setForm(p => ({ ...p, distrito: e.target.value }))}
-            placeholder="Distrito educativo"
+            placeholder={tieneCentro ? "Distrito educativo" : "Sin centro vinculado"}
+            disabled={true}
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Regional de educación</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.regional}
-            onChange={e => setForm(p => ({ ...p, regional: e.target.value }))}
-            placeholder="Regional de educación"
+            placeholder={tieneCentro ? "Regional de educación" : "Sin centro vinculado"}
+            disabled={true}
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Provincia</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.provincia}
-            onChange={e => setForm(p => ({ ...p, provincia: e.target.value }))}
-            placeholder="Provincia"
+            placeholder={tieneCentro ? "Provincia" : "Sin centro vinculado"}
+            disabled={true}
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Municipio</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.municipio}
-            onChange={e => setForm(p => ({ ...p, municipio: e.target.value }))}
-            placeholder="Municipio"
+            placeholder={tieneCentro ? "Municipio" : "Sin centro vinculado"}
+            disabled={true}
           />
         </div>
       </div>
