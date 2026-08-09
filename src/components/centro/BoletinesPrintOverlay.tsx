@@ -68,7 +68,7 @@ export default function BoletinesPrintOverlay({ curso, state, docenteNombre, onC
                 </span>
                 <button
                     onClick={() => window.print()}
-                    className="bg-[#7A8D69] text-white px-4 py-1.5 rounded-full text-xs font-bold hover:bg-[#6C7E5C] transition-colors"
+                    className="bg-[#ADC762] text-white px-4 py-1.5 rounded-full text-xs font-bold hover:bg-[#6C7E5C] transition-colors"
                 >
                     Imprimir
                 </button>

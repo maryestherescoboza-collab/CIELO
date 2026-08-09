@@ -39,7 +39,7 @@ export function CourseCard({
     const displayDiasSemana = myLink ? myLink.diasSemana : (curso.diasSemana || []);
 
     return (
-        <div className={`group flex flex-col h-full bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${isSelected ? 'ring-2 ring-[#7A8D69]' : 'hover:border-slate-350'}`}>
+        <div className={`group flex flex-col h-full bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${isSelected ? 'ring-2 ring-[#ADC762]' : 'hover:border-slate-350'}`}>
             <div className="p-6 flex-1">
                 <div className="flex items-start justify-between mb-5">
                     <div className="flex items-center gap-4">
@@ -64,7 +64,7 @@ export function CourseCard({
                     </button>
                 </div>
 
-                <h3 className="text-lg font-black text-[#2E3330] tracking-tight leading-snug group-hover:text-[#7A8D69] transition-colors mb-3 font-notion-title">{curso.nombre}</h3>
+                <h3 className="text-lg font-black text-[#2E3330] tracking-tight leading-snug group-hover:text-[#ADC762] transition-colors mb-3 font-notion-title">{curso.nombre}</h3>
 
                 <div className="inline-flex items-center gap-2 mb-5">
                     {editingAsignaturaId === curso.id ? (
@@ -77,7 +77,7 @@ export function CourseCard({
                             }}
                             onBlur={() => onEditAsignatura(null)}
                             onClick={(e) => e.stopPropagation()}
-                            className="px-3 py-1.5 text-[9px] rounded-lg font-bold bg-white border border-[#7A8D69] text-[#2E3330] outline-none focus:ring-2 focus:ring-[#7A8D69]/50 transition-all"
+                            className="px-3 py-1.5 text-[9px] rounded-lg font-bold bg-white border border-[#ADC762] text-[#2E3330] outline-none focus:ring-2 focus:ring-[#ADC762]/50 transition-all"
                             autoFocus
                         >
                             {ASIGNATURAS_CATALOGO.map(asig => (
@@ -92,7 +92,7 @@ export function CourseCard({
                                 e.stopPropagation();
                                 onEditAsignatura(curso.id);
                             }}
-                            className="px-3 py-1 rounded-full text-[9px] font-bold tracking-[0.08em] text-[#2E3330] bg-[#BFC9A6] border border-[rgba(46,51,48,0.08)] hover:bg-[#7A8D69] hover:text-white transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50"
+                            className="px-3 py-1 rounded-full text-[9px] font-bold tracking-[0.08em] text-[#2E3330] bg-[#BFC9A6] border border-[rgba(46,51,48,0.08)] hover:bg-[#ADC762] hover:text-white transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50"
                             title="Modificar asignatura"
                         >
                             {getAsignaturaNombre(displayAsignatura)}
@@ -124,16 +124,16 @@ export function CourseCard({
                                                     e.stopPropagation();
                                                     onSaveDias(curso, d);
                                                 }}
-                                                className={`px-3 py-1.5 text-[10px] rounded-lg font-bold uppercase transition-all border outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 ${displayDiasSemana.includes(d) ? 'bg-[#2E3330] border-[#2E3330] text-white shadow-sm' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-350'}`}
+                                                className={`px-3 py-1.5 text-[10px] rounded-lg font-bold uppercase transition-all border outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 ${displayDiasSemana.includes(d) ? 'bg-[#2E3330] border-[#2E3330] text-white shadow-sm' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-350'}`}
                                             >
                                                 {d}
                                             </button>
                                         ))}
                                     </div>
-                                    <button onClick={(e) => { e.stopPropagation(); onEditDias(null); }} className="w-full text-center text-[10px] font-bold uppercase tracking-widest py-2.5 bg-[#7A8D69] text-white rounded-xl shadow-lg shadow-[#7A8D69]/20 outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 focus-visible:ring-offset-2 hover:bg-[#6C7E5C] active:scale-95 transition-all">Listo</button>
+                                    <button onClick={(e) => { e.stopPropagation(); onEditDias(null); }} className="w-full text-center text-[10px] font-bold uppercase tracking-widest py-2.5 bg-[#ADC762] text-white rounded-xl shadow-lg shadow-[#ADC762]/20 outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 focus-visible:ring-offset-2 hover:bg-[#6C7E5C] active:scale-95 transition-all">Listo</button>
                                 </div>
                             ) : (
-                                <button onClick={(e) => { e.stopPropagation(); onEditDias(curso.id); }} className="text-[#2E3330] border-b border-dotted border-slate-350 hover:border-[#7A8D69] hover:text-[#7A8D69] transition-all font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 rounded-sm">
+                                <button onClick={(e) => { e.stopPropagation(); onEditDias(curso.id); }} className="text-[#2E3330] border-b border-dotted border-slate-350 hover:border-[#ADC762] hover:text-[#ADC762] transition-all font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 rounded-sm">
                                     {displayDiasSemana.length ? displayDiasSemana.join(', ') : 'Click para asignar días'}
                                 </button>
                             )}
@@ -167,7 +167,7 @@ export function CourseCard({
                                 </div>
                             </div>
                             {isTutor && (
-                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="text-[#2E3330] hover:bg-[#D4CCBE] bg-[#EAE4DA] px-3 py-1.5 rounded-full text-[9px] font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 transition-colors border border-[rgba(46,51,48,0.08)]">
+                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="text-[#2E3330] hover:bg-[#D4CCBE] bg-[#EAE4DA] px-3 py-1.5 rounded-full text-[9px] font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 transition-colors border border-[rgba(46,51,48,0.08)]">
                                     Modificar
                                 </button>
                             )}
@@ -175,7 +175,7 @@ export function CourseCard({
                     ) : (
                         isTutor && (
                             <div className="mt-4 pt-4 border-t border-slate-100">
-                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-slate-250 rounded-xl text-slate-400 hover:text-[#7A8D69] hover:border-[#7A8D69]/30 hover:bg-[#7A8D69]/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 focus-visible:ring-offset-2">
+                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-slate-250 rounded-xl text-slate-400 hover:text-[#ADC762] hover:border-[#ADC762]/30 hover:bg-[#ADC762]/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 focus-visible:ring-offset-2">
                                     <Plus size={14} /> <span className="text-[9px] font-bold uppercase tracking-widest">Añadir Co-docentes</span>
                                 </button>
                             </div>

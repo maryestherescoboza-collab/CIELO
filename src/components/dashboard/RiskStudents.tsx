@@ -56,7 +56,7 @@ export function RiskStudents({ enRiesgo, incidencias, calificaciones, actividade
                                             </div>
                                         </div>
                                         <div>
-                                            <p className="text-[17px] font-bold text-[#2E3330] tracking-tight group-hover:text-[#7A8D69] transition-colors">{est.nombre} {est.apellido}</p>
+                                            <p className="text-[17px] font-bold text-[#2E3330] tracking-tight group-hover:text-[#ADC762] transition-colors">{est.nombre} {est.apellido}</p>
                                             <div className="flex items-center gap-3 mt-1.5">
                                                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">ID: #{est.id}</span>
                                                 <div className="h-1 w-1 rounded-full bg-slate-300"></div>

@@ -71,11 +71,11 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-8">
                     <div>
                         <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2 font-notion-title">
-                            Saludos, <span className="text-[#7A8D69]">{docenteNombre.split(' ')[0]}</span>
+                            Saludos, <span className="text-[#ADC762]">{docenteNombre.split(' ')[0]}</span>
                         </h1>
                         <div className="flex items-center gap-4">
                             <div className={`flex items-center gap-2 bg-[#EAE4DA]/60 px-3 py-1.5 rounded-full border border-slate-200 transition-all ${currentCourseRole?.rol !== 'co-docente' ? 'group cursor-pointer hover:border-slate-350' : 'cursor-default'}`}>
-                                <TC_Archive size={12} className="text-[#7A8D69] transition-colors" />
+                                <TC_Archive size={12} className="text-[#ADC762] transition-colors" />
                                 {isEditingInstituto && currentCourseRole?.rol !== 'co-docente' ? (
                                     <input
                                         autoFocus
@@ -104,7 +104,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                         <div className="relative group" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsSelectOpen(!isSelectOpen)}
-                                className="flex items-center justify-between min-w-60 px-5 rounded-full border border-slate-200 text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm outline-none focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 cursor-pointer artisan-pill artisan-btn-neutral"
+                                className="flex items-center justify-between min-w-60 px-5 rounded-full border border-slate-200 text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm outline-none focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 cursor-pointer artisan-pill artisan-btn-neutral"
                             >
                                 <span className="truncate pr-4">
                                     {selectedCourseId === 'all' ? 'Global (Todos)' : (() => {
@@ -112,7 +112,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                                         return c ? `${c.grado} ${c.seccion} - ${c.nombre}` : 'Global (Todos)';
                                     })()}
                                 </span>
-                                <TC_Flux size={12} className={`text-[#2E3330]/60 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-[#7A8D69]' : 'rotate-90 group-hover:text-[#7A8D69]'}`} />
+                                <TC_Flux size={12} className={`text-[#2E3330]/60 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-[#ADC762]' : 'rotate-90 group-hover:text-[#ADC762]'}`} />
                             </button>
                             {isSelectOpen && (
                                 <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-white border border-slate-200 rounded-[16px] shadow-md z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top">
@@ -138,7 +138,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                         </div>
 
                         <button
-                            className="px-5 rounded-full bg-[#BFC9A6] text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 focus-visible:ring-offset-2 group flex items-center gap-2 artisan-pill"
+                            className="px-5 rounded-full bg-[#BFC9A6] text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 focus-visible:ring-offset-2 group flex items-center gap-2 artisan-pill"
                             onClick={() => setShowModal(true)}
                         >
                             <TC_Genesis size={16} className="group-hover:rotate-180 transition-transform duration-700" />

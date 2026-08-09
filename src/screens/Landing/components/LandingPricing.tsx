@@ -78,7 +78,7 @@ export function LandingPricing() {
             >
               {/* Top part: Header & Price */}
               <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#7A8D69] mb-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ADC762] mb-1">
                   {planDocente.name}
                 </h3>
                 <p className="text-xs text-zinc-400 mb-4 leading-normal">
@@ -129,7 +129,7 @@ export function LandingPricing() {
             >
               {/* Top part: Header & Price */}
               <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#7A8D69] mb-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ADC762] mb-1">
                   {planInst.name}
                 </h3>
                 <p className="text-xs text-zinc-400 mb-4 leading-normal">

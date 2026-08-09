@@ -511,7 +511,7 @@ export default function Rubrica({
                 <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                        className="absolute top-4 -right-1 z-50 p-1.5 bg-[#7A8D69] text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
+                        className="absolute top-4 -right-1 z-50 p-1.5 bg-[#ADC762] text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
                     >
                         {isSidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                     </button>
@@ -519,7 +519,7 @@ export default function Rubrica({
                     {!isSidebarCollapsed ? (
                         <div className="flex flex-col h-full overflow-y-auto relative z-10">
                             <div className="p-5 border-b border-slate-250 flex items-center gap-2.5">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#7A8D69] text-white">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ADC762] text-white">
                                     <ClipboardList size={18} />
                                 </div>
                                 <div className="min-w-0">
@@ -539,7 +539,7 @@ export default function Rubrica({
                                             <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
                                             <select
                                                 data-guide="selector-curso"
-                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedCursoId}
                                                 onChange={(event) => {
                                                     setSelectedCursoId(Number(event.target.value));
@@ -558,7 +558,7 @@ export default function Rubrica({
                                             <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
                                             <select
                                                 data-guide="selector-actividad"
-                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedAct?.id ?? ''}
                                                 onChange={(event) => setSelectedActId(Number(event.target.value) || null)}
                                             >
@@ -580,7 +580,7 @@ export default function Rubrica({
                                             <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-[8px] font-black text-[#2E3330]">{rubricaPlantillas.length}</div>
                                         </div>
                                         <div className="space-y-2">
-                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-[#7A8D69] focus-within:ring-2 focus-within:ring-[#7A8D69]/20 transition-all shadow-sm artisan-pill artisan-btn-white">
+                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-[#ADC762] focus-within:ring-2 focus-within:ring-[#ADC762]/20 transition-all shadow-sm artisan-pill artisan-btn-white">
                                                 <BookMarked size={14} className="text-[#2E3330]" />
                                                 <select
                                                     data-guide="selector-plantilla"
@@ -682,7 +682,7 @@ export default function Rubrica({
 
                                 {activeCell && (
                                     <div className="flex bg-[#FAF6F0] border border-slate-200 rounded-[20px] px-4 py-2.5 items-center gap-3 shadow-sm animate-pulse">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#7A8D69] text-white shadow-sm">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#ADC762] text-white shadow-sm">
                                             <Plus size={16} />
                                         </div>
                                         <div className="flex flex-col">
@@ -706,7 +706,7 @@ export default function Rubrica({
                                     onClick={Object.keys(multiEvaluations).length > 0 ? handleFinalizeGroupEvaluation : handleSave}
                                     className={`flex h-10 min-w-58 items-center justify-center gap-2.5 rounded-full px-5 text-xs font-black text-white shadow-sm transition-all artisan-pill ${((!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving)
                                         ? 'bg-slate-300 cursor-not-allowed opacity-50'
-                                        : 'bg-[#7A8D69] hover:bg-[#6C7E5C] hover:-translate-y-0.5 active:scale-[0.98]'
+                                        : 'bg-[#ADC762] hover:bg-[#6C7E5C] hover:-translate-y-0.5 active:scale-[0.98]'
                                         }`}
                                 >
                                     {isSaving ? <Loader2 size={16} className="animate-spin" /> : (savedFlash ? <CheckCircle size={18} /> : <Target size={18} />)}
@@ -728,7 +728,7 @@ export default function Rubrica({
 
                                     </div>
                                     {selectedAct && (
-                                        <div className="rounded-full border border-[rgba(46,51,48,0.08)] bg-[#FAF6F0] px-3.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-[#7A8D69] shadow-sm">
+                                        <div className="rounded-full border border-[rgba(46,51,48,0.08)] bg-[#FAF6F0] px-3.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-[#ADC762] shadow-sm">
                                             Actividad: {selectedAct.nombre} ({selectedAct.periodo})
                                         </div>
                                     )}

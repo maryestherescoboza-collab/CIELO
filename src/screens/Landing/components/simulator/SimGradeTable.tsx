@@ -114,7 +114,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                             e.currentTarget.blur();
                                                         }
                                                     }}
-                                                    className="text-[10px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] focus:text-[#2E3330] bg-transparent outline-none text-center w-full max-w-30 truncate focus:border-b focus:border-[#7A8D69]/30 transition-all placeholder:text-[#5F665E]/40"
+                                                    className="text-[10px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] focus:text-[#2E3330] bg-transparent outline-none text-center w-full max-w-30 truncate focus:border-b focus:border-[#ADC762]/30 transition-all placeholder:text-[#5F665E]/40"
                                                     placeholder="NOMBRE"
                                                 />
                                             </div>
@@ -154,8 +154,8 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             }
                             if (col.type === 'bc-rec') {
                                 return (
-                                    <div key={col.id} className="px-1 py-4 border-r border-[rgba(46,51,48,0.08)] bg-[#7A8D69]/5 flex flex-col items-center justify-center box-border" style={style}>
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-[#7A8D69]/70">Rec.</span>
+                                    <div key={col.id} className="px-1 py-4 border-r border-[rgba(46,51,48,0.08)] bg-[#ADC762]/5 flex flex-col items-center justify-center box-border" style={style}>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-[#ADC762]/70">Rec.</span>
                                     </div>
                                 );
                             }

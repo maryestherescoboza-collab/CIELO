@@ -50,7 +50,7 @@ export function NewCourseModal({
                             </label>
                             <div className="relative">
                                 <select
-                                    className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-[#7A8D69] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
+                                    className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-[#ADC762] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
                                     value={form.grado}
                                     onChange={e => setForm((f: any) => ({ ...f, grado: e.target.value }))}
                                 >
@@ -65,7 +65,7 @@ export function NewCourseModal({
                                 <Hash size={12} /> Sección
                             </label>
                             <input
-                                className="w-full bg-slate-100 border-2 border-transparent focus:border-[#7A8D69] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all uppercase placeholder:text-slate-400"
+                                className="w-full bg-slate-100 border-2 border-transparent focus:border-[#ADC762] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all uppercase placeholder:text-slate-400"
                                 placeholder="A"
                                 maxLength={2}
                                 value={form.seccion}
@@ -80,7 +80,7 @@ export function NewCourseModal({
                         </label>
                         <div className="relative">
                             <select
-                                className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-[#7A8D69] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
+                                className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-[#ADC762] focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
                                 value={form.asignatura}
                                 onChange={e => setForm((f: any) => ({ ...f, asignatura: e.target.value }))}
                             >
@@ -106,7 +106,7 @@ export function NewCourseModal({
 
                     <div className="pt-2">
                         <label className="inline-flex items-center gap-3 cursor-pointer group">
-                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${form.isTutorOficial ? 'bg-[#7A8D69] border-[#7A8D69] shadow-sm' : 'bg-slate-50 border-slate-200 group-hover:border-slate-300'}`}>
+                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${form.isTutorOficial ? 'bg-[#ADC762] border-[#ADC762] shadow-sm' : 'bg-slate-50 border-slate-200 group-hover:border-slate-300'}`}>
                                 {form.isTutorOficial && <X size={14} className="text-white rotate-45" />}
                                 <input type="checkbox" className="hidden" checked={form.isTutorOficial} onChange={(e) => setForm((f: any) => ({ ...f, isTutorOficial: e.target.checked }))} />
                             </div>

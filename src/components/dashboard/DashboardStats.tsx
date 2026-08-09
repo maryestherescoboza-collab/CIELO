@@ -9,7 +9,7 @@ export function DashboardStats({ totalEstudiantes, actividadesEvaluadas, avgGene
     const stats = [
         { label: 'Estudiantes', value: totalEstudiantes, bgImage: 'estudiantes.png', bg: 'bg-[#EB8847]', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-[#EB8847]/20' },
         { label: 'Actividades', value: actividadesEvaluadas, bgImage: 'actividades.png', bg: 'bg-[#F5BC5D]', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-[#F5BC5D]/20' },
-        { label: 'Promedio G.', value: `${avgGeneral}%`, bgImage: 'promedio.png', bg: 'bg-[#7A8D69]', text: 'text-[#F8F3ED]', labelColor: 'text-[#F8F3ED]/80', lineBg: 'bg-[#F8F3ED]', accent: 'border-[#7A8D69]/20' },
+        { label: 'Promedio G.', value: `${avgGeneral}%`, bgImage: 'promedio.png', bg: 'bg-[#ADC762]', text: 'text-[#F8F3ED]', labelColor: 'text-[#F8F3ED]/80', lineBg: 'bg-[#F8F3ED]', accent: 'border-[#ADC762]/20' },
         { label: 'Cursos Act.', value: totalCursos, bgImage: 'libro.png', bg: 'bg-[#6D8FB9]', text: 'text-[#F8F3ED]', labelColor: 'text-[#F8F3ED]/80', lineBg: 'bg-[#F8F3ED]', accent: 'border-[#6D8FB9]/20' },
     ];
 

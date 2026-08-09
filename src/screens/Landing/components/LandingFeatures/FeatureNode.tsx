@@ -24,7 +24,7 @@ export const FeatureNode: React.FC<FeatureNodeProps> = ({ x, y, label, isActive,
         className={`w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border-2
           ${isActive 
             ? 'bg-[#2E3330] text-white border-white scale-105 shadow-md' 
-            : 'bg-white border-[#7A8D69] text-[#7A8D69] scale-100 hover:scale-105'
+            : 'bg-white border-[#ADC762] text-[#ADC762] scale-100 hover:scale-105'
           }
         `}
       >

@@ -67,7 +67,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                                                             onCompleteTarea(n.tareaId!);
                                                             onMarkNotifyRead?.(n.id);
                                                         }}
-                                                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#7A8D69] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#6C7E5C] transition-colors"
+                                                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ADC762] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#6C7E5C] transition-colors"
                                                     >
                                                         <SquareCheck size={12} /> Completar tarea
                                                     </button>

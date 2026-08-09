@@ -12,7 +12,7 @@ export function LandingStats() {
     <section className="py-24 bg-[#1a1c1a] relative overflow-hidden text-white">
       {/* Background decoration */}
       <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
-      <div className="absolute bottom-0 right-0 w-125 h-125 bg-[#7A8D69]/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-125 h-125 bg-[#ADC762]/20 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">

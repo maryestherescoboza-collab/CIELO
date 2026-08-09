@@ -81,7 +81,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         <div className="flex items-center justify-between mb-2">
                             <h1 className="text-2xl font-black text-[#2E3330] tracking-tight">{activeProfile.nombre}</h1>
                             <div className="flex gap-1">
-                                <div className="w-2 h-2 rounded-full bg-[#7A8D69] animate-pulse"></div>
+                                <div className="w-2 h-2 rounded-full bg-[#ADC762] animate-pulse"></div>
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2 items-center">
@@ -95,7 +95,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-[10px] font-bold text-[#5F665E] uppercase tracking-widest">Sobre mí</h3>
                             {isOwnProfile && !editingProfile && (
-                                <button onClick={() => setEditingProfile(true)} className="text-[#5F665E] hover:text-[#7A8D69] transition-colors">
+                                <button onClick={() => setEditingProfile(true)} className="text-[#5F665E] hover:text-[#ADC762] transition-colors">
                                     <Pencil size={14} />
                                 </button>
                             )}
@@ -104,14 +104,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                         {isOwnProfile && editingProfile ? (
                             <div className="space-y-4">
                                 <textarea 
-                                    className="w-full p-4 bg-white border border-[#2E3330]/25 rounded-[4px] text-sm font-medium focus:border-[#7A8D69] outline-none min-h-25" 
+                                    className="w-full p-4 bg-white border border-[#2E3330]/25 rounded-[4px] text-sm font-medium focus:border-[#ADC762] outline-none min-h-25" 
                                     value={localBio} 
                                     onChange={e => setLocalBio(e.target.value)} 
                                     placeholder="Cuéntanos sobre ti..." 
                                 />
                                 <div className="flex gap-2">
                                     <button className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-[4px] text-xs font-bold text-slate-600 hover:bg-slate-50" onClick={() => setEditingProfile(false)}>Cancelar</button>
-                                    <button className="flex-1 px-4 py-2 bg-[#7A8D69] rounded-[4px] text-xs font-bold text-white hover:bg-[#6C7E5C]" onClick={saveBio} disabled={bioSaving}>
+                                    <button className="flex-1 px-4 py-2 bg-[#ADC762] rounded-[4px] text-xs font-bold text-white hover:bg-[#6C7E5C]" onClick={saveBio} disabled={bioSaving}>
                                         {bioSaving ? 'Guardando...' : 'Guardar'}
                                     </button>
                                 </div>
@@ -146,7 +146,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                             </button>
                         )}
                         {onOpenSuscripcion && (
-                            <button onClick={() => { setShowProfile(false); onOpenSuscripcion(); }} className="w-full py-3 bg-[#7A8D69] border border-[#6C7E5C] rounded-[4px] text-sm font-bold text-white hover:bg-[#6C7E5C] flex items-center justify-center gap-2 transition-all">
+                            <button onClick={() => { setShowProfile(false); onOpenSuscripcion(); }} className="w-full py-3 bg-[#ADC762] border border-[#6C7E5C] rounded-[4px] text-sm font-bold text-white hover:bg-[#6C7E5C] flex items-center justify-center gap-2 transition-all">
                                 Planes y Suscripción
                             </button>
                         )}

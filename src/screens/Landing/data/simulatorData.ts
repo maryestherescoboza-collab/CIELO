@@ -8,13 +8,13 @@ const cursoDemo: Curso = {
     asignatura: 'Lengua Española',
     periodo: 'P1',
     diasSemana: [],
-    color: '#7A8D69',
+    color: '#ADC762',
     grupoId: 1
 };
 
 const estudiantesDemo: Estudiante[] = [
     { id: 1001, nombre: 'Isabella', apellido: 'Rosario', avatarColor: '#B87449', cursoId: 999, grupoId: 1, nivel: 1, puntaje: 0, bc1: {nivel: 1, puntaje: 0}, bc2: {nivel: 1, puntaje: 0}, bc3: {nivel: 1, puntaje: 0}, bc4: {nivel: 1, puntaje: 0}, actividadesRecientes: 0, enRiesgo: false, numeroLista: 1 },
-    { id: 1002, nombre: 'Mateo', apellido: 'Jiménez', avatarColor: '#7A8D69', cursoId: 999, grupoId: 1, nivel: 1, puntaje: 0, bc1: {nivel: 1, puntaje: 0}, bc2: {nivel: 1, puntaje: 0}, bc3: {nivel: 1, puntaje: 0}, bc4: {nivel: 1, puntaje: 0}, actividadesRecientes: 0, enRiesgo: false, numeroLista: 2 },
+    { id: 1002, nombre: 'Mateo', apellido: 'Jiménez', avatarColor: '#ADC762', cursoId: 999, grupoId: 1, nivel: 1, puntaje: 0, bc1: {nivel: 1, puntaje: 0}, bc2: {nivel: 1, puntaje: 0}, bc3: {nivel: 1, puntaje: 0}, bc4: {nivel: 1, puntaje: 0}, actividadesRecientes: 0, enRiesgo: false, numeroLista: 2 },
     { id: 1003, nombre: 'Valentina', apellido: 'Cruz', avatarColor: '#EB8847', cursoId: 999, grupoId: 1, nivel: 1, puntaje: 0, bc1: {nivel: 1, puntaje: 0}, bc2: {nivel: 1, puntaje: 0}, bc3: {nivel: 1, puntaje: 0}, bc4: {nivel: 1, puntaje: 0}, actividadesRecientes: 0, enRiesgo: false, numeroLista: 3 },
 ];
 

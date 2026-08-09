@@ -96,7 +96,7 @@ export default function PrintBoletines({ state, docenteNombre }: PrintBoletinesP
                   font-weight: bold;
                 }
                 .print-floating-bar button {
-                  background: #7A8D69;
+                  background: #ADC762;
                   border: none;
                   color: white;
                   padding: 6px 14px;

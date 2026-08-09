@@ -99,14 +99,14 @@ export const CATALOGO_GUIAS: Guide[] = [
     titulo: 'Cómo evaluar con rúbrica',
     steps: [
       {
-        selector: '#nav-rubrica',
+        selector: '.app-bottom-nav button:nth-child(7)',
         texto: 'Haz clic en «Rúbrica».',
         evento: 'click'
       },
       {
         selector: '[data-guide="selector-curso"]',
         texto: 'Haz clic en el curso que deseas evaluar.',
-        evento: 'change'
+        evento: 'click'
       },
       {
         selector: '[data-guide="selector-actividad"]',
@@ -140,14 +140,14 @@ export const CATALOGO_GUIAS: Guide[] = [
     titulo: 'Cómo evaluar con cotejo',
     steps: [
       {
-        selector: '#nav-cotejo',
+        selector: '.app-bottom-nav button:nth-child(8)',
         texto: 'Haz clic en «Cotejo».',
         evento: 'click'
       },
       {
         selector: '[data-guide="selector-curso"]',
         texto: 'Haz clic en el curso que deseas evaluar.',
-        evento: 'change'
+        evento: 'click'
       },
       {
         selector: '[data-guide="selector-actividad"]',

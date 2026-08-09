@@ -17,7 +17,7 @@ module.exports = {
         "outline": "#6E8CA0",
         // CIELO official palette
         "cielo-high": "#BFC9A6",
-        "cielo-medium": "#7A8D69",
+        "cielo-medium": "#ADC762",
         "cielo-low": "#EB8847",
         "cielo-accent1": "#6D8FB9",
         "cielo-accent2": "#F5BC5D",

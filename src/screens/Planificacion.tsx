@@ -226,7 +226,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                     <div className="flex flex-col items-stretch sm:items-center gap-3 sm:flex-row">
                         <div className="relative group">
                             <select
-                                className="pl-5 pr-10 appearance-none rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-xs font-bold uppercase tracking-[0.08em] shadow-sm outline-none focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 cursor-pointer transition-all hover:bg-[#FAF6F0] min-w-60 artisan-pill"
+                                className="pl-5 pr-10 appearance-none rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-xs font-bold uppercase tracking-[0.08em] shadow-sm outline-none focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 cursor-pointer transition-all hover:bg-[#FAF6F0] min-w-60 artisan-pill"
                                 value={cursoSel}
                                 onChange={(event) => setCursoSel(Number(event.target.value))}
                             >
@@ -238,13 +238,13 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                             </select>
                             <ChevronDown
                                 size={14}
-                                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-hover:text-[#7A8D69]"
+                                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-hover:text-[#ADC762]"
                             />
                         </div>
 
                         <button
                             onClick={() => { setShowModal(true); setImportStep('select'); }}
-                            className="px-6 rounded-full bg-[#7A8D69] text-white text-xs font-black uppercase tracking-[0.08em] shadow-sm hover:bg-[#6C7E5C] hover:-translate-y-0.5 transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 flex items-center justify-center gap-2.5 shrink-0"
+                            className="px-6 rounded-full bg-[#ADC762] text-white text-xs font-black uppercase tracking-[0.08em] shadow-sm hover:bg-[#6C7E5C] hover:-translate-y-0.5 transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 flex items-center justify-center gap-2.5 shrink-0"
                             style={{ height: '36px' }}
                         >
                             <Plus size={16} strokeWidth={3} className="transition-transform duration-700 hover:rotate-180" />
@@ -278,7 +278,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                         key={seq.id}
                                         type="button"
                                         onClick={() => setViewerSeq(seq)}
-                                        className="group flex flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 rounded-[20px] p-5 transition-all bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] shadow-sm hover:shadow-md hover:bg-[#F8F3ED]/30 hover:-translate-y-1"
+                                        className="group flex flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 rounded-[20px] p-5 transition-all bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] shadow-sm hover:shadow-md hover:bg-[#F8F3ED]/30 hover:-translate-y-1"
                                     >
                                         <div className="relative flex h-40 items-end justify-center mb-4">
                                             <img
@@ -290,7 +290,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                         </div>
 
                                         <div className="max-w-44 flex-1">
-                                            <h3 className="text-sm font-black text-[#2E3330] leading-snug group-hover:text-[#7A8D69] transition-colors font-notion-title">
+                                            <h3 className="text-sm font-black text-[#2E3330] leading-snug group-hover:text-[#ADC762] transition-colors font-notion-title">
                                                 {seq.titulo}
                                             </h3>
                                             <p className="mt-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
@@ -303,11 +303,11 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                                 {[0, 1, 2].map((dot) => (
                                                     <span
                                                         key={dot}
-                                                        className={`h-1.5 w-1.5 rounded-full ${dot < filledDots ? 'bg-[#7A8D69]' : 'bg-slate-200'}`}
+                                                        className={`h-1.5 w-1.5 rounded-full ${dot < filledDots ? 'bg-[#ADC762]' : 'bg-slate-200'}`}
                                                     />
                                                 ))}
                                             </div>
-                                            <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#2E3330] px-2.5 py-0.5 rounded-full border border-slate-100 group-hover:border-[#7A8D69]/20 group-hover:text-[#7A8D69] bg-[#EAE4DA]/30 transition-colors">
+                                            <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#2E3330] px-2.5 py-0.5 rounded-full border border-slate-100 group-hover:border-[#ADC762]/20 group-hover:text-[#ADC762] bg-[#EAE4DA]/30 transition-colors">
                                                 {getDisplayStatus(seq.estado)}
                                             </p>
                                         </div>
@@ -350,7 +350,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
                             <div className="flex flex-wrap items-center gap-2.5">
                                 <select
-                                    className="px-3 rounded-full border border-slate-350 bg-[#FDFBF7] text-[10px] font-bold text-[#2E3330] uppercase tracking-[0.08em] outline-none transition-all focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 appearance-none relative shadow-sm artisan-pill artisan-btn-white"
+                                    className="px-3 rounded-full border border-slate-350 bg-[#FDFBF7] text-[10px] font-bold text-[#2E3330] uppercase tracking-[0.08em] outline-none transition-all focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 appearance-none relative shadow-sm artisan-pill artisan-btn-white"
                                     value={viewerSeq.estado}
                                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232e3330'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '0.8rem', paddingRight: '2rem' }}
                                     onChange={(event) => {
@@ -371,7 +371,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                     onClick={() => {
                                         void togglePresentation();
                                     }}
-                                    className="px-4.5 rounded-full bg-[#FDFBF7] border border-slate-350 text-[#2E3330] text-[9px] font-bold uppercase tracking-[0.08em] shadow-sm hover:bg-[#FAF6F0] transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 flex items-center gap-1.5 artisan-pill"
+                                    className="px-4.5 rounded-full bg-[#FDFBF7] border border-slate-350 text-[#2E3330] text-[9px] font-bold uppercase tracking-[0.08em] shadow-sm hover:bg-[#FAF6F0] transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 flex items-center gap-1.5 artisan-pill"
                                     style={{ height: '36px' }}
                                 >
                                     {isPresenting ? <Minimize2 size={13} /> : <Maximize2 size={13} />}

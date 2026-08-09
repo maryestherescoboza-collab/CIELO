@@ -38,7 +38,7 @@ const AnnualGradesTable: React.FC<AnnualGradesTableProps> = ({
                         <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC2">Pensamiento lógico, creativo y crítico; resolución de problemas</th>
                         <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC3">Científica y tecnológica; ambiental y de la salud</th>
                         <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC4">Desarrollo personal y espiritual; ética y ciudadana</th>
-                        <th rowSpan={2} className="bg-[#FDFBF7] text-[#7A8D69] border-x border-[rgba(46,51,48,0.08)]">A</th>
+                        <th rowSpan={2} className="bg-[#FDFBF7] text-[#ADC762] border-x border-[rgba(46,51,48,0.08)]">A</th>
                         <th rowSpan={2} className="bg-[#FDFBF7] text-[#B87449] border-r border-[rgba(46,51,48,0.08)]">R</th>
                     </tr>
                     <tr className="bg-[#F8F3ED] text-[#2E3330] font-black uppercase text-[10px] tracking-wider">

@@ -28,7 +28,7 @@ const UP: Record<number, number> = { 0: 56, 1: 38, 2: 20, 3: 14, 4: 10, 5: 7 };
 const SIDES = [0, -1, 1, -2, 2, -3, 3, -4, 4, 5];
 
 const bandFor = (avg: number) =>
-  avg >= 85 ? '#7A8D69' : avg >= 70 ? '#E9934A' : '#A9B4C6';
+  avg >= 85 ? '#ADC762' : avg >= 70 ? '#E9934A' : '#A9B4C6';
 
 // Anillo más vivo para los tres primeros lugares
 const ACCENT: Record<number, string> = { 1: '#E6B64A', 2: '#C7D2DE', 3: '#D89161' };
@@ -81,8 +81,8 @@ export default function PodiumTop10({ students }: Props) {
         >
           <defs>
             <linearGradient id="podium-hill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#7A8D69" stopOpacity="0.16" />
-              <stop offset="100%" stopColor="#7A8D69" stopOpacity="0.02" />
+              <stop offset="0%" stopColor="#ADC762" stopOpacity="0.16" />
+              <stop offset="100%" stopColor="#ADC762" stopOpacity="0.02" />
             </linearGradient>
           </defs>
 
@@ -111,7 +111,7 @@ export default function PodiumTop10({ students }: Props) {
               BASE_Y - UP[3] - 18
             }, ${CX + 5 * STEP_X} ${BASE_Y}`}
             fill="none"
-            stroke="#7A8D69"
+            stroke="#ADC762"
             strokeWidth={1.5}
             strokeOpacity={0.25}
             strokeLinecap="round"
@@ -182,7 +182,7 @@ export default function PodiumTop10({ students }: Props) {
                   {/* PDA posición */}
                   <span
                     className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white"
-                    style={{ background: rank === 1 ? '#7A8D69' : rank === 2 ? '#BFC9A6' : rank === 3 ? '#E9934B' : '#D9DFE4' }}
+                    style={{ background: rank === 1 ? '#ADC762' : rank === 2 ? '#BFC9A6' : rank === 3 ? '#E9934B' : '#D9DFE4' }}
                   >
                     {rank}
                   </span>
@@ -207,7 +207,7 @@ export default function PodiumTop10({ students }: Props) {
       {/* Leyenda de desempeño */}
       <div className="mt-2 flex items-center justify-end gap-3">
         <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-[#5F665E] uppercase tracking-widest">
-          <span className="w-2 h-2 rounded-full bg-[#7A8D69]"></span>
+          <span className="w-2 h-2 rounded-full bg-[#ADC762]"></span>
           alto rendimiento
         </span>
         <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-[#5F665E] uppercase tracking-widest">

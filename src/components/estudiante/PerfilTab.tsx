@@ -163,7 +163,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 </div>
                 <div className="text-right no-print">
                     <p className="text-[13px] font-black text-[#5F665E]/40 uppercase tracking-[0.2em]">Expediente Digital</p>
-                    <button onClick={() => window.print()} className="text-[14px] font-bold text-[#7A8D69] hover:underline mt-1 uppercase">Imprimir Registro</button>
+                    <button onClick={() => window.print()} className="text-[14px] font-bold text-[#ADC762] hover:underline mt-1 uppercase">Imprimir Registro</button>
                 </div>
             </div>
 
@@ -171,7 +171,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 <div className="col-span-3 border-r border-[rgba(46,51,48,0.08)] pr-4 flex items-center gap-6">
                     <div>
                         <p className="text-[12px] font-black text-[#5F665E] uppercase mb-1">Promedio</p>
-                        <p className="text-2xl font-black text-[#7A8D69]">{promedioPeriodo}%</p>
+                        <p className="text-2xl font-black text-[#ADC762]">{promedioPeriodo}%</p>
                     </div>
                     <div>
                         <p className="text-[12px] font-black text-[#5F665E] uppercase mb-1">Ranking</p>
@@ -221,7 +221,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                                     {(act.bcAsignados || ['BC1']).map((bc: string) => (
                                                         <span 
                                                             key={bc} 
-                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider bg-[#FDFBF7] text-[#7A8D69] border border-[rgba(46,51,48,0.08)]"
+                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider bg-[#FDFBF7] text-[#ADC762] border border-[rgba(46,51,48,0.08)]"
                                                             title={bc}
                                                         >
                                                             {getCompetenciaDisplay(bc)}
@@ -233,7 +233,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                                 {isEvaluated ? (
                                                     <span className={`inline-flex items-center justify-center font-black text-[14px] px-2.5 py-1 rounded-lg ${
                                                         score! >= 90 
-                                                            ? 'bg-[#FDFBF7] text-[#7A8D69] border border-[#7A8D69]/20' 
+                                                            ? 'bg-[#FDFBF7] text-[#ADC762] border border-[#ADC762]/20' 
                                                             : score! >= 70 
                                                             ? 'bg-[#FDFBF7] text-[#EB8847] border border-[#EB8847]/20' 
                                                             : 'bg-[#FDFBF7] text-[#B87449] border border-[#B87449]/20'

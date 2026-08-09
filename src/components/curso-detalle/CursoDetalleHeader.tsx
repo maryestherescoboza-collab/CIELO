@@ -71,7 +71,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     </button>
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <span className="px-3.5 py-1 min-h-6 leading-none bg-[#7A8D69] text-white text-[10px] font-semibold uppercase tracking-[0.08em] rounded-full flex items-center justify-center">CURSO ACTIVO</span>
+                            <span className="px-3.5 py-1 min-h-6 leading-none bg-[#ADC762] text-white text-[10px] font-semibold uppercase tracking-[0.08em] rounded-full flex items-center justify-center">CURSO ACTIVO</span>
                             <h1 className="text-3xl font-black text-[#2E3330] tracking-tighter uppercase italic">{curso?.grado} {curso?.seccion}</h1>
                         </div>
                         <p className="text-[#5F665E] font-semibold text-sm uppercase tracking-widest flex items-center gap-2">
@@ -86,7 +86,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <input
                             type="text"
                             placeholder="BUSCAR ESTUDIANTE..."
-                            className="pl-12 pr-6 py-2.5 min-h-10 bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-[#7A8D69]/10 focus:bg-white focus:border-[#7A8D69]/30 transition-all w-64 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
+                            className="pl-12 pr-6 py-2.5 min-h-10 bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-[#ADC762]/10 focus:bg-white focus:border-[#ADC762]/30 transition-all w-64 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
                             value={buscar}
                             onChange={(e) => setBuscar(e.target.value)}
                         />
@@ -98,8 +98,8 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         className={`flex items-center gap-3 px-4.5 py-2 min-h-10 leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all border ${isSaving
                                 ? 'bg-[#EB8847] border-[#EB8847] text-white cursor-wait shadow-sm'
                                 : isDirty
-                                    ? 'bg-[#7A8D69] border-[#7A8D69] text-white hover:bg-[#6C7E5C] shadow-sm'
-                                    : 'bg-white text-[#7A8D69] border-[rgba(46,51,48,0.08)] cursor-default'
+                                    ? 'bg-[#ADC762] border-[#ADC762] text-white hover:bg-[#6C7E5C] shadow-sm'
+                                    : 'bg-white text-[#ADC762] border-[rgba(46,51,48,0.08)] cursor-default'
                             }`}
                     >
                         {isSaving ? (
@@ -107,7 +107,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         ) : isDirty ? (
                             <Save size={16} />
                         ) : (
-                            <Check size={16} className="text-[#7A8D69] font-bold" />
+                            <Check size={16} className="text-[#ADC762] font-bold" />
                         )}
                         {isSaving ? 'GUARDANDO...' : isDirty ? 'GUARDAR AHORA' : 'GUARDADO'}
                     </button>
@@ -159,8 +159,8 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             let colorClasses = '';
                             if (val === 100) {
                                 colorClasses = isActive
-                                    ? 'bg-[#7A8D69] text-white border-2 border-transparent'
-                                    : 'bg-[#7A8D69]/10 text-[#7A8D69] border border-transparent hover:bg-[#7A8D69]/20';
+                                    ? 'bg-[#ADC762] text-white border-2 border-transparent'
+                                    : 'bg-[#ADC762]/10 text-[#ADC762] border border-transparent hover:bg-[#ADC762]/20';
                             } else if (val === 85) {
                                 colorClasses = isActive
                                     ? 'bg-[#EB8847] text-white border-2 border-transparent'

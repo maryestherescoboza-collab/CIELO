@@ -36,7 +36,7 @@ export function LandingHero() {
         >
           <motion.div variants={itemVariants} className="mb-6 flex justify-center">
             <div className="inline-flex items-center gap-2 bg-[#EAE4DA]/50 px-4 py-2 rounded-full border border-[rgba(46,51,48,0.08)] backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-[#7A8D69] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[#ADC762] animate-pulse" />
               <span className="text-[10px] font-black text-[#5F665E] uppercase tracking-widest">
                 Si algo merece hacerse, merece hacerse bien
               </span>
@@ -48,7 +48,7 @@ export function LandingHero() {
             className="text-4xl sm:text-5xl md:text-7xl lg:text-[5rem] font-black text-[#2E3330] tracking-tighter leading-[1.1] mb-6 md:mb-8"
           >
             Evalua competencias para{' '}
-            <span className="text-transparent bg-clip-text bg-linear-to-r from-[#7A8D69] to-[#6C7E5C]">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-[#ADC762] to-[#6C7E5C]">
               instituciones de vanguardia.
             </span>
           </motion.h1>
@@ -64,7 +64,7 @@ export function LandingHero() {
             <button className="px-8 py-4 rounded-full bg-[#2E3330] text-white text-sm font-black uppercase tracking-widest hover:bg-[#1a1c1a] hover:-translate-y-0.5 transition-all shadow-xl shadow-black/10 w-full sm:w-auto">
               Explorar Demostración
             </button>
-            <button className="px-8 py-4 rounded-full bg-white text-[#2E3330] text-sm font-black uppercase tracking-widest border border-slate-200 hover:border-[#7A8D69] hover:bg-[#FDFBF7] hover:-translate-y-0.5 transition-all w-full sm:w-auto">
+            <button className="px-8 py-4 rounded-full bg-white text-[#2E3330] text-sm font-black uppercase tracking-widest border border-slate-200 hover:border-[#ADC762] hover:bg-[#FDFBF7] hover:-translate-y-0.5 transition-all w-full sm:w-auto">
               Conocer Características
             </button>
           </motion.div>

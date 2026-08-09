@@ -70,6 +70,33 @@ export function startGuide(guideId: string) {
 }
 
 /**
+ * Dynamically resolves selectors to their parent container for group highlighting (e.g. students).
+ */
+function getResolvedSelector(selector: string): string {
+  if (selector === '[data-guide="seleccionar-estudiantes"]') {
+    const firstStudent = document.querySelector('[data-guide="seleccionar-estudiantes"]');
+    if (firstStudent && firstStudent.parentElement) {
+      const parent = firstStudent.parentElement;
+      if (!parent.id) {
+        parent.id = 'dynamic-students-container';
+      }
+      return '#' + parent.id;
+    }
+  }
+  if (selector === '[data-guide="celda-cotejo"]') {
+    const firstCell = document.querySelector('[data-guide="celda-cotejo"]');
+    const table = firstCell?.closest('table');
+    if (table) {
+      if (!table.id) {
+        table.id = 'dynamic-cotejo-table';
+      }
+      return '#' + table.id;
+    }
+  }
+  return selector;
+}
+
+/**
  * Highlights the current step of the active guide.
  */
 export function highlightStep() {
@@ -85,28 +112,29 @@ export function highlightStep() {
   }
 
   // Check if the target element exists in the DOM. If not, wait for it using a MutationObserver
-  const element = document.querySelector(step.selector);
+  const resolvedSelector = getResolvedSelector(step.selector);
+  const element = document.querySelector(resolvedSelector);
   if (!element) {
-    waitForElement(step.selector, () => {
+    waitForElement(resolvedSelector, () => {
       if (currentGuideId === guide.id) {
-        highlightElement(step);
+        highlightElement(step, resolvedSelector);
       }
     });
     return;
   }
 
-  highlightElement(step);
+  highlightElement(step, resolvedSelector);
 }
 
 /**
  * Displays the Driver.js popover on the target element and initializes interaction listeners.
  */
-function highlightElement(step: any) {
+function highlightElement(step: any, resolvedSelector: string) {
   if (!driverObj || !currentGuideId) return;
 
   try {
     driverObj.highlight({
-      element: step.selector,
+      element: resolvedSelector,
       popover: {
         description: step.texto,
         side: 'bottom',
@@ -114,7 +142,7 @@ function highlightElement(step: any) {
       }
     });
   } catch (e) {
-    console.error('[driverGuides] Failed to highlight:', step.selector, e);
+    console.error('[driverGuides] Failed to highlight:', resolvedSelector, e);
   }
 
   // Setup the event listener that triggers advancing to the next step when the action is executed
@@ -129,7 +157,7 @@ function highlightElement(step: any) {
 /**
  * Advances the active guide to the next step.
  */
-function advanceStep() {
+export function advanceStep() {
   if (!currentGuideId) return;
 
   const guide = CATALOGO_GUIAS.find(g => g.id === currentGuideId);
@@ -141,6 +169,20 @@ function advanceStep() {
   } else {
     highlightStep();
   }
+}
+
+/**
+ * Executes driverObj.moveNext() and advances internal step tracking.
+ */
+export function moveNext() {
+  if (driverObj && typeof driverObj.moveNext === 'function') {
+    try {
+      driverObj.moveNext();
+    } catch (e) {
+      console.error('[driverGuides] moveNext failed:', e);
+    }
+  }
+  advanceStep();
 }
 
 /**

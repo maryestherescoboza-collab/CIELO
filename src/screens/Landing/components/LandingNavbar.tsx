@@ -17,7 +17,7 @@ export function LandingNavbar() {
         <div className="flex items-center gap-6">
           <Link 
             to="/login"
-            className="px-6 py-2.5 rounded-full bg-[#7A8D69] text-white text-xs font-black uppercase tracking-widest hover:bg-[#6C7E5C] hover:-translate-y-0.5 transition-all shadow-sm"
+            className="px-6 py-2.5 rounded-full bg-[#ADC762] text-white text-xs font-black uppercase tracking-widest hover:bg-[#6C7E5C] hover:-translate-y-0.5 transition-all shadow-sm"
           >
             Iniciar Sesión
           </Link>

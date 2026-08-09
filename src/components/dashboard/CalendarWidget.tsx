@@ -81,7 +81,7 @@ export function CalendarWidget({ eventos, actividades, onSelectDate }: CalendarW
                             }}
                             className={`
                                 aspect-square w-full flex flex-col items-center justify-center rounded-lg text-[11px] font-medium transition-all relative overflow-hidden
-                                ${isToday ? 'bg-[#7A8D69] text-white shadow-sm z-10' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-bold'}
+                                ${isToday ? 'bg-[#ADC762] text-white shadow-sm z-10' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-bold'}
                                 ${selectedDate === dateStr && !isToday ? 'ring-2 ring-[#BFC9A6] bg-[#BFC9A6]/20 text-[#2E3330] font-bold' : ''}
                             `}
                         >

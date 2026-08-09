@@ -43,10 +43,10 @@ export default function SimTutorialOverlay() {
                         exit={{ opacity: 0, x: 20 }}
                         className="absolute top-[15%] left-[20%] flex items-center gap-2"
                     >
-                        <div className="bg-[#7A8D69] text-white px-4 py-2 rounded-xl shadow-2xl font-black text-sm tracking-wider uppercase animate-bounce">
+                        <div className="bg-[#ADC762] text-white px-4 py-2 rounded-xl shadow-2xl font-black text-sm tracking-wider uppercase animate-bounce">
                             Explora los distintos periodos
                         </div>
-                        <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[10px] border-l-[#7A8D69] border-b-[8px] border-b-transparent animate-bounce"></div>
+                        <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[10px] border-l-[#ADC762] border-b-[8px] border-b-transparent animate-bounce"></div>
                     </motion.div>
                 )}
             </AnimatePresence>

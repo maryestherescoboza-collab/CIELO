@@ -80,7 +80,7 @@ export default function CentroTareas({ centroId }: Props) {
         }
         const asignaciones = tarea.asignaciones || [];
         if (asignaciones.length > 0 && asignaciones.every(a => a.estado === 'completada')) {
-            return { label: 'Completada', color: 'text-[#7A8D69]', bg: 'bg-[#BFC9A6]/40' };
+            return { label: 'Completada', color: 'text-[#ADC762]', bg: 'bg-[#BFC9A6]/40' };
         }
         return { label: 'Pendiente', color: 'text-[#A3792E]', bg: 'bg-[#F5BC5D]/25' };
     };
@@ -248,7 +248,7 @@ export default function CentroTareas({ centroId }: Props) {
                                                             key={a.id}
                                                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border ${
                                                                 done
-                                                                    ? 'bg-[#BFC9A6]/25 border-[#7A8D69]/30 text-[#4F5F44]'
+                                                                    ? 'bg-[#BFC9A6]/25 border-[#ADC762]/30 text-[#4F5F44]'
                                                                     : 'bg-white border-[#E6E1D8] text-[#6B7280]'
                                                             }`}
                                                         >

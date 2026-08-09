@@ -7,7 +7,7 @@
   --sidebar: #DDD5C8;
 
   --olive-branch: #BFC9A6;
-  --herb-garden: #7A8D69;
+  --herb-garden: #ADC762;
   --french-blue: #6D8FB9;
   --clementine: #EB8847;
   --calendula: #F5BC5D;
@@ -869,4 +869,9 @@ input[type="range"]:focus::-webkit-slider-thumb {
 
 .artisan-text {
   color: #2E3330 !important;
+}
+
+/* Permitir click-through en el overlay de driver.js para interactuar libremente con los estudiantes y el boton evaluar */
+.driver-overlay, .driver-active-overlay {
+  pointer-events: none !important;
 }

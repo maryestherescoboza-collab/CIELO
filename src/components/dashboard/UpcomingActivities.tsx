@@ -34,7 +34,7 @@ export function UpcomingActivities({ events }: UpcomingActivitiesProps) {
                         const typeStyles = {
                             evaluacion: 'bg-[#EB8847]/15 text-[#EB8847] border-[#EB8847]/35 shadow-sm',
                             reunion: 'bg-[#F5BC5D]/15 text-[#F5BC5D] border-[#F5BC5D]/35 shadow-sm',
-                            actividad: 'bg-[#7A8D69]/15 text-[#7A8D69] border-[#7A8D69]/35 shadow-sm',
+                            actividad: 'bg-[#ADC762]/15 text-[#ADC762] border-[#ADC762]/35 shadow-sm',
                             otro: 'bg-[#EAE4DA] text-[#2E3330] border-slate-300'
                         };
                         return (
@@ -51,10 +51,10 @@ export function UpcomingActivities({ events }: UpcomingActivitiesProps) {
                                     <span className="text-[9px] font-black uppercase tracking-tighter mt-1">{new Date(e.fecha).toLocaleString('default', { month: 'short' })}</span>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[14px] font-extrabold text-[#2E3330] truncate leading-snug group-hover:text-[#7A8D69] transition-colors">{e.titulo}</p>
+                                    <p className="text-[14px] font-extrabold text-[#2E3330] truncate leading-snug group-hover:text-[#ADC762] transition-colors">{e.titulo}</p>
                                     <div className="flex items-center gap-2 mt-1.5">
                                         <span className="text-[9px] font-black uppercase tracking-widest text-[#2E3330]/70">{e.tipo}</span>
-                                        {e.isActivity && <span className="w-1.5 h-1.5 rounded-full bg-[#7A8D69]"></span>}
+                                        {e.isActivity && <span className="w-1.5 h-1.5 rounded-full bg-[#ADC762]"></span>}
                                     </div>
                                 </div>
                             </div>

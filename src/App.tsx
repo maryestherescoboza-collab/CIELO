@@ -28,6 +28,7 @@ import CentroPanel from './screens/CentroPanel';
 import { useAppStore } from './store/appStore';
 import { useAppInitialization } from './hooks/useAppInitialization';
 import { usePendingCentro } from './hooks/usePendingCentro';
+import { usePendingVinculo } from './hooks/usePendingVinculo';
 import { useShallow } from 'zustand/react/shallow';
 import { analizarRolAcceso } from './utils/autorizacion';
 
@@ -69,6 +70,7 @@ export default function App() {
     state, session 
   });
   usePendingCentro(session, () => actions.refresh());
+  usePendingVinculo(session, () => actions.refresh());
 
   const currentCourseRole = useMemo(() => {
     if (!selectedCursoId || !session?.user?.id) return null;

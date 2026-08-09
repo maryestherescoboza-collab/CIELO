@@ -63,7 +63,7 @@ export function DemoRubric({ studentId, activityId, onClose }: Props) {
             <div key={crit.id}>
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-black text-[#2E3330]">{crit.name}</h4>
-                <span className="text-[10px] font-bold px-2 py-1 bg-[#EAE4DA] rounded-full text-[#7A8D69] uppercase tracking-wider">
+                <span className="text-[10px] font-bold px-2 py-1 bg-[#EAE4DA] rounded-full text-[#ADC762] uppercase tracking-wider">
                   Valor: {crit.weight}%
                 </span>
               </div>
@@ -76,16 +76,16 @@ export function DemoRubric({ studentId, activityId, onClose }: Props) {
                       onClick={() => handleSelect(crit.id, level.id)}
                       className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all ${
                         isSelected 
-                          ? 'border-[#7A8D69] bg-[#86A792]/10 shadow-sm' 
-                          : 'border-slate-100 bg-white hover:border-[#7A8D69]/30 hover:shadow-md'
+                          ? 'border-[#ADC762] bg-[#86A792]/10 shadow-sm' 
+                          : 'border-slate-100 bg-white hover:border-[#ADC762]/30 hover:shadow-md'
                       }`}
                     >
                       {isSelected && (
-                        <div className="absolute top-3 right-3 text-[#7A8D69]">
+                        <div className="absolute top-3 right-3 text-[#ADC762]">
                           <Check size={16} strokeWidth={3} />
                         </div>
                       )}
-                      <div className={`text-xl font-black mb-2 ${isSelected ? 'text-[#7A8D69]' : 'text-slate-300'}`}>
+                      <div className={`text-xl font-black mb-2 ${isSelected ? 'text-[#ADC762]' : 'text-slate-300'}`}>
                         {level.score}
                       </div>
                       <p className={`text-xs font-medium leading-relaxed ${isSelected ? 'text-[#2E3330]' : 'text-slate-500'}`}>

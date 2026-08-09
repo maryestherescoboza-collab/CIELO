@@ -367,7 +367,7 @@ export default function Dashboard({ docenteNombre }: Props) {
     
     // Largest Remainder Method for exactly 100 percentages
     const raw = [
-      { id: 'high', label: 'Alto Rendimiento', color: '#7A8D69', count: high, avg: high > 0 ? Math.round(highSum / high) : null, exact: (high / total) * 100 },
+      { id: 'high', label: 'Alto Rendimiento', color: '#ADC762', count: high, avg: high > 0 ? Math.round(highSum / high) : null, exact: (high / total) * 100 },
       { id: 'medium', label: 'Rendimiento Medio', color: '#BFC9A6', count: medium, avg: medium > 0 ? Math.round(mediumSum / medium) : null, exact: (medium / total) * 100 },
       { id: 'risk', label: 'En Riesgo', color: '#EB8847', count: risk, avg: risk > 0 ? Math.round(riskSum / risk) : null, exact: (risk / total) * 100 },
       { id: 'nodata', label: 'Sin Datos', color: '#B8CADC', count: noData, avg: null, exact: (noData / total) * 100 },
@@ -424,7 +424,7 @@ export default function Dashboard({ docenteNombre }: Props) {
     });
 
     return [
-      { value: excelente, color: '#7A8D69', label: 'Excelente', range: '>90' },
+      { value: excelente, color: '#ADC762', label: 'Excelente', range: '>90' },
       { value: bueno, color: '#BFC9A6', label: 'Bueno', range: '80-90' },
       { value: enDesarrollo, color: '#F5BC5D', label: 'En desarrollo', range: '70-80' },
       { value: requiereApoyo, color: '#EB8847', label: 'Requiere apoyo', range: '<70' }
@@ -500,7 +500,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                 Dashboard Analítico
             </h1>
             <p className="text-[10px] font-bold text-[#5F665E] uppercase tracking-widest">
-                Bienvenido, <span className="text-[#7A8D69]">{docenteNombre.split(' ')[0]}</span> · {state.instituto || 'Instituto Central'}
+                Bienvenido, <span className="text-[#ADC762]">{docenteNombre.split(' ')[0]}</span> · {state.instituto || 'Instituto Central'}
             </p>
           </div>
           
@@ -508,7 +508,7 @@ export default function Dashboard({ docenteNombre }: Props) {
             <div className="relative group" ref={dropdownRef}>
                 <button
                     onClick={() => setIsSelectOpen(!isSelectOpen)}
-                    className="flex items-center justify-between min-w-55 h-10 pl-5 pr-4 rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-[10px] font-black uppercase tracking-widest shadow-sm outline-none focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 cursor-pointer transition-all hover:bg-[#FAF6F0] artisan-pill"
+                    className="flex items-center justify-between min-w-55 h-10 pl-5 pr-4 rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-[10px] font-black uppercase tracking-widest shadow-sm outline-none focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 cursor-pointer transition-all hover:bg-[#FAF6F0] artisan-pill"
                 >
                     <span className="truncate pr-4">
                         {selectedCursoId === 'all' ? 'Todos los Cursos' : (() => {
@@ -517,7 +517,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                             return c ? `${c.grado} ${c.seccion} - ${c.nombre}` : 'Todos los Cursos';
                         })()}
                     </span>
-                    <TC_Flux size={12} className={`text-slate-500 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-[#7A8D69]' : 'rotate-90 group-hover:text-[#7A8D69]'}`} />
+                    <TC_Flux size={12} className={`text-slate-500 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-[#ADC762]' : 'rotate-90 group-hover:text-[#ADC762]'}`} />
                 </button>
                 {isSelectOpen && (
                     <div className="absolute top-[calc(100%+6px)] left-0 w-full bg-[#FDFBF7] border border-slate-300 rounded-[20px] shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top">
@@ -544,7 +544,7 @@ export default function Dashboard({ docenteNombre }: Props) {
             
             <button
                 onClick={() => navigate('/')}
-                className="h-10 px-6 rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-[#FAF6F0] hover:border-slate-350 transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 flex items-center justify-center gap-1.5 artisan-pill"
+                className="h-10 px-6 rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-[#FAF6F0] hover:border-slate-350 transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 flex items-center justify-center gap-1.5 artisan-pill"
             >
                 ← Inicio
             </button>
@@ -633,7 +633,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                 className={`px-3 py-1.5 text-white text-[10px] font-bold uppercase tracking-wider rounded-full transition-all artisan-pill ${
                   courseRecords.length >= 5
                     ? 'bg-slate-350 cursor-not-allowed'
-                    : 'bg-[#7A8D69] hover:bg-[#6C7E5C] active:scale-95 cursor-pointer'
+                    : 'bg-[#ADC762] hover:bg-[#6C7E5C] active:scale-95 cursor-pointer'
                 }`}
               >
                 + Nuevo Registro
@@ -664,7 +664,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                   return (
                     <div key={r.id} className="relative">
                       {/* Timeline dot */}
-                      <span className="absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full bg-[#7A8D69] border-2 border-white ring-4 ring-[#7A8D69]/10" />
+                      <span className="absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full bg-[#ADC762] border-2 border-white ring-4 ring-[#ADC762]/10" />
                       
                       <div className="flex justify-between items-center gap-2 mb-0.5">
                         <div className="text-[9px] font-bold text-[#5F665E] uppercase tracking-wider">{r.fecha}</div>
@@ -723,8 +723,8 @@ export default function Dashboard({ docenteNombre }: Props) {
             </div>
             
             {optimizationProgress && (
-              <div className="p-3 bg-[#7A8D69]/5 border border-[#7A8D69]/10 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-[#7A8D69] uppercase tracking-widest animate-pulse">
+              <div className="p-3 bg-[#ADC762]/5 border border-[#ADC762]/10 rounded-xl text-center">
+                <span className="text-[10px] font-bold text-[#ADC762] uppercase tracking-widest animate-pulse">
                   {optimizationProgress}
                 </span>
               </div>
@@ -737,7 +737,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                   type="date"
                   value={recordDate}
                   onChange={(e) => setRecordDate(e.target.value)}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#ADC762] focus:ring-2 focus:ring-[#ADC762]/20"
                   disabled={isSaving}
                 />
               </div>
@@ -749,7 +749,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                   placeholder="Ej. Excursión al museo de ciencias"
                   value={recordTitle}
                   onChange={(e) => setRecordTitle(e.target.value)}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#ADC762] focus:ring-2 focus:ring-[#ADC762]/20"
                   disabled={isSaving}
                 />
               </div>
@@ -761,7 +761,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                   placeholder="Escribe aquí los acontecimientos o detalles importantes..."
                   value={recordDesc}
                   onChange={(e) => setRecordDesc(e.target.value)}
-                  className="w-full p-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#7A8D69] focus:ring-2 focus:ring-[#7A8D69]/20 resize-none leading-relaxed"
+                  className="w-full p-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#ADC762] focus:ring-2 focus:ring-[#ADC762]/20 resize-none leading-relaxed"
                   disabled={isSaving}
                 />
               </div>
@@ -821,7 +821,7 @@ export default function Dashboard({ docenteNombre }: Props) {
               </button>
               <button
                 onClick={handleSaveRecord}
-                className="px-4 py-2 bg-[#7A8D69] hover:bg-[#6C7E5C] active:scale-95 text-white text-[10px] font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all flex items-center gap-1.5"
+                className="px-4 py-2 bg-[#ADC762] hover:bg-[#6C7E5C] active:scale-95 text-white text-[10px] font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all flex items-center gap-1.5"
                 disabled={isSaving || !recordTitle.trim() || !recordDate}
               >
                 {isSaving ? 'Guardando...' : 'Guardar'}

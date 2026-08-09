@@ -35,7 +35,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
     return (
         <div
             data-guide="celda-evaluacion"
-            className={`p-0 border-r border-[rgba(46,51,48,0.08)] relative transition-all group ${isDragging ? 'cursor-none' : 'cursor-pointer'} ${isFocused ? 'ring-2 ring-[#7A8D69] ring-inset z-10' : ''} shrink-0`}
+            className={`p-0 border-r border-[rgba(46,51,48,0.08)] relative transition-all group ${isDragging ? 'cursor-none' : 'cursor-pointer'} ${isFocused ? 'ring-2 ring-[#ADC762] ring-inset z-10' : ''} shrink-0`}
             style={style}
             onMouseEnter={() => {
                 onInteraction('hover');
@@ -99,7 +99,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
                         </div>
                     )
                 ) : isPointMode ? (
-                    <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === 100 ? 'w-6 h-6 bg-[#7A8D69]' : score === 85 ? 'w-6 h-6 bg-[#EB8847]' : score === 70 ? 'w-6 h-6 bg-[#B87449]' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : 'w-2 h-2 bg-[rgba(46,51,48,0.08)]'}`} />
+                    <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === 100 ? 'w-6 h-6 bg-[#ADC762]' : score === 85 ? 'w-6 h-6 bg-[#EB8847]' : score === 70 ? 'w-6 h-6 bg-[#B87449]' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : 'w-2 h-2 bg-[rgba(46,51,48,0.08)]'}`} />
                 ) : (
                     <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)}`}>
                         {score ?? '-'}

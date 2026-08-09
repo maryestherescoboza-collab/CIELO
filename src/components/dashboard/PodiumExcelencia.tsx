@@ -70,7 +70,7 @@ export default function PodiumExcelencia({ periods }: Props) {
                     <defs>
                       <linearGradient id={`grad-${periodNum}`} x1="0" y1="0" x2="1" y2="0">
                         <stop offset="0%" stopColor="#BFC9A6" stopOpacity="0.3" />
-                        <stop offset="50%" stopColor="#7A8D69" stopOpacity="0.8" />
+                        <stop offset="50%" stopColor="#ADC762" stopOpacity="0.8" />
                         <stop offset="100%" stopColor="#BFC9A6" stopOpacity="0.3" />
                       </linearGradient>
                     </defs>
@@ -104,7 +104,7 @@ export default function PodiumExcelencia({ periods }: Props) {
                           <circle cx={pos.cx} cy={pos.cy} r={pos.r + 3} fill={pos.color} opacity="0.15" />
                           
                           {/* Avatar */}
-                          <circle cx={pos.cx} cy={pos.cy} r={pos.r} fill={pos.s.avatarColor || '#7A8D69'} />
+                          <circle cx={pos.cx} cy={pos.cy} r={pos.r} fill={pos.s.avatarColor || '#ADC762'} />
                           <text
                             x={pos.cx}
                             y={pos.cy}
@@ -151,7 +151,7 @@ export default function PodiumExcelencia({ periods }: Props) {
                             x={pos.cx}
                             y={pos.cy + pos.r + 20.8}
                             textAnchor="middle"
-                            fill="#7A8D69"
+                            fill="#ADC762"
                             fontSize="8.8"
                             fontWeight="900"
                             fontFamily="sans-serif"

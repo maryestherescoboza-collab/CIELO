@@ -16,7 +16,7 @@ export default function Landing() {
 
   return (
     <ReactLenis root>
-      <div className="min-h-screen bg-[#FDFBF7] flex flex-col font-sans selection:bg-[#7A8D69] selection:text-white">
+      <div className="min-h-screen bg-[#FDFBF7] flex flex-col font-sans selection:bg-[#ADC762] selection:text-white">
         <LandingNavbar />
         
         <main className="flex-1">

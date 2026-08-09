@@ -44,7 +44,7 @@ export default function ComunidadSidebar({
                     <select 
                         value={filter}
                         onChange={(e) => onSetFilter(e.target.value)}
-                        className="w-full h-10 pl-4 pr-10 bg-[#FDFBF7] border border-slate-300 rounded-full text-xs font-bold text-[#2E3330] focus:outline-none focus:border-[#7A8D69] transition-all appearance-none cursor-pointer lowercase artisan-pill"
+                        className="w-full h-10 pl-4 pr-10 bg-[#FDFBF7] border border-slate-300 rounded-full text-xs font-bold text-[#2E3330] focus:outline-none focus:border-[#ADC762] transition-all appearance-none cursor-pointer lowercase artisan-pill"
                         style={{
                             backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%232E3330' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
                             backgroundSize: '1.25rem',
@@ -129,7 +129,7 @@ export default function ComunidadSidebar({
                                             <span className="font-bold text-slate-400 text-xs">{user.nombre?.[0]?.toLowerCase()}</span>
                                         )}
                                     </div>
-                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#7A8D69] border-2 border-white rounded-full"></span>
+                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#ADC762] border-2 border-white rounded-full"></span>
                                 </div>
 
                                 <div className="flex flex-col min-w-0">

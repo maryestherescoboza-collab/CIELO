@@ -126,7 +126,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                         </div>
                     </div>
                     <div className="h-10 px-5 rounded-full border border-[rgba(46,51,48,0.08)] bg-[#FDFBF7] flex items-center gap-2.5 shadow-sm shrink-0">
-                        <div className="h-2 w-2 rounded-full bg-[#7A8D69] animate-pulse" />
+                        <div className="h-2 w-2 rounded-full bg-[#ADC762] animate-pulse" />
                         <span className="text-[9px] font-bold uppercase tracking-widest text-[#5F665E]">
                             Sistema Activo · {new Date().toLocaleDateString('es-ES')}
                         </span>
@@ -139,7 +139,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                         <div className="bg-white border border-[rgba(46,51,48,0.08)] rounded-[20px] p-4 shadow-sm space-y-4.5">
                             <div>
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-[#2E3330] mb-3">1. Estudiantes Vinculados</h3>
-                                <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white border border-[#7A8D69]/35 focus-within:border-[#7A8D69] transition-all artisan-pill">
+                                <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white border border-[#ADC762]/35 focus-within:border-[#ADC762] transition-all artisan-pill">
                                     <Search size={14} className="text-[#7D847A]" />
                                     <input
                                         type="text"
@@ -157,8 +157,8 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                                 onClick={() => toggleEstudiante(e.id)}
                                                 className={`w-full text-left p-3 hover:bg-[#FAF6F0] rounded-xl flex items-center justify-between group transition-all ${estIds.includes(e.id) ? 'bg-[#FAF6F0]' : ''}`}
                                             >
-                                                <span className="text-xs font-bold text-[#2E3330] group-hover:text-[#7A8D69]">{e.nombre} {e.apellido}</span>
-                                                {estIds.includes(e.id) && <span className="text-[9px] font-black text-[#7A8D69] uppercase tracking-widest">Seleccionado</span>}
+                                                <span className="text-xs font-bold text-[#2E3330] group-hover:text-[#ADC762]">{e.nombre} {e.apellido}</span>
+                                                {estIds.includes(e.id) && <span className="text-[9px] font-black text-[#ADC762] uppercase tracking-widest">Seleccionado</span>}
                                             </button>
                                         ))}
                                     </div>
@@ -189,7 +189,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                             <button
                                                 key={cat.key}
                                                 onClick={() => setCategoria(cat.key)}
-                                                className={`px-3 py-1 rounded-full border flex items-center gap-1.5 transition-all w-fit artisan-pill ${isSel ? 'bg-[#BFC9A6] border-[#7A8D69] text-[#2E3330] shadow-sm' : 'bg-white border-[#7A8D69]/35 text-[#5F665E] hover:bg-[#F9F8F6] hover:border-[#7A8D69]'}`}
+                                                className={`px-3 py-1 rounded-full border flex items-center gap-1.5 transition-all w-fit artisan-pill ${isSel ? 'bg-[#BFC9A6] border-[#ADC762] text-[#2E3330] shadow-sm' : 'bg-white border-[#ADC762]/35 text-[#5F665E] hover:bg-[#F9F8F6] hover:border-[#ADC762]'}`}
                                             >
                                                 <Icon size={13} className={isSel ? 'text-[#2E3330]' : cat.iconColor} />
                                                 <span className="text-[9px] font-bold uppercase tracking-wider leading-tight">{cat.label}</span>
@@ -221,7 +221,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                     <textarea
                                         rows={3}
                                         placeholder="Describe de forma objetiva lo sucedido..."
-                                        className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#7A8D69]/35 bg-white text-[#2E3330] placeholder:text-[#7D847A] text-xs font-medium outline-none focus:border-[#7A8D69] transition-all resize-none"
+                                        className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#ADC762]/35 bg-white text-[#2E3330] placeholder:text-[#7D847A] text-xs font-medium outline-none focus:border-[#ADC762] transition-all resize-none"
                                         value={descripcion}
                                         onChange={(e) => setDescripcion(e.target.value)}
                                     />
@@ -231,7 +231,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                     <textarea
                                         rows={2}
                                         placeholder="Medidas adoptadas o compromisos del estudiante..."
-                                        className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#7A8D69]/35 bg-white text-[#2E3330] placeholder:text-[#7D847A] text-xs font-medium outline-none focus:border-[#7A8D69] transition-all resize-none"
+                                        className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#ADC762]/35 bg-white text-[#2E3330] placeholder:text-[#7D847A] text-xs font-medium outline-none focus:border-[#ADC762] transition-all resize-none"
                                         value={acuerdos}
                                         onChange={(e) => setAcuerdos(e.target.value)}
                                     />
@@ -249,8 +249,8 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                                 onClick={() => toggleAccion(accion)}
                                                 className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border artisan-pill ${
                                                     active
-                                                        ? 'bg-[#BFC9A6] border-[#7A8D69] text-[#2E3330]'
-                                                        : 'bg-white border-[#7A8D69]/35 text-[#5F665E] hover:bg-[#F9F8F6] hover:border-[#7A8D69]'
+                                                        ? 'bg-[#BFC9A6] border-[#ADC762] text-[#2E3330]'
+                                                        : 'bg-white border-[#ADC762]/35 text-[#5F665E] hover:bg-[#F9F8F6] hover:border-[#ADC762]'
                                                 }`}
                                             >
                                                 {accion}
@@ -261,13 +261,13 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                 <button
                                     onClick={handleSubmit}
                                     disabled={!estIds.length || !descripcion.trim()}
-                                    className="w-full rounded-full bg-[#7A8D69] text-white text-xs font-black uppercase tracking-widest hover:bg-[#6C7E5C] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center"
+                                    className="w-full rounded-full bg-[#ADC762] text-white text-xs font-black uppercase tracking-widest hover:bg-[#6C7E5C] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center"
                                     style={{ height: '32px' }}
                                 >
                                     Guardar en Bitácora
                                 </button>
                                 {saved && (
-                                    <div className="flex items-center justify-center gap-2 text-[#7A8D69] text-[10px] font-black uppercase tracking-wider mt-2.5 animate-in fade-in">
+                                    <div className="flex items-center justify-center gap-2 text-[#ADC762] text-[10px] font-black uppercase tracking-wider mt-2.5 animate-in fade-in">
                                         <CheckCircle size={14} /> Registro Guardado Correctamente
                                     </div>
                                 )}
@@ -281,7 +281,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                     <h2 className="text-base font-black text-[#2E3330]">Bitácora de Acontecimientos</h2>
                                     <p className="text-[9px] text-[#5F665E] font-bold uppercase tracking-wider mt-0.5">Historial del Año Escolar en Curso</p>
                                 </div>
-                                <div className="w-full sm:w-64 bg-white border border-[#7A8D69]/35 focus-within:border-[#7A8D69] rounded-full px-3.5 flex items-center gap-2 transition-all artisan-pill" style={{ height: '32px' }}>
+                                <div className="w-full sm:w-64 bg-white border border-[#ADC762]/35 focus-within:border-[#ADC762] rounded-full px-3.5 flex items-center gap-2 transition-all artisan-pill" style={{ height: '32px' }}>
                                     <Search size={14} className="text-[#7D847A]" />
                                     <input
                                         type="text"

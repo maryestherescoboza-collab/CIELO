@@ -63,7 +63,7 @@ export default function Cursos({
                 diasSemana: form.diasSemana,
                 isTutorOficial: form.isTutorOficial,
                 periodo: 'P1',
-                color: '#7A8D69',
+                color: '#ADC762',
                 configuracionEvaluacion: {}
             });
             if (result) {
@@ -115,7 +115,7 @@ export default function Cursos({
                     </div>
                      <button
                         id="btn-nuevo-curso"
-                        className="px-6 rounded-full bg-[#7A8D69] text-white text-xs font-black uppercase tracking-[0.08em] shadow-sm hover:bg-[#6C7E5C] hover:-translate-y-0.5 transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#7A8D69]/50 flex items-center justify-center gap-2.5 shrink-0"
+                        className="px-6 rounded-full bg-[#ADC762] text-white text-xs font-black uppercase tracking-[0.08em] shadow-sm hover:bg-[#6C7E5C] hover:-translate-y-0.5 transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 flex items-center justify-center gap-2.5 shrink-0"
                         style={{ height: '36px' }}
                         onClick={() => setShowModal(true)}
                     >
