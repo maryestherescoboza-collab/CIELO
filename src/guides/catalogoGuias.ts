@@ -99,28 +99,33 @@ export const CATALOGO_GUIAS: Guide[] = [
     titulo: 'Cómo evaluar con rúbrica',
     steps: [
       {
+        selector: '#nav-rubrica',
+        texto: 'Haz clic en «Rúbrica».',
+        evento: 'click'
+      },
+      {
         selector: '[data-guide="selector-curso"]',
-        texto: 'Selecciona el curso que deseas evaluar.',
+        texto: 'Haz clic en el curso que deseas evaluar.',
         evento: 'change'
       },
       {
         selector: '[data-guide="selector-actividad"]',
-        texto: 'Selecciona la actividad que deseas evaluar.',
+        texto: 'Haz clic en la actividad que deseas evaluar.',
         evento: 'change'
       },
       {
         selector: '[data-guide="selector-plantilla"]',
-        texto: 'Selecciona la plantilla de rúbrica que utilizarás.',
+        texto: 'Haz clic en la plantilla que deseas utilizar.',
         evento: 'change'
       },
       {
         selector: '[data-guide="celda-rubrica"]',
-        texto: 'Selecciona una celda de la rúbrica para establecer el nivel de desempeño.',
+        texto: 'Selecciona una celda de la rúbrica.',
         evento: 'click'
       },
       {
         selector: '[data-guide="seleccionar-estudiantes"]',
-        texto: 'Selecciona uno o varios estudiantes que serán evaluados.',
+        texto: 'Selecciona uno o más estudiantes.',
         evento: 'click'
       },
       {
@@ -135,18 +140,23 @@ export const CATALOGO_GUIAS: Guide[] = [
     titulo: 'Cómo evaluar con cotejo',
     steps: [
       {
+        selector: '#nav-cotejo',
+        texto: 'Haz clic en «Cotejo».',
+        evento: 'click'
+      },
+      {
         selector: '[data-guide="selector-curso"]',
-        texto: 'Selecciona el curso que deseas evaluar.',
+        texto: 'Haz clic en el curso que deseas evaluar.',
         evento: 'change'
       },
       {
         selector: '[data-guide="selector-actividad"]',
-        texto: 'Selecciona la actividad que deseas evaluar.',
+        texto: 'Haz clic en la actividad que deseas evaluar.',
         evento: 'change'
       },
       {
         selector: '[data-guide="selector-plantilla"]',
-        texto: 'Selecciona la plantilla de cotejo que utilizarás.',
+        texto: 'Haz clic en la plantilla que deseas utilizar.',
         evento: 'change'
       },
       {
@@ -156,7 +166,7 @@ export const CATALOGO_GUIAS: Guide[] = [
       },
       {
         selector: '[data-guide="seleccionar-estudiantes"]',
-        texto: 'Selecciona uno o varios estudiantes que serán evaluados.',
+        texto: 'Selecciona uno o más estudiantes.',
         evento: 'click'
       },
       {
