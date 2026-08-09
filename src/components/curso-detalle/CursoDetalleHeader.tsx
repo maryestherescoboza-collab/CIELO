@@ -136,7 +136,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 border-r border-[rgba(46,51,48,0.08)] pr-4 mr-2">
-                        <button onClick={onAddActividad} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] hover:bg-[#F8F3ED] hover:text-[#2E3330] transition-all">
+                        <button data-guide="btn-agregar-actividad" onClick={onAddActividad} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] hover:bg-[#F8F3ED] hover:text-[#2E3330] transition-all">
                             + AGREGAR ACTIVIDAD
                         </button>
                         <button
@@ -178,6 +178,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             return (
                                 <button
                                     key={val}
+                                    data-guide="puntuacion"
                                     onClick={() => setActivePaintColor(val)}
                                     className={`w-9 h-9 rounded-full transition-all flex items-center justify-center font-bold text-xs ${isActive ? 'scale-105 shadow-sm ring-2 ring-white/50' : 'hover:scale-105'} ${colorClasses}`}
                                 >

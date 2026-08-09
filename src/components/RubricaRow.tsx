@@ -173,6 +173,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                 return (
                     <td
                         key={field.key}
+                        data-guide="celda-rubrica"
                         className={`w-[17.5%] p-2 align-middle text-center transition-all border-r border-slate-100 last:border-r-0 ${readOnly ? 'cursor-default' : 'cursor-pointer'} relative group-cell 
                             ${isSelected ? 'after:absolute after:inset-0 after:border-2 after:border-[#1E293B]' : ''}
                             ${isActive ? 'ring-2 ring-inset ring-turf-green-base shadow-inner z-10' : ''}`}

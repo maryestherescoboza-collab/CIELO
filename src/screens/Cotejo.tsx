@@ -393,6 +393,7 @@ export default function Cotejo({
                                         <div>
                                             <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
                                             <select
+                                                data-guide="selector-curso"
                                                 className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedCursoId}
                                                 onChange={e => { setSelectedCursoId(Number(e.target.value)); setSelectedActId(null); setSelectedEstId(null); }}
@@ -403,6 +404,7 @@ export default function Cotejo({
                                         <div>
                                             <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
                                             <select
+                                                data-guide="selector-actividad"
                                                 className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedAct?.id ?? ''}
                                                 onChange={e => setSelectedActId(Number(e.target.value) || null)}
@@ -424,6 +426,7 @@ export default function Cotejo({
                                             <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-[#7A8D69] focus-within:ring-2 focus-within:ring-[#7A8D69]/20 transition-all shadow-sm artisan-pill artisan-btn-white">
                                                 <BookMarked size={14} className="text-[#2E3330]" />
                                                 <select
+                                                    data-guide="selector-plantilla"
                                                     className="flex-1 bg-transparent text-xs font-bold outline-none text-[#2E3330] cursor-pointer"
                                                     value={selectedPlantillaId ?? ''}
                                                     onChange={e => {
@@ -583,6 +586,7 @@ export default function Cotejo({
                                 )}
 
                                 <button
+                                    id="btn-evaluar-alumnos"
                                     onClick={Object.keys(multiEvaluations).length > 0 ? handleFinalizeGroupEvaluation : handleSave}
                                     disabled={(!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving}
                                     className={`flex h-12 min-w-14 items-center justify-center gap-2.5 rounded-[16px] px-5 text-[12px] font-black text-white shadow-xl transition-all ${((!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving)
@@ -624,6 +628,7 @@ export default function Cotejo({
                                             return (
                                                 <button
                                                     key={est.id}
+                                                    data-guide="seleccionar-estudiantes"
                                                     onClick={() => handleAvatarClick(est.id)}
                                                     className="flex min-w-12 flex-col items-center gap-1.5 outline-none group relative"
                                                 >
@@ -769,6 +774,7 @@ export default function Cotejo({
                                             return (
                                                 <td
                                                     key={n.val}
+                                                    data-guide="celda-cotejo"
                                                     className={`px-2 py-1 align-middle text-center border-r border-slate-100 last:border-r-0 ${readOnly ? 'cursor-default' : 'cursor-pointer'} transition-colors relative
                                                         ${isSelected ? 'after:absolute after:inset-0 after:border-2 after:border-[#1E293B]' : readOnly ? '' : 'hover:bg-slate-50'}
                                                         ${isActive ? 'ring-2 ring-inset ring-turf-green-base shadow-inner' : ''}`}

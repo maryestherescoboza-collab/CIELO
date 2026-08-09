@@ -96,7 +96,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                 return (
                                     <div key={col.id} className="sticky left-0 z-50 bg-[#F8F3ED] px-8 py-8 text-left border-r border-[rgba(46,51,48,0.08)] flex items-center justify-between box-border" style={style}>
                                         <span className="text-sm font-black uppercase tracking-[0.2em] italic text-[#2E3330]">Estudiantes</span>
-                                        <button onClick={onAddEstudiante} className="w-8 h-8 flex items-center justify-center hover:bg-[#FDFBF7] rounded-full transition-all text-[#5F665E] hover:text-[#2E3330] border border-transparent hover:border-[rgba(46,51,48,0.08)]"><Plus size={18} /></button>
+                                        <button data-guide="btn-agregar-estudiante" onClick={onAddEstudiante} className="w-8 h-8 flex items-center justify-center hover:bg-[#FDFBF7] rounded-full transition-all text-[#5F665E] hover:text-[#2E3330] border border-transparent hover:border-[rgba(46,51,48,0.08)]"><Plus size={18} /></button>
                                     </div>
                                 );
                             }
@@ -108,6 +108,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                             <div className="flex items-center gap-2 w-full justify-center px-1">
                                                 <button onClick={() => onDeleteActividad(act.id)} title="Desactivar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-[#EB8847] rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><EyeOff size={12} /></button>
                                                 <input 
+                                                    data-guide="celda-actividad"
                                                     defaultValue={act.nombre.replace(/^Actividad\s+/i, 'ACTIV. ')}
                                                     onFocus={(e) => { e.target.value = act.nombre; }}
                                                     onBlur={(e) => {
@@ -135,6 +136,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                     return (
                                                         <button 
                                                             key={bc}
+                                                            data-guide="bloque-competencia"
                                                             onClick={() => onToggleBc(act.id, bc)}
                                                             className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${isSel ? BC_COLOR_THEMES[bc].active : 'text-[#5F665E]/40 hover:text-[#5F665E]'}`}
                                                         >
@@ -203,6 +205,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                         <span className="text-[10px] font-black text-[#5F665E]/40 w-4 shrink-0">{est.numeroLista || eIdx + 1}</span>
                                                         <div className="flex flex-col overflow-hidden w-full">
                                                             <input 
+                                                                data-guide="celda-estudiante"
                                                                 defaultValue={est.displayName}
                                                                 onBlur={(e) => {
                                                                     const val = e.target.value.trim();

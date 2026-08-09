@@ -37,6 +37,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                 return (
                     <button 
                         key={item.label} 
+                        id={item.screen === 'cursos' ? 'nav-cursos' : undefined}
                         onClick={() => onNavigate(item.screen)} 
                         className={`flex flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 ${btnBg} hover:bg-slate-100 text-[#2E3330]`}
                         style={{ minWidth: '72px', height: '40px' }}

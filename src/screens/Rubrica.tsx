@@ -538,6 +538,7 @@ export default function Rubrica({
                                         <div>
                                             <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
                                             <select
+                                                data-guide="selector-curso"
                                                 className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedCursoId}
                                                 onChange={(event) => {
@@ -556,6 +557,7 @@ export default function Rubrica({
                                         <div>
                                             <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
                                             <select
+                                                data-guide="selector-actividad"
                                                 className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#7A8D69] focus-visible:ring-2 focus-visible:ring-[#7A8D69]/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedAct?.id ?? ''}
                                                 onChange={(event) => setSelectedActId(Number(event.target.value) || null)}
@@ -581,6 +583,7 @@ export default function Rubrica({
                                             <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-[#7A8D69] focus-within:ring-2 focus-within:ring-[#7A8D69]/20 transition-all shadow-sm artisan-pill artisan-btn-white">
                                                 <BookMarked size={14} className="text-[#2E3330]" />
                                                 <select
+                                                    data-guide="selector-plantilla"
                                                     className="flex-1 bg-transparent text-xs font-bold outline-none text-[#2E3330] cursor-pointer"
                                                     disabled={!hasTemplates}
                                                     value={selectedPlantillaId ?? ''}
@@ -698,6 +701,7 @@ export default function Rubrica({
                                 )}
 
                                 <button
+                                    id="btn-evaluar-alumnos"
                                     disabled={(!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving}
                                     onClick={Object.keys(multiEvaluations).length > 0 ? handleFinalizeGroupEvaluation : handleSave}
                                     className={`flex h-10 min-w-58 items-center justify-center gap-2.5 rounded-full px-5 text-xs font-black text-white shadow-sm transition-all artisan-pill ${((!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving)
@@ -741,6 +745,7 @@ export default function Rubrica({
                                             return (
                                                 <button
                                                     key={estudiante.id}
+                                                    data-guide="seleccionar-estudiantes"
                                                     onClick={() => handleAvatarClick(estudiante.id)}
                                                     className="flex min-w-12 flex-col items-center gap-1.5 outline-none group relative"
                                                 >

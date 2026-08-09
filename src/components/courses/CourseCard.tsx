@@ -202,6 +202,7 @@ export function CourseCard({
                 </button>
 
                 <button
+                    data-guide="btn-abrir-registro-academico"
                     className="w-full flex items-center justify-between px-6 py-4.5 bg-[#FDFBF7] text-[10px] font-bold text-[#2E3330] uppercase tracking-[0.15em] transition-all duration-200 hover:bg-[#EAE4DA] outline-none focus-visible:bg-[#EAE4DA]"
                     onClick={() => onSelect(curso.id, `/curso-detalle/${curso.id}`)}>
                     <span className="flex items-center gap-2">

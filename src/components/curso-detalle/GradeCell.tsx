@@ -34,6 +34,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
 }) => {
     return (
         <div
+            data-guide="celda-evaluacion"
             className={`p-0 border-r border-[rgba(46,51,48,0.08)] relative transition-all group ${isDragging ? 'cursor-none' : 'cursor-pointer'} ${isFocused ? 'ring-2 ring-[#7A8D69] ring-inset z-10' : ''} shrink-0`}
             style={style}
             onMouseEnter={() => {
