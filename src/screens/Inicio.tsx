@@ -23,6 +23,7 @@ interface Props {
 
 export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstituto, currentCourseRole }: Props) {
     const state = useAppStore(s => s.state);
+    const session = useAppStore(s => s.session);
     const [selectedCourseId, setSelectedCourseId] = useState<number | 'all'>('all');
     const [showModal, setShowModal] = useState(false);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -55,7 +56,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
         avgGeneral,
         enRiesgo,
         getUpcomingEvents
-    } = useDashboardData(state, selectedCourseId);
+    } = useDashboardData(state, selectedCourseId, session?.user?.id);
 
     const proximosEventosMerged = getUpcomingEvents(selectedDate);
 
@@ -71,15 +72,15 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-8">
                     <div>
                         <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2 font-notion-title">
-                            Saludos, <span className="text-[#ADC762]">{docenteNombre.split(' ')[0]}</span>
+                            Saludos, <span className="text-primary">{docenteNombre.split(' ')[0]}</span>
                         </h1>
                         <div className="flex items-center gap-4">
                             <div className={`flex items-center gap-2 bg-[#EAE4DA]/60 px-3 py-1.5 rounded-full border border-slate-200 transition-all ${currentCourseRole?.rol !== 'co-docente' ? 'group cursor-pointer hover:border-slate-350' : 'cursor-default'}`}>
-                                <TC_Archive size={12} className="text-[#ADC762] transition-colors" />
+                                <TC_Archive size={12} className="text-primary transition-colors" />
                                 {isEditingInstituto && currentCourseRole?.rol !== 'co-docente' ? (
                                     <input
                                         autoFocus
-                                        className="bg-transparent border-none outline-none focus-visible:ring-2 focus-visible:ring-turf-green-base/50 rounded-md text-slate-700 font-bold text-xs w-40 focus:ring-0 uppercase tracking-widest px-1 -ml-1"
+                                        className="bg-transparent border-none outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-md text-slate-700 font-bold text-xs w-40 focus:ring-0 uppercase tracking-widest px-1 -ml-1"
                                         value={institutoTemp}
                                         onChange={e => setInstitutoTemp(e.target.value)}
                                         onBlur={() => { setIsEditingInstituto(false); onUpdateInstituto(institutoTemp); }}
@@ -91,20 +92,20 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                                             setInstitutoTemp(state.instituto || 'Instituto Central'); 
                                             setIsEditingInstituto(true); 
                                         }
-                                    }} className={`text-[11px] font-black text-slate-600 uppercase tracking-widest transition-colors ${currentCourseRole?.rol !== 'co-docente' ? 'hover:text-slate-800' : ''}`}>
+                                    }} className={`text-xs font-black text-slate-600 uppercase tracking-widest transition-colors ${currentCourseRole?.rol !== 'co-docente' ? 'hover:text-slate-800' : ''}`}>
                                         {state.instituto || 'Instituto Central'}
                                     </span>
                                 )}
                             </div>
                             <div className="h-1.5 w-1.5 rounded-full bg-slate-400"></div>
-                            <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Portafolio del Docente</span>
+                            <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Portafolio del Docente</span>
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row items-center gap-4">
                         <div className="relative group" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsSelectOpen(!isSelectOpen)}
-                                className="flex items-center justify-between min-w-60 px-5 rounded-full border border-slate-200 text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm outline-none focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 cursor-pointer artisan-pill artisan-btn-neutral"
+                                className="flex items-center justify-between min-w-60 px-5 rounded-full border border-slate-200 text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 cursor-pointer artisan-pill artisan-btn-neutral"
                             >
                                 <span className="truncate pr-4">
                                     {selectedCourseId === 'all' ? 'Global (Todos)' : (() => {
@@ -112,14 +113,14 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                                         return c ? `${c.grado} ${c.seccion} - ${c.nombre}` : 'Global (Todos)';
                                     })()}
                                 </span>
-                                <TC_Flux size={12} className={`text-[#2E3330]/60 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-[#ADC762]' : 'rotate-90 group-hover:text-[#ADC762]'}`} />
+                                <TC_Flux size={12} className={`text-[#2E3330]/60 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-primary' : 'rotate-90 group-hover:text-primary'}`} />
                             </button>
                             {isSelectOpen && (
                                 <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-white border border-slate-200 rounded-[16px] shadow-md z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top">
                                     <div className="max-h-75 overflow-y-auto py-2 scrollbar-hide">
                                         <button
                                             onClick={() => { setSelectedCourseId('all'); setIsSelectOpen(false); }}
-                                            className={`w-full text-left px-6 py-3.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedCourseId === 'all' ? 'bg-[#BFC9A6] text-[#2E3330]' : 'text-[#2E3330]/70 hover:bg-[#EAE4DA]'}`}
+                                            className={`w-full text-left px-6 py-3.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedCourseId === 'all' ? 'bg-primary text-[#2E3330]' : 'text-[#2E3330]/70 hover:bg-[#EAE4DA]'}`}
                                         >
                                             Global (Todos)
                                         </button>
@@ -127,7 +128,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                                             <button
                                                 key={c.id}
                                                 onClick={() => { setSelectedCourseId(c.id); setIsSelectOpen(false); }}
-                                                className={`w-full text-left px-6 py-3.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedCourseId === c.id ? 'bg-[#BFC9A6] text-[#2E3330]' : 'text-[#2E3330]/70 hover:bg-[#EAE4DA]'}`}
+                                                className={`w-full text-left px-6 py-3.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedCourseId === c.id ? 'bg-primary text-[#2E3330]' : 'text-[#2E3330]/70 hover:bg-[#EAE4DA]'}`}
                                             >
                                                 {c.grado} {c.seccion} - {c.nombre}
                                             </button>
@@ -138,7 +139,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                         </div>
 
                         <button
-                            className="px-5 rounded-full bg-[#BFC9A6] text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 focus-visible:ring-offset-2 group flex items-center gap-2 artisan-pill"
+                            className="px-5 rounded-full bg-primary text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 group flex items-center gap-2 artisan-pill"
                             onClick={() => setShowModal(true)}
                         >
                             <TC_Genesis size={16} className="group-hover:rotate-180 transition-transform duration-700" />
@@ -185,13 +186,13 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-[12px] font-black text-[#0F172A] uppercase tracking-[0.25em]">Calendario Escolar</h3>
-                        <div className="w-2 h-2 rounded-full bg-turf-green-base animate-pulse shadow-lg shadow-turf-green-base/50"></div>
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-lg shadow-primary/50"></div>
                     </div>
                     {isLoading ? (
                         <div className="h-70 w-full rounded-[10px] bg-slate-200/40 animate-pulse border border-slate-200" />
                     ) : (
                         <div className="bg-white border border-slate-200 rounded-[10px] p-6 shadow-sm relative overflow-hidden group">
-                            <CalendarWidget eventos={state.eventos} actividades={state.actividades} onSelectDate={setSelectedDate} />
+                            <CalendarWidget eventos={state.eventos} actividades={state.actividades} tareas={state.tareas} onSelectDate={setSelectedDate} />
                         </div>
                     )}
                 </div>
@@ -206,7 +207,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
             {saved && (
                 <div className="fixed bottom-24 right-6 bg-slate-900 text-white px-6 py-4 rounded-[24px] shadow-2xl flex items-center gap-4 z-60 animate-in slide-in-from-right-8 duration-500 border border-white/10">
                     <TC_Echo size={20} className="text-emerald-400" />
-                    <span className="text-[11px] font-black uppercase tracking-widest">Actividad Vinculada</span>
+                    <span className="text-xs font-black uppercase tracking-widest">Actividad Vinculada</span>
                 </div>
             )}
 

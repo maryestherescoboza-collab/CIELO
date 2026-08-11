@@ -20,11 +20,11 @@ const PostCard = ({
 }: PostCardProps) => {
     const isAuthor = post.userId && currentUserId && post.userId === currentUserId;
     return (
-    <div className={`bg-white rounded-xl p-5 flex flex-col border border-[#2E3330]/20 shadow-sm hover:shadow-md hover:border-[#ADC762] hover:-translate-y-0.5 transition-all duration-200 relative group min-h-56 ${post.isOptimistic ? 'opacity-75 grayscale-[0.3]' : ''}`}>
+    <div className={`bg-white rounded-xl p-5 flex flex-col border border-[#2E3330]/20 shadow-sm hover:shadow-md hover:border-primary hover:-translate-y-0.5 transition-all duration-200 relative group min-h-56 ${post.isOptimistic ? 'opacity-75 grayscale-[0.3]' : ''}`}>
         {post.isOptimistic && (
             <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 bg-[#ADC762] rounded-full animate-pulse"></div>
-                <span className="text-[10px] font-black text-[#ADC762] uppercase tracking-widest">Enviando...</span>
+                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
+                <span className="text-xs font-black text-primary uppercase tracking-widest">Enviando...</span>
             </div>
         )}
         
@@ -32,7 +32,7 @@ const PostCard = ({
             <div className="flex items-center gap-2.5">
                 <div 
                     onClick={(e) => onViewProfile(e, post.userId)}
-                    className="w-9 h-9 rounded-lg overflow-hidden border border-[#2E3330]/15 bg-[#FAF6F0] flex items-center justify-center cursor-pointer hover:border-[#ADC762] transition-all"
+                    className="w-9 h-9 rounded-lg overflow-hidden border border-[#2E3330]/15 bg-[#FAF6F0] flex items-center justify-center cursor-pointer hover:border-primary transition-all"
                 >
                     {post.avatarUrl ? (
                         <img alt={post.autor} className="w-full h-full object-cover" src={post.avatarUrl} />
@@ -41,15 +41,15 @@ const PostCard = ({
                     )}
                 </div>
                 <div className="flex flex-col cursor-pointer group/name" onClick={(e) => onViewProfile(e, post.userId)}>
-                    <span className="text-sm font-bold text-[#2E3330] leading-none mb-1 group-hover/name:text-[#ADC762] transition-colors">{post.autor}</span>
+                    <span className="text-sm font-bold text-[#2E3330] leading-none mb-1 group-hover/name:text-primary transition-colors">{post.autor}</span>
                     <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] text-[#5F665E] font-black uppercase tracking-widest">{post.tiempo || 'Ahora'}</span>
-                        <span className="text-[9px] text-red-600 font-black uppercase tracking-widest whitespace-nowrap">&middot; {getRemainingDays(post.expiresAt)}d</span>
+                        <span className="text-xs text-[#5F665E] font-black uppercase tracking-widest">{post.tiempo || 'Ahora'}</span>
+                        <span className="text-xs text-red-600 font-black uppercase tracking-widest whitespace-nowrap">&middot; {getRemainingDays(post.expiresAt)}d</span>
                     </div>
                 </div>
             </div>
             <div className="flex flex-wrap gap-1 justify-end shrink-0 max-w-[40%]">
-                <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest whitespace-nowrap border ${getTagStyles(post.tipo)}`}>
+                <span className={`px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-widest whitespace-nowrap border ${getTagStyles(post.tipo)}`}>
                     {getTipoLabel(post.tipo)}
                 </span>
             </div>
@@ -77,15 +77,15 @@ const PostCard = ({
             <div className="flex items-center gap-1.5">
                 <button
                     onClick={() => onPreview(post)}
-                    className="h-8 px-3 rounded-lg bg-[#ADC762] border border-[#6C7E5C] flex items-center gap-1.5 text-white hover:bg-[#6C7E5C] transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]"
+                    className="h-8 px-3 rounded-lg bg-primary border border-[#6C7E5C] flex items-center gap-1.5 text-white hover:bg-[#6C7E5C] transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     title="Ver detalle"
                 >
                     <Eye size={13} />
-                    <span className="text-[9px] font-black uppercase tracking-wider hidden sm:block">Ver</span>
+                    <span className="text-xs font-black uppercase tracking-wider hidden sm:block">Ver</span>
                 </button>
                 <button
                     onClick={() => onImport?.(post)}
-                    className="h-8 w-8 rounded-lg bg-[#EAE4DA]/40 border border-[#2E3330]/20 flex items-center justify-center text-[#2E3330] hover:bg-[#BFC9A6] hover:border-[#9AA77F] hover:text-[#2E3330] transition-all shadow-sm outline-none"
+                    className="h-8 w-8 rounded-lg bg-[#EAE4DA]/40 border border-[#2E3330]/20 flex items-center justify-center text-[#2E3330] hover:bg-primary hover:border-[#9AA77F] hover:text-[#2E3330] transition-all shadow-sm outline-none"
                     title="Añadir"
                 >
                     <Plus size={14} />

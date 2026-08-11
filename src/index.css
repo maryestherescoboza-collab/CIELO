@@ -5,15 +5,32 @@
   --background: #FDFBF7;
   --surface: #F8F3ED;
   --sidebar: #DDD5C8;
+  /* New CIELO Official Palette */
+  --color-1: #5F9563;
+  --color-2: #79C599;
+  --color-3: #D68253;
+  --color-4: #C63D3D;
+  --color-5: #E8C166;
+  --neutral-warm: #DDD5C8;
 
-  --olive-branch: #BFC9A6;
-  --herb-garden: #ADC762;
-  --french-blue: #6D8FB9;
-  --clementine: #EB8847;
-  --calendula: #F5BC5D;
-  --sicilian-sky: #B8CADC;
-  --terra-cotta: #B87449;
-  --linen: #EAE4DA;
+  --primary: var(--color-2);
+  --primary-hover: #63b387;
+  --success: var(--color-1);
+  --warning-soft: rgba(232, 193, 102, 0.15);
+  --warning: var(--color-5);
+  --attention: var(--color-3);
+  --danger: var(--color-4);
+  --risk: var(--color-5);
+
+  /* Legacy variable mappings to prevent breakage */
+  --olive-branch: var(--primary);
+  --herb-garden: var(--primary);
+  --french-blue: var(--primary);
+  --clementine: var(--attention);
+  --calendula: var(--warning);
+  --sicilian-sky: var(--primary);
+  --terra-cotta: var(--danger);
+  --linen: var(--background);
 
   --text-primary: #2E3330;
   --text-secondary: #5F665E;
@@ -34,38 +51,55 @@
   --color-slate-900: #8695A7;
   --color-slate-950: #073843;
 
-   /* Tropical Sunset Palette */
-  --color-primary-base: #7C9672; 
+   /* CIELO Semantic Palette */
+  --color-color-1: #5F9563;
+  --color-color-2: #79C599;
+  --color-color-3: #D68253;
+  --color-color-4: #C63D3D;
+  --color-color-5: #E8C166;
+  --color-neutral-warm: #DDD5C8;
+
+  --color-primary: var(--color-color-2);
+  --color-primary-soft: rgba(121, 197, 153, 0.15);
+  --color-success: var(--color-color-1);
+  --color-warning-soft: rgba(232, 193, 102, 0.15);
+  --color-warning: var(--color-color-5);
+  --color-attention: var(--color-color-3);
+  --color-danger: var(--color-color-4);
+  --color-risk: var(--color-color-5);
+
+  /* Legacy mappings */
+  --color-primary-base: var(--color-primary); 
   --color-primary-dark: #3F3C36;
-  --color-primary-light: #D8B55A;
+  --color-primary-light: var(--color-warning-soft);
 
   --color-secondary-base: #3F3C36;
   --color-secondary-dark: #073843;
-  --color-secondary-light: #D8B55A;
+  --color-secondary-light: var(--color-warning-soft);
 
-  --color-base-creme: #FEF0E7; 
+  --color-base-creme: #FDFBF7; 
   --color-dark-notion: #3F3C36;
 
-  /* Premium Brand Palette mapped to Tropical Sunset */
-  --color-red-ochre-base: #7C9672;
+  /* Premium Brand Palette mapped to CIELO palette */
+  --color-red-ochre-base: var(--color-primary);
   --color-red-ochre-lightest: #FAF6ED;
   --color-jet-black-base: #3F3C36;
   --color-jet-black-lightest: #F3F3F2;
-  --color-turf-green-base: #7C9672;
+  --color-turf-green-base: var(--color-primary);
   --color-turf-green-lightest: #F2F5F1;
-  --color-golden-orange-base: #D8B55A;
+  --color-golden-orange-base: var(--color-warning);
   --color-golden-orange-lightest: #FAF6ED;
 
-  --color-accent-amber: #D8B55A;
-  --color-accent-rose: #CB4834;
-  --color-accent-indigo: #6E8CA0;
-  --color-accent-sky: #7C9672;
+  --color-accent-amber: var(--color-warning);
+  --color-accent-rose: var(--color-danger);
+  --color-accent-indigo: var(--color-primary);
+  --color-accent-sky: var(--color-primary);
 
   /* Official secondary palette for CIELO */
-  --color-cielo-blue: #6F94AF;
-  --color-cielo-olive: #7C9672;
-  --color-cielo-gold: #D8B55A;
-  --color-cielo-terracotta: #CB4834;
+  --color-cielo-blue: var(--color-primary);
+  --color-cielo-olive: var(--color-primary);
+  --color-cielo-gold: var(--color-warning);
+  --color-cielo-terracotta: var(--color-danger);
 
 
   --animate-float: uiFloat 4s ease-in-out infinite;
@@ -128,7 +162,7 @@
     --bg-main: #FDF3EC; /* Conserved background */
     --paper: #FFFFFF;
     --paper-soft: #FAF4E8;
-    --paper-deep: #F2D6A2;
+    --paper-deep: var(--warning);
     --surface: #FFFFFF;
     --ink: #8695A7;
     --ink-soft: #6E8CA0;
@@ -137,12 +171,12 @@
     --text-secondary: #6E8CA0;
     --text-placeholder: #6E8CA0;
     --border-soft: var(--border-unificado);
-    --primary: #86A792;
-    --primary-hover: #8695A7;
+    --primary: #2BBAA5;
+    --primary-hover: #229A88; /* Darker turquesa */
 
-    --accent-green: #86A792;
-    --accent-orange: #E88C6B;
-    --accent-yellow: #F2D6A2;
+    --accent-green: #2BBAA5;
+    --accent-orange: #F96635;
+    --accent-yellow: #F9A822;
 
     --shadow-sm: 0px 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-md: 0px 4px 12px rgba(0, 0, 0, 0.05);
@@ -161,16 +195,16 @@
     --notion-text-secondary: rgba(134, 149, 167, 0.6);
     --notion-text-tertiary: rgba(134, 149, 167, 0.4);
 
-    --tag-emerald-bg: #EFF5F1;
-    --tag-emerald-text: #86A792;
-    --tag-indigo-bg: #EFF2F5;
-    --tag-indigo-text: #8695A7;
-    --tag-amber-bg: #FDF4E7;
-    --tag-amber-text: #A3792E;
-    --tag-rose-bg: #FDF3F0;
-    --tag-rose-text: #E88C6B;
-    --tag-sky-bg: #E9EFF2;
-    --tag-sky-text: #6E8CA0;
+    --tag-emerald-bg: #EAF8F6;
+    --tag-emerald-text: var(--primary);
+    --tag-indigo-bg: #F0FBF4;
+    --tag-indigo-text: var(--success);
+    --tag-amber-bg: #FFF6E6;
+    --tag-amber-text: var(--warning);
+    --tag-rose-bg: #FDEBEB;
+    --tag-rose-text: var(--danger);
+    --tag-sky-bg: #EAF8F6;
+    --tag-sky-text: var(--primary);
   }
 
   /* Support for Dark Mode and dark cards */
@@ -320,7 +354,7 @@
   }
 
   .btn-primary {
-    color: #ffffff;
+    color: #000000;
     background: var(--primary);
     border: 1px solid var(--primary);
   }
@@ -345,28 +379,28 @@
   }
 
   .btn-orange {
-    background: var(--accent-yellow);
+    background: var(--warning);
     color: #ffffff;
-    border: 1px solid var(--accent-yellow);
+    border: 1px solid var(--warning);
   }
 
   .btn-orange:hover {
-    background: #D97706;
-    border-color: #B45309;
+    background: color-mix(in srgb, var(--warning) 85%, black);
+    border-color: color-mix(in srgb, var(--warning) 85%, black);
     box-shadow: var(--shadow-md);
   }
 
   .btn-danger,
   .btn-destructive {
-    background: #E11D48;
+    background: var(--danger);
     color: #ffffff;
-    border: 1px solid #E11D48;
+    border: 1px solid var(--danger);
   }
 
   .btn-danger:hover,
   .btn-destructive:hover {
-    background: #BE123C;
-    border-color: #BE123C;
+    background: color-mix(in srgb, var(--danger) 85%, black);
+    border-color: color-mix(in srgb, var(--danger) 85%, black);
     box-shadow: var(--shadow-md);
   }
 
@@ -449,7 +483,7 @@
   .teacher-input:focus,
   .teacher-select:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(44, 173, 111, 0.08);
+    box-shadow: 0 0 0 4px rgba(95, 170, 128, 0.15);
   }
 
   .teacher-textarea {
@@ -465,7 +499,7 @@
 
   .search-container:focus-within {
     border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(44, 173, 111, 0.08);
+    box-shadow: 0 0 0 4px rgba(95, 170, 128, 0.15);
   }
 
   /* Navigation Items */
@@ -594,7 +628,7 @@
 }
 
 .icon-amber {
-  color: #F59E0B;
+  color: var(--warning);
 }
 
 .icon-indigo {
@@ -719,7 +753,7 @@ input[type="range"]:active::-webkit-slider-thumb {
 }
 
 input[type="range"]:focus::-webkit-slider-thumb {
-  box-shadow: 0 0 0 4px rgba(44, 173, 111, 0.15);
+  box-shadow: 0 0 0 4px rgba(95, 170, 128, 0.15);
 }
 
 /* Subtler Scrollbars Global */
@@ -814,7 +848,7 @@ input[type="range"]:focus::-webkit-slider-thumb {
 
 /* Panel Lateral Blanco para Cotejo y Rúbricas */
 .sidebar-artisan-white {
-  background-color: #FDFBF7 !important;
+  background-color: var(--neutral-warm) !important;
   border-color: rgba(46, 51, 48, 0.08) !important;
   color: #2E3330 !important;
 }
@@ -856,13 +890,13 @@ input[type="range"]:focus::-webkit-slider-thumb {
 }
 
 .artisan-btn-active {
-  background-color: #BFC9A6 !important;
+  background-color: var(--primary) !important;
   color: #2E3330 !important;
   border: 1px solid rgba(46, 51, 48, 0.08) !important;
 }
 
 .artisan-btn-highlight {
-  background-color: #F5BC5D !important;
+  background-color: var(--warning) !important;
   color: #2E3330 !important;
   border: 1px solid rgba(46, 51, 48, 0.08) !important;
 }
@@ -874,4 +908,30 @@ input[type="range"]:focus::-webkit-slider-thumb {
 /* Permitir click-through en el overlay de driver.js para interactuar libremente con los estudiantes y el boton evaluar */
 .driver-overlay, .driver-active-overlay {
   pointer-events: none !important;
+}
+
+/* Regla Obligatoria: Texto negro sobre fondo #79C599 (bg-primary / var(--primary)) */
+.bg-primary,
+[class*="bg-primary"],
+[class*="bg-[var(--primary)]"],
+.bg-primary-hover,
+[class*="bg-primary-hover"] {
+  color: #000000 !important;
+}
+
+.bg-primary.text-white,
+.bg-primary .text-white,
+[class*="bg-primary"].text-white,
+[class*="bg-primary"] .text-white,
+[class*="bg-[var(--primary)]"].text-white,
+[class*="bg-[var(--primary)]"] .text-white,
+.bg-primary-hover.text-white,
+.bg-primary-hover .text-white {
+  color: #000000 !important;
+}
+
+.bg-primary svg,
+[class*="bg-primary"] svg,
+.bg-primary-hover svg {
+  stroke: #000000 !important;
 }

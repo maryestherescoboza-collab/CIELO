@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import type { AppState } from '../types';
 import { computeStudentGrades } from '../utils/boletines';
+import { CieloPill } from '../components/ui/CieloPill';
 
 // Import bulletin templates
 import Boletin1ero from '../templates/boletines/Boletin1ero';
@@ -96,7 +97,7 @@ export default function PrintBoletines({ state, docenteNombre }: PrintBoletinesP
                   font-weight: bold;
                 }
                 .print-floating-bar button {
-                  background: #ADC762;
+                  background: var(--primary);
                   border: none;
                   color: white;
                   padding: 6px 14px;
@@ -116,7 +117,7 @@ export default function PrintBoletines({ state, docenteNombre }: PrintBoletinesP
             {/* FLOATING ACTION BAR FOR PREVIEW/MANUAL TRIGGER */}
             <div className="print-floating-bar no-print">
                 <span>Preparado para imprimir ({estudiantes.length} boletines)</span>
-                <button onClick={() => window.print()}>Imprimir ahora</button>
+                <CieloPill as="button" onClick={() => window.print()} variant="primary" className="h-8">Imprimir ahora</CieloPill>
             </div>
 
             <TemplateComponent 

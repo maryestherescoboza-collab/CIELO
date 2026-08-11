@@ -121,27 +121,27 @@ export interface EventoCalendario {
     tipo: 'evaluacion' | 'reunion' | 'actividad' | 'otro';
 }
 
-export interface TareaAsignacion {
-    id: number;
-    tareaId: number;
-    userId: string;
-    estado: 'pendiente' | 'completada';
-    fechaCompletado?: string;
-    activo?: boolean;
+export interface TareaDocente {
+    id: string;
+    tareaId: string;
+    docenteId: string;
+    estado: 'pendiente' | 'en_progreso' | 'completada' | 'vencida';
+    fechaEntrega?: string;
+    observaciones?: string;
+    archivosEntrega?: string;
     createdAt?: string;
 }
 
-export interface Tarea {
-    id: number;
+export interface TareaInstitucional {
+    id: string;
     centroId: string;
     titulo: string;
     descripcion: string;
+    prioridad: string;
     fechaLimite: string;
-    estado: 'pendiente' | 'completada' | 'cancelada';
-    userId?: string;
-    asignaciones?: TareaAsignacion[];
+    createdBy?: string;
+    asignaciones?: TareaDocente[];
     createdAt?: string;
-    updatedAt?: string;
 }
 
 export interface ResourceData {
@@ -252,7 +252,7 @@ export interface Notification {
     leida: boolean;
     tipo?: string;
     postId?: number;
-    tareaId?: number;
+    tareaId?: string;
     grado?: string;
     seccion?: string;
     estado?: 'pendiente' | 'resuelto';
@@ -395,7 +395,7 @@ export interface AppState {
     grupos: Grupo[];
     registrosAnecdoticos: RegistroAnecdotico[];
     registroImagenes: RegistroImagen[];
-    tareas: Tarea[];
+    tareas: TareaInstitucional[];
     
     suscripcionActual?: Suscripcion;
     centroRolActual?: CentroRol;

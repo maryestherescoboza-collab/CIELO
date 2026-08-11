@@ -5,24 +5,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        "seashell": "#FEF0E7",
-        "red-ochre": "#86A792",
-        "jet-black": "#123C47",
-        "turf-green": "#86A792",
-        "golden-orange": "#F2D6A2",
-        "primary": "#86A792",
-        "background": "#FEF0E7",
+        "color-1": "#5F9563",
+        "color-2": "#79C599",
+        "color-3": "#D68253",
+        "color-4": "#C63D3D",
+        "color-5": "#E8C166",
+        "neutral-warm": "#DDD5C8",
+        "primary": "#79C599",
+        "primary-soft": "#79C59926", // 15% opacity
+        "success": "#5F9563",
+        "warning-soft": "#E8C16626", // 15% opacity
+        "warning": "#E8C166",
+        "attention": "#D68253",
+        "danger": "#C63D3D",
+        "risk": "#E8C166",
+        
+        // Manteniendo los neutrales sin modificar mucho la estética original,
+        // pero eliminando las referencias a la paleta antigua (cielo-high, turf-green, etc).
+        "background": "#FDFBF7",
         "on-background": "#8695A7",
         "surface": "#FFFFFF",
         "outline": "#6E8CA0",
-        // CIELO official palette
-        "cielo-high": "#BFC9A6",
-        "cielo-medium": "#ADC762",
-        "cielo-low": "#EB8847",
-        "cielo-accent1": "#6D8FB9",
-        "cielo-accent2": "#F5BC5D",
-        "cielo-accent3": "#B87449",
-        // Additional UI colors
         "cielo-bg-main": "#FDFBF7",
         "cielo-sidebar": "#EAE4DA"
       },

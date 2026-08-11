@@ -148,7 +148,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                     <div className="relative">
                         {parseFloat(promedioPeriodo) < 70 && (
                             <div className="absolute -top-6 -right-20">
-                                <div className="border-[3px] border-double border-[#B87449] px-2 py-1 rounded text-[#B87449] font-black text-[10px] uppercase rotate-[-10deg] opacity-60">Riesgo Académico</div>
+                                <div className="border-[3px] border-double border-danger px-2 py-1 rounded text-danger font-black text-xs uppercase rotate-[-10deg] opacity-60">Riesgo Académico</div>
                             </div>
                         )}
                         <h1 className="text-[26px] font-black text-[#2E3330] tracking-tight">{est.nombre} {est.apellido}</h1>
@@ -163,7 +163,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 </div>
                 <div className="text-right no-print">
                     <p className="text-[13px] font-black text-[#5F665E]/40 uppercase tracking-[0.2em]">Expediente Digital</p>
-                    <button onClick={() => window.print()} className="text-[14px] font-bold text-[#ADC762] hover:underline mt-1 uppercase">Imprimir Registro</button>
+                    <button onClick={() => window.print()} className="text-[14px] font-bold text-primary hover:underline mt-1 uppercase">Imprimir Registro</button>
                 </div>
             </div>
 
@@ -171,7 +171,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 <div className="col-span-3 border-r border-[rgba(46,51,48,0.08)] pr-4 flex items-center gap-6">
                     <div>
                         <p className="text-[12px] font-black text-[#5F665E] uppercase mb-1">Promedio</p>
-                        <p className="text-2xl font-black text-[#ADC762]">{promedioPeriodo}%</p>
+                        <p className="text-2xl font-black text-primary">{promedioPeriodo}%</p>
                     </div>
                     <div>
                         <p className="text-[12px] font-black text-[#5F665E] uppercase mb-1">Ranking</p>
@@ -192,7 +192,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 <h3 className="text-[13px] font-black uppercase tracking-[0.3em] text-[#5F665E] text-center">Itinerario Académico</h3>
                 <div className="overflow-x-auto rounded-[16px] border border-[rgba(46,51,48,0.08)] bg-white shadow-sm">
                     <table className="w-full border-collapse text-left text-sm text-[#2E3330]">
-                        <thead className="bg-[#F8F3ED] text-[11px] font-black uppercase tracking-wider text-[#2E3330] border-b border-[rgba(46,51,48,0.08)]">
+                        <thead className="bg-[#F8F3ED] text-xs font-black uppercase tracking-wider text-[#2E3330] border-b border-[rgba(46,51,48,0.08)]">
                             <tr>
                                 <th scope="col" className="px-6 py-4">Actividad</th>
                                 <th scope="col" className="px-6 py-4">Competencia Evaluada</th>
@@ -214,14 +214,14 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                         <tr key={act.id} className="hover:bg-[#F8F3ED] transition-colors duration-150 border-b border-[rgba(46,51,48,0.04)]">
                                             <td className="px-6 py-4">
                                                 <div className="font-bold text-[#2E3330] text-[14px]">{act.nombre}</div>
-                                                <div className="text-[11px] font-black text-[#5F665E] uppercase mt-0.5">{act.fecha}</div>
+                                                <div className="text-xs font-black text-[#5F665E] uppercase mt-0.5">{act.fecha}</div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {(act.bcAsignados || ['BC1']).map((bc: string) => (
                                                         <span 
                                                             key={bc} 
-                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider bg-[#FDFBF7] text-[#ADC762] border border-[rgba(46,51,48,0.08)]"
+                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black tracking-wider bg-[#FDFBF7] text-primary border border-[rgba(46,51,48,0.08)]"
                                                             title={bc}
                                                         >
                                                             {getCompetenciaDisplay(bc)}
@@ -233,10 +233,10 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                                 {isEvaluated ? (
                                                     <span className={`inline-flex items-center justify-center font-black text-[14px] px-2.5 py-1 rounded-lg ${
                                                         score! >= 90 
-                                                            ? 'bg-[#FDFBF7] text-[#ADC762] border border-[#ADC762]/20' 
+                                                            ? 'bg-[#FDFBF7] text-primary border border-primary/20' 
                                                             : score! >= 70 
-                                                            ? 'bg-[#FDFBF7] text-[#EB8847] border border-[#EB8847]/20' 
-                                                            : 'bg-[#FDFBF7] text-[#B87449] border border-[#B87449]/20'
+                                                            ? 'bg-[#FDFBF7] text-attention border border-attention/20' 
+                                                            : 'bg-[#FDFBF7] text-danger border border-danger/20'
                                                     }`}>
                                                         {score}%
                                                     </span>
@@ -259,7 +259,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                                 ) : isEvaluated ? (
                                                     <span className="text-[#5F665E]/60 italic">Sin descriptores registrados</span>
                                                 ) : (
-                                                    <span className="text-[#EB8847] font-semibold italic bg-[#FDFBF7] px-2 py-0.5 rounded border border-[#EB8847]/20 text-[12px]">
+                                                    <span className="text-attention font-semibold italic bg-[#FDFBF7] px-2 py-0.5 rounded border border-attention/20 text-[12px]">
                                                         Pendiente de evaluación
                                                     </span>
                                                 )}
@@ -286,8 +286,8 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                         {incidenciasEstudiante.length > 0 ? incidenciasEstudiante.map((inc, i) => (
                             <div key={i} className="bg-[#F8F3ED] p-3.5 rounded-[12px] border border-[rgba(46,51,48,0.04)] flex gap-4 items-start">
                                 <div className="text-center min-w-15">
-                                    <p className="text-[9px] font-black text-[#5F665E] uppercase">{inc.fecha}</p>
-                                    <span className="text-[12px] font-black text-[#EB8847] uppercase">{inc.categoria}</span>
+                                    <p className="text-xs font-black text-[#5F665E] uppercase">{inc.fecha}</p>
+                                    <span className="text-[12px] font-black text-attention uppercase">{inc.categoria}</span>
                                 </div>
                                 <div className="flex-1 border-l border-[rgba(46,51,48,0.08)] pl-4">
                                     <p className="text-[13px] text-[#2E3330] leading-tight font-medium italic">"{inc.descripcion}"</p>

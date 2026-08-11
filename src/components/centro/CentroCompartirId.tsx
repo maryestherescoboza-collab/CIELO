@@ -62,7 +62,7 @@ export default function CentroCompartirId({ centroId }: Props) {
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <h3 className="text-[13px] font-semibold text-[#3F3C36]">ID del centro</h3>
-                    <p className="mt-0.5 text-[11px] text-[#6B7280]">
+                    <p className="mt-0.5 text-xs text-[#6B7280]">
                         Comparte este ID con los docentes que quieras vincular a este centro.
                     </p>
                 </div>
@@ -70,7 +70,7 @@ export default function CentroCompartirId({ centroId }: Props) {
                     <button
                         type="button"
                         onClick={() => setMostrando(v => !v)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6E1D8] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#6F94AF] hover:border-[#6F94AF] transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6E1D8] bg-white px-2.5 py-1.5 text-xs font-semibold text-primary hover:border-primary transition-colors"
                         title={mostrando ? 'Ocultar ID' : 'Mostrar ID'}
                     >
                         {mostrando ? <EyeOff size={12} /> : <Eye size={12} />}
@@ -80,10 +80,10 @@ export default function CentroCompartirId({ centroId }: Props) {
                         type="button"
                         onClick={copiarId}
                         disabled={!idCentro}
-                        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                             copiado
                                 ? 'bg-[#188038]/10 border-[#188038]/30 text-[#188038]'
-                                : 'bg-white border-[#E6E1D8] text-[#6F94AF] hover:border-[#6F94AF]'
+                                : 'bg-white border-[#E6E1D8] text-primary hover:border-primary'
                         }`}
                         title="Copiar ID del centro"
                     >
@@ -94,7 +94,7 @@ export default function CentroCompartirId({ centroId }: Props) {
                         type="button"
                         onClick={compartirId}
                         disabled={!idCentro}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6E1D8] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#6F94AF] hover:border-[#6F94AF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6E1D8] bg-white px-2.5 py-1.5 text-xs font-semibold text-primary hover:border-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Compartir ID del centro"
                     >
                         <Share2 size={12} />

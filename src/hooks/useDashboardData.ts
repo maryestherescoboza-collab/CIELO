@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { AppState, BCKey } from '../types';
 
-export function useDashboardData(state: AppState, selectedCourseId: number | 'all') {
+export function useDashboardData(state: AppState, selectedCourseId: number | 'all', userId?: string) {
     const today = new Date().toISOString().split('T')[0];
 
     const sharedCourseIds = useMemo(() => 
@@ -79,6 +79,15 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
                 tipo: 'actividad' as const, 
                 isActivity: true, 
                 cursoId: a.cursoId 
+            })),
+            ...state.tareas.filter(t => !userId || t.asignaciones?.some(asig => asig.docenteId === userId && asig.estado !== 'completada')).map(t => ({
+                id: `tar-${t.id}`,
+                originalId: t.id,
+                titulo: t.titulo,
+                fecha: t.fechaLimite || today,
+                tipo: 'tarea' as const,
+                isActivity: false,
+                cursoId: undefined
             }))
         ]
         .filter(e => {

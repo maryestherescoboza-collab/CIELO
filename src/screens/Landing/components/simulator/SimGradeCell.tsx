@@ -34,7 +34,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
 }) => {
     return (
         <div
-            className={`p-0 border-r border-[rgba(46,51,48,0.08)] relative transition-all group ${isDragging ? 'cursor-none' : 'cursor-pointer'} ${isFocused ? 'ring-2 ring-[#ADC762] ring-inset z-10' : ''} shrink-0`}
+            className={`p-0 border-r border-[rgba(46,51,48,0.08)] relative transition-all group ${isDragging ? 'cursor-none' : 'cursor-pointer'} ${isFocused ? 'ring-2 ring-primary ring-inset z-10' : ''} shrink-0`}
             style={style}
             onMouseEnter={() => {
                 onInteraction('hover');
@@ -91,14 +91,14 @@ const GradeCell: React.FC<GradeCellProps> = ({
 
                 {isRecoveryAct ? (
                     hasLowBc ? (
-                        <FlameIcon size={10} className="text-[#EB8847]" />
+                        <FlameIcon size={10} className="text-attention" />
                     ) : (
                         <div className="flex flex-col items-center gap-1 opacity-40">
                             <div className="w-3 h-3 rounded-full border-2 bg-[rgba(46,51,48,0.08)] border-transparent" />
                         </div>
                     )
                 ) : isPointMode ? (
-                    <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === 100 ? 'w-4 h-4 bg-[#ADC762]' : score === 85 ? 'w-4 h-4 bg-[#EB8847]' : score === 70 ? 'w-4 h-4 bg-[#B87449]' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : 'w-2 h-2 bg-[rgba(46,51,48,0.08)]'}`} />
+                    <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === 100 ? 'w-4 h-4 bg-primary' : score === 85 ? 'w-4 h-4 bg-attention' : score === 70 ? 'w-4 h-4 bg-danger' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : 'w-2 h-2 bg-[rgba(46,51,48,0.08)]'}`} />
                 ) : (
                     <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)}`}>
                         {score ?? '-'}

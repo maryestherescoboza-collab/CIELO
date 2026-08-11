@@ -1,6 +1,8 @@
 import React from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { AlertCircle, FileText } from 'lucide-react';
 import type { BCKey } from '../../types';
+import { CieloPill } from '../ui/CieloPill';
+import { CieloModal } from '../ui/CieloModal';
 
 interface RubricModalProps {
     targetEst: any;
@@ -23,23 +25,37 @@ const RubricModal: React.FC<RubricModalProps> = ({
 }) => {
     if (!rubricTarget || !targetEst) return null;
 
-    return (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-            <div className="w-full max-w-7xl bg-white border border-slate-200 flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
-                <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                    <div>
-                        <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter italic leading-none">Acta de Recuperación de Competencias</h2>
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-2">Estudiante: {targetEst.displayName} — {selectedPeriodo}</p>
-                    </div>
-                    <button onClick={onClose} className="p-3 hover:bg-slate-50 transition-colors rounded-full text-slate-400">
-                        <X size={24} />
-                    </button>
-                </div>
+    const modalFooter = (
+        <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest">
+                <AlertCircle size={14} />
+                Solo competencias {'<'} 70
+            </div>
+            <CieloPill
+                as="button"
+                variant="primary"
+                onClick={onClose}
+                className="px-8 shadow-xl bg-slate-800 hover:bg-black uppercase tracking-widest text-xs"
+            >
+                Registrar y Guardar
+            </CieloPill>
+        </div>
+    );
 
-                <div className="p-8 bg-white overflow-hidden">
+    return (
+        <CieloModal
+            isOpen={true}
+            onClose={onClose}
+            title="Acta de Recuperación de Competencias"
+            subtitle={`Estudiante: ${targetEst.displayName} — ${selectedPeriodo}`}
+            icon={<FileText size={20} />}
+            maxWidth="7xl"
+            footer={modalFooter}
+        >
+            <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-slate-200">
                         <thead>
-                            <tr className="bg-slate-50 text-[11px] font-black uppercase text-slate-500 tracking-wider">
+                            <tr className="bg-slate-50 text-xs font-black uppercase text-slate-500 tracking-wider">
                                 <th className="border border-slate-200 p-4 text-left w-1/3">Competencia Deficiente</th>
                                 <th className="border border-slate-200 p-4 text-center">Estratégico: Muestra dominio de la competencia (100)</th>
                                 <th className="border border-slate-200 p-4 text-center">Autónomo: Aplica la competencia con independencia (85)</th>
@@ -63,7 +79,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                                                     <span className="block text-xs font-black text-slate-800 uppercase leading-none">{v.bc}</span>
                                                 </div>
                                                 <div className="ml-auto">
-                                                    <span className={`text-[11px] font-black px-2 py-0.5 rounded border ${v.avg !== null && v.avg < 70 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                                                    <span className={`text-xs font-black px-2 py-0.5 rounded border ${v.avg !== null && v.avg < 70 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
                                                         BC: {v.avg ?? '--'}
                                                     </span>
                                                 </div>
@@ -73,10 +89,10 @@ const RubricModal: React.FC<RubricModalProps> = ({
                                             const isSelected = v.rec === score;
                                             const isReceptivo = sIdx === 3;
                                             const bgColors = [
-                                                'bg-[#7C9672]', // 100 -> Estratégico
-                                                'bg-[#D8B55A]', // 85 -> Autónomo
-                                                'bg-[#CB4834]', // 70 -> Resolutivo
-                                                'bg-[#3F3C36]'  // Receptivo
+                                                'bg-success', // 100 -> Estratégico
+                                                'bg-primary', // 85 -> Autónomo
+                                                'bg-attention', // 70 -> Resolutivo
+                                                'bg-danger'  // Receptivo
                                             ];
                                             const selectedBg = bgColors[sIdx];
 
@@ -89,7 +105,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                                                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-white bg-white shadow-lg' : 'border-slate-300'}`}>
                                                             {isSelected && <div className={`w-2 h-2 rounded-full ${sIdx === 1 ? 'bg-[#8C6D1F]' : selectedBg}`} />}
                                                         </div>
-                                                        {isReceptivo && isSelected && <span className="absolute mt-10 text-[9px] font-black text-white/50">{score} pts</span>}
+                                                        {isReceptivo && isSelected && <span className="absolute mt-10 text-xs font-black text-white/50">{score} pts</span>}
                                                     </button>
                                                 </td>
                                             );
@@ -99,22 +115,8 @@ const RubricModal: React.FC<RubricModalProps> = ({
                             })}
                         </tbody>
                     </table>
-                </div>
-
-                <div className="p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        <AlertCircle size={14} />
-                        Solo las competencias con BC inferior a 70 son habilitadas para acta de recuperación.
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="px-12 py-4 bg-slate-800 text-white text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl"
-                    >
-                        Registrar y Guardar
-                    </button>
-                </div>
             </div>
-        </div>
+        </CieloModal>
     );
 };
 

@@ -121,6 +121,7 @@ interface AppRoutesProps {
   updateCriterios: any;
   savePlantilla: any;
   deletePlantilla: any;
+  onLogout: () => void;
 }
 
 const AppRoutes: React.FC<AppRoutesProps> = ({
@@ -139,7 +140,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   uploadAvatar, updateFullProfile, updateAvatarColor, updatePerfilProfesional,
   updateCentro, createCentro, cambiarCentro, updateInstitutoName, resetSchoolYear,
   saveRubrica, updateDescriptor, updateNivelesPuntaje,
-  saveCotejo, updateCriterios, savePlantilla, deletePlantilla
+  saveCotejo, updateCriterios, savePlantilla, deletePlantilla,
+  onLogout
 }) => {
   const navigate = useNavigate();
 
@@ -328,6 +330,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
               perfilAvatarColor={currentUserProfile?.avatarColor || '#2D3436'} 
               onResetSchoolYear={resetSchoolYear} 
               onClose={() => navigate(-1)} 
+              onLogout={onLogout}
               centro={currentUserProfile?.centro}
               centroId={currentUserProfile?.centro_id}
               centroNombre={currentUserProfile?.centro?.nombre}

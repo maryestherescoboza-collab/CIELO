@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, EvaluacionRubrica, EvaluacionCotejo, CriterioCotejo, DescriptorRubrica, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, Nivel, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, Tarea, TareaAsignacion, Centro } from '../types';
+import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, EvaluacionRubrica, EvaluacionCotejo, CriterioCotejo, DescriptorRubrica, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, Nivel, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, TareaInstitucional, TareaDocente, Centro } from '../types';
 import { useAppStore } from '../store/appStore';
 import { esRolAdministrador } from '../utils/autorizacion';
 
@@ -24,10 +24,10 @@ const parseObservaciones = (val: any): string[] => {
 
 const sanitizeNivelesPuntaje = (fetchedNiveles: any[] | null | undefined): NivelPuntaje[] => {
     const defaults: Record<number, { puntaje: number; nombre: string; color: string; description: string }> = {
-        4: { puntaje: 100, nombre: 'Estratégico', color: '#22c55e', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
-        3: { puntaje: 85, nombre: 'Autónomo', color: '#eab308', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
-        2: { puntaje: 70, nombre: 'Resolutivo', color: '#f97316', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
-        1: { puntaje: 55, nombre: 'Receptivo', color: '#94a3b8', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' }
+        4: { puntaje: 100, nombre: 'Estratégico', color: '#5F9563', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
+        3: { puntaje: 85, nombre: 'Autónomo', color: '#79C599', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
+        2: { puntaje: 70, nombre: 'Resolutivo', color: '#D68253', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
+        1: { puntaje: 55, nombre: 'Receptivo', color: '#C63D3D', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' }
     };
 
     const result: NivelPuntaje[] = [];
@@ -106,8 +106,8 @@ export function useSupabaseData() {
                 supabase.from('historial_colaboradores').select('*'),
                 supabase.from('suscripciones').select('*'),
                 supabase.from('centro_roles').select('*'),
-                supabase.from('tareas').select('*').eq('activo', true),
-                supabase.from('tarea_asignaciones').select('*').eq('activo', true),
+                supabase.from('tareas_institucionales').select('*').eq('activo', true), // o manejar activo si se añade, sino quitar eq
+                supabase.from('tarea_docente').select('*'),
             ]);
 
             // Nombres de tabla para logging de errores
@@ -118,7 +118,7 @@ export function useSupabaseData() {
                 'descriptores_rubrica', 'niveles_puntaje', 'plantillas', 'curso_detalle',
                 'notificaciones', 'curso_docentes', 'grupos',
                 'registros_anecdoticos', 'registro_imagenes', 'historial_colaboradores',
-                'suscripciones', 'centro_roles', 'tareas', 'tarea_asignaciones'
+                'suscripciones', 'centro_roles', 'tareas_institucionales', 'tarea_docente'
             ];
 
             // Detectar y reportar errores de consulta sin silenciarlos
@@ -484,7 +484,7 @@ export function useSupabaseData() {
                     leida: n.leida as boolean,
                     tipo: n.tipo as string,
                     postId: n.post_id as number,
-                    tareaId: n.tarea_id as number,
+                    tareaId: n.tarea_institucional_id as string,
                     grado: n.grado as string,
                     seccion: n.seccion as string,
                     estado: n.estado as 'pendiente' | 'resuelto',
@@ -526,25 +526,25 @@ export function useSupabaseData() {
                     createdAt: ri.created_at as string
                 })),
 
-                tareas: (tareas || []).map((t: Record<string, unknown>): Tarea => ({
-                    id: t.id as number,
+                tareas: (tareas || []).map((t: Record<string, unknown>): TareaInstitucional => ({
+                    id: t.id as string,
                     centroId: t.centro_id as string,
                     titulo: t.titulo as string,
                     descripcion: (t.descripcion as string) || '',
                     fechaLimite: (t.fecha_limite as string) || '',
-                    estado: t.estado as 'pendiente' | 'completada' | 'cancelada',
-                    userId: t.created_by as string,
+                    prioridad: (t.prioridad as string) || 'normal',
+                    createdBy: t.created_by as string,
                     createdAt: t.created_at as string,
-                    updatedAt: t.updated_at as string,
                     asignaciones: (tareaAsignaciones || [])
                         .filter((ta: Record<string, unknown>) => ta.tarea_id === t.id)
-                        .map((ta: Record<string, unknown>): TareaAsignacion => ({
-                            id: ta.id as number,
-                            tareaId: ta.tarea_id as number,
-                            userId: ta.user_id as string,
-                            estado: ta.estado as 'pendiente' | 'completada',
-                            fechaCompletado: ta.fecha_completado as string,
-                            activo: ta.activo as boolean,
+                        .map((ta: Record<string, unknown>): TareaDocente => ({
+                            id: ta.id as string,
+                            tareaId: ta.tarea_id as string,
+                            docenteId: ta.docente_id as string,
+                            estado: ta.estado as 'pendiente' | 'en_progreso' | 'completada' | 'vencida',
+                            fechaEntrega: ta.fecha_entrega as string,
+                            observaciones: ta.observaciones as string,
+                            archivosEntrega: ta.archivos_entrega as string,
                             createdAt: ta.created_at as string
                         }))
                 })),
@@ -581,8 +581,8 @@ export function useSupabaseData() {
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'grupos' }, () => fetchData(true))
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'registros_anecdoticos', filter: `profile_id=eq.${session.user.id}` }, () => fetchData(true))
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'registro_imagenes' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tareas' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tarea_asignaciones' }, () => fetchData(true))
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tareas_institucionales' }, () => fetchData(true))
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tarea_docente' }, () => fetchData(true))
                 .subscribe();
 
             return () => {

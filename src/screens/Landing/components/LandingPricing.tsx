@@ -78,7 +78,7 @@ export function LandingPricing() {
             >
               {/* Top part: Header & Price */}
               <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ADC762] mb-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
                   {planDocente.name}
                 </h3>
                 <p className="text-xs text-zinc-400 mb-4 leading-normal">
@@ -88,7 +88,7 @@ export function LandingPricing() {
                   <div className="text-4xl font-light text-zinc-900 tracking-tight">
                     {planDocente.price} <span className="text-lg font-normal text-zinc-400">USD</span>
                   </div>
-                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider mt-0.5">
+                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5">
                     por mes
                   </div>
                 </div>
@@ -98,7 +98,7 @@ export function LandingPricing() {
               <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
                 {planDocente.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-[8px] font-extrabold mt-0.5">
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
                       ✓
                     </span>
                     <span className="text-xs text-zinc-600 leading-tight">
@@ -110,7 +110,7 @@ export function LandingPricing() {
 
               {/* Bottom part: Secondary & Button */}
               <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-                <p className="text-[10px] text-zinc-400 italic leading-relaxed mb-4">
+                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
                   {planDocente.secondary}
                 </p>
                 <button onClick={() => handlePlanSelection('individual')} className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 text-xs font-medium tracking-widest uppercase hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] transition-all duration-200">
@@ -129,7 +129,7 @@ export function LandingPricing() {
             >
               {/* Top part: Header & Price */}
               <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ADC762] mb-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
                   {planInst.name}
                 </h3>
                 <p className="text-xs text-zinc-400 mb-4 leading-normal">
@@ -139,7 +139,7 @@ export function LandingPricing() {
                   <div className="text-4xl font-light text-zinc-900 tracking-tight">
                     {planInst.price} <span className="text-lg font-normal text-zinc-400">USD</span>
                   </div>
-                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider mt-0.5">
+                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5">
                     por docente al mes
                   </div>
                 </div>
@@ -149,7 +149,7 @@ export function LandingPricing() {
               <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
                 {planInst.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-[8px] font-extrabold mt-0.5">
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
                       ✓
                     </span>
                     <span className="text-xs text-zinc-600 leading-tight">
@@ -165,29 +165,29 @@ export function LandingPricing() {
                 {/* Calculadora Integrada */}
                 <div className="border border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/80 rounded p-3 mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-medium text-zinc-500">Número de docentes</span>
+                    <span className="text-xs font-medium text-zinc-500">Número de docentes</span>
                     <input
                       type="number"
                       min="1"
                       value={docentes || ''}
                       onChange={(e) => setDocentes(parseInt(e.target.value) || 0)}
-                      className="w-14 px-1.5 py-0.5 bg-white border border-dashed border-[rgba(120,135,110,0.3)] rounded text-right text-[11px] font-semibold text-zinc-800 focus:outline-none"
+                      className="w-14 px-1.5 py-0.5 bg-white border border-dashed border-[rgba(120,135,110,0.3)] rounded text-right text-xs font-semibold text-zinc-800 focus:outline-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-[rgba(120,135,110,0.2)]">
                     <div>
-                      <span className="text-[9px] text-zinc-400 uppercase tracking-wider block">Mensual</span>
-                      <span className="text-xs font-semibold text-zinc-700">${mensual} <span className="text-[9px] font-normal text-zinc-400">USD</span></span>
+                      <span className="text-xs text-zinc-400 uppercase tracking-wider block">Mensual</span>
+                      <span className="text-xs font-semibold text-zinc-700">${mensual} <span className="text-xs font-normal text-zinc-400">USD</span></span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[9px] text-zinc-400 uppercase tracking-wider block">Anual</span>
-                      <span className="text-xs font-semibold text-zinc-700">${anual} <span className="text-[9px] font-normal text-zinc-400">USD</span></span>
+                      <span className="text-xs text-zinc-400 uppercase tracking-wider block">Anual</span>
+                      <span className="text-xs font-semibold text-zinc-700">${anual} <span className="text-xs font-normal text-zinc-400">USD</span></span>
                     </div>
                   </div>
                 </div>
 
-                <p className="text-[10px] text-zinc-400 italic leading-relaxed mb-4">
+                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
                   {planInst.secondary}
                 </p>
 
@@ -201,16 +201,16 @@ export function LandingPricing() {
 
           {/* Footer Area inside the grid */}
           <div className="border-t border-dashed border-[rgba(120,135,110,0.25)] p-6 bg-[#FCFAF7]/40 text-center">
-            <span className="inline-block border border-dashed border-[rgba(120,135,110,0.35)] text-zinc-500 text-[9px] uppercase tracking-widest px-2.5 py-0.5 rounded-full mb-3">
+            <span className="inline-block border border-dashed border-[rgba(120,135,110,0.35)] text-zinc-500 text-xs uppercase tracking-widest px-2.5 py-0.5 rounded-full mb-3">
               Precio de Lanzamiento
             </span>
-            <p className="text-[10px] text-zinc-400 leading-relaxed mb-1.5 max-w-2xl mx-auto">
+            <p className="text-xs text-zinc-400 leading-relaxed mb-1.5 max-w-2xl mx-auto">
               Los precios actuales corresponden a la etapa inicial del proyecto. CIELO continuará evolucionando mediante actualizaciones constantes, nuevas funcionalidades y mejoras continuas.
             </p>
-            <p className="text-[10px] text-zinc-400 leading-relaxed mb-2.5 max-w-2xl mx-auto">
+            <p className="text-xs text-zinc-400 leading-relaxed mb-2.5 max-w-2xl mx-auto">
               Los usuarios que se registren durante esta etapa conservarán permanentemente el precio vigente al momento de su suscripción.
             </p>
-            <p className="text-[10px] font-medium text-zinc-600">
+            <p className="text-xs font-medium text-zinc-600">
               El valor del servicio podría aumentar un 75 % si decides comprar en el futuro.
             </p>
           </div>

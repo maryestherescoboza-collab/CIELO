@@ -28,7 +28,7 @@ const UP: Record<number, number> = { 0: 56, 1: 38, 2: 20, 3: 14, 4: 10, 5: 7 };
 const SIDES = [0, -1, 1, -2, 2, -3, 3, -4, 4, 5];
 
 const bandFor = (avg: number) =>
-  avg >= 85 ? '#ADC762' : avg >= 70 ? '#E9934A' : '#A9B4C6';
+  avg >= 85 ? 'var(--primary)' : avg >= 70 ? '#E9934A' : '#A9B4C6';
 
 // Anillo más vivo para los tres primeros lugares
 const ACCENT: Record<number, string> = { 1: '#E6B64A', 2: '#C7D2DE', 3: '#D89161' };
@@ -55,10 +55,10 @@ export default function PodiumTop10({ students }: Props) {
     <section className="mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
       {/* Cabecera */}
       <div className="mb-2">
-        <h3 className="text-[10px] font-black text-[#2E3330] uppercase tracking-[0.25em]">
+        <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-[0.25em]">
           Podium de excelencia
         </h3>
-        <p className="text-[9px] font-bold text-[#5F665E] uppercase tracking-widest mt-0.5">
+        <p className="text-xs font-bold text-[#5F665E] uppercase tracking-widest mt-0.5">
           Top 10 de estudiantes con mejor promedio general
         </p>
       </div>
@@ -81,8 +81,8 @@ export default function PodiumTop10({ students }: Props) {
         >
           <defs>
             <linearGradient id="podium-hill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ADC762" stopOpacity="0.16" />
-              <stop offset="100%" stopColor="#ADC762" stopOpacity="0.02" />
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.16" />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
             </linearGradient>
           </defs>
 
@@ -94,7 +94,7 @@ export default function PodiumTop10({ students }: Props) {
                 BASE_Y + 30 + i * 10
               }, ${W} ${BASE_Y + 8 + i * 4} L ${W} ${H + 20} L 0 ${H + 20} Z`}
               fill="url(#podium-hill)"
-              stroke={i === 0 ? '#BFC9A6' : 'none'}
+              stroke={i === 0 ? 'var(--primary)' : 'none'}
               strokeOpacity={i === 0 ? 0.5 : 0}
               strokeWidth={i === 0 ? 1.5 : 0}
               opacity={0.6 - i * 0.15}
@@ -111,7 +111,7 @@ export default function PodiumTop10({ students }: Props) {
               BASE_Y - UP[3] - 18
             }, ${CX + 5 * STEP_X} ${BASE_Y}`}
             fill="none"
-            stroke="#ADC762"
+            stroke="var(--primary)"
             strokeWidth={1.5}
             strokeOpacity={0.25}
             strokeLinecap="round"
@@ -181,8 +181,8 @@ export default function PodiumTop10({ students }: Props) {
                   </span>
                   {/* PDA posición */}
                   <span
-                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white"
-                    style={{ background: rank === 1 ? '#ADC762' : rank === 2 ? '#BFC9A6' : rank === 3 ? '#E9934B' : '#D9DFE4' }}
+                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white"
+                    style={{ background: rank === 1 ? 'var(--primary)' : rank === 2 ? 'var(--primary)' : rank === 3 ? '#E9934B' : '#D9DFE4' }}
                   >
                     {rank}
                   </span>
@@ -190,12 +190,12 @@ export default function PodiumTop10({ students }: Props) {
 
                 {/* Nombre + porcentaje */}
                 <span
-                  className="mt-1.5 text-[9px] font-bold text-[#2E3330] leading-tight truncate text-center max-w-14"
+                  className="mt-1.5 text-xs font-bold text-[#2E3330] leading-tight truncate text-center max-w-14"
                   style={{ fontSize: Math.max(8, size * 0.26) }}
                 >
                   {est.nombre}
                 </span>
-                <span className="text-[8.5px] font-black" style={{ color: fill }}>
+                <span className="text-xs font-black" style={{ color: fill }}>
                   {avg}%
                 </span>
               </button>
@@ -206,11 +206,11 @@ export default function PodiumTop10({ students }: Props) {
 
       {/* Leyenda de desempeño */}
       <div className="mt-2 flex items-center justify-end gap-3">
-        <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-[#5F665E] uppercase tracking-widest">
-          <span className="w-2 h-2 rounded-full bg-[#ADC762]"></span>
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5F665E] uppercase tracking-widest">
+          <span className="w-2 h-2 rounded-full bg-primary"></span>
           alto rendimiento
         </span>
-        <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-[#5F665E] uppercase tracking-widest">
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5F665E] uppercase tracking-widest">
           <span className="w-2 h-2 rounded-full bg-[#E9934B]"></span>
           rendimiento medio
         </span>

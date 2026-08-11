@@ -7,6 +7,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { SmoothLineChart, StudentPopulationChart, DonutChart } from './DashboardCharts';
 import PodiumExcelencia from '../components/dashboard/PodiumExcelencia';
 import { TC_Flux } from '../components/icons/TerraCognitaIcons';
+import { CieloPill } from '../components/ui/CieloPill';
+import { CieloPopover } from '../components/ui/CieloPopover';
 
 interface EnhancedStudent extends Estudiante {
   computedAvg: number | null;
@@ -36,6 +38,7 @@ export default function Dashboard({ docenteNombre }: Props) {
   const [optimizationProgress, setOptimizationProgress] = useState('');
   const [imageWarning, setImageWarning] = useState('');
   const [visibleCount, setVisibleCount] = useState(5);
+  const courseSelectRef = useRef<HTMLDivElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -288,24 +291,47 @@ export default function Dashboard({ docenteNombre }: Props) {
     });
   }, [filteredEstudiantes, filteredCalificaciones, state.cursos]);
 
-  // ── Smooth Line Data (Rendimiento Acumulado) ──
-  const smoothLineData = useMemo(() => {
+  // ── Smooth Line Data (Rendimiento Acumulado Multi-Serie por BC) ──
+  const multiLineData = useMemo(() => {
+    // REGLA CRÍTICA APLICADA: Se incluyen explícitamente todas las calificaciones cuyo valor sea un número, INCLUSO el 0.
+    // Solo se excluyen null y undefined (ausencia de registro).
+    const validGrades = filteredCalificaciones.filter(c => typeof c.puntaje === 'number');
+    const studentGrades: Record<number, Record<string, number[]>> = {};
+
+    validGrades.forEach(c => {
+      if (!studentGrades[c.estudianteId]) {
+        studentGrades[c.estudianteId] = { BC1: [], BC2: [], BC3: [], BC4: [] };
+      }
+      if (Array.isArray(c.competencias)) {
+        c.competencias.forEach(bc => {
+          if (bc === 'BC1' || bc === 'BC2' || bc === 'BC3' || bc === 'BC4') {
+            studentGrades[c.estudianteId][bc].push(c.puntaje as number);
+          }
+        });
+      }
+    });
+
     const sortedStudents = [...enhancedStudents].sort((a, b) => a.apellido.localeCompare(b.apellido));
-    const globalAvg = sortedStudents.length > 0 
-      ? Math.round(sortedStudents.reduce((acc, curr) => acc + (curr.computedAvg ?? 0), 0) / sortedStudents.length)
-      : 0;
 
     return sortedStudents.map(est => {
-      const score = est.computedAvg ?? 0;
+      const grades = studentGrades[est.id] || { BC1: [], BC2: [], BC3: [], BC4: [] };
+      
+      // La suma y la división tomarán en cuenta los 0 en arr.length y arr.reduce.
+      const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((acc, val) => acc + val, 0) / arr.length) : null;
+      
+      const shortName = est.nombre.split(' ')[0] + ' ' + (est.apellido.charAt(0) + '.');
+
       return {
         id: est.id,
-        label: est.displayName,
-        score,
-        diff: score - globalAvg,
-        status: score >= 70 ? 'Alto Rendimiento' : (score >= 60 ? 'Rendimiento Medio' : 'En Riesgo')
+        label: shortName,
+        fullName: est.displayName,
+        bc1: avg(grades.BC1),
+        bc2: avg(grades.BC2),
+        bc3: avg(grades.BC3),
+        bc4: avg(grades.BC4)
       };
     });
-  }, [enhancedStudents]);
+  }, [enhancedStudents, filteredCalificaciones]);
 
   // ── 4 Podiums by Period ──
   const podiumsByPeriod = useMemo(() => {
@@ -367,9 +393,9 @@ export default function Dashboard({ docenteNombre }: Props) {
     
     // Largest Remainder Method for exactly 100 percentages
     const raw = [
-      { id: 'high', label: 'Alto Rendimiento', color: '#ADC762', count: high, avg: high > 0 ? Math.round(highSum / high) : null, exact: (high / total) * 100 },
-      { id: 'medium', label: 'Rendimiento Medio', color: '#BFC9A6', count: medium, avg: medium > 0 ? Math.round(mediumSum / medium) : null, exact: (medium / total) * 100 },
-      { id: 'risk', label: 'En Riesgo', color: '#EB8847', count: risk, avg: risk > 0 ? Math.round(riskSum / risk) : null, exact: (risk / total) * 100 },
+      { id: 'high', label: 'Alto Rendimiento', color: 'var(--success)', count: high, avg: high > 0 ? Math.round(highSum / high) : null, exact: (high / total) * 100 },
+      { id: 'medium', label: 'Rendimiento Medio', color: 'var(--attention)', count: medium, avg: medium > 0 ? Math.round(mediumSum / medium) : null, exact: (medium / total) * 100 },
+      { id: 'risk', label: 'En Riesgo', color: 'var(--warning)', count: risk, avg: risk > 0 ? Math.round(riskSum / risk) : null, exact: (risk / total) * 100 },
       { id: 'nodata', label: 'Sin Datos', color: '#B8CADC', count: noData, avg: null, exact: (noData / total) * 100 },
     ];
 
@@ -424,46 +450,19 @@ export default function Dashboard({ docenteNombre }: Props) {
     });
 
     return [
-      { value: excelente, color: '#ADC762', label: 'Excelente', range: '>90' },
-      { value: bueno, color: '#BFC9A6', label: 'Bueno', range: '80-90' },
-      { value: enDesarrollo, color: '#F5BC5D', label: 'En desarrollo', range: '70-80' },
-      { value: requiereApoyo, color: '#EB8847', label: 'Requiere apoyo', range: '<70' }
+      { value: excelente, color: 'var(--success)', label: 'Excelente', range: '>90' },
+      { value: bueno, color: 'var(--primary)', label: 'Bueno', range: '80-90' },
+      { value: enDesarrollo, color: 'var(--attention)', label: 'En desarrollo', range: '70-80' },
+      { value: requiereApoyo, color: 'var(--danger)', label: 'Requiere apoyo', range: '<70' }
     ];
   }, [filteredCalificaciones]);
 
   const lineChartDescription = useMemo(() => {
-    const scores = smoothLineData.map(d => d.score);
-    const count = scores.length;
-    if (count === 0) {
-      return 'No hay datos de rendimiento registrados para generar el análisis interpretativo.';
+    if (multiLineData.length === 0) {
+      return 'No hay calificaciones registradas para calcular los promedios por competencia fundamental en este curso.';
     }
-    const promedio = Math.round(scores.reduce((a, b) => a + b, 0) / count);
-    const minimo = Math.min(...scores);
-    const maximo = Math.max(...scores);
-    const meta = 70;
-    const cumplimientoMeta = Math.round((scores.filter(s => s >= meta).length / count) * 100);
-
-    let stdDev = 0;
-    const mean = scores.reduce((a, b) => a + b, 0) / count;
-    const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / count;
-    stdDev = Math.sqrt(variance);
-    const variabilidad = stdDev < 8 ? 'baja' : (stdDev < 18 ? 'moderada' : 'alta');
-
-    let slope = 0;
-    if (count > 1) {
-      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-      for (let i = 0; i < count; i++) {
-        sumX += i;
-        sumY += scores[i];
-        sumXY += i * scores[i];
-        sumXX += i * i;
-      }
-      slope = (count * sumXY - sumX * sumY) / (count * sumXX - sumX * sumX);
-    }
-    const tendencia = slope > 0.3 ? 'creciente' : (slope < -0.3 ? 'decreciente' : 'estable');
-
-    return `El rendimiento acumulado registró un promedio de ${promedio}%, con valores comprendidos entre ${minimo}% y ${maximo}%. Durante el período analizado, el indicador permaneció por encima de la meta en ${cumplimientoMeta}% de los registros y presentó una variabilidad ${variabilidad}. La tendencia identificada fue ${tendencia}, describiendo el comportamiento del desempeño a lo largo del tiempo.`;
-  }, [smoothLineData]);
+    return `La gráfica representa el promedio histórico de cada estudiante en las cuatro Competencias Fundamentales evaluadas. Se han incluido todas las calificaciones disponibles del curso seleccionado, sin aplicar filtros por período, para observar el progreso acumulativo individual y compararlo de forma paralela.`;
+  }, [multiLineData]);
 
   const populationChartDescription = useMemo(() => {
     const total = enhancedStudents.length;
@@ -499,32 +498,43 @@ export default function Dashboard({ docenteNombre }: Props) {
             <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-1.5 font-notion-title">
                 Dashboard Analítico
             </h1>
-            <p className="text-[10px] font-bold text-[#5F665E] uppercase tracking-widest">
-                Bienvenido, <span className="text-[#ADC762]">{docenteNombre.split(' ')[0]}</span> · {state.instituto || 'Instituto Central'}
+            <p className="text-xs font-bold text-[#5F665E] uppercase tracking-widest">
+                Bienvenido, <span className="text-primary">{docenteNombre.split(' ')[0]}</span> · {state.instituto || 'Instituto Central'}
             </p>
           </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative group" ref={dropdownRef}>
-                <button
-                    onClick={() => setIsSelectOpen(!isSelectOpen)}
-                    className="flex items-center justify-between min-w-55 h-10 pl-5 pr-4 rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-[10px] font-black uppercase tracking-widest shadow-sm outline-none focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 cursor-pointer transition-all hover:bg-[#FAF6F0] artisan-pill"
-                >
-                    <span className="truncate pr-4">
-                        {selectedCursoId === 'all' ? 'Todos los Cursos' : (() => {
-                            const cid = Number(selectedCursoId);
-                            const c = state.cursos.find(c => c.id === cid);
-                            return c ? `${c.grado} ${c.seccion} - ${c.nombre}` : 'Todos los Cursos';
-                        })()}
-                    </span>
-                    <TC_Flux size={12} className={`text-slate-500 transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-[#ADC762]' : 'rotate-90 group-hover:text-[#ADC762]'}`} />
-                </button>
-                {isSelectOpen && (
-                    <div className="absolute top-[calc(100%+6px)] left-0 w-full bg-[#FDFBF7] border border-slate-300 rounded-[20px] shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top">
-                        <div className="max-h-62.5 overflow-y-auto py-1.5 scrollbar-hide">
+                <div className="relative" ref={courseSelectRef}>
+                    <CieloPill
+                        as="button"
+                        variant="neutral"
+                        onClick={() => setIsSelectOpen(!isSelectOpen)}
+                        className="w-full min-w-55 justify-between px-5 h-10 border-transparent shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-black/50 group"
+                        style={{ backgroundColor: '#DDD5C8', color: '#000000', borderColor: '#DDD5C8' }}
+                    >
+                        <span className="truncate pr-4">
+                            {selectedCursoId === 'all' ? 'Todos los Cursos' : (() => {
+                                const cid = Number(selectedCursoId);
+                                const c = state.cursos.find(c => c.id === cid);
+                                return c ? `${c.grado} ${c.seccion} - ${c.nombre}` : 'Todos los Cursos';
+                            })()}
+                        </span>
+                        <TC_Flux size={12} className={`text-black transition-transform duration-200 ${isSelectOpen ? '-rotate-90 text-black' : 'rotate-90 group-hover:text-black'}`} />
+                    </CieloPill>
+                    
+                    <CieloPopover 
+                        isOpen={isSelectOpen} 
+                        onClose={() => setIsSelectOpen(false)} 
+                        triggerRef={courseSelectRef}
+                        width="full"
+                        position="bottom-left"
+                        className="p-0!"
+                    >
+                        <div className="max-h-62.5 overflow-y-auto py-2 scrollbar-hide">
                             <button
                                 onClick={() => { setSelectedCursoId('all'); setIsSelectOpen(false); }}
-                                className={`w-full text-left px-5 py-2.5 text-[9px] font-black uppercase tracking-widest transition-colors ${selectedCursoId === 'all' ? 'bg-[#BFC9A6]/30 text-[#2E3330]' : 'text-[#5F665E] hover:bg-[#FAF6F0]'}`}
+                                className={`w-full text-left px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedCursoId === 'all' ? 'bg-primary/30 text-[#2E3330]' : 'text-[#5F665E] hover:bg-[#FAF6F0]'}`}
                             >
                                 Todos los Cursos
                             </button>
@@ -532,22 +542,24 @@ export default function Dashboard({ docenteNombre }: Props) {
                                 <button
                                     key={c.id}
                                     onClick={() => { setSelectedCursoId(String(c.id)); setIsSelectOpen(false); }}
-                                    className={`w-full text-left px-5 py-2.5 text-[9px] font-black uppercase tracking-widest transition-colors ${selectedCursoId === String(c.id) ? 'bg-[#BFC9A6]/30 text-[#2E3330]' : 'text-[#5F665E] hover:bg-[#FAF6F0]'}`}
+                                    className={`w-full text-left px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedCursoId === String(c.id) ? 'bg-primary/30 text-[#2E3330]' : 'text-[#5F665E] hover:bg-[#FAF6F0]'}`}
                                 >
                                     {c.grado} {c.seccion} - {c.nombre}
                                 </button>
                             ))}
                         </div>
-                    </div>
-                )}
+                    </CieloPopover>
+                </div>
             </div>
             
-            <button
+            <CieloPill
+                as="button"
+                variant="neutral"
                 onClick={() => navigate('/')}
-                className="h-10 px-6 rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-[#FAF6F0] hover:border-slate-350 transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 flex items-center justify-center gap-1.5 artisan-pill"
+                className="h-10 px-6 border-slate-300 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50 gap-1.5"
             >
                 ← Inicio
-            </button>
+            </CieloPill>
           </div>
         </div>
 
@@ -559,13 +571,13 @@ export default function Dashboard({ docenteNombre }: Props) {
           {/* ═══ SMOOTH LINE CHART ═══ */}
           <div className="flex flex-col xl:col-span-2">
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[10px] font-black text-[#2E3330] uppercase tracking-[0.25em]">Promedio de calificaciones</h3>
+                <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-[0.25em]">Promedio de calificaciones</h3>
             </div>
             <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-5 min-h-95 flex flex-col justify-between">
-              <div className="flex-1 flex items-center justify-center">
-                <SmoothLineChart data={smoothLineData} height={220} />
+              <div className="flex-1 flex items-center justify-center p-2 relative">
+                <SmoothLineChart data={multiLineData} height={220} />
               </div>
-              <div className="mt-4 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-[10px] text-[#5F665E] font-medium leading-relaxed">
+              <div className="mt-4 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-xs text-[#5F665E] font-medium leading-relaxed">
                 {lineChartDescription}
               </div>
             </div>
@@ -574,21 +586,21 @@ export default function Dashboard({ docenteNombre }: Props) {
           {/* ═══ STUDENT POPULATION (WAFFLE) ═══ */}
           <div className="flex flex-col xl:col-span-1">
             <div className="flex items-center justify-between mb-1.5">
-                <h3 className="text-[10px] font-black text-[#2E3330] uppercase tracking-[0.25em]">Distribución Poblacional</h3>
+                <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-[0.25em]">Distribución Poblacional</h3>
             </div>
             <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-4 min-h-80 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex-1 flex flex-col justify-center">
                 <StudentPopulationChart categories={populationData} />
                 <div className="flex gap-3 justify-center mt-2.5 flex-wrap">
                   {populationData.map(c => (
-                    <div key={c.id} className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-[#5F665E]">
+                    <div key={c.id} className="flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-[#5F665E]">
                       <span className="w-2 h-2 rounded-full shadow-sm" style={{ background: c.color }} />
                       {c.label} <span className="text-slate-400">({c.percentage}%)</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="mt-3 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-[10px] text-[#5F665E] font-medium leading-relaxed">
+              <div className="mt-3 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-xs text-[#5F665E] font-medium leading-relaxed">
                 {populationChartDescription}
               </div>
             </div>
@@ -597,13 +609,13 @@ export default function Dashboard({ docenteNombre }: Props) {
           {/* ═══ DONUT CHART ═══ */}
           <div className="flex flex-col xl:col-span-1">
             <div className="flex items-center justify-between mb-1.5">
-                <h3 className="text-[10px] font-black text-[#2E3330] uppercase tracking-[0.25em]">Distribución del rendimiento académico</h3>
+                <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-[0.25em]">Distribución del rendimiento académico</h3>
             </div>
             <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-4 min-h-80 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex-1 flex flex-col justify-center">
                 <DonutChart segments={donutData} />
               </div>
-              <div className="mt-3 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-[10px] text-[#5F665E] font-medium leading-relaxed">
+              <div className="mt-3 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-xs text-[#5F665E] font-medium leading-relaxed">
                 Distribución porcentual de las actividades evaluadas según los niveles de desempeño alcanzados. Permite identificar la concentración de
               </div>
             </div>
@@ -619,7 +631,9 @@ export default function Dashboard({ docenteNombre }: Props) {
           </h3>
           {selectedCursoId !== 'all' && (
             <div className="flex flex-col items-end gap-1">
-              <button
+              <CieloPill
+                as="button"
+                variant={courseRecords.length >= 5 ? 'disabled' : 'primary'}
                 onClick={() => {
                   setRecordDate(new Date().toISOString().split('T')[0]);
                   setRecordTitle('');
@@ -630,16 +644,12 @@ export default function Dashboard({ docenteNombre }: Props) {
                   setIsNewRecordOpen(true);
                 }}
                 disabled={courseRecords.length >= 5}
-                className={`px-3 py-1.5 text-white text-[10px] font-bold uppercase tracking-wider rounded-full transition-all artisan-pill ${
-                  courseRecords.length >= 5
-                    ? 'bg-slate-350 cursor-not-allowed'
-                    : 'bg-[#ADC762] hover:bg-[#6C7E5C] active:scale-95 cursor-pointer'
-                }`}
+                className="px-3 py-1.5 font-bold tracking-wider"
               >
                 + Nuevo Registro
-              </button>
+              </CieloPill>
               {courseRecords.length >= 5 && (
-                <span className="text-[8px] text-red-500 font-bold uppercase tracking-wider text-right">Límite alcanzado (Máx 5)</span>
+                <span className="text-xs text-red-500 font-bold uppercase tracking-wider text-right">Límite alcanzado (Máx 5)</span>
               )}
             </div>
           )}
@@ -649,7 +659,7 @@ export default function Dashboard({ docenteNombre }: Props) {
           {courseRecords.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center h-full text-slate-400 py-10">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Sin acontecimientos</p>
-              <p className="text-[10px] text-slate-400/80 mt-1 max-w-50">
+              <p className="text-xs text-slate-400/80 mt-1 max-w-50">
                 {selectedCursoId === 'all' 
                   ? 'Selecciona un curso específico arriba para poder añadir o ver registros.'
                   : 'Registra hechos relevantes del curso para mantener un historial visual.'
@@ -664,20 +674,20 @@ export default function Dashboard({ docenteNombre }: Props) {
                   return (
                     <div key={r.id} className="relative">
                       {/* Timeline dot */}
-                      <span className="absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full bg-[#ADC762] border-2 border-white ring-4 ring-[#ADC762]/10" />
+                      <span className="absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-white ring-4 ring-primary/10" />
                       
                       <div className="flex justify-between items-center gap-2 mb-0.5">
-                        <div className="text-[9px] font-bold text-[#5F665E] uppercase tracking-wider">{r.fecha}</div>
+                        <div className="text-xs font-bold text-[#5F665E] uppercase tracking-wider">{r.fecha}</div>
                         <button
                           onClick={() => handleDeleteRecord(r.id)}
-                          className="text-[9px] font-bold text-[#EB8847] hover:text-[#B87449] uppercase tracking-wider cursor-pointer"
+                          className="text-xs font-bold text-attention hover:text-danger uppercase tracking-wider cursor-pointer"
                         >
                           Eliminar
                         </button>
                       </div>
                       
                       <h4 className="text-xs font-black text-[#2E3330] uppercase tracking-tight mb-1 leading-snug">{r.titulo}</h4>
-                      <p className="text-[10px] text-[#5F665E] leading-relaxed mb-2 whitespace-pre-wrap">{r.descripcion}</p>
+                      <p className="text-xs text-[#5F665E] leading-relaxed mb-2 whitespace-pre-wrap">{r.descripcion}</p>
                       
                       {images.length > 0 && (
                         <div className="flex gap-1.5 overflow-x-auto py-1 scrollbar-hide">
@@ -701,12 +711,14 @@ export default function Dashboard({ docenteNombre }: Props) {
               </div>
               
               {courseRecords.length > visibleCount && (
-                <button
+                <CieloPill
+                  as="button"
+                  variant="neutral"
                   onClick={() => setVisibleCount(prev => prev + 5)}
-                  className="w-full py-2 bg-[#FDFBF7] border border-slate-350 hover:bg-[#FAF6F0] text-[#2E3330] text-[10px] font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer mt-2 artisan-pill"
+                  className="w-full py-2 border-slate-350 mt-2"
                 >
                   Cargar más registros
-                </button>
+                </CieloPill>
               )}
             </>
           )}
@@ -723,8 +735,8 @@ export default function Dashboard({ docenteNombre }: Props) {
             </div>
             
             {optimizationProgress && (
-              <div className="p-3 bg-[#ADC762]/5 border border-[#ADC762]/10 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-[#ADC762] uppercase tracking-widest animate-pulse">
+              <div className="p-3 bg-primary/5 border border-primary/10 rounded-xl text-center">
+                <span className="text-xs font-bold text-primary uppercase tracking-widest animate-pulse">
                   {optimizationProgress}
                 </span>
               </div>
@@ -732,44 +744,44 @@ export default function Dashboard({ docenteNombre }: Props) {
 
             <div className="flex flex-col gap-3.5">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#5F665E] mb-1">Fecha</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[#5F665E] mb-1">Fecha</label>
                 <input
                   type="date"
                   value={recordDate}
                   onChange={(e) => setRecordDate(e.target.value)}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#ADC762] focus:ring-2 focus:ring-[#ADC762]/20"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   disabled={isSaving}
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#5F665E] mb-1">Título</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[#5F665E] mb-1">Título</label>
                 <input
                   type="text"
                   placeholder="Ej. Excursión al museo de ciencias"
                   value={recordTitle}
                   onChange={(e) => setRecordTitle(e.target.value)}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#ADC762] focus:ring-2 focus:ring-[#ADC762]/20"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   disabled={isSaving}
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#5F665E] mb-1">Descripción</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[#5F665E] mb-1">Descripción</label>
                 <textarea
                   rows={3}
                   placeholder="Escribe aquí los acontecimientos o detalles importantes..."
                   value={recordDesc}
                   onChange={(e) => setRecordDesc(e.target.value)}
-                  className="w-full p-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-[#ADC762] focus:ring-2 focus:ring-[#ADC762]/20 resize-none leading-relaxed"
+                  className="w-full p-4 rounded-xl border border-slate-300 bg-[#F9F8F6] text-[#2E3330] text-xs font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none leading-relaxed"
                   disabled={isSaving}
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-[#5F665E] mb-1">Imágenes (Máx 2)</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[#5F665E] mb-1">Imágenes (Máx 2)</label>
                 <div className="flex items-center gap-2">
-                  <label className={`h-10 px-4 flex items-center justify-center border rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  <label className={`h-10 px-4 flex items-center justify-center border rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                     selectedFiles.length >= 2 || isSaving
                       ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
                       : 'bg-[#FDFBF7] hover:bg-[#FAF6F0] border-slate-300 text-slate-500 cursor-pointer'
@@ -784,11 +796,11 @@ export default function Dashboard({ docenteNombre }: Props) {
                       disabled={selectedFiles.length >= 2 || isSaving}
                     />
                   </label>
-                  <span className="text-[10px] text-slate-400">{selectedFiles.length}/2 seleccionadas</span>
+                  <span className="text-xs text-slate-400">{selectedFiles.length}/2 seleccionadas</span>
                 </div>
                 
                 {imageWarning && (
-                  <p className="text-[9px] text-red-500 font-bold mt-1.5 uppercase tracking-wider">{imageWarning}</p>
+                  <p className="text-xs text-red-500 font-bold mt-1.5 uppercase tracking-wider">{imageWarning}</p>
                 )}
                 
                 {imagePreviews.length > 0 && (
@@ -799,7 +811,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                         {!isSaving && (
                           <button
                             onClick={() => handleRemoveFile(idx)}
-                            className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[8px] font-bold shadow-md cursor-pointer"
+                            className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md cursor-pointer"
                           >
                             ×
                           </button>
@@ -814,14 +826,14 @@ export default function Dashboard({ docenteNombre }: Props) {
             <div className="flex justify-end gap-2.5 pt-3 border-t border-[rgba(46,51,48,0.08)]">
               <button
                 onClick={() => setIsNewRecordOpen(false)}
-                className="px-4 py-2 bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-[10px] font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all hover:bg-[#FAF6F0]"
+                className="px-4 py-2 bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-xs font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all hover:bg-[#FAF6F0]"
                 disabled={isSaving}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveRecord}
-                className="px-4 py-2 bg-[#ADC762] hover:bg-[#6C7E5C] active:scale-95 text-white text-[10px] font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all flex items-center gap-1.5"
+                className="px-4 py-2 bg-primary hover:bg-[#6C7E5C] active:scale-95 text-white text-xs font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all flex items-center gap-1.5"
                 disabled={isSaving || !recordTitle.trim() || !recordDate}
               >
                 {isSaving ? 'Guardando...' : 'Guardar'}

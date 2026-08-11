@@ -10,6 +10,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import NotificationsOverlay from './components/NotificationsOverlay';
 import InvitationModal from './components/courses/InvitationModal';
 import { FloatingRubricManager } from './components/FloatingRubricManager';
+import { PresentationProvider } from './contexts/PresentationContext';
 import LoadingMessage from './components/LoadingMessage';
 import { useSupabaseData } from './hooks/useSupabaseData';
 import { supabase } from './lib/supabase';
@@ -164,13 +165,15 @@ export default function App() {
           visibleCalificaciones={visibleCalificaciones}
           onlineUsers={onlineUsers}
           currentUserProfile={currentUserProfile}
+          onLogout={() => supabase.auth.signOut()}
         />
       </ErrorBoundary>
     );
   }
 
   return (
-    <Layout
+    <PresentationProvider>
+      <Layout
       onResetSchoolYear={actions.resetSchoolYear}
       onLogout={() => supabase.auth.signOut()}
       onUpdateBio={actions.updateBio}
@@ -203,6 +206,7 @@ export default function App() {
           visibleCalificaciones={visibleCalificaciones}
           onlineUsers={onlineUsers}
           currentUserProfile={currentUserProfile}
+          onLogout={() => supabase.auth.signOut()}
         />
       </ErrorBoundary>
 
@@ -218,5 +222,6 @@ export default function App() {
         onRefresh={() => actions.refresh()}
       />
     </Layout>
+    </PresentationProvider>
   );
 }

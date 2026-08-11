@@ -24,7 +24,7 @@ const AnnualGradesTable: React.FC<AnnualGradesTableProps> = ({
         <div className="overflow-x-auto no-scrollbar border border-[rgba(46,51,48,0.08)] rounded-[16px] bg-white overflow-hidden">
             <table className="w-full text-center border-collapse min-w-375">
                 <thead>
-                    <tr className="bg-[#F8F3ED] text-[#2E3330] font-black uppercase text-[10px] tracking-wider">
+                    <tr className="bg-[#F8F3ED] text-[#2E3330] font-black uppercase text-xs tracking-wider">
                         <th rowSpan={3} className="w-70 px-6 text-left border-b-2 border-[rgba(46,51,48,0.08)]">ASIGNATURAS</th>
                         <th colSpan={16} className="py-3 border-b-2 border-r border-[rgba(46,51,48,0.08)]">COMPETENCIAS FUNDAMENTALES</th>
                         <th rowSpan={3} className="bg-[#F0EBE3] border-x-2 border-[rgba(46,51,48,0.08)] px-2">PROMEDIO GRUPO DE<br/>COMPETENCIAS ESPECÍFICAS</th>
@@ -33,15 +33,15 @@ const AnnualGradesTable: React.FC<AnnualGradesTableProps> = ({
                         <th rowSpan={3} className="border-r border-[rgba(46,51,48,0.08)] px-2">EVALUACIÓN<br/>ESPECIAL</th>
                         <th colSpan={2} className="bg-[#2E3330] text-[#FDFBF7] border-[rgba(46,51,48,0.08)]">SITUACIÓN FINAL</th>
                     </tr>
-                    <tr className="bg-[#F8F3ED] text-[#2E3330] font-black uppercase text-[10px] tracking-wider">
+                    <tr className="bg-[#F8F3ED] text-[#2E3330] font-black uppercase text-xs tracking-wider">
                         <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC1">Comunicativa</th>
                         <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC2">Pensamiento lógico, creativo y crítico; resolución de problemas</th>
                         <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC3">Científica y tecnológica; ambiental y de la salud</th>
                         <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC4">Desarrollo personal y espiritual; ética y ciudadana</th>
-                        <th rowSpan={2} className="bg-[#FDFBF7] text-[#ADC762] border-x border-[rgba(46,51,48,0.08)]">A</th>
-                        <th rowSpan={2} className="bg-[#FDFBF7] text-[#B87449] border-r border-[rgba(46,51,48,0.08)]">R</th>
+                        <th rowSpan={2} className="bg-[#FDFBF7] text-primary border-x border-[rgba(46,51,48,0.08)]">A</th>
+                        <th rowSpan={2} className="bg-[#FDFBF7] text-danger border-r border-[rgba(46,51,48,0.08)]">R</th>
                     </tr>
-                    <tr className="bg-[#F8F3ED] text-[#2E3330] font-black uppercase text-[10px] tracking-wider">
+                    <tr className="bg-[#F8F3ED] text-[#2E3330] font-black uppercase text-xs tracking-wider">
                         {[1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4].map((p, i) => (
                             <th key={i} className="w-10 py-2 border-[rgba(46,51,48,0.04)]">P{p}</th>
                         ))}

@@ -7,10 +7,11 @@ import { useAppStore } from '../../store/appStore';
 interface CalendarWidgetProps {
     eventos: AppState['eventos'];
     actividades: Actividad[];
+    tareas?: AppState['tareas'];
     onSelectDate: (d: string | null) => void;
 }
 
-export function CalendarWidget({ eventos, actividades, onSelectDate }: CalendarWidgetProps) {
+export function CalendarWidget({ eventos, actividades, tareas = [], onSelectDate }: CalendarWidgetProps) {
     const today = new Date();
     const [viewDate, setViewDate] = useState(today);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -28,7 +29,8 @@ export function CalendarWidget({ eventos, actividades, onSelectDate }: CalendarW
 
     const allItems = [
         ...eventos.map(e => ({ id: `e${e.id}`, title: e.titulo, date: e.fecha, type: 'evento', color: 'bg-[#3F3C36]' })),
-        ...actividades.map(a => ({ id: `a${a.id}`, title: a.nombre, date: a.fecha, type: 'actividad', color: 'bg-[#7C9672]' }))
+        ...actividades.map(a => ({ id: `a${a.id}`, title: a.nombre, date: a.fecha, type: 'actividad', color: 'bg-primary' })),
+        ...tareas.filter(t => t.asignaciones?.some(a => a.docenteId === session?.user?.id && a.estado !== 'completada')).map(t => ({ id: `t${t.id}`, title: t.titulo, date: t.fechaLimite || today.toISOString().split('T')[0], type: 'tarea', color: 'bg-[#F5BC5D]' }))
     ];
 
     const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
@@ -41,7 +43,7 @@ export function CalendarWidget({ eventos, actividades, onSelectDate }: CalendarW
     return (
         <div className="terra-calendar-root relative">
             <div className="flex items-center justify-between mb-4">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest font-notion-title">{monthNames[month]} {year}</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest font-notion-title">{monthNames[month]} {year}</span>
                 <div className="flex gap-1">
                     <button className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800" onClick={prevMonth}>
                         <TC_Flux size={14} className="rotate-180" />
@@ -53,7 +55,7 @@ export function CalendarWidget({ eventos, actividades, onSelectDate }: CalendarW
             </div>
             <div className="grid grid-cols-7 gap-1 mb-2">
                 {dayNames.map((d, i) => (
-                    <div key={i} className="text-center text-[10px] font-bold text-slate-600 uppercase tracking-widest">{d}</div>
+                    <div key={i} className="text-center text-xs font-bold text-slate-600 uppercase tracking-widest">{d}</div>
                 ))}
             </div>
             <div className="grid grid-cols-7 gap-1.5">
@@ -80,19 +82,19 @@ export function CalendarWidget({ eventos, actividades, onSelectDate }: CalendarW
                                 }
                             }}
                             className={`
-                                aspect-square w-full flex flex-col items-center justify-center rounded-lg text-[11px] font-medium transition-all relative overflow-hidden
-                                ${isToday ? 'bg-[#ADC762] text-white shadow-sm z-10' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-bold'}
-                                ${selectedDate === dateStr && !isToday ? 'ring-2 ring-[#BFC9A6] bg-[#BFC9A6]/20 text-[#2E3330] font-bold' : ''}
+                                aspect-square w-full flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-all relative overflow-hidden
+                                ${isToday ? 'bg-primary text-white shadow-sm z-10' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-bold'}
+                                ${selectedDate === dateStr && !isToday ? 'ring-2 ring-primary bg-primary/20 text-[#2E3330] font-bold' : ''}
                             `}
                         >
                             {hasRecord && (
-                                <span className="absolute top-1 left-1.5 w-1.5 h-1.5 rounded-full bg-[#D8B55A] shadow-sm z-20" />
+                                <span className="absolute top-1 left-1.5 w-1.5 h-1.5 rounded-full bg-warning shadow-sm z-20" />
                             )}
                             <>
                                 <span className="relative z-10">{day}</span>
                                 <div className="absolute bottom-1.5 flex gap-0.5 justify-center px-0.5">
-                                    {dayItems.slice(0, 3).map((_item, idx) => (
-                                        <span key={idx} className={`w-1 h-1 rounded-full ${isToday ? 'bg-white' : 'bg-turf-green-base'}`} />
+                                    {dayItems.slice(0, 3).map((item, idx) => (
+                                        <span key={idx} className={`w-1 h-1 rounded-full ${isToday ? 'bg-white' : item.color}`} />
                                     ))}
                                 </div>
                             </>
@@ -107,21 +109,21 @@ export function CalendarWidget({ eventos, actividades, onSelectDate }: CalendarW
                     
                     {activeDateRecords.length > 0 ? (
                         <div className="w-full max-h-40 overflow-y-auto scrollbar-hide text-left">
-                            <h5 className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1.5">Acontecimientos del día:</h5>
+                            <h5 className="text-xs font-bold text-slate-300 uppercase tracking-widest mb-1.5">Acontecimientos del día:</h5>
                             {activeDateRecords.map(r => (
                                 <div key={r.id} className="mb-2 last:mb-0 p-2 bg-white/5 rounded-lg border border-white/5">
-                                    <div className="text-[10px] font-bold text-white mb-0.5">{r.titulo}</div>
-                                    <div className="text-[9px] text-slate-300 leading-normal">{r.descripcion}</div>
+                                    <div className="text-xs font-bold text-white mb-0.5">{r.titulo}</div>
+                                    <div className="text-xs text-slate-300 leading-normal">{r.descripcion}</div>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <div className="text-[11px] text-slate-400 mb-4">No hay acontecimientos registrados para este día.</div>
+                        <div className="text-xs text-slate-400 mb-4">No hay acontecimientos registrados para este día.</div>
                     )}
 
                     <button
                         onClick={() => setActiveDateForDetails(null)}
-                        className="mt-4 px-4 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                        className="mt-4 px-4 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
                     >
                         Cerrar
                     </button>

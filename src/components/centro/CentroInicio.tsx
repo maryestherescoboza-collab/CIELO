@@ -31,7 +31,7 @@ export default function CentroInicio({ centroId, centro }: Props) {
 
     const tareasPendientes = useMemo(() =>
         (state.tareas || [])
-            .filter(t => t.centroId === centroId && t.estado !== 'cancelada')
+            .filter(t => t.centroId === centroId)
             .filter(t => {
                 const asignaciones = t.asignaciones || [];
                 return asignaciones.length === 0 || !asignaciones.every(a => a.estado === 'completada');
@@ -53,16 +53,16 @@ export default function CentroInicio({ centroId, centro }: Props) {
     );
 
     const cards: { label: string; valor: number; icon: LucideIcon; color: string }[] = [
-        { label: 'Cursos', valor: cursosCentro.length, icon: GraduationCap, color: 'bg-[#6F94AF]/10 text-[#6F94AF]' },
-        { label: 'Docentes', valor: docentesCentro.length, icon: Users, color: 'bg-[#EB8847]/10 text-[#A34B22]' },
-        { label: 'Tareas pendientes', valor: tareasPendientes, icon: ClipboardList, color: 'bg-[#F5BC5D]/20 text-[#8A651F]' },
+        { label: 'Cursos', valor: cursosCentro.length, icon: GraduationCap, color: 'bg-primary/10 text-primary' },
+        { label: 'Docentes', valor: docentesCentro.length, icon: Users, color: 'bg-attention/10 text-[#A34B22]' },
+        { label: 'Tareas pendientes', valor: tareasPendientes, icon: ClipboardList, color: 'bg-warning/20 text-[#8A651F]' },
         { label: 'Incidencias', valor: incidenciasCentro.length, icon: AlertTriangle, color: 'bg-[#D93025]/10 text-[#D93025]' },
     ];
 
     return (
         <section className="bg-[#F9F8F6] border border-[#E6E1D8] rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_rgba(0,0,0,0.05)] overflow-hidden">
             <header className="px-5 py-3.5 border-b border-[#E6E1D8] flex items-center gap-3">
-                <span className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center text-[#6F94AF] shrink-0">
+                <span className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center text-primary shrink-0">
                     <GraduationCap size={16} />
                 </span>
                 <div>

@@ -126,12 +126,12 @@
 
 .dash-trend-up {
   background: #EFF5F1;
-  color: #86A792;
+  color: var(--primary);
 }
 
 .dash-trend-down {
   background: #FDF3F0;
-  color: #E88C6B;
+  color: var(--attention);
 }
 
 .dash-metric-card__icon {
@@ -385,7 +385,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #86A792;
+  background: var(--primary);
 }
 
 /* ── Section Header ── */

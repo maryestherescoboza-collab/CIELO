@@ -53,8 +53,8 @@ export function buildIncidenciaReport(data: IncidenciaReportData): string {
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Inter', Arial, sans-serif; background: #FDFBF7; color: #2E3330; padding: 32px; }
   .page { max-width: 720px; margin: 0 auto; background: #FFFFFF; border: 1px solid rgba(46,51,48,0.08); border-radius: 16px; padding: 36px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); }
-  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ADC762; padding-bottom: 16px; margin-bottom: 24px; }
-  .brand { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #ADC762; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--primary); padding-bottom: 16px; margin-bottom: 24px; }
+  .brand { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); }
   .brand small { display: block; color: #5F665E; font-weight: 700; letter-spacing: 0.08em; }
   .doc-number { font-size: 11px; font-weight: 700; color: #5F665E; text-transform: uppercase; letter-spacing: 0.08em; text-align: right; }
   h1 { font-size: 20px; font-weight: 800; color: #2E3330; margin-bottom: 4px; }
@@ -63,7 +63,7 @@ export function buildIncidenciaReport(data: IncidenciaReportData): string {
   .field label { display: block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #7D847A; margin-bottom: 3px; }
   .field p { font-size: 13px; font-weight: 600; color: #2E3330; }
   .section { margin-bottom: 18px; }
-  .section h2 { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #ADC762; border-left: 4px solid #BFC9A6; padding-left: 10px; margin-bottom: 8px; }
+  .section h2 { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--primary); border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 8px; }
   .section p { font-size: 13px; line-height: 1.6; color: #2E3330; white-space: pre-wrap; }
   .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
   .pill-conducta { background: rgba(232,140,107,0.12); color: #A34B22; }

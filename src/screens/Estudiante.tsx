@@ -147,7 +147,7 @@ export default function Estudiante() {
                 return (
                     <td key={`${p}-${bc}`} className="px-3 py-4 text-center border border-[rgba(46,51,48,0.08)]">
                         {finalVal !== null && finalVal !== undefined ? (
-                            <span className={`text-[13px] font-black ${isRecovered ? 'text-[#B87449] bg-[#FDFBF7] px-1.5 py-0.5 rounded border border-[#B87449]/20' : 'text-[#2E3330]'}`}>
+                            <span className={`text-[13px] font-black ${isRecovered ? 'text-danger bg-[#FDFBF7] px-1.5 py-0.5 rounded border border-danger/20' : 'text-[#2E3330]'}`}>
                                 {finalVal}
                             </span>
                         ) : (
@@ -171,8 +171,8 @@ export default function Estudiante() {
                 <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
                 <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
                 <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
-                <td className="px-2 text-[#ADC762] font-black text-[14px] bg-[#FDFBF7] border-x border-[rgba(46,51,48,0.08)]">{sitA}</td>
-                <td className="px-2 text-[#B87449] font-black text-[14px] bg-[#FDFBF7] border-r border-[rgba(46,51,48,0.08)]">{sitR}</td>
+                <td className="px-2 text-primary font-black text-[14px] bg-[#FDFBF7] border-x border-[rgba(46,51,48,0.08)]">{sitA}</td>
+                <td className="px-2 text-danger font-black text-[14px] bg-[#FDFBF7] border-r border-[rgba(46,51,48,0.08)]">{sitR}</td>
             </>
         );
     }, [curso, est, state.actividades, state.calificaciones, state.recuperaciones, state.cursos]);
@@ -218,9 +218,9 @@ export default function Estudiante() {
                         <div className="flex justify-between items-center border-b pb-5 border-[rgba(46,51,48,0.08)]">
                             <div>
                                 <h2 className="text-xl font-black text-[#2E3330] tracking-tight">REGISTRO ANUAL</h2>
-                                <p className="text-[10px] font-bold text-[#5F665E] uppercase tracking-widest">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
+                                <p className="text-xs font-bold text-[#5F665E] uppercase tracking-widest">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
                             </div>
-                            <button onClick={() => window.print()} className="flex items-center gap-2 px-[18px] py-[8px] min-h-[36px] leading-none bg-[#ADC762] text-white rounded-full font-semibold text-xs hover:bg-[#6C7E5C] transition-all uppercase tracking-[0.08em] shadow-sm">
+                            <button onClick={() => window.print()} className="flex items-center gap-2 px-[18px] py-[8px] min-h-[36px] leading-none bg-primary text-white rounded-full font-semibold text-xs hover:bg-[#6C7E5C] transition-all uppercase tracking-[0.08em] shadow-sm">
                                 <Printer size={15} /> Imprimir
                             </button>
                         </div>
@@ -234,7 +234,7 @@ export default function Estudiante() {
 
             <footer className="w-[92%] max-w-7xl mt-16 text-center py-10 opacity-40 select-none">
                 <p className="text-[#5F665E] text-[14px] font-bold uppercase tracking-[0.5em] mb-2">Plataforma Educativa Noether</p>
-                <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#5F665E]/70">
+                <div className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-[#5F665E]/70">
                     <School size={14} />
                     <span>Registro Oficial Validado</span>
                 </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Users, CheckCircle, Save, Loader2, X } from 'lucide-react';
 import type { Estudiante } from '../types';
+import { CieloModal } from './ui/CieloModal';
 
 interface Props {
     availableEstudiantes: Estudiante[];
@@ -42,36 +43,47 @@ export default function StudentSelectionModal({ availableEstudiantes, onFinalize
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-100 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-(--paper) w-full max-w-2xl rounded-none shadow-2xl border-2 border-(--ink) overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="p-8 border-b border-(--line) flex items-center justify-between bg-(--paper-soft)">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-(--ink) text-white">
-                            <Users size={24} />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-black text-(--ink)">EvaluaciÃ³n MÃºltiple</h2>
-                            <p className="text-xs font-bold text-(--ink-soft) opacity-60 uppercase tracking-widest">
-                                Seleccione los estudiantes a evaluar simultÃ¡neamente
-                            </p>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={() => onToggle(false)}
-                        className="p-2 hover:bg-(--paper-deep) rounded-xl transition-all"
-                    >
-                        <X size={24} />
-                    </button>
-                </div>
+    const modalFooter = (
+        <div className="flex gap-4 w-full">
+            <button
+                onClick={() => onToggle(false)}
+                className="flex-1 flex items-center justify-center h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all"
+            >
+                Cancelar
+            </button>
+            
+            <button
+                disabled={selectedStudents.length === 0 || isSaving}
+                onClick={handleSave}
+                className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow-md ${
+                    selectedStudents.length === 0 || isSaving
+                        ? 'bg-slate-300 opacity-50 cursor-not-allowed text-slate-500'
+                        : 'bg-(--accent-orange) text-white shadow-(--accent-orange)/20 hover:scale-[1.02] active:scale-[0.98]'
+                }`}
+            >
+                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                Confirmar ({selectedStudents.length})
+            </button>
+        </div>
+    );
 
-                <div className="flex-1 overflow-y-auto p-8 space-y-8">
+    return (
+        <CieloModal
+            isOpen={isActive}
+            onClose={() => onToggle(false)}
+            title="Evaluación Múltiple"
+            subtitle="Seleccione los estudiantes a evaluar simultáneamente"
+            icon={<Users size={20} />}
+            maxWidth="2xl"
+            footer={modalFooter}
+        >
+            <div className="space-y-6">
                     <div className="bg-(--paper-deep) p-5 rounded-2xl border border-(--line)">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xs font-black uppercase tracking-widest text-(--ink) opacity-60">Listado del Curso ({sortedEsts.length} estudiantes)</h3>
                             <button 
                                 onClick={handleSelectAll}
-                                className="text-[10px] font-black uppercase tracking-widest text-(--accent-orange) hover:underline"
+                                className="text-xs font-black uppercase tracking-widest text-(--accent-orange) hover:underline"
                             >
                                 {selectedStudents.length === sortedEsts.length ? 'Desmarcar Todos' : 'Seleccionar Todos'}
                                 ({selectedStudents.length})
@@ -93,10 +105,10 @@ export default function StudentSelectionModal({ availableEstudiantes, onFinalize
                                                 : 'bg-white border-(--line) text-(--ink) hover:border-(--ink-soft)'
                                         }`}
                                     >
-                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${isSel ? 'bg-white/20' : 'bg-(--paper-soft)'}`}>
+                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${isSel ? 'bg-white/20' : 'bg-(--paper-soft)'}`}>
                                             {i + 1}
                                         </span>
-                                        <span className="text-[11px] font-bold truncate flex-1">{est.nombre} {est.apellido}</span>
+                                        <span className="text-xs font-bold truncate flex-1">{est.nombre} {est.apellido}</span>
                                         {isSel && <CheckCircle size={12} className="text-white" />}
                                     </button>
                                 );
@@ -117,12 +129,12 @@ export default function StudentSelectionModal({ availableEstudiantes, onFinalize
                                     </button>
                                     <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-black text-white relative" style={{ background: est.avatarColor }}>
                                         {est.nombre?.[0] || '?'}
-                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center text-[10px] font-black text-(--ink) shadow-sm border border-(--line)">
+                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-black text-(--ink) shadow-sm border border-(--line)">
                                             {listNum}
                                         </div>
                                     </div>
                                     <div className="text-center overflow-hidden w-full">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-(--ink-soft) opacity-40">Estudiante</p>
+                                        <p className="text-xs font-black uppercase tracking-widest text-(--ink-soft) opacity-40">Estudiante</p>
                                         <p className="text-xs font-bold truncate">{est.nombre} {est.apellido}</p>
                                     </div>
                                     <CheckCircle size={16} className="text-green-500 absolute bottom-3 right-3 opacity-40" />
@@ -134,34 +146,11 @@ export default function StudentSelectionModal({ availableEstudiantes, onFinalize
                             <div className="col-span-full py-16 flex flex-col items-center justify-center border-2 border-dashed border-(--line) rounded-4xl opacity-30 bg-(--paper-soft)">
                                 <Users size={48} className="text-(--ink-soft)" />
                                 <p className="mt-4 text-sm font-black uppercase tracking-[0.2em]">Seleccione estudiantes para evaluar</p>
-                                <p className="text-[10px] font-medium mt-1">Haga clic en los nombres del listado superior</p>
+                                <p className="text-xs font-medium mt-1">Haga clic en los nombres del listado superior</p>
                             </div>
                         )}
                     </div>
-                </div>
-
-                <div className="p-8 bg-(--paper-soft) border-t border-(--line) flex gap-4">
-                    <button
-                        onClick={() => onToggle(false)}
-                        className="flex-1 flex items-center justify-center h-14 rounded-2xl text-sm font-black uppercase tracking-[0.2em] bg-white border-2 border-(--line) text-(--ink-soft) hover:bg-(--paper-deep) transition-all"
-                    >
-                        Cancelar
-                    </button>
-                    
-                    <button
-                        disabled={selectedStudents.length === 0 || isSaving}
-                        onClick={handleSave}
-                        className={`flex-1 flex items-center justify-center gap-3 h-14 rounded-2xl text-sm font-black uppercase tracking-[0.2em] transition-all shadow-xl ${
-                            selectedStudents.length === 0 || isSaving
-                                ? 'bg-slate-300 opacity-50 cursor-not-allowed'
-                                : 'bg-(--accent-orange) text-white hover:scale-[1.02] active:scale-[0.98]'
-                        }`}
-                    >
-                        {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-                        Confirmar ({selectedStudents.length})
-                    </button>
-                </div>
             </div>
-        </div>
+        </CieloModal>
     );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, CheckCircle, X, ClipboardCheck, BookMarked, Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
 import type { AppState, CriterioCotejo, EvaluacionCotejo, CursoDocente } from '../types';
 import { getAsignaturaNombre } from '../constants/asignaturas';
+import { CieloPill } from '../components/ui/CieloPill';
 
 interface Props {
     state?: AppState;
@@ -15,13 +16,13 @@ interface Props {
 }
 
 const NIVELES = [
-    { val: 0, label: 'No cumple', pts: 0, color: 'bg-[#CB4834]' },
-    { val: 100, label: 'Logrado', pts: 100, color: 'bg-[#7C9672]' },
+    { val: 0, label: 'No cumple', pts: 0, color: 'bg-danger' },
+    { val: 100, label: 'Logrado', pts: 100, color: 'bg-primary' },
 ];
 
 const COTEJO_COLORES: Record<number, { headerBg: string; cellBg: string }> = {
-    100: { headerBg: '#7C9672', cellBg: '#F2F5F1' }, // Logrado
-    0: { headerBg: '#CB4834', cellBg: '#FDF1EF' }, // No cumple
+    100: { headerBg: 'var(--primary)', cellBg: '#F2F5F1' }, // Logrado
+    0: { headerBg: 'var(--danger)', cellBg: '#FDF1EF' }, // No cumple
 };
 
 export default function Cotejo({
@@ -361,12 +362,12 @@ export default function Cotejo({
     }
 
     return (
-        <div className="flex flex-1 h-full overflow-hidden bg-[#FDFBF7]">
+        <div className="flex flex-col md:flex-row h-full overflow-hidden bg-[#FDFBF7]">
             {!readOnly && (
                 <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                        className="absolute top-4 -right-1 z-50 p-1.5 bg-[#ADC762] text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
+                        className="absolute top-4 -right-1 z-50 p-1.5 bg-primary text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
                     >
                         {isSidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                     </button>
@@ -374,11 +375,11 @@ export default function Cotejo({
                     {!isSidebarCollapsed ? (
                         <div className="flex flex-col h-full overflow-y-auto relative z-10">
                             <div className="p-5 border-b border-slate-250 flex items-center gap-2.5">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ADC762] text-white">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white">
                                     <ClipboardCheck size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#2E3330]">Instrumento</p>
+                                    <p className="text-xs font-black uppercase tracking-widest text-[#2E3330]">Instrumento</p>
                                     <h1 className="text-lg font-black text-[#2E3330] truncate font-notion-title">Lista de Cotejo</h1>
                                 </div>
                             </div>
@@ -387,14 +388,14 @@ export default function Cotejo({
                                 <div className="space-y-4">
                                     <div className="space-y-3">
                                         <div className="px-1">
-                                            <p className="text-[11px] font-black uppercase tracking-widest text-[#2E3330] mb-0.5">Contexto</p>
-                                            <p className="text-[11px] font-medium text-[#2E3330]/80">Configura el entorno de evaluación.</p>
+                                            <p className="text-xs font-black uppercase tracking-widest text-[#2E3330] mb-0.5">Contexto</p>
+                                            <p className="text-xs font-medium text-[#2E3330]/80">Configura el entorno de evaluación.</p>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
+                                            <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
                                             <select
                                                 data-guide="selector-curso"
-                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedCursoId}
                                                 onChange={e => { setSelectedCursoId(Number(e.target.value)); setSelectedActId(null); setSelectedEstId(null); }}
                                             >
@@ -402,10 +403,10 @@ export default function Cotejo({
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
+                                            <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
                                             <select
                                                 data-guide="selector-actividad"
-                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedAct?.id ?? ''}
                                                 onChange={e => setSelectedActId(Number(e.target.value) || null)}
                                             >
@@ -419,11 +420,11 @@ export default function Cotejo({
 
                                     <div className="space-y-3">
                                         <div className="px-1 flex items-center justify-between">
-                                            <p className="text-[11px] font-black uppercase tracking-widest text-[#2E3330]">Plantillas</p>
-                                            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-[8px] font-black text-[#2E3330]">{cotejoPlantillas.length}</div>
+                                            <p className="text-xs font-black uppercase tracking-widest text-[#2E3330]">Plantillas</p>
+                                            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-[#2E3330]">{cotejoPlantillas.length}</div>
                                         </div>
                                         <div className="space-y-2">
-                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-[#ADC762] focus-within:ring-2 focus-within:ring-[#ADC762]/20 transition-all shadow-sm artisan-pill artisan-btn-white">
+                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm artisan-pill artisan-btn-white">
                                                 <BookMarked size={14} className="text-[#2E3330]" />
                                                 <select
                                                     data-guide="selector-plantilla"
@@ -478,7 +479,7 @@ export default function Cotejo({
                                                         }
                                                     }
                                                 }}
-                                                className="w-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-[10px] py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
                                             >
                                                 Guardar como Plantilla
                                             </button>
@@ -490,7 +491,7 @@ export default function Cotejo({
                             <div className="p-5 border-t border-slate-200">
                                 <button
                                     onClick={() => setShowAddCrit(true)}
-                                    className="w-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 py-2.5 flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-widest transition-all rounded-xl"
+                                    className="w-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 py-2.5 flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest transition-all rounded-xl"
                                 >
                                     <Plus size={14} />
                                     Nuevo Criterio
@@ -524,13 +525,11 @@ export default function Cotejo({
                                 {readOnly ? 'Vista Previa de Lista de Cotejo' : 'Lista de Cotejo'}
                             </h1>
                             <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2.5 bg-slate-200/50 px-4 py-2 rounded-xl border border-slate-200">
-                                    <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">
-                                        Registro de Logros
-                                    </span>
-                                </div>
+                                <CieloPill variant="neutral" uppercase className="px-4 text-black" style={{ backgroundColor: '#DDD5C8', borderColor: '#DDD5C8', color: '#000000' }}>
+                                    Registro de Logros
+                                </CieloPill>
                                 <div className="h-1.5 w-1.5 rounded-full bg-slate-400"></div>
-                                <span className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Verificación de Competencias</span>
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Verificación de Competencias</span>
                             </div>
                         </div>
 
@@ -539,25 +538,25 @@ export default function Cotejo({
                                 {selectedEst && (
                                     <div className="flex bg-white border border-slate-200 rounded-[16px] px-4 py-2.5 items-center gap-4 shadow-sm">
                                         <div className="flex flex-col items-center">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">
                                                 Puntaje Actual
                                             </p>
                                             <p className="mt-0.5 text-xl font-black tracking-tighter text-[#1E293B]">
                                                 {puntajeActual}
-                                                <span className="ml-1 text-[11px] font-bold text-slate-400">/100</span>
+                                                <span className="ml-1 text-xs font-bold text-slate-400">/100</span>
                                             </p>
                                         </div>
                                         <div className="h-8 w-px bg-slate-200" />
                                         <div className="flex items-center gap-3">
                                             <div
-                                                className="flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-black text-white shadow-sm"
+                                                className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white shadow-sm"
                                                 style={{ background: selectedEst.avatarColor }}
                                             >
                                                 {selectedEst.nombre[0]}
                                             </div>
                                             <div className="flex flex-col">
-                                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Estudiante</p>
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-[#1E293B]">
+                                                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Estudiante</p>
+                                                <span className="text-xs font-black uppercase tracking-widest text-[#1E293B]">
                                                     {selectedEst.nombre} {selectedEst.apellido}
                                                 </span>
                                             </div>
@@ -567,38 +566,37 @@ export default function Cotejo({
 
                                 {activeCell && (
                                     <div className="flex bg-slate-50 border border-slate-200 rounded-[16px] px-4 py-2.5 items-center gap-3 shadow-sm animate-pulse">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-turf-green-base text-white shadow-sm">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white shadow-sm">
                                             <Plus size={16} />
                                         </div>
                                         <div className="flex flex-col">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Asignando Nivel</p>
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-[#1E293B]">
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Asignando Nivel</p>
+                                            <span className="text-xs font-black uppercase tracking-widest text-[#1E293B]">
                                                 {localCriterios.find(c => c.id === activeCell.critId)?.descripcion?.substring(0, 20)}...
                                             </span>
                                         </div>
                                         <button
                                             onClick={() => setActiveCell(null)}
-                                            className="ml-1 text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline transition-all"
+                                            className="ml-1 text-xs font-black text-red-500 uppercase tracking-widest hover:underline transition-all"
                                         >
                                             Cancelar
                                         </button>
                                     </div>
                                 )}
 
-                                <button
+                                <CieloPill
+                                    as="button"
                                     id="btn-evaluar-alumnos"
                                     onClick={Object.keys(multiEvaluations).length > 0 ? handleFinalizeGroupEvaluation : handleSave}
+                                    variant={((!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving) ? 'disabled' : 'primary'}
                                     disabled={(!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving}
-                                    className={`flex h-12 min-w-14 items-center justify-center gap-2.5 rounded-[16px] px-5 text-[12px] font-black text-white shadow-xl transition-all ${((!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving)
-                                        ? 'bg-slate-300 cursor-not-allowed opacity-50'
-                                        : 'bg-turf-green-base hover:bg-turf-green-base/90 hover:-translate-y-0.5 active:scale-[0.98]'
-                                        }`}
+                                    className="px-5 gap-2.5 h-12 shadow-xl"
                                 >
                                     {isSaving ? <Loader2 size={16} className="animate-spin" /> : (savedFlash ? <CheckCircle size={18} /> : <Save size={18} />)}
-                                    <span className="uppercase tracking-widest">
+                                    <span className="uppercase tracking-widest text-[12px]">
                                         {savedFlash ? '¡Registrada!' : Object.keys(multiEvaluations).length > 1 ? `Evaluar ${Object.keys(multiEvaluations).length} Alumnos` : 'Finalizar Evaluación'}
                                     </span>
-                                </button>
+                                </CieloPill>
                             </div>
                         )}
                     </div>
@@ -612,9 +610,9 @@ export default function Cotejo({
 
                                     </div>
                                     {selectedAct && (
-                                        <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-turf-green-base shadow-sm">
+                                        <CieloPill variant="primary" uppercase className="px-3 bg-slate-50 text-primary shadow-sm tracking-[0.16em]">
                                             Actividad: {selectedAct.nombre} ({selectedAct.periodo})
-                                        </div>
+                                        </CieloPill>
                                     )}
                                 </div>
 
@@ -634,9 +632,9 @@ export default function Cotejo({
                                                 >
                                                     <div
                                                         className={`flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-black text-white transition-all ring-offset-2 ${isSel
-                                                            ? 'scale-105 ring-2 ring-turf-green-base shadow-lg'
+                                                            ? 'scale-105 ring-2 ring-primary shadow-lg'
                                                             : 'opacity-50 grayscale hover:scale-105 hover:opacity-100 hover:grayscale-0'
-                                                            } ${isInActiveCell ? 'ring-2 ring-turf-green-base opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
+                                                            } ${isInActiveCell ? 'ring-2 ring-primary opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
                                                         style={{ background: est.avatarColor }}
                                                     >
                                                         {est.nombre[0]}
@@ -646,13 +644,13 @@ export default function Cotejo({
                                                             </div>
                                                         )}
                                                         {isInActiveCell && (
-                                                            <div className="absolute -bottom-1 -right-1 bg-turf-green-base text-white h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white shadow-sm">
+                                                            <div className="absolute -bottom-1 -right-1 bg-primary text-white h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white shadow-sm">
                                                                 <CheckCircle size={9} />
                                                             </div>
                                                         )}
                                                     </div>
                                                     <span
-                                                        className={`text-center text-[8px] font-black uppercase tracking-[0.14em] transition-colors ${isSel || isInActiveCell ? 'text-[#1E293B]' : 'text-slate-400'
+                                                        className={`text-center text-xs font-black uppercase tracking-[0.14em] transition-colors ${isSel || isInActiveCell ? 'text-[#1E293B]' : 'text-slate-400'
                                                             }`}
                                                     >
                                                         {idx + 1}. {est.nombre.split(' ')[0]}
@@ -736,7 +734,7 @@ export default function Cotejo({
                                                                 e.stopPropagation();
                                                                 handleInsertRowAfter(crit.id);
                                                             }}
-                                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#7C9672] hover:text-[#7C9672]/80 text-xl font-bold select-none px-1"
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary hover:text-primary/80 text-xl font-bold select-none px-1"
                                                             title="Insertar indicador"
                                                         >
                                                             +
@@ -755,7 +753,7 @@ export default function Cotejo({
                                                                 e.stopPropagation();
                                                                 setLocalCriterios(p => p.filter(c => c.id !== crit.id));
                                                             }}
-                                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#CB4834] hover:text-[#CB4834]/80 text-xl font-bold select-none px-1"
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-danger hover:text-danger/80 text-xl font-bold select-none px-1"
                                                             title="Eliminar indicador"
                                                         >
                                                             ×
@@ -777,7 +775,7 @@ export default function Cotejo({
                                                     data-guide="celda-cotejo"
                                                     className={`px-2 py-1 align-middle text-center border-r border-slate-100 last:border-r-0 ${readOnly ? 'cursor-default' : 'cursor-pointer'} transition-colors relative
                                                         ${isSelected ? 'after:absolute after:inset-0 after:border-2 after:border-[#1E293B]' : readOnly ? '' : 'hover:bg-slate-50'}
-                                                        ${isActive ? 'ring-2 ring-inset ring-turf-green-base shadow-inner' : ''}`}
+                                                        ${isActive ? 'ring-2 ring-inset ring-primary shadow-inner' : ''}`}
                                                     style={{ backgroundColor: colors.cellBg }}
                                                     onClick={() => {
                                                         if (readOnly) return;
@@ -791,7 +789,7 @@ export default function Cotejo({
                                                                     <div
                                                                         key={s.id}
                                                                         title={`${s.nombre} ${s.apellido}`}
-                                                                        className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white shadow-sm"
+                                                                        className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
                                                                         style={{ background: s.avatarColor }}
                                                                     >
                                                                         {i}
@@ -832,9 +830,9 @@ export default function Cotejo({
                         </div>
                         <div className="p-6 space-y-5">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Descripción del Criterio</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Descripción del Criterio</label>
                                 <textarea
-                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-[#1E293B] min-h-25 outline-none transition-all focus-visible:border-turf-green-base focus-visible:ring-2 focus-visible:ring-turf-green-base/50"
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-[#1E293B] min-h-25 outline-none transition-all focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/50"
                                     placeholder="Detalle el criterio de observación..."
                                     value={newCrit.descripcion}
                                     onChange={e => setNewCrit({ ...newCrit, descripcion: e.target.value })}
@@ -842,8 +840,8 @@ export default function Cotejo({
                             </div>
                         </div>
                         <div className="p-6 bg-slate-50 flex gap-4 border-t border-slate-100">
-                            <button className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl py-3 text-[10px] font-black uppercase tracking-widest transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400" onClick={() => setShowAddCrit(false)}>Cancelar</button>
-                            <button className="flex-1 bg-turf-green-base text-white hover:bg-turf-green-base/90 rounded-xl py-3 text-[10px] font-black uppercase tracking-widest transition-all shadow-md outline-none focus-visible:ring-2 focus-visible:ring-turf-green-base/50 hover:-translate-y-0.5 active:scale-95" onClick={() => {
+                            <button className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl py-3 text-xs font-black uppercase tracking-widest transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400" onClick={() => setShowAddCrit(false)}>Cancelar</button>
+                            <button className="flex-1 bg-primary text-white hover:bg-primary/90 rounded-xl py-3 text-xs font-black uppercase tracking-widest transition-all shadow-md outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:-translate-y-0.5 active:scale-95" onClick={() => {
                                 if (newCrit.descripcion.trim()) {
                                     const id = Math.max(0, ...localCriterios.map(c => c.id)) + 1;
                                     setLocalCriterios([...localCriterios, { id, titulo: newCrit.descripcion.trim(), descripcion: newCrit.descripcion.trim() }]);

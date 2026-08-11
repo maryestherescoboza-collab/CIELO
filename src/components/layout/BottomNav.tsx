@@ -28,7 +28,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                 
                 let btnBg = 'bg-transparent';
                 if (isActive) {
-                    btnBg = 'bg-[#BFC9A6]';
+                    btnBg = 'bg-primary';
                 } else if (item.label === 'Comunidad') {
                     // Let's make Comunidad have the highlight background F5BC5D
                     btnBg = 'hover:bg-[#D4CCBE]';
@@ -45,7 +45,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                         <div className="text-[#2E3330]">
                             {item.icon}
                         </div>
-                        <span className="text-[8px] font-semibold uppercase tracking-[0.08em] text-[#2E3330]">{item.label}</span>
+                        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[#2E3330]">{item.label}</span>
                     </button>
                 );
             })}

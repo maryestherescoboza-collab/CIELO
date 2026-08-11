@@ -11,23 +11,23 @@ export const BC_ICONS: Record<BCKey, React.ReactNode> = {
 
 export const BC_COLOR_THEMES: Record<BCKey, { bg: string; text: string; active: string }> = {
     BC1: {
-        bg: 'bg-[#7C9672]/10 text-[#7C9672] border-[#7C9672]/20',
-        text: 'text-[#7C9672]',
-        active: 'bg-[#7C9672] text-white border-[#7C9672]'
+        bg: 'bg-primary/10 text-primary border-primary/20',
+        text: 'text-primary',
+        active: 'bg-primary text-white border-primary'
     },
     BC2: {
-        bg: 'bg-[#D8B55A]/15 text-[#8C6D1F] border-[#D8B55A]/30', // darker text for readability on light yellow background
+        bg: 'bg-warning/15 text-[#8C6D1F] border-warning/30', // darker text for readability on light yellow background
         text: 'text-[#8C6D1F]',
-        active: 'bg-[#D8B55A] text-white border-[#D8B55A]'
+        active: 'bg-warning text-white border-warning'
     },
     BC3: {
-        bg: 'bg-[#CB4834]/10 text-[#CB4834] border-[#CB4834]/20',
-        text: 'text-[#CB4834]',
-        active: 'bg-[#CB4834] text-white border-[#CB4834]'
+        bg: 'bg-danger/10 text-danger border-danger/20',
+        text: 'text-danger',
+        active: 'bg-danger text-white border-danger'
     },
     BC4: {
-        bg: 'bg-[#6F94AF]/10 text-[#6F94AF] border-[#6F94AF]/20',
-        text: 'text-[#6F94AF]',
-        active: 'bg-[#6F94AF] text-white border-[#6F94AF]'
+        bg: 'bg-primary/10 text-primary border-primary/20',
+        text: 'text-primary',
+        active: 'bg-primary text-white border-primary'
     }
 };

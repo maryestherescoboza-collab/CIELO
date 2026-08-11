@@ -11,6 +11,7 @@ import {
     Check
 } from 'lucide-react';
 import type { Curso } from '../../types';
+import { CieloPill } from '../ui/CieloPill';
 
 interface CursoDetalleHeaderProps {
     curso: Curso | undefined;
@@ -71,7 +72,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     </button>
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <span className="px-3.5 py-1 min-h-6 leading-none bg-[#ADC762] text-white text-[10px] font-semibold uppercase tracking-[0.08em] rounded-full flex items-center justify-center">CURSO ACTIVO</span>
+                            <CieloPill variant="primary" uppercase className="px-3.5 h-6">CURSO ACTIVO</CieloPill>
                             <h1 className="text-3xl font-black text-[#2E3330] tracking-tighter uppercase italic">{curso?.grado} {curso?.seccion}</h1>
                         </div>
                         <p className="text-[#5F665E] font-semibold text-sm uppercase tracking-widest flex items-center gap-2">
@@ -86,31 +87,28 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <input
                             type="text"
                             placeholder="BUSCAR ESTUDIANTE..."
-                            className="pl-12 pr-6 py-2.5 min-h-10 bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-[#ADC762]/10 focus:bg-white focus:border-[#ADC762]/30 transition-all w-64 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
+                            className="pl-12 pr-6 py-2.5 min-h-10 bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white focus:border-primary/30 transition-all w-64 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
                             value={buscar}
                             onChange={(e) => setBuscar(e.target.value)}
                         />
                     </div>
 
-                    <button
+                    <CieloPill
+                        as="button"
                         onClick={onSave}
                         disabled={!isDirty || isSaving}
-                        className={`flex items-center gap-3 px-4.5 py-2 min-h-10 leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all border ${isSaving
-                                ? 'bg-[#EB8847] border-[#EB8847] text-white cursor-wait shadow-sm'
-                                : isDirty
-                                    ? 'bg-[#ADC762] border-[#ADC762] text-white hover:bg-[#6C7E5C] shadow-sm'
-                                    : 'bg-white text-[#ADC762] border-[rgba(46,51,48,0.08)] cursor-default'
-                            }`}
+                        variant={isSaving || !isDirty ? 'disabled' : 'primary'}
+                        className={`gap-3 px-4.5 min-h-10 border ${isSaving ? 'bg-attention border-attention text-white cursor-wait' : isDirty ? 'bg-primary border-primary' : 'bg-white text-primary border-[rgba(46,51,48,0.08)] cursor-default'}`}
                     >
                         {isSaving ? (
                             <Loader2 size={16} className="animate-spin" />
                         ) : isDirty ? (
                             <Save size={16} />
                         ) : (
-                            <Check size={16} className="text-[#ADC762] font-bold" />
+                            <Check size={16} className="text-primary font-bold" />
                         )}
                         {isSaving ? 'GUARDANDO...' : isDirty ? 'GUARDAR AHORA' : 'GUARDADO'}
-                    </button>
+                    </CieloPill>
 
                     <button
                         onClick={onToggleFullScreen}
@@ -124,33 +122,45 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-transparent">
                 <div className="flex items-center gap-1 bg-[#F8F3ED] p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
                     {['P1', 'P2', 'P3', 'P4'].map(p => (
-                        <button
+                        <CieloPill
+                            as="button"
                             key={p}
+                            variant={selectedPeriodo === p ? 'neutral' : 'ghost'}
                             onClick={() => onPeriodoChange(p)}
-                            className={`px-4.5 py-2 min-h-9 leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all ${selectedPeriodo === p ? 'bg-white text-[#2E3330] shadow-sm border border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330] border border-transparent'}`}
+                            className={`px-4.5 min-h-9 transition-all border ${selectedPeriodo === p ? 'bg-white text-[#2E3330] border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330] border-transparent'}`}
                         >
                             {p}
-                        </button>
+                        </CieloPill>
                     ))}
                 </div>
 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 border-r border-[rgba(46,51,48,0.08)] pr-4 mr-2">
-                        <button data-guide="btn-agregar-actividad" onClick={onAddActividad} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] hover:bg-[#F8F3ED] hover:text-[#2E3330] transition-all">
+                        <CieloPill
+                            as="button"
+                            data-guide="btn-agregar-actividad"
+                            variant="ghost"
+                            onClick={onAddActividad}
+                            className="gap-2 px-4.5 min-h-9 bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]"
+                        >
                             + AGREGAR ACTIVIDAD
-                        </button>
-                        <button
+                        </CieloPill>
+                        <CieloPill
+                            as="button"
+                            variant={showRecoveryOnly ? 'danger' : 'ghost'}
                             onClick={() => setShowRecoveryOnly(!showRecoveryOnly)}
-                            className={`flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] transition-all border ${showRecoveryOnly ? 'bg-[#EB8847]/10 text-[#EB8847] border-[#EB8847]/30' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
+                            className={`gap-2 px-4.5 min-h-9 transition-all border ${showRecoveryOnly ? 'bg-attention/10 text-attention border-attention/30 hover:bg-attention/20 hover:text-attention' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
                         >
                             {showRecoveryOnly ? 'VER TODOS' : 'VER RIESGO'}
-                        </button>
-                        <button
+                        </CieloPill>
+                        <CieloPill
+                            as="button"
+                            variant={isPointMode ? 'primary' : 'ghost'}
                             onClick={() => setIsPointMode(!isPointMode)}
-                            className={`flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] transition-all border ${isPointMode ? 'bg-[#2E3330] text-white border-[#2E3330]' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
+                            className={`gap-2 px-4.5 min-h-9 transition-all border ${isPointMode ? 'bg-[#2E3330] text-white border-[#2E3330]' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
                         >
                             MODO PINCEL
-                        </button>
+                        </CieloPill>
                     </div>
 
                     <div className="flex items-center gap-1.5 bg-[#F8F3ED] p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
@@ -159,16 +169,16 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             let colorClasses = '';
                             if (val === 100) {
                                 colorClasses = isActive
-                                    ? 'bg-[#ADC762] text-white border-2 border-transparent'
-                                    : 'bg-[#ADC762]/10 text-[#ADC762] border border-transparent hover:bg-[#ADC762]/20';
+                                    ? 'bg-primary text-white border-2 border-transparent'
+                                    : 'bg-primary/10 text-primary border border-transparent hover:bg-primary/20';
                             } else if (val === 85) {
                                 colorClasses = isActive
-                                    ? 'bg-[#EB8847] text-white border-2 border-transparent'
-                                    : 'bg-[#EB8847]/10 text-[#EB8847] border border-transparent hover:bg-[#EB8847]/20';
+                                    ? 'bg-attention text-white border-2 border-transparent'
+                                    : 'bg-attention/10 text-attention border border-transparent hover:bg-attention/20';
                             } else if (val === 70) {
                                 colorClasses = isActive
-                                    ? 'bg-[#B87449] text-white border-2 border-transparent'
-                                    : 'bg-[#B87449]/10 text-[#B87449] border border-transparent hover:bg-[#B87449]/20';
+                                    ? 'bg-danger text-white border-2 border-transparent'
+                                    : 'bg-danger/10 text-danger border border-transparent hover:bg-danger/20';
                             } else {
                                 colorClasses = isActive
                                     ? 'bg-[#2E3330] text-white border-2 border-transparent'
@@ -190,12 +200,12 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
 
                     {isTutor && (
                         <div className="flex items-center gap-3">
-                            <button onClick={onShowVincular} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330] transition-all shadow-sm active:scale-95">
+                            <CieloPill as="button" variant="ghost" onClick={onShowVincular} className="gap-2 px-4.5 min-h-9 bg-white border border-[rgba(46,51,48,0.08)] text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330]">
                                 CARGA
-                            </button>
-                            <button onClick={onShowEliminarEstudiantes} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[10px] font-semibold uppercase tracking-[0.08em] text-[#EB8847] hover:border-[#EB8847]/30 hover:bg-[#EB8847]/10 transition-all shadow-sm active:scale-95">
+                            </CieloPill>
+                            <CieloPill as="button" variant="danger" onClick={onShowEliminarEstudiantes} className="gap-2 px-4.5 min-h-9 bg-white border border-[rgba(46,51,48,0.08)] text-attention hover:border-attention/30 hover:bg-attention/10">
                                 <UserMinus size={14} /> LIMPIAR
-                            </button>
+                            </CieloPill>
                         </div>
                     )}
                 </div>

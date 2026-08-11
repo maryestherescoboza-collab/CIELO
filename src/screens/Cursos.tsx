@@ -7,6 +7,7 @@ import { useCursosData } from '../hooks/useCursosData';
 import { CourseCard } from '../components/courses/CourseCard';
 import { NewCourseModal } from '../components/courses/NewCourseModal';
 import { LinkTeacherModal } from '../components/courses/LinkTeacherModal';
+import { CieloPill } from '../components/ui/CieloPill';
 
 interface Props {
     onAddCurso: (c: Omit<Curso, 'id' | 'grupoId'>) => Promise<any>;
@@ -63,7 +64,7 @@ export default function Cursos({
                 diasSemana: form.diasSemana,
                 isTutorOficial: form.isTutorOficial,
                 periodo: 'P1',
-                color: '#ADC762',
+                color: 'var(--primary)',
                 configuracionEvaluacion: {}
             });
             if (result) {
@@ -109,19 +110,20 @@ export default function Cursos({
                         <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2.5 font-notion-title">
                             Gestión Académica
                         </h1>
-                        <p className="text-[10px] font-bold text-[#5F665E] uppercase tracking-[0.08em]">
+                        <p className="text-xs font-bold text-[#5F665E] uppercase tracking-[0.08em]">
                             Administra tus aulas, estudiantes y registros de evaluación.
                         </p>
                     </div>
-                     <button
+                     <CieloPill
+                        as="button"
                         id="btn-nuevo-curso"
-                        className="px-6 rounded-full bg-[#ADC762] text-white text-xs font-black uppercase tracking-[0.08em] shadow-sm hover:bg-[#6C7E5C] hover:-translate-y-0.5 transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-[#ADC762]/50 flex items-center justify-center gap-2.5 shrink-0"
-                        style={{ height: '36px' }}
+                        variant="primary"
+                        className="px-6 gap-2.5 shrink-0 h-9"
                         onClick={() => setShowModal(true)}
                     >
                         <Plus size={16} strokeWidth={3} />
                         Nuevo Curso
-                    </button>
+                    </CieloPill>
                 </div>
 
                 <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
@@ -134,12 +136,14 @@ export default function Cursos({
                             <p className="text-slate-500 font-medium max-w-md mx-auto leading-relaxed text-sm">
                                 Comienza configurando tu primer curso para empezar a llevar el control de tus evaluaciones por competencias.
                             </p>
-                            <button
-                                className="mt-8 h-12 px-8 rounded-2xl bg-[#1E293B] text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 hover:bg-slate-800 hover:-translate-y-0.5 transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 flex items-center gap-2"
+                            <CieloPill
+                                as="button"
+                                variant="primary"
+                                className="mt-8 h-12 px-8 bg-[#1E293B] hover:bg-slate-800 gap-2 shadow-lg shadow-slate-900/20"
                                 onClick={() => setShowModal(true)}
                             >
                                 Crear mi primer curso
-                            </button>
+                            </CieloPill>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

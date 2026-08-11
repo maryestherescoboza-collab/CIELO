@@ -58,7 +58,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     const rowVirtualizer = useVirtualizer({
         count: estudiantes.length,
         getScrollElement: () => parentRef.current,
-        estimateSize: () => 72,
+        estimateSize: () => 64,
         overscan: 10,
     });
 
@@ -94,7 +94,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             
                             if (col.type === 'estudiantes') {
                                 return (
-                                    <div key={col.id} className="sticky left-0 z-50 bg-[#F8F3ED] px-8 py-8 text-left border-r border-[rgba(46,51,48,0.08)] flex items-center justify-between box-border" style={style}>
+                                    <div key={col.id} className="sticky left-0 z-50 bg-[#F8F3ED] px-6 py-5 text-left border-r border-[rgba(46,51,48,0.08)] flex items-center justify-between box-border" style={style}>
                                         <span className="text-sm font-black uppercase tracking-[0.2em] italic text-[#2E3330]">Estudiantes</span>
                                         <button data-guide="btn-agregar-estudiante" onClick={onAddEstudiante} className="w-8 h-8 flex items-center justify-center hover:bg-[#FDFBF7] rounded-full transition-all text-[#5F665E] hover:text-[#2E3330] border border-transparent hover:border-[rgba(46,51,48,0.08)]"><Plus size={18} /></button>
                                     </div>
@@ -103,10 +103,10 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             if (col.type === 'actividad') {
                                 const act = col.act;
                                 return (
-                                    <div key={col.id} className="px-2 py-6 border-r border-[rgba(46,51,48,0.08)] relative group flex flex-col items-center justify-center box-border" style={style}>
-                                        <div className="flex flex-col items-center gap-4 w-full">
+                                    <div key={col.id} className="px-2 py-4 border-r border-[rgba(46,51,48,0.08)] relative group flex flex-col items-center justify-center box-border" style={style}>
+                                        <div className="flex flex-col items-center gap-3 w-full">
                                             <div className="flex items-center gap-2 w-full justify-center px-1">
-                                                <button onClick={() => onDeleteActividad(act.id)} title="Desactivar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-[#EB8847] rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><EyeOff size={12} /></button>
+                                                <button onClick={() => onDeleteActividad(act.id)} title="Desactivar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-attention rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><EyeOff size={12} /></button>
                                                 <input 
                                                     data-guide="celda-actividad"
                                                     defaultValue={act.nombre.replace(/^Actividad\s+/i, 'ACTIV. ')}
@@ -126,7 +126,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                             e.currentTarget.blur();
                                                         }
                                                     }}
-                                                    className="text-sm font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] focus:text-[#2E3330] bg-transparent outline-none text-center w-full max-w-30 truncate focus:border-b focus:border-[#ADC762]/30 transition-all placeholder:text-[#5F665E]/40"
+                                                    className="text-sm font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] focus:text-[#2E3330] bg-transparent outline-none text-center w-full max-w-30 truncate focus:border-b focus:border-primary/30 transition-all placeholder:text-[#5F665E]/40"
                                                     placeholder="NOMBRE"
                                                 />
                                             </div>
@@ -151,24 +151,24 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             }
                             if (col.type === 'destaca') {
                                 return (
-                                    <div key={col.id} className="px-6 py-6 border-r border-[rgba(46,51,48,0.08)] bg-[#F5BC5D]/10 flex flex-col items-center justify-center box-border" style={style}>
-                                        <Target size={18} className="text-[#B87449]" />
-                                        <span className="text-[11px] font-black uppercase tracking-widest text-[#B87449]/70 mt-2">Destaca</span>
+                                    <div key={col.id} className="px-4 py-4 border-r border-[rgba(46,51,48,0.08)] bg-warning/10 flex flex-col items-center justify-center box-border" style={style}>
+                                        <Target size={18} className="text-danger" />
+                                        <span className="text-xs font-black uppercase tracking-widest text-danger/70 mt-1">Destaca</span>
                                     </div>
                                 );
                             }
                             if (col.type === 'bc-avg') {
                                 const fullName = getCompetenciaDisplay(col.bc);
                                 return (
-                                     <div key={col.id} className={`px-3 pb-3 pt-6 border-r border-[rgba(46,51,48,0.08)] flex flex-col items-center justify-end box-border relative ${col.idx === 0 ? 'border-l-2 border-l-[rgba(46,51,48,0.08)]' : ''}`} style={style}>
-                                         <span className="text-[10px] font-bold uppercase tracking-wider text-[#5F665E] text-center leading-[1.2] whitespace-normal w-full">{fullName}</span>
+                                     <div key={col.id} className={`px-2 pb-2 pt-4 border-r border-[rgba(46,51,48,0.08)] flex flex-col items-center justify-end box-border relative ${col.idx === 0 ? 'border-l-2 border-l-[rgba(46,51,48,0.08)]' : ''}`} style={style}>
+                                         <span className="text-xs font-bold uppercase tracking-wider text-[#5F665E] text-center leading-[1.2] whitespace-normal w-full">{fullName}</span>
                                      </div>
                                 );
                             }
                             if (col.type === 'bc-rec') {
                                 return (
-                                    <div key={col.id} className="px-4 py-6 border-r border-[rgba(46,51,48,0.08)] bg-[#ADC762]/5 flex flex-col items-center justify-center box-border" style={style}>
-                                        <span className="text-xs font-black uppercase tracking-widest text-[#ADC762]/70">Rec.</span>
+                                    <div key={col.id} className="px-4 py-4 border-r border-[rgba(46,51,48,0.08)] bg-primary/5 flex flex-col items-center justify-center box-border" style={style}>
+                                        <span className="text-xs font-black uppercase tracking-widest text-primary/70">Rec.</span>
                                     </div>
                                 );
                             }
@@ -200,9 +200,9 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                         
                                         if (col.type === 'estudiantes') {
                                             return (
-                                                <div key={col.id} className="sticky left-0 z-20 bg-inherit px-8 py-4 border-r border-[rgba(46,51,48,0.08)] font-semibold text-[#2E3330] flex items-center box-border" style={style}>
-                                                    <div className="flex items-center gap-4 w-full">
-                                                        <span className="text-[10px] font-black text-[#5F665E]/40 w-4 shrink-0">{est.numeroLista || eIdx + 1}</span>
+                                                <div key={col.id} className="sticky left-0 z-20 bg-inherit px-6 py-3 border-r border-[rgba(46,51,48,0.08)] font-semibold text-[#2E3330] flex items-center box-border" style={style}>
+                                                    <div className="flex items-center gap-3 w-full">
+                                                        <span className="text-xs font-black text-[#5F665E]/40 w-4 shrink-0">{est.numeroLista || eIdx + 1}</span>
                                                         <div className="flex flex-col overflow-hidden w-full">
                                                             <input 
                                                                 data-guide="celda-estudiante"
@@ -227,7 +227,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                                 }}
                                                                 className="text-sm font-black uppercase tracking-tight truncate bg-transparent outline-none w-full hover:bg-[#F8F3ED] focus:bg-white focus:ring-1 focus:ring-[rgba(46,51,48,0.15)] rounded px-1 transition-all"
                                                             />
-                                                            <span className="text-[9px] font-bold text-[#5F665E] uppercase tracking-widest truncate px-1">ID: {est.id.toString().slice(-6)}</span>
+                                                            <span className="text-xs font-bold text-[#5F665E] uppercase tracking-widest truncate px-1">ID: {est.id.toString().slice(-6)}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -260,7 +260,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                         }
                                         if (col.type === 'destaca') {
                                             return (
-                                                <div key={col.id} className="px-4 py-4 border-r border-[rgba(46,51,48,0.08)] flex items-center justify-center box-border bg-[#FDFBF7]" style={style}>
+                                                <div key={col.id} className="px-3 py-3 border-r border-[rgba(46,51,48,0.08)] flex items-center justify-center box-border bg-[#FDFBF7]" style={style}>
                                                     {est.destaca && (
                                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm transition-transform hover:scale-110 ${BC_COLOR_THEMES[est.destaca as BCKey]?.active}`}>
                                                             {BC_ICONS[est.destaca as BCKey]}
@@ -272,7 +272,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                         if (col.type === 'bc-avg') {
                                             const v = est.bcValues?.[col.idx];
                                             return (
-                                                <div key={col.id} className={`px-4 py-4 border-r border-[rgba(46,51,48,0.08)] flex items-center justify-center box-border ${col.idx === 0 ? 'border-l-2 border-l-[rgba(46,51,48,0.08)]' : ''}`} style={style}>
+                                                <div key={col.id} className={`px-3 py-3 border-r border-[rgba(46,51,48,0.08)] flex items-center justify-center box-border ${col.idx === 0 ? 'border-l-2 border-l-[rgba(46,51,48,0.08)]' : ''}`} style={style}>
                                                     <span className={`text-base font-semibold px-2.5 py-1 rounded ${v?.avg !== null ? getGradeClass(v.avg) : ''}`}>{v?.avg ?? '-'}</span>
                                                 </div>
                                             );

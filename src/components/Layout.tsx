@@ -16,7 +16,7 @@ interface Props {
     onUploadAvatar: (file: File) => Promise<string | null>;
     onOpenSettings?: () => void;
     onMarkNotifyRead?: (id: number) => Promise<void> | void;
-    onCompleteTarea?: (tareaId: number) => void;
+    onCompleteTarea?: (tareaId: string) => void;
     onSelectSearchResult: (type: 'estudiante' | 'curso' | 'actividad', id: number) => void;
 }
 
@@ -82,11 +82,7 @@ export default function Layout({
     const perfilAvatarUrl = state.perfilAvatarUrl || currentUserProfile?.avatarUrl || '';
     
     const [showNotifs, setShowNotifs] = useState(false);
-    const [tasks, setTasks] = useState([
-        { id: 1, text: 'Planificar secuencias para el P1', done: false },
-        { id: 2, text: 'Crear instrumentos de evaluación para el P1', done: false },
-        { id: 3, text: 'Evaluar actividades del P1', done: false }
-    ]);
+
     const [showProfile, setShowProfile] = useState(false);
     const [localBio, setLocalBio] = useState(perfilBio);
     const [editingProfile, setEditingProfile] = useState(false);
@@ -102,9 +98,6 @@ export default function Layout({
     useEffect(() => { setLocalAvatarUrl(perfilAvatarUrl); }, [perfilAvatarUrl]);
 
     useEffect(() => {
-        const t = localStorage.getItem('misTareasPendientes');
-        if (t) setTasks(JSON.parse(t));
-
         const handleShowProfile = (e: CustomEvent) => {
             const d = (e as CustomEvent).detail as { userId?: string; nombre?: string; avatar?: string; materias?: string; descripcion?: string; stats?: { cursos?: string } };
             const clickedUserId = d?.userId;
@@ -159,11 +152,7 @@ export default function Layout({
         };
     }, [docenteNombre, localBio, localAvatarUrl]);
 
-    const toggleTask = (id: number) => {
-        const nextTasks = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
-        setTasks(nextTasks);
-        localStorage.setItem('misTareasPendientes', JSON.stringify(nextTasks));
-    };
+
 
     const saveBio = async () => {
         setBioSaving(true);
@@ -194,7 +183,7 @@ export default function Layout({
         return activeProfile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeProfile?.nombre || 'U')}&background=f8fafc&color=0f172a&bold=true&size=128`;
     };
 
-    const hasUnread = useMemo(() => tasks.some(t => !t.done) || state.notificaciones.some(n => !n.leida), [tasks, state.notificaciones]);
+    const hasUnread = useMemo(() => state.notificaciones.some(n => !n.leida), [state.notificaciones]);
 
     const logrosPedagogicos = useMemo(() => {
         const result = {
@@ -279,8 +268,7 @@ export default function Layout({
             <NotificationDropdown 
                 showNotifs={showNotifs}
                 notificaciones={state.notificaciones}
-                tasks={tasks}
-                toggleTask={toggleTask}
+
                 onMarkNotifyRead={onMarkNotifyRead}
                 onCompleteTarea={onCompleteTarea}
             />

@@ -187,7 +187,7 @@ export default function InvitationModal({ session, currentUserProfile, onRefresh
 
                         <div className="space-y-4 mb-6">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Asignatura</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-400">Asignatura</label>
                                 <select 
                                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-xs font-bold bg-white outline-none focus:border-slate-950 transition-all"
                                     value={selectedSubject}

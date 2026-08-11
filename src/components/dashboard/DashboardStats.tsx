@@ -7,10 +7,10 @@ interface DashboardStatsProps {
 
 export function DashboardStats({ totalEstudiantes, actividadesEvaluadas, avgGeneral, totalCursos }: DashboardStatsProps) {
     const stats = [
-        { label: 'Estudiantes', value: totalEstudiantes, bgImage: 'estudiantes.png', bg: 'bg-[#EB8847]', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-[#EB8847]/20' },
-        { label: 'Actividades', value: actividadesEvaluadas, bgImage: 'actividades.png', bg: 'bg-[#F5BC5D]', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-[#F5BC5D]/20' },
-        { label: 'Promedio G.', value: `${avgGeneral}%`, bgImage: 'promedio.png', bg: 'bg-[#ADC762]', text: 'text-[#F8F3ED]', labelColor: 'text-[#F8F3ED]/80', lineBg: 'bg-[#F8F3ED]', accent: 'border-[#ADC762]/20' },
-        { label: 'Cursos Act.', value: totalCursos, bgImage: 'libro.png', bg: 'bg-[#6D8FB9]', text: 'text-[#F8F3ED]', labelColor: 'text-[#F8F3ED]/80', lineBg: 'bg-[#F8F3ED]', accent: 'border-[#6D8FB9]/20' },
+        { label: 'Estudiantes', value: totalEstudiantes, bgImage: 'estudiantes.png', bg: 'bg-attention', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-attention/20' },
+        { label: 'Actividades', value: actividadesEvaluadas, bgImage: 'actividades.png', bg: 'bg-warning', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-warning/20' },
+        { label: 'Promedio G.', value: `${avgGeneral}%`, bgImage: 'promedio.png', bg: 'bg-[#DDD5C8]', text: 'text-[#000000]', labelColor: 'text-[#000000]/80', lineBg: 'bg-[#000000]', accent: 'border-[#DDD5C8]/20' },
+        { label: 'Cursos Act.', value: totalCursos, bgImage: 'libro.png', bg: 'bg-primary', text: 'text-black', labelColor: 'text-black/80', lineBg: 'bg-black', accent: 'border-primary/20' },
     ];
 
     return (
@@ -37,7 +37,7 @@ export function DashboardStats({ totalEstudiantes, actividadesEvaluadas, avgGene
                         </div>
                         <div className="flex items-baseline gap-2">
                             <p className={`text-4xl font-semibold font-notion-title tracking-tight ${s.text} leading-none`}>{s.value}</p>
-                            {s.label === 'Promedio G.' && <span className="text-[10px] font-black tracking-tighter text-[#2E3330] bg-[#EAE4DA] px-2 py-0.5 rounded-full border border-black/5 animate-pulse">↑ 1.5%</span>}
+                            {s.label === 'Promedio G.' && <span className="text-xs font-black tracking-tighter text-[#2E3330] bg-[#EAE4DA] px-2 py-0.5 rounded-full border border-black/5 animate-pulse">↑ 1.5%</span>}
                         </div>
                     </div>
                 </div>

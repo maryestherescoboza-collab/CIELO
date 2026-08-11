@@ -131,10 +131,10 @@ export function useEvaluationActions() {
     const updateNivelesPuntaje = useCallback(async (nps: NivelPuntaje[]) => {
         if (!session?.user?.id) return;
         const defaults: Record<number, { puntaje: number; nombre: string; color: string; description: string }> = {
-            4: { puntaje: 100, nombre: 'Estratégico', color: '#22c55e', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
-            3: { puntaje: 85, nombre: 'Autónomo', color: '#eab308', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
-            2: { puntaje: 70, nombre: 'Resolutivo', color: '#f97316', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
-            1: { puntaje: 55, nombre: 'Receptivo', color: '#94a3b8', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' }
+            4: { puntaje: 100, nombre: 'Estratégico', color: '#5F9563', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
+            3: { puntaje: 85, nombre: 'Autónomo', color: '#79C599', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
+            2: { puntaje: 70, nombre: 'Resolutivo', color: '#D68253', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
+            1: { puntaje: 55, nombre: 'Receptivo', color: '#C63D3D', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' }
         };
 
         const sanitizedNps = nps.map(np => {

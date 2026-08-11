@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, AlertTriangle } from 'lucide-react';
+import { CieloModal } from '../ui/CieloModal';
 
 interface ResetModalProps {
     showResetModal: boolean;
@@ -16,21 +17,25 @@ const ResetModal: React.FC<ResetModalProps> = ({
     if (!showResetModal) return null;
 
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-200 flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-white rounded-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="bg-rose-600 p-8 text-white text-center relative">
-                    <button 
-                        onClick={() => { setShowResetModal(false); setConfirmKeyword(''); }}
-                        className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
-                    >
-                        <X size={24} />
-                    </button>
-                    <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-                        <AlertTriangle size={40} />
-                    </div>
-                    <h2 className="text-2xl font-black tracking-tight uppercase">¡Atención Crítica!</h2>
-                    <p className="text-rose-100 text-sm font-bold mt-2 uppercase tracking-widest opacity-80">Acción irreversible</p>
+        <CieloModal
+            isOpen={showResetModal}
+            onClose={() => { setShowResetModal(false); setConfirmKeyword(''); }}
+            hideCloseButton
+            maxWidth="md"
+        >
+            <div className="-m-6 mb-6 bg-rose-600 p-8 text-white text-center relative rounded-t-[24px]">
+                <button 
+                    onClick={() => { setShowResetModal(false); setConfirmKeyword(''); }}
+                    className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                    <X size={24} />
+                </button>
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                    <AlertTriangle size={32} />
                 </div>
+                <h2 className="text-xl font-black tracking-tight uppercase">¡Atención Crítica!</h2>
+                <p className="text-rose-100 text-xs font-bold mt-2 uppercase tracking-widest opacity-80">Acción irreversible</p>
+            </div>
                 
                 <div className="p-10">
                     <p className="text-slate-600 text-sm leading-relaxed mb-8">
@@ -43,7 +48,7 @@ const ResetModal: React.FC<ResetModalProps> = ({
 
                     <div className="space-y-4">
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 text-center">
                                 Escribe <span className="text-slate-900">REINICIAR TODO</span> para confirmar
                             </p>
                             <input 
@@ -58,7 +63,7 @@ const ResetModal: React.FC<ResetModalProps> = ({
                         <div className="flex gap-3 pt-4">
                             <button 
                                 onClick={() => { setShowResetModal(false); setConfirmKeyword(''); }}
-                                className="flex-1 py-4 text-sm font-black text-slate-400 hover:text-slate-600 transition-colors"
+                                className="flex-1 h-12 rounded-full text-xs font-black text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors uppercase tracking-widest"
                             >
                                 CANCELAR
                             </button>
@@ -70,15 +75,14 @@ const ResetModal: React.FC<ResetModalProps> = ({
                                     setConfirmKeyword('');
                                     setShowProfile(false);
                                 }}
-                                className="flex-2 py-4 bg-rose-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl text-sm font-black shadow-xl shadow-rose-900/10 hover:bg-rose-700 transition-all transform active:scale-95"
+                                className="flex-2 h-12 bg-rose-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-full text-xs font-black shadow-md shadow-rose-900/10 hover:bg-rose-700 transition-all transform active:scale-95 uppercase tracking-widest"
                             >
                                 REINICIAR AÑO
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+        </CieloModal>
     );
 };
 

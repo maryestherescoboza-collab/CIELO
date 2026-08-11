@@ -7,6 +7,7 @@ import ComunidadSidebar from '../components/comunidad/ComunidadSidebar';
 import ModalsManager from '../components/comunidad/ModalsManager';
 import { Info } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
+import { CieloPill } from '../components/ui/CieloPill';
 import { useComunidadData } from '../hooks/useComunidadData';
 import { useCommunityData } from '../hooks/useCommunityData';
 
@@ -78,13 +79,13 @@ export default function Comunidad({
                                     Comunidad Educativa
                                 </h1>
                                 <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-2 bg-[#EAE4DA] px-3 py-1 rounded-full border border-[rgba(46,51,48,0.08)]">
-                                        <span className="text-[9px] font-bold text-[#2E3330] uppercase tracking-[0.08em]">
+                                    <CieloPill variant="neutral" className="gap-2 px-3">
+                                        <span className="text-xs font-bold text-[#2E3330] uppercase tracking-[0.08em]">
                                             Recursos Compartidos
                                         </span>
-                                    </div>
+                                    </CieloPill>
                                     <div className="h-1.5 w-1.5 rounded-full bg-slate-350"></div>
-                                    <span className="text-[9px] font-bold text-[#5F665E] uppercase tracking-[0.08em]">Intercambio Docente</span>
+                                    <span className="text-xs font-bold text-[#5F665E] uppercase tracking-[0.08em]">Intercambio Docente</span>
                                 </div>
                             </div>
                         </div>
@@ -121,8 +122,8 @@ export default function Comunidad({
 
             <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
                 <div className="bg-[#1E293B] text-white px-6 h-12 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700/50 scale-90 md:scale-100 shadow-slate-900/50">
-                    <Info size={16} className="text-turf-green-base" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Los recursos expiran automáticamente cada 15 días</span>
+                    <Info size={16} className="text-primary" />
+                    <span className="text-xs font-black uppercase tracking-widest">Los recursos expiran automáticamente cada 15 días</span>
                 </div>
             </div>
         </div>

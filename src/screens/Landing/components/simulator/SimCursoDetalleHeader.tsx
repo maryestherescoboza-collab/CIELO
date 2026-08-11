@@ -55,10 +55,10 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                 <div className="flex items-center gap-1">
                     <div>
                         <div className="flex items-center gap-1 mb-1">
-                            <span className="px-1.5 py-0.5 min-h-[24px] leading-none bg-[#ADC762] text-white text-[8px] font-semibold uppercase tracking-[0.08em] rounded-full flex items-center justify-center">CURSO ACTIVO</span>
+                            <span className="px-1.5 py-0.5 min-h-[24px] leading-none bg-primary text-white text-xs font-semibold uppercase tracking-[0.08em] rounded-full flex items-center justify-center">CURSO ACTIVO</span>
                             <h1 className="text-lg font-black text-[#2E3330] tracking-tighter uppercase italic">{curso?.grado} {curso?.seccion}</h1>
                         </div>
-                        <p className="text-[#5F665E] font-semibold text-[8px] uppercase tracking-widest flex items-center gap-1">
+                        <p className="text-[#5F665E] font-semibold text-xs uppercase tracking-widest flex items-center gap-1">
                             <Layout size={10} /> GESTION DEL PERIODO / {curso?.periodo}
                         </p>
                     </div>
@@ -70,7 +70,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <input
                             type="text"
                             placeholder="BUSCAR ESTUDIANTE..."
-                            className="pl-12 pr-6 py-[10px] min-h-[24px] bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-full text-[8px] font-semibold focus:outline-none focus:ring-4 focus:ring-[#ADC762]/10 focus:bg-white focus:border-[#ADC762]/30 transition-all w-48 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
+                            className="pl-12 pr-6 py-[10px] min-h-[24px] bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white focus:border-primary/30 transition-all w-48 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
                             value={buscar}
                             onChange={(e) => setBuscar(e.target.value)}
                         />
@@ -79,11 +79,11 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     <button
                         onClick={onSave}
                         disabled={!isDirty || isSaving}
-                        className={`flex items-center gap-1 px-1.5 py-0.5 min-h-[24px] leading-none rounded-full text-[8px] font-semibold uppercase tracking-[0.08em] transition-all border ${isSaving
-                                ? 'bg-[#EB8847] border-[#EB8847] text-white cursor-wait shadow-sm'
+                        className={`flex items-center gap-1 px-1.5 py-0.5 min-h-[24px] leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all border ${isSaving
+                                ? 'bg-attention border-attention text-white cursor-wait shadow-sm'
                                 : isDirty
-                                    ? 'bg-[#ADC762] border-[#ADC762] text-white hover:bg-[#6C7E5C] shadow-sm'
-                                    : 'bg-white text-[#ADC762] border-[rgba(46,51,48,0.08)] cursor-default'
+                                    ? 'bg-primary border-primary text-white hover:bg-[#6C7E5C] shadow-sm'
+                                    : 'bg-white text-primary border-[rgba(46,51,48,0.08)] cursor-default'
                             }`}
                     >
                         {isSaving ? (
@@ -91,7 +91,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         ) : isDirty ? (
                             <Save size={10} />
                         ) : (
-                            <Check size={10} className="text-[#ADC762] font-bold" />
+                            <Check size={10} className="text-primary font-bold" />
                         )}
                         {isSaving ? 'GUARDANDO...' : isDirty ? 'GUARDAR AHORA' : 'GUARDADO'}
                     </button>
@@ -105,7 +105,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <button
                             key={p}
                             onClick={() => onPeriodoChange(p)}
-                            className={`px-1.5 py-0.5 min-h-[20px] leading-none rounded-full text-[8px] font-semibold uppercase tracking-[0.08em] transition-all ${selectedPeriodo === p ? 'bg-white text-[#2E3330] shadow-sm border border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330] border border-transparent'}`}
+                            className={`px-1.5 py-0.5 min-h-[20px] leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all ${selectedPeriodo === p ? 'bg-white text-[#2E3330] shadow-sm border border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330] border border-transparent'}`}
                         >
                             {p}
                         </button>
@@ -114,18 +114,18 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
 
                 <div className="flex items-center gap-1">
                     <div className="flex items-center gap-1 border-r border-[rgba(46,51,48,0.08)] pr-4 mr-2">
-                        <button onClick={onAddActividad} className="flex items-center gap-1 px-1.5 py-0.5 min-h-[20px] leading-none bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] rounded-full text-[8px] font-semibold uppercase tracking-[0.08em] hover:bg-[#F8F3ED] hover:text-[#2E3330] transition-all">
+                        <button onClick={onAddActividad} className="flex items-center gap-1 px-1.5 py-0.5 min-h-[20px] leading-none bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold uppercase tracking-[0.08em] hover:bg-[#F8F3ED] hover:text-[#2E3330] transition-all">
                             + AGREGAR ACTIVIDAD
                         </button>
                         <button
                             onClick={() => setShowRecoveryOnly(!showRecoveryOnly)}
-                            className={`flex items-center gap-1 px-1.5 py-0.5 min-h-[20px] leading-none rounded-full text-[8px] font-semibold uppercase tracking-[0.08em] transition-all border ${showRecoveryOnly ? 'bg-[#EB8847]/10 text-[#EB8847] border-[#EB8847]/30' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
+                            className={`flex items-center gap-1 px-1.5 py-0.5 min-h-[20px] leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all border ${showRecoveryOnly ? 'bg-attention/10 text-attention border-attention/30' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
                         >
                             {showRecoveryOnly ? 'VER TODOS' : 'VER RIESGO'}
                         </button>
                         <button
                             onClick={() => setIsPointMode(!isPointMode)}
-                            className={`flex items-center gap-1 px-1.5 py-0.5 min-h-[20px] leading-none rounded-full text-[8px] font-semibold uppercase tracking-[0.08em] transition-all border ${isPointMode ? 'bg-[#2E3330] text-white border-[#2E3330]' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
+                            className={`flex items-center gap-1 px-1.5 py-0.5 min-h-[20px] leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all border ${isPointMode ? 'bg-[#2E3330] text-white border-[#2E3330]' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
                         >
                             MODO PINCEL
                         </button>
@@ -137,16 +137,16 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             let colorClasses = '';
                             if (val === 100) {
                                 colorClasses = isActive
-                                    ? 'bg-[#ADC762] text-white border-2 border-transparent'
-                                    : 'bg-[#ADC762]/10 text-[#ADC762] border border-transparent hover:bg-[#ADC762]/20';
+                                    ? 'bg-primary text-white border-2 border-transparent'
+                                    : 'bg-primary/10 text-primary border border-transparent hover:bg-primary/20';
                             } else if (val === 85) {
                                 colorClasses = isActive
-                                    ? 'bg-[#EB8847] text-white border-2 border-transparent'
-                                    : 'bg-[#EB8847]/10 text-[#EB8847] border border-transparent hover:bg-[#EB8847]/20';
+                                    ? 'bg-attention text-white border-2 border-transparent'
+                                    : 'bg-attention/10 text-attention border border-transparent hover:bg-attention/20';
                             } else if (val === 70) {
                                 colorClasses = isActive
-                                    ? 'bg-[#B87449] text-white border-2 border-transparent'
-                                    : 'bg-[#B87449]/10 text-[#B87449] border border-transparent hover:bg-[#B87449]/20';
+                                    ? 'bg-danger text-white border-2 border-transparent'
+                                    : 'bg-danger/10 text-danger border border-transparent hover:bg-danger/20';
                             } else {
                                 colorClasses = isActive
                                     ? 'bg-[#2E3330] text-white border-2 border-transparent'
@@ -157,7 +157,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                                 <button
                                     key={val}
                                     onClick={() => setActivePaintColor(val)}
-                                    className={`w-9 h-9 rounded-full transition-all flex items-center justify-center font-bold text-[8px] ${isActive ? 'scale-105 shadow-sm ring-2 ring-white/50' : 'hover:scale-105'} ${colorClasses}`}
+                                    className={`w-9 h-9 rounded-full transition-all flex items-center justify-center font-bold text-xs ${isActive ? 'scale-105 shadow-sm ring-2 ring-white/50' : 'hover:scale-105'} ${colorClasses}`}
                                 >
                                     {val}
                                 </button>
@@ -166,10 +166,10 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1">
-                        <button onClick={onShowVincular} className="flex items-center gap-1 px-1.5 py-0.5 min-h-[20px] leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[8px] font-semibold uppercase tracking-[0.08em] text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330] transition-all shadow-sm active:scale-95">
+                        <button onClick={onShowVincular} className="flex items-center gap-1 px-1.5 py-0.5 min-h-[20px] leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold uppercase tracking-[0.08em] text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330] transition-all shadow-sm active:scale-95">
                             CARGA
                         </button>
-                        <button onClick={onShowEliminarEstudiantes} className="flex items-center gap-1 px-1.5 py-0.5 min-h-[20px] leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-[8px] font-semibold uppercase tracking-[0.08em] text-[#EB8847] hover:border-[#EB8847]/30 hover:bg-[#EB8847]/10 transition-all shadow-sm active:scale-95">
+                        <button onClick={onShowEliminarEstudiantes} className="flex items-center gap-1 px-1.5 py-0.5 min-h-[20px] leading-none bg-white border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold uppercase tracking-[0.08em] text-attention hover:border-attention/30 hover:bg-attention/10 transition-all shadow-sm active:scale-95">
                             <UserMinus size={10} /> LIMPIAR
                         </button>
                     </div>

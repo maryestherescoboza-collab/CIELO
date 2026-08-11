@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { usePremiumAccess } from '../hooks/usePremiumAccess';
 import { Loader2 } from 'lucide-react';
+import { CieloPill } from '../components/ui/CieloPill';
 
 export default function Suscripcion() {
   const { hasPremium, isDirector, suscripcionActual } = usePremiumAccess();
@@ -81,9 +82,9 @@ export default function Suscripcion() {
               </p>
             )}
             <div className="mt-4 flex gap-3">
-              <button className="px-4 py-2 bg-white border border-green-200 text-green-700 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-green-50">
+              <CieloPill as="button" variant="primary" className="px-4 bg-white border border-green-200 text-green-700 hover:bg-green-50 shadow-sm">
                 Gestionar Suscripción
-              </button>
+              </CieloPill>
             </div>
           </div>
         </div>
@@ -100,13 +101,15 @@ export default function Suscripcion() {
               Tienes una suscripción {suscripcionActual.tipo} iniciada. Completa el pago para activar tu cuenta premium.
             </p>
             <div className="mt-4 flex gap-3">
-              <button 
+              <CieloPill 
+                as="button"
                 onClick={() => handleSubscribe(suscripcionActual.tipo === 'institucional' ? 'institucion' : 'docente')}
                 disabled={loadingPlan !== null}
-                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                variant={loadingPlan !== null ? 'disabled' : 'primary'}
+                className="px-4 bg-yellow-600 hover:bg-yellow-700 text-white gap-2 shadow-sm"
               >
                 {loadingPlan !== null ? <Loader2 size={14} className="animate-spin" /> : 'Pagar Ahora (Tilopay)'}
-              </button>
+              </CieloPill>
             </div>
           </div>
         </div>
@@ -137,7 +140,7 @@ export default function Suscripcion() {
             >
               {/* Top part: Header & Price */}
               <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ADC762] mb-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
                   {planDocente.name}
                 </h3>
                 <p className="text-xs text-zinc-400 mb-4 leading-normal">
@@ -147,7 +150,7 @@ export default function Suscripcion() {
                   <div className="text-4xl font-light text-zinc-900 tracking-tight">
                     {planDocente.price} <span className="text-lg font-normal text-zinc-400">USD</span>
                   </div>
-                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider mt-0.5">
+                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5">
                     por mes
                   </div>
                 </div>
@@ -157,7 +160,7 @@ export default function Suscripcion() {
               <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
                 {planDocente.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-[8px] font-extrabold mt-0.5">
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
                       ✓
                     </span>
                     <span className="text-xs text-zinc-600 leading-tight">
@@ -169,21 +172,23 @@ export default function Suscripcion() {
 
               {/* Bottom part: Secondary & Button */}
               <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-                <p className="text-[10px] text-zinc-400 italic leading-relaxed mb-4">
+                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
                   {planDocente.secondary}
                 </p>
                 {hasPremium && suscripcionActual?.tipo === 'individual' ? (
-                  <button disabled className="w-full py-2.5 px-4 bg-green-50 border border-green-200 text-green-600 text-xs font-medium tracking-widest uppercase">
+                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-green-50 border border-green-200 text-green-600 shadow-sm">
                     Plan Actual
-                  </button>
+                  </CieloPill>
                 ) : (
-                  <button 
+                  <CieloPill 
+                    as="button"
                     onClick={() => handleSubscribe('docente')}
                     disabled={loadingPlan !== null || hasPremium}
-                    className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 text-xs font-medium tracking-widest uppercase hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] transition-all duration-200 flex justify-center items-center gap-2 disabled:opacity-50"
+                    variant={(loadingPlan !== null || hasPremium) ? 'disabled' : 'ghost'}
+                    className="w-full px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] gap-2 flex justify-center shadow-sm h-10"
                   >
                     {loadingPlan === 'docente' ? <Loader2 size={16} className="animate-spin" /> : 'Comprar Plan'}
-                  </button>
+                  </CieloPill>
                 )}
               </div>
             </motion.div>
@@ -198,7 +203,7 @@ export default function Suscripcion() {
             >
               {/* Top part: Header & Price */}
               <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ADC762] mb-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
                   {planInst.name}
                 </h3>
                 <p className="text-xs text-zinc-400 mb-4 leading-normal">
@@ -208,7 +213,7 @@ export default function Suscripcion() {
                   <div className="text-4xl font-light text-zinc-900 tracking-tight">
                     {planInst.price} <span className="text-lg font-normal text-zinc-400">USD</span>
                   </div>
-                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider mt-0.5">
+                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5">
                     por docente al mes
                   </div>
                 </div>
@@ -218,7 +223,7 @@ export default function Suscripcion() {
               <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
                 {planInst.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-[8px] font-extrabold mt-0.5">
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
                       ✓
                     </span>
                     <span className="text-xs text-zinc-600 leading-tight">
@@ -232,47 +237,49 @@ export default function Suscripcion() {
               <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
                 <div className="border border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/80 rounded p-3 mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-medium text-zinc-500">Número de docentes</span>
+                    <span className="text-xs font-medium text-zinc-500">Número de docentes</span>
                     <input
                       type="number"
                       min="1"
                       value={docentes || ''}
                       onChange={(e) => setDocentes(parseInt(e.target.value) || 0)}
-                      className="w-14 px-1.5 py-0.5 bg-white border border-dashed border-[rgba(120,135,110,0.3)] rounded text-right text-[11px] font-semibold text-zinc-800 focus:outline-none"
+                      className="w-14 px-1.5 py-0.5 bg-white border border-dashed border-[rgba(120,135,110,0.3)] rounded text-right text-xs font-semibold text-zinc-800 focus:outline-none"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-[rgba(120,135,110,0.2)]">
                     <div>
-                      <span className="text-[9px] text-zinc-400 uppercase tracking-wider block">Mensual</span>
-                      <span className="text-xs font-semibold text-zinc-700">${mensual} <span className="text-[9px] font-normal text-zinc-400">USD</span></span>
+                      <span className="text-xs text-zinc-400 uppercase tracking-wider block">Mensual</span>
+                      <span className="text-xs font-semibold text-zinc-700">${mensual} <span className="text-xs font-normal text-zinc-400">USD</span></span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[9px] text-zinc-400 uppercase tracking-wider block">Anual</span>
-                      <span className="text-xs font-semibold text-zinc-700">${anual} <span className="text-[9px] font-normal text-zinc-400">USD</span></span>
+                      <span className="text-xs text-zinc-400 uppercase tracking-wider block">Anual</span>
+                      <span className="text-xs font-semibold text-zinc-700">${anual} <span className="text-xs font-normal text-zinc-400">USD</span></span>
                     </div>
                   </div>
                 </div>
 
-                <p className="text-[10px] text-zinc-400 italic leading-relaxed mb-4">
+                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
                   {planInst.secondary}
                 </p>
 
                 {hasPremium && suscripcionActual?.tipo === 'institucional' ? (
-                  <button disabled className="w-full py-2.5 px-4 bg-green-50 border border-green-200 text-green-600 text-xs font-medium tracking-widest uppercase">
+                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-green-50 border border-green-200 text-green-600 shadow-sm">
                     Plan Actual
-                  </button>
+                  </CieloPill>
                 ) : isDirector ? (
-                  <button 
+                  <CieloPill 
+                    as="button"
                     onClick={() => handleSubscribe('institucion')}
                     disabled={loadingPlan !== null}
-                    className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 text-xs font-medium tracking-widest uppercase hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] transition-all duration-200 flex justify-center items-center gap-2"
+                    variant={loadingPlan !== null ? 'disabled' : 'ghost'}
+                    className="w-full px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] gap-2 flex justify-center shadow-sm h-10"
                   >
                     {loadingPlan === 'institucion' ? <Loader2 size={16} className="animate-spin" /> : 'Pagar Institucional'}
-                  </button>
+                  </CieloPill>
                 ) : (
-                  <button disabled className="w-full py-2.5 px-4 bg-slate-50 border border-dashed border-slate-200 text-slate-400 text-xs font-medium tracking-widest uppercase">
+                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-slate-50 border border-dashed border-slate-200 text-slate-400 shadow-sm">
                     Solo para Directores
-                  </button>
+                  </CieloPill>
                 )}
               </div>
             </motion.div>

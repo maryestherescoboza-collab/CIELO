@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Especificaciones Curriculares - Parte 1 (pág. 62-80)</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', 'Segoe UI', Arial, Helvetica, sans-serif;
+            color: #231F20;
+            background: #e8e8e8;
+        }
+
+        .page {
+            width: 8.5in;
+            min-height: 11in;
+            background: #ffffff;
+            margin: 0 auto 24px auto;
+            padding: 0.55in 0.6in 0.5in 0.6in;
+            position: relative;
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page:last-child {
+            page-break-after: auto;
+        }
+
+        /* ---- Intro page ---- */
+        .intro-title {
+            text-align: center;
+            font-size: 19pt;
+            font-weight: 800;
+            margin: 0 0 4px 0;
+            letter-spacing: 0.2px;
+        }
+
+        .intro-underline {
+            width: 300px;
+            height: 3px;
+            background: #231F20;
+            margin: 0 auto 26px auto;
+        }
+
+        .intro-section h3 {
+            font-size: 11.5pt;
+            font-weight: 700;
+            margin: 18px 0 6px 0;
+        }
+
+        .intro-section p {
+            font-size: 10.3pt;
+            line-height: 1.5;
+            text-align: justify;
+            margin: 0 0 10px 0;
+        }
+
+        /* ---- Competencias tables ---- */
+        .subject-title {
+            text-align: center;
+            font-size: 14.5pt;
+            font-weight: 800;
+            margin: 0 0 14px 0;
+            text-transform: uppercase;
+        }
+
+        .subject-title-edit {
+            outline: none;
+            border-bottom: 1px dashed transparent;
+            display: inline-block;
+            min-width: 220px;
+            text-align: left;
+        }
+
+        .subject-title-edit:hover,
+        .subject-title-edit:focus {
+            border-bottom: 1px dashed #999;
+        }
+
+        .subject-title-edit:empty:before {
+            content: "Aquí escribe curso";
+            color: #aaa;
+            font-weight: 400;
+            text-transform: none;
+        }
+
+        table.comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            flex: 1;
+        }
+
+        table.comp-table col.c1 {
+            width: 15%;
+        }
+
+        table.comp-table col.c2 {
+            width: 27%;
+        }
+
+        table.comp-table col.c3 {
+            width: 58%;
+        }
+
+        .hdr-dark td {
+            background: #2b2728;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 9.5pt;
+            padding: 6px 8px;
+            border: 1px solid #2b2728;
+            text-align: center;
+        }
+
+        .hdr-dark td.area-cell {
+            text-align: left;
+            width: 40%;
+        }
+
+        .hdr-dark td b {
+            font-weight: 800;
+        }
+
+        .hdr-col td {
+            background: #e7e7e7;
+            color: #231F20;
+            font-weight: 700;
+            font-size: 9pt;
+            padding: 5px 8px;
+            border: 1px solid #b7b6b6;
+            text-align: center;
+        }
+
+        .comp-table td.fund {
+            border: 1px solid #b7b6b6;
+            vertical-align: middle;
+            text-align: center;
+            font-weight: 700;
+            font-size: 9.3pt;
+            padding: 8px 6px;
+        }
+
+        .comp-table td.ce {
+            border: 1px solid #b7b6b6;
+            vertical-align: top;
+            font-size: 8.7pt;
+            line-height: 1.35;
+            padding: 8px 8px;
+        }
+
+        .comp-table td.ce b {
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .comp-table td.il {
+            border: 1px solid #b7b6b6;
+            vertical-align: top;
+            font-size: 8.7pt;
+            line-height: 1.35;
+            padding: 8px 10px;
+            text-align: justify;
+        }
+
+        .comp-table td.il p {
+            margin: 0 0 10px 0;
+        }
+
+        .comp-table td.il p:last-child {
+            margin-bottom: 0;
+        }
+
+        .fund-edit:empty:before {
+            content: "Competencia Fundamental";
+            color: #aaa;
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .ce-edit:empty:before {
+            content: "CE-### y descripción completa de la competencia específica";
+            color: #aaa;
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .il-edit:empty:before {
+            content: "IL-#- Indicador de logro completo (uno por línea/párrafo)";
+            color: #aaa;
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .ce-edit p,
+        .il-edit p {
+            margin: 0 0 10px 0;
+            text-align: justify;
+        }
+
+        .ce-edit p:last-child,
+        .il-edit p:last-child {
+            margin-bottom: 0;
+        }
+
+        .footnote {
+            font-size: 8pt;
+            font-style: italic;
+            margin-top: 10px;
+            line-height: 1.3;
+        }
+
+        /* ---- Periodo blank tables ---- */
+        table.periodo-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            flex: 1;
+        }
+
+        table.periodo-table col.p1 {
+            width: 22%;
+        }
+
+        table.periodo-table col.p2 {
+            width: 42%;
+        }
+
+        table.periodo-table col.p3 {
+            width: 36%;
+        }
+
+        .periodo-hdr td {
+            background: #e7e7e7;
+            border: 1px solid #b7b6b6;
+            font-weight: 700;
+            padding: 6px 8px;
+            font-size: 9.5pt;
+        }
+
+        .periodo-hdr td.p-label {
+            text-align: center;
+        }
+
+        .periodo-hdr td.p-title {
+            text-align: center;
+            font-size: 12pt;
+            letter-spacing: 0.3px;
+        }
+
+        .periodo-col td {
+            background: #cfcfcf;
+            border: 1px solid #b7b6b6;
+            font-weight: 700;
+            font-size: 9.5pt;
+            padding: 5px 8px;
+            text-align: center;
+        }
+
+        .curso-row td {
+            border: 1px solid #b7b6b6;
+            padding: 6px 8px;
+            font-size: 9.5pt;
+        }
+
+        .curso-row .curso-label {
+            font-weight: 700;
+            width: 90px;
+        }
+
+        .curso-input[contenteditable="true"] {
+            outline: none;
+            font-weight: 600;
+            min-height: 16px;
+        }
+
+        .curso-input[contenteditable="true"]:empty:before {
+            content: "Escriba aquí el nombre del curso...";
+            color: #aaa;
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .periodo-bigrow td {
+            border: 1px solid #b7b6b6;
+            vertical-align: top;
+            padding: 8px 8px;
+            font-size: 8.7pt;
+            height: 8.1in;
+        }
+
+        /* ---- Multiselect widget ---- */
+        .multiselect {
+            position: relative;
+            font-family: inherit;
+        }
+
+        .ms-toggle {
+            border: 1px solid #999;
+            background: #f4f4f4;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: 600;
+            padding: 3px 6px;
+            cursor: pointer;
+            display: inline-block;
+            color: #333;
+        }
+
+        .ms-toggle:hover {
+            background: #e9e9e9;
+        }
+
+        .ms-panel {
+            position: absolute;
+            z-index: 50;
+            top: 100%;
+            left: 0;
+            background: #fff;
+            border: 1px solid #999;
+            box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.25);
+            width: 320px;
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 6px;
+            margin-top: 2px;
+        }
+
+        .ms-panel.hidden {
+            display: none;
+        }
+
+        .ms-panel label {
+            display: block;
+            font-size: 8pt;
+            line-height: 1.3;
+            padding: 3px 2px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .ms-panel label:hover {
+            background: #f2f2f2;
+        }
+
+        .ms-panel input {
+            margin-right: 5px;
+        }
+
+        .ms-selected {
+            margin-top: 4px;
+        }
+
+        .ms-selected .tag {
+            display: block;
+            font-size: 8pt;
+            line-height: 1.35;
+            padding: 2px 0 2px 12px;
+            position: relative;
+            text-align: justify;
+        }
+
+        .ms-selected .tag:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+        }
+
+        .ms-selected .tag .rm {
+            color: #b00000;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 6px;
+            font-size: 8pt;
+        }
+
+        .cc-cell[contenteditable="true"] {
+            min-height: 40px;
+            outline: none;
+            font-size: 8.5pt;
+            line-height: 1.35;
+        }
+
+        .cc-cell[contenteditable="true"]:empty:before {
+            content: "Escriba aquí los contenidos clave...";
+            color: #aaa;
+            font-style: italic;
+        }
+
+        .addrow-btn {
+            margin-top: 8px;
+            border: 1px dashed #888;
+            background: #fafafa;
+            color: #333;
+            font-size: 8.5pt;
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .addrow-btn:hover {
+            background: #eee;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            .ms-panel {
+                display: none !important;
+            }
+        }
+
+        /* ---- Footer ---- */
+        .footer {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 10px;
+            gap: 6px;
+        }
+
+        .footer .pagenum {
+            font-size: 9.5pt;
+            font-weight: 700;
+        }
+
+        .footer .tab {
+            width: 14px;
+            height: 9px;
+            background: #231F20;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="intro-title">Especificaciones Curriculares</div>
+        <div class="intro-underline"></div>
+        <div class="intro-section">
+            <h3>Sobre los aspectos trabajados en la asignatura</h3>
+            <p>La adecuación curricular está pensada para que el sistema educativo avance en el logro de las
+                aspiraciones educativas más altas que le demanda la sociedad, planteadas en las competencias
+                fundamentales. Para ello se han definido competencias específicas que el estudiante desarrollará a lo
+                largo de todo el proceso formativo, a través un conjunto de mediadores, definidos para cada grado, que
+                le permita alcanzar aprendizajes aplicables a contextos diversos. Para lo tanto, se requiere que el
+                docente registre en cada período, de manera resumida, los aspectos trabajados de esas competencias.</p>
+        </div>
+        <div class="intro-section">
+            <h3>Especificaciones curriculares</h3>
+            <p>La implementación de la actualización y revisión curricular proporcionó evidencias y experiencias en
+                torno a la redacción de las competencias específicas, su aporte a las fundamentales y al rol que en el
+                proceso desempeñan los indicadores que permitieron avanzara en la adecuación curricular. Producto del
+                proceso de implementación y validación desarrollado se tienen competencias específicas, criterios de
+                evaluación e indicadores de logro que son marcos referenciales fundamentales para la evaluación del
+                proceso de enseñanza y aprendizaje, a fin de determinar su alcance por período, teniendo como mediadores
+                los contenidos y ejes transversales que se trabajan durante todo el año escolar en las diferentes áreas
+                curriculares.</p>
+            <p>Las competencias específicas tributan directamente a las fundamentales. Su alcance se espera que suceda
+                de manera progresiva durante todo el año escolar. Para evaluar su nivel de avance en cada período,
+                teniendo como referente los indicadores de logro, se hace imperativo a partir de la adecuación
+                curricular, precisar el aspecto que de ellas se ha trabajado, de los indicadores de logro y los
+                contenidos claves.</p>
+            <p>La adecuación curricular aporta al quehacer escolar flexibilidad, apertura y dinamismo. En ese sentido,
+                el docente, a partir de los procesos que ha desarrollado desde su planificación, especificará los
+                códigos correspondientes a las competencias específicas trabajadas, aquellos indicadores de logro
+                puntualizados y especificados al contexto y los contenidos esenciales que durante un período le permiten
+                indicar con precisión el aspecto desarrollado de las competencias, consignando su valorización a partir
+                del diseño y utilización de estrategias y técnicas e instrumentos de evaluación pertinentes.</p>
+            <p>Los aspectos esenciales de la planificación, su ejecución y evaluación ofrecen los insumos que se
+                utilizarán para las precisiones curriculares y se especificarán en las siguientes tablas con su
+                respectivo período, permitiendo vincular y evidenciar el alcance en el desarrollo de las competencias
+                específicas en cada período.</p>
+        </div>
+        <div class="footer"><span class="pagenum">61</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <div class="subject-title">Competencias e indicadores: <span class="subject-title-edit"
+                contenteditable="true"></span></div>
+        <table class="comp-table" data-subject="0">
+            <colgroup>
+                <col class="c1">
+                <col class="c2">
+                <col class="c3">
+            </colgroup>
+            <tr class="hdr-dark">
+                <td class="area-cell" colspan="1"><b>Área:</b> Lengua Española</td>
+                <td><b>Nivel:</b> Secundario - Primer Ciclo</td>
+                <td><b>Grado:</b> 2do.</td>
+            </tr>
+            <tr class="hdr-col">
+                <td>Competencias<br>Fundamentales</td>
+                <td>Competencias Específicas<br>(CE) del Grado</td>
+                <td>Indicadores de Logro (IL)</td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">62</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="comp-table" data-subject="0">
+            <colgroup>
+                <col class="c1">
+                <col class="c2">
+                <col class="c3">
+            </colgroup>
+            <tr class="hdr-dark">
+                <td class="area-cell" colspan="1"><b>Área:</b> Lengua Española</td>
+                <td><b>Nivel:</b> Secundario - Primer Ciclo</td>
+                <td><b>Grado:</b> 2do.</td>
+            </tr>
+            <tr class="hdr-col">
+                <td>Competencias<br>Fundamentales</td>
+                <td>Competencias Específicas<br>(CE) del Grado</td>
+                <td>Indicadores de Logro (IL)</td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footnote">Usar el código para las competencias y el indicador, tomando en cuenta su planificación
+            diseñada y ejecutada.<br>Se debe agregar, solo los aspectos específicos trabajados.</div>
+        <div class="footer"><span class="pagenum">63</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 1</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="0" id="ms1">
+                        <div class="ms-toggle" onclick="msToggle('ms1')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms1-panel"></div>
+                        <div class="ms-selected" id="ms1-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="0" id="ms2">
+                        <div class="ms-toggle" onclick="msToggle('ms2')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms2-panel"></div>
+                        <div class="ms-selected" id="ms2-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">65</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 2</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="0" id="ms3">
+                        <div class="ms-toggle" onclick="msToggle('ms3')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms3-panel"></div>
+                        <div class="ms-selected" id="ms3-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="0" id="ms4">
+                        <div class="ms-toggle" onclick="msToggle('ms4')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms4-panel"></div>
+                        <div class="ms-selected" id="ms4-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">66</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 3</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="0" id="ms5">
+                        <div class="ms-toggle" onclick="msToggle('ms5')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms5-panel"></div>
+                        <div class="ms-selected" id="ms5-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="0" id="ms6">
+                        <div class="ms-toggle" onclick="msToggle('ms6')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms6-panel"></div>
+                        <div class="ms-selected" id="ms6-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">67</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 4</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="0" id="ms7">
+                        <div class="ms-toggle" onclick="msToggle('ms7')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms7-panel"></div>
+                        <div class="ms-selected" id="ms7-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="0" id="ms8">
+                        <div class="ms-toggle" onclick="msToggle('ms8')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms8-panel"></div>
+                        <div class="ms-selected" id="ms8-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">68</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <div class="subject-title">Competencias e indicadores: <span class="subject-title-edit"
+                contenteditable="true"></span></div>
+        <table class="comp-table" data-subject="1">
+            <colgroup>
+                <col class="c1">
+                <col class="c2">
+                <col class="c3">
+            </colgroup>
+            <tr class="hdr-dark">
+                <td class="area-cell" colspan="1"><b>Área:</b> Lenguas Extranjeras - Inglés</td>
+                <td><b>Nivel:</b> Secundario - Primer Ciclo</td>
+                <td><b>Grado:</b> 2do.</td>
+            </tr>
+            <tr class="hdr-col">
+                <td>Competencias<br>Fundamentales</td>
+                <td>Competencias Específicas<br>(CE) del Grado</td>
+                <td>Indicadores de Logro (IL)</td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">68</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="comp-table" data-subject="1">
+            <colgroup>
+                <col class="c1">
+                <col class="c2">
+                <col class="c3">
+            </colgroup>
+            <tr class="hdr-dark">
+                <td class="area-cell" colspan="1"><b>Área:</b> Lenguas Extranjeras - Inglés</td>
+                <td><b>Nivel:</b> Secundario - Primer Ciclo</td>
+                <td><b>Grado:</b> 2do.</td>
+            </tr>
+            <tr class="hdr-col">
+                <td>Competencias<br>Fundamentales</td>
+                <td>Competencias Específicas<br>(CE) del Grado</td>
+                <td>Indicadores de Logro (IL)</td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footnote">Usar el código para las competencias y el indicador, tomando en cuenta su planificación
+            diseñada y ejecutada.<br>Se debe agregar, solo los aspectos específicos trabajados.</div>
+        <div class="footer"><span class="pagenum">69</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 1</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="1" id="ms9">
+                        <div class="ms-toggle" onclick="msToggle('ms9')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms9-panel"></div>
+                        <div class="ms-selected" id="ms9-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="1" id="ms10">
+                        <div class="ms-toggle" onclick="msToggle('ms10')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms10-panel"></div>
+                        <div class="ms-selected" id="ms10-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">71</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 2</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="1" id="ms11">
+                        <div class="ms-toggle" onclick="msToggle('ms11')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms11-panel"></div>
+                        <div class="ms-selected" id="ms11-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="1" id="ms12">
+                        <div class="ms-toggle" onclick="msToggle('ms12')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms12-panel"></div>
+                        <div class="ms-selected" id="ms12-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">72</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 3</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="1" id="ms13">
+                        <div class="ms-toggle" onclick="msToggle('ms13')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms13-panel"></div>
+                        <div class="ms-selected" id="ms13-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="1" id="ms14">
+                        <div class="ms-toggle" onclick="msToggle('ms14')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms14-panel"></div>
+                        <div class="ms-selected" id="ms14-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">73</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 4</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="1" id="ms15">
+                        <div class="ms-toggle" onclick="msToggle('ms15')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms15-panel"></div>
+                        <div class="ms-selected" id="ms15-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="1" id="ms16">
+                        <div class="ms-toggle" onclick="msToggle('ms16')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms16-panel"></div>
+                        <div class="ms-selected" id="ms16-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">74</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <div class="subject-title">Competencias e indicadores: <span class="subject-title-edit"
+                contenteditable="true"></span></div>
+        <table class="comp-table" data-subject="2">
+            <colgroup>
+                <col class="c1">
+                <col class="c2">
+                <col class="c3">
+            </colgroup>
+            <tr class="hdr-dark">
+                <td class="area-cell" colspan="1"><b>Área:</b> Lenguas Extranjeras - Francés</td>
+                <td><b>Nivel:</b> Secundario - Primer Ciclo</td>
+                <td><b>Grado:</b> 2do.</td>
+            </tr>
+            <tr class="hdr-col">
+                <td>Competencias<br>Fundamentales</td>
+                <td>Competencias Específicas<br>(CE) del Grado</td>
+                <td>Indicadores de Logro (IL)</td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">74</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="comp-table" data-subject="2">
+            <colgroup>
+                <col class="c1">
+                <col class="c2">
+                <col class="c3">
+            </colgroup>
+            <tr class="hdr-dark">
+                <td class="area-cell" colspan="1"><b>Área:</b> Lenguas Extranjeras - Francés</td>
+                <td><b>Nivel:</b> Secundario - Primer Ciclo</td>
+                <td><b>Grado:</b> 2do.</td>
+            </tr>
+            <tr class="hdr-col">
+                <td>Competencias<br>Fundamentales</td>
+                <td>Competencias Específicas<br>(CE) del Grado</td>
+                <td>Indicadores de Logro (IL)</td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+            <tr>
+                <td class="fund fund-edit" contenteditable="true"></td>
+                <td class="ce ce-edit" contenteditable="true"></td>
+                <td class="il il-edit" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footnote">Usar el código para las competencias y el indicador, tomando en cuenta su planificación
+            diseñada y ejecutada.<br>Se debe agregar, solo los aspectos específicos trabajados.</div>
+        <div class="footer"><span class="pagenum">75</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 1</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="2" id="ms17">
+                        <div class="ms-toggle" onclick="msToggle('ms17')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms17-panel"></div>
+                        <div class="ms-selected" id="ms17-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="2" id="ms18">
+                        <div class="ms-toggle" onclick="msToggle('ms18')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms18-panel"></div>
+                        <div class="ms-selected" id="ms18-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">77</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 2</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="2" id="ms19">
+                        <div class="ms-toggle" onclick="msToggle('ms19')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms19-panel"></div>
+                        <div class="ms-selected" id="ms19-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="2" id="ms20">
+                        <div class="ms-toggle" onclick="msToggle('ms20')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms20-panel"></div>
+                        <div class="ms-selected" id="ms20-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">78</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 3</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="2" id="ms21">
+                        <div class="ms-toggle" onclick="msToggle('ms21')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms21-panel"></div>
+                        <div class="ms-selected" id="ms21-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="2" id="ms22">
+                        <div class="ms-toggle" onclick="msToggle('ms22')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms22-panel"></div>
+                        <div class="ms-selected" id="ms22-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">79</span><span class="tab"></span></div>
+    </div>
+    <div class="page">
+        <table class="periodo-table">
+            <colgroup>
+                <col class="p1">
+                <col class="p2">
+                <col class="p3">
+            </colgroup>
+            <tr class="periodo-hdr">
+                <td class="p-label">Período 4</td>
+                <td class="p-title" colspan="2">ESPECIFICACIÓN CURRICULAR APLICADA POR PERÍODO</td>
+            </tr>
+            <tr class="periodo-col">
+                <td>CE</td>
+                <td>Indicadores de Logro</td>
+                <td>Contenidos Claves</td>
+            </tr>
+            <tr class="periodo-bigrow">
+                <td>
+                    <div class="multiselect" data-kind="ce" data-subject="2" id="ms23">
+                        <div class="ms-toggle" onclick="msToggle('ms23')">Seleccionar CE ▾</div>
+                        <div class="ms-panel hidden" id="ms23-panel"></div>
+                        <div class="ms-selected" id="ms23-selected"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="multiselect" data-kind="il" data-subject="2" id="ms24">
+                        <div class="ms-toggle" onclick="msToggle('ms24')">Seleccionar IL ▾</div>
+                        <div class="ms-panel hidden" id="ms24-panel"></div>
+                        <div class="ms-selected" id="ms24-selected"></div>
+                    </div>
+                </td>
+                <td class="cc-cell" contenteditable="true"></td>
+            </tr>
+        </table>
+        <div class="footer"><span class="pagenum">80</span><span class="tab"></span></div>
+    </div>
+
+    <script>
+        const SUBJECT_DATA = { "0": { "ces": ["CE-LE1", "CE-LE2", "CE-LE3", "CE-LE4", "CE-LE5", "CE-LE 6", "CE-LE7"], "ils": ["IL-1- Expresa sus ideas a través de textos orales y/o escritos, creando un ambiente cultural e interactivo, desde una perspectiva social.", "IL-2- Emplea la lengua haciendo uso de las diferentes funciones textuales, a través de su expresión personal, creando estructuras para forjar el conocimiento en medios diversos.", "IL-3- Valora los recursos de la lengua y los utiliza al responder preguntas inferenciales y críticas en la comprensión de sentidos.", "IL-4- Demuestra capacidad en el uso de secuencias argumentativas, en la construcción de discursos con temas de su realidad, así como del contexto local, nacional y mundial.", "IL-5- Reconstruye conocimientos sobre situaciones sociales a partir de inferencias en la comprensión y producción de textos funcionales y literarios.", "IL-6- Expone informaciones con juicios y puntos de vista pertinentes, en la construcción de pensamiento estructurado que derivan en conclusiones lógicas, acciones y respeto de opiniones.", "IL-7- Identifica problemas o conflictos del centro educativo y comunitario, a través de un tipo de texto específico y apropiado.", "IL-8- Utiliza textos específicos variados que apoyan la solución de problemas, facilitando la investigación, búsqueda de información, con criterios de relevancia, pertinencia, validez y confiabilidad.", "IL-9- Presenta informes de investigación que evidencian la solución de problemas en un contexto determinado.", "IL-10- Presenta nuevas relaciones sociales en reconocimiento y valoración de lo natural y sociocultural, haciendo uso de textos, tales como análisis, comentarios, argumentos, entre otros.", "IL-11- Conoce y cuestiona las prácticas sociales de ciudadanía en el entorno local y su confrontación con los valores universales, a través de textos y secuencia argumentativa.", "IL-12- Elabora proyectos colaborativos, utilizando textos variados y apropiados, para la construcción de una ciudadanía que busca soluciones a problemas.", "IL-13- Expone conocimientos sobre procesos de investigación en el campo de la ciencia, mediante textos variados y haciendo uso de medios y herramientas tecnológicas.", "IL-14- Analiza textos de secuencia expositivo-explicativa relacionados con investigaciones científicas sencillas, para la comprensión de problemas o situaciones de su entorno familiar, escolar y comunitario.", "IL-15- Redacta textos expositivo-explicativos sobre hallazgos científicos y sociales, haciendo uso de las convenciones de lengua y su divulgación en diferentes contextos.", "IL-16- Caracteriza problemáticas relacionadas con salud y ambiente que afectan el quehacer social, haciendo uso de textos diversos y apoyándose en recursos y medios variados.", "IL-17- Escribe textos sobre la flora y la fauna dominicanas, la salud y el ambiente, identificando especies endémicas, preparación de alimentos sanos, problemas ambientales de actualidad, proceso de reciclaje, zonas protegidas, para una mejor salud integral y ambiente favorable al desarrollo humano.", "IL-18- Aplica conocimientos sobre la conservación de la salud, la naturaleza y sus ecosistemas, redactando textos variados, para su divulgación en actividades de intercomunicación dentro y fuera del aula.", "IL-19- Utiliza un género textual para la comprensión de sí mismo y de los demás en variadas situaciones de comunicación.", "IL-20- Escribe textos literarios para el cultivo de valores universales y reforzar la dimensión humanista y el desarrollo físico y espiritual.", "IL-21- Canalizar emociones y sentimientos mediante lecturas y escrituras reflexivas, fortaleciendo las relaciones humanas, el respeto y la dignidad de las personas."] }, "1": { "ces": ["CE-LEI1", "CE-LEI2", "CE-LEI3", "CE-LEI4", "CE-LEI5", "CE-LEI6", "CE-LEI7"], "ils": ["IL-1- Responde de forma adecuada a preguntas e indicaciones, a partir de la escucha o lectura de textos breves y sencillos que contienen información sobre su entorno inmediato, actividades cotidianas, estados de salud, sentimientos, intereses, consejos, planes sugerencias, y narraciones de experiencias.", "IL-2- Produce textos breves y sencillos mediante una serie de frases y oraciones enlazadas por conectores básicos para compartir informaciones personales y de su entorno inmediato, tales como experiencias, estados de salud, sentimientos, planes, consejos y sugerencias, con pausas y reformulaciones en lo oral y con algunos errores básicos en lo escrito.", "IL-3- Interactúa en forma oral o escrita a través de una serie de frases y oraciones sencillas, enlazadas por conectores, con el propósito de informar sobre actividades cotidianas, describir estados anímicos y físicos, solicitar ayuda, comprar, expresar deseo o interés, dar consejos y sugerencias, expresar planes y narrar experiencias, aunque con algunos errores básicos.", "IL-4- Responde de forma adecuada a preguntas e indicaciones, a partir de textos orales y escritos breves y sencillos donde se presenta información variada y sugerencias sobre situaciones presentes, futuras y pasadas, comprendiendo de forma reflexiva y creativa la secuencia y relación lógica de los elementos.", "IL-5- Produce textos orales y escritos breves y sencillos con claridad y creatividad, manteniendo una secuencia clara y ordenada de las ideas, mediante el uso de conectores lógicos básicos apropiados a la relación específica de las ideas, al tema y la situación.", "IL-6- Interactúa en forma oral o escrita a través de una serie de oraciones breves y sencillas ordenadas de una forma lógica y presentadas de forma creativa en diferentes tipos de texto donde comparte experiencias, información, planes, sugerencias, y consejos.", "IL-7- Responde de forma adecuada a preguntas e indicaciones sobre situaciones y problemas de su entorno inmediato y temas que le son familiares, a partir de textos orales y escritos breves y sencillos.", "IL-8- Se comunica mediante textos orales y escritos de forma clara y comprensible, para comunicar problemas inmediatos propios, de otras personas y del entorno cotidiano, así como para proponer consejos y sugerencias pertinentes, utilizando frases y oraciones breves y sencillas.", "IL-9- Interactúa de forma oral y escrita para solicitar o proveer información, ayuda, consejos y sugerencias sobre situaciones y problemas relativos a actividades cotidianas, intereses y estados de ánimo, utilizando con claridad frases y oraciones breves y sencillas.", "IL-10- Reconoce las diferencias individuales y la identidad social y cultural propia y de otros países como gestos, compras, celebraciones, actividades de tiempo libre, puntualidad y lugares de interés.", "IL-11- Interactúa de forma breve y sencilla en el idioma inglés, con cortesía, asertividad y respeto.", "IL-12- Sostiene la conversación al interactuar en forma oral o escrita, utilizando frases y oraciones estratégicas para mantener la interacción de forma cortés y respetuosa a las diferencias de la cultura personal y de otras personas.", "IL-13- Identifica información y la utiliza de forma adecuada para responder a preguntas e indicaciones sobre aspectos científicos y tecnológicos presentes en la descripción de actividades cotidianas, experiencias, sentimientos y dolencias propias y de otras personas.", "IL-14- Expresa ideas y sugerencias sobre aspectos de temas científicos, tecnológicos y de otra índole presentes en su entorno inmediato de interés personal para referirse a la salud, estados de ánimo, deseos y experiencias pasadas, utilizando oraciones comunes breves y sencillas.", "IL-15- Interactúa sobre temas científicos, tecnológicos y de otra índole con el propósito de pedir y dar consejos y sugerencias, de forma presencial o virtual, utilizando vocabulario común con frases y oraciones breves y sencillas.", "IL-16- Identifica las acciones que impactan positivamente la salud y el medio ambiente en las actividades cotidianas que se realizan en su entorno inmediato.", "IL-17- Describe información del estado de su entorno inmediato, presentando consejos, sugerencias y planes para cuidar el medioambiente, la salud propia y de otras personas.", "IL-18- Interactúa de forma adecuada en situaciones donde se promueve prácticas de hábitos saludables para las personas y amigables con el medioambiente.", "IL-19- Muestra empatía por los sentimientos y necesidades de las demás personas.", "IL-20- Muestra disposición para ayudar a las demás personas que lo necesitan, al interactuar con sus compañeros de forma colaborativa.", "IL-21- Interactúa con cortesía, respeto y asertividad al referirse a sí mismo y a otras personas."] }, "2": { "ces": ["CE-LEF1", "CE-LEF2", "CE-LEF3", "CE-LEF4", "CE-LEF5", "CE-LEF6", "CE-LEF7"], "ils": ["IL-1- Responde de manera adecuada a preguntas e indicaciones, a partir de textos orales o escritos breves y sencillos, compuestos por un repertorio muy limitado de vocabulario y expresiones ensayadas en el idioma francés, relativos a información personal básica, actividades cotidianas, preferencias y descripción de viviendas, releyendo cuando sea necesario.", "IL-2- Produce textos orales y escritos muy breves y sencillos que requieren cierto esfuerzo para ser comprendidos, usualmente compuestos por un repertorio limitado de vocabulario y expresiones básicas donde se tratan brevemente informaciones personales, propias y de otras personas, actividades cotidianas, descripción del entorno inmediato y preferencias, apoyándose en experiencias previas, imágenes y estrategias compensatorias.", "IL-3- Interactúa de forma oral y escrita, utilizando un repertorio ensayado de vocabulario y expresiones muy breves y sencillas, donde se identifica e identifica a otras personas, y donde describe sus actividades cotidianas y sus preferencias, necesitando ayuda de su interlocutor para comprender y hacerse comprender.", "IL-4- Utiliza el pensamiento lógico-verbal para comprender expresiones básicas en textos orales y escritos muy breves y senillos sobre identificación personal, actividades inmediatas y descripción de su entorno, releyendo cuando sea necesario y ayudándose de las ilustraciones y otros elementos textuales y paratextuales del contexto.", "IL-5- Presenta de forma lógica y creativa la estructura y secuencia de ideas, empleando estrategias de desempeño y pensamiento creativo, tales como acompañar con dibujos, dramatizar, cantar, entre otros, aunque requiera esfuerzo poder comprender las frases y oraciones breves y sencillas que expresa en forma oral o escrita.", "IL-6- Interactúa de forma sencilla oral y escrita muy breve y sencilla sobre situaciones de identificación personal, descripción de su entorno, actividades cotidianas y gustos y preferencias, utilizando el pensamiento lógico-verbal para estructurar y seguir la secuencia de expresiones ensayadas y el pensamiento creativo para realizar el intercambio en la situación planteada.", "IL-7- Responde de forma adecuada a preguntas en indicaciones simples de información específica, tendentes a la resolución de situaciones y problemas inmediatos, a partir de textos orales y escritos simples donde se comparte información personal, y se describe actividades cotidianas, la vivienda y los gustos y preferencias.", "IL-8- Presenta información breve sobre situaciones y problemas que lo requieren, utilizando frases y oraciones escritas, y de elementos orales practicados en colocación sucesiva, que se comprenden al compartir información personal y describir actividades cotidianas, la vivienda y los gustos y preferencias.", "IL-9- Interactúa de forma muy breve y sencilla para compartir información básica tendente a resolver situaciones o problemas planteados en su entorno cotidiano inmediato, tales como información personal básica, descripción de vivienda, actividades cotidianas y gustos y preferencias, utilizando un repertorio limitado de vocabulario y expresiones con ayuda de su interlocutor.", "IL-10- Responde de forma adecuada ante las expresiones de cortesía y respeto, identificándolas al compartir información personal, sus actividades cotidianas, descripción de su vivienda y sus preferencias.", "IL-11- Se expresa con cortesía, respeto y asertividad, al compartir información personal, sus actividades cotidianas, descripción de su vivienda y sus preferencias, en textos orales y escritos muy breves y sencillos.", "IL-12- Interactúa de forma oral y escrita con expresiones básicas de cortesía, tolerancia y respeto a las diferencias individuales, costumbres y cultura de las demás personas.", "IL-13- Localiza información referente a aspectos de la ciencia y la tecnología, en la identificación personal de otras personas, en sus actividades cotidianas, gustos y preferencias y descripción de viviendas, siempre que el texto esté compuesto por frases y oraciones comunes sencillas y pueda releer o escuchar de nuevo cuando sea necesario.", "IL-14- Se refiere a aspectos de la ciencia y la tecnología, a partir de un repertorio limitado de expresiones orales y escritas ensayadas, relativas a identificación personal, descripción de actividades cotidianas, viviendas, gustos y preferencias.", "IL-15- Interactúa en forma oral y escrita empleando aspectos científicos y tecnológicos propios de la identificación de las personas, gustos y preferencias, vivienda y actividades cotidianas, a través de un repertorio limitado de expresiones ensayadas.", "IL-16- Responde a preguntas e indicaciones de reflexión sobre las opciones que impactan positivamente la salud y el medio ambiente, a partir de la escucha lectura de textos breves sobre situaciones inmediatas de comunicación.", "IL-17- Escribe textos orales y escritos muy breves y sencillos, en los que muestra preferencia por opciones favorables para su salud, la de otras personas, y el medioambiente.", "IL-18- Interactúa mostrando preferencia por opciones beneficiosas para el medioambiente y la salud, a partir de expresiones breves.", "IL-19- Responde de forma adecuada y en un plano de cortesía, honestidad, aceptación, asertividad y respeto, a preguntas e indicaciones, a partir de la escucha o lectura de textos sencillos que contienen información personal básica, y descripción de actividades cotidianas y objetos de su vivienda y entorno.", "IL-20- Se expresa en forma oral y escrita con cortesía, honestidad, aceptación y respeto por la identidad personal y modo de vida de las demás personas, utilizando frases simples en el idioma francés.", "IL-21- Interactúa de forma oral y escrita con cortesía, actitud de respeto, aceptación y asertividad en intercambios sencillos en el idioma francés."] } };
+
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.innerText = s;
+            return d.innerHTML;
+        }
+
+        function normalizePaste(e) {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            const html = lines.map(l => `<p>${escapeHtml(l)}</p>`).join('');
+            document.execCommand('insertHTML', false, html);
+        }
+
+        function plainPaste(e) {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text/plain').replace(/\r?\n/g, ' ').trim();
+            document.execCommand('insertText', false, text);
+        }
+
+        document.querySelectorAll('.il-edit, .ce-edit').forEach(el => el.addEventListener('paste', normalizePaste));
+        document.querySelectorAll('.fund-edit, .subject-title-edit').forEach(el => el.addEventListener('paste', plainPaste));
+
+        /* ---- Smart distribute: paste a full competencias block copied from the
+           original document (Fundamental / CE-code + text / IL-1.. IL-N, wrapped
+           across many lines) and auto-split it into the correct row cells. ---- */
+
+        function endsWithPeriod(s) {
+            return /[.!?…]["'’”)\]]?\s*$/.test(s);
+        }
+
+        function looksLikeCompBlock(text) {
+            return /^CE[\s-]/mi.test(text) && /^IL[\s-]?\d+/mi.test(text);
+        }
+
+        function parseCompBlock(text) {
+            const CE_RE = /^CE[\s-]/i;
+            const IL_RE = /^IL[\s-]?\d+/i;
+            const rawLines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            let rows = [];
+            let curFund = [], curCE = [], curILs = [], curILBuffer = null, mode = 'FUND';
+
+            function closeIL() {
+                if (curILBuffer !== null) { curILs.push(curILBuffer.trim()); curILBuffer = null; }
+            }
+            function closeRow() {
+                rows.push({ fund: curFund.join(' ').trim(), ce: curCE.join(' ').trim(), ils: curILs.slice() });
+                curFund = []; curCE = []; curILs = []; curILBuffer = null;
+            }
+
+            for (const line of rawLines) {
+                if (CE_RE.test(line)) {
+                    if (mode === 'IL') { closeIL(); closeRow(); }
+                    mode = 'CE'; curCE.push(line); continue;
+                }
+                if (IL_RE.test(line)) {
+                    if (mode === 'CE') { mode = 'IL'; curILBuffer = line; }
+                    else if (mode === 'IL') { closeIL(); curILBuffer = line; }
+                    else { mode = 'IL'; curILBuffer = line; }
+                    continue;
+                }
+                if (mode === 'FUND') { curFund.push(line); }
+                else if (mode === 'CE') { curCE.push(line); }
+                else if (mode === 'IL') {
+                    if (curILBuffer === null) { curILBuffer = line; }
+                    else if (endsWithPeriod(curILBuffer)) {
+                        closeIL(); closeRow(); mode = 'FUND'; curFund.push(line);
+                    } else {
+                        curILBuffer += ' ' + line;
+                    }
+                }
+            }
+            if (mode === 'IL') closeIL();
+            if (curFund.length || curCE.length || curILs.length) closeRow();
+            return rows;
+        }
+
+        function handleCompTablePaste(e) {
+            const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+            if (!looksLikeCompBlock(text)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const table = e.currentTarget;
+            const rows = parseCompBlock(text);
+            const trs = Array.from(table.querySelectorAll('tr')).filter(tr => tr.querySelector('.fund-edit'));
+            rows.forEach((r, i) => {
+                if (i >= trs.length) return;
+                const tr = trs[i];
+                const fundEl = tr.querySelector('.fund-edit');
+                const ceEl = tr.querySelector('.ce-edit');
+                const ilEl = tr.querySelector('.il-edit');
+                if (fundEl) fundEl.innerText = r.fund;
+                if (ceEl) ceEl.innerHTML = r.ce ? `<p>${escapeHtml(r.ce)}</p>` : '';
+                if (ilEl) ilEl.innerHTML = r.ils.map(t => `<p>${escapeHtml(t)}</p>`).join('');
+            });
+        }
+
+        document.querySelectorAll('table.comp-table').forEach(tbl => {
+            tbl.addEventListener('paste', handleCompTablePaste, true);
+        });
+
+        function extractCEItems(subjIdx) {
+            const tables = document.querySelectorAll(`table.comp-table[data-subject="${subjIdx}"]`);
+            let items = [];
+            tables.forEach(table => {
+                table.querySelectorAll('.ce-edit').forEach(cell => {
+                    const raw = (cell.innerText || '').trim();
+                    if (!raw) return;
+                    const firstLine = raw.split(/\r?\n/)[0].trim();
+                    const m = firstLine.match(/^CE[\s-]?[A-Za-z]*\s?\d+/i);
+                    const code = m ? m[0].trim() : firstLine;
+                    if (code) items.push(code);
+                });
+            });
+            return [...new Set(items)];
+        }
+
+        function extractILItems(subjIdx) {
+            const tables = document.querySelectorAll(`table.comp-table[data-subject="${subjIdx}"]`);
+            let items = [];
+            tables.forEach(table => {
+                table.querySelectorAll('.il-edit').forEach(cell => {
+                    const paras = Array.from(cell.querySelectorAll('p')).map(p => p.innerText.trim());
+                    const lines = paras.length ? paras : (cell.innerText || '').split(/\r?\n/).map(l => l.trim());
+                    lines.forEach(l => { if (/^IL[\s-]?\d+/i.test(l)) items.push(l); });
+                });
+            });
+            return [...new Set(items)];
+        }
+
+        function buildPanel(panel, kind, subjIdx, uid) {
+            const items = kind === 'ce' ? extractCEItems(subjIdx) : extractILItems(subjIdx);
+            const selectedDiv = document.getElementById(uid + '-selected');
+            const already = selectedDiv ? Array.from(selectedDiv.querySelectorAll('.tag')).map(t => t.textContent) : [];
+            if (items.length === 0) {
+                panel.innerHTML = '<div style="padding:6px 4px;font-size:8pt;color:#999;font-style:italic;">' +
+                    'Aún no hay datos. Complete primero la tabla de Competencias e Indicadores de esta asignatura.</div>';
+                return;
+            }
+            let html = '';
+            items.forEach(item => {
+                const checked = already.includes(item) ? 'checked' : '';
+                html += `<label><input type="checkbox" data-val="${escapeHtml(item)}" ${checked} onchange="msChanged(this)"> ${escapeHtml(item)}</label>`;
+            });
+            panel.innerHTML = html;
+        }
+
+        function msToggle(uid) {
+            const panel = document.getElementById(uid + '-panel');
+            const root = document.getElementById(uid);
+            const kind = root.getAttribute('data-kind');
+            const subjIdx = root.getAttribute('data-subject');
+            const wasHidden = panel.classList.contains('hidden');
+            // close all other panels
+            document.querySelectorAll('.ms-panel').forEach(p => { if (p !== panel) p.classList.add('hidden'); });
+            if (wasHidden) {
+                buildPanel(panel, kind, subjIdx, uid);
+                panel.classList.remove('hidden');
+            } else {
+                panel.classList.add('hidden');
+            }
+        }
+
+        function msChanged(checkbox) {
+            const panel = checkbox.closest('.ms-panel');
+            const root = panel.closest('.multiselect');
+            const uid = root.id;
+            const selectedDiv = document.getElementById(uid + '-selected');
+            const checked = panel.querySelectorAll('input[type=checkbox]:checked');
+            let html = '';
+            checked.forEach(cb => {
+                const val = cb.getAttribute('data-val');
+                html += `<span class="tag">${escapeHtml(val)}</span>`;
+            });
+            selectedDiv.innerHTML = html;
+        }
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.multiselect')) {
+                document.querySelectorAll('.ms-panel').forEach(p => p.classList.add('hidden'));
+            }
+        });
+
+        function addRow(tbodyId, subjIdx) {
+            const tbody = document.getElementById(tbodyId);
+            const tr = document.createElement('tr');
+            tr.className = 'periodo-row';
+            const uidBase = 'ms' + Math.floor(Math.random() * 1000000);
+            tr.innerHTML = `
+    <td>
+      <div class="multiselect" data-kind="ce" data-subject="${subjIdx}" id="${uidBase}a">
+        <div class="ms-toggle" onclick="msToggle('${uidBase}a')">Seleccionar CE ▾</div>
+        <div class="ms-panel hidden" id="${uidBase}a-panel"></div>
+        <div class="ms-selected" id="${uidBase}a-selected"></div>
+      </div>
+    </td>
+    <td>
+      <div class="multiselect" data-kind="il" data-subject="${subjIdx}" id="${uidBase}b">
+        <div class="ms-toggle" onclick="msToggle('${uidBase}b')">Seleccionar IL ▾</div>
+        <div class="ms-panel hidden" id="${uidBase}b-panel"></div>
+        <div class="ms-selected" id="${uidBase}b-selected"></div>
+      </div>
+    </td>
+    <td class="cc-cell" contenteditable="true"></td>
+  `;
+            tbody.appendChild(tr);
+        }
+    </script>
+
+</body>
+
+</html>

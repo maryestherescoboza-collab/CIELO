@@ -1,7 +1,8 @@
 import React from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { Trash2, Users } from 'lucide-react';
 import type { AppState } from '../../types';
 import { ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
+import { CieloModal } from '../ui/CieloModal';
 
 interface VincularDocentesModalProps {
     show: boolean;
@@ -25,15 +26,14 @@ const VincularDocentesModal: React.FC<VincularDocentesModalProps> = ({
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 z-120 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl bg-white shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
-                <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Configuración de Carga Académica</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 text-slate-400 rounded-full transition-colors">
-                        <X size={24} />
-                    </button>
-                </div>
-                <div className="p-8 max-h-[60vh] overflow-y-auto space-y-6">
+        <CieloModal
+            isOpen={show}
+            onClose={onClose}
+            title="Configuración de Carga Académica"
+            icon={<Users size={20} />}
+            maxWidth="2xl"
+        >
+            <div className="space-y-4">
                     {ASIGNATURAS_CATALOGO.filter(a => a.id !== 'lengua_espanola').map((asig) => {
                         const linked = state.cursoDocentes.find(cd => cd.cursoId === cursoId && cd.asignatura === asig.id);
                         const profile = linked ? state.perfiles.find(p => p.userId === linked.userId) : null;
@@ -57,14 +57,14 @@ const VincularDocentesModal: React.FC<VincularDocentesModalProps> = ({
                                         {linked ? (
                                             <button 
                                                 onClick={() => onToggleDocenteCurso(cursoId, linked.userId, 'co-docente', asig.id)}
-                                                className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-black uppercase border border-rose-100 hover:bg-rose-100 transition-all flex items-center gap-2"
+                                                className="px-4 py-2 bg-rose-50 text-rose-600 rounded-full text-xs font-black uppercase border border-rose-100 hover:bg-rose-100 transition-all flex items-center gap-2"
                                             >
                                                 <Trash2 size={14} /> Desvincular
                                             </button>
                                         ) : (
                                             <div className="flex items-center gap-2">
                                                 <select 
-                                                    className="text-xs font-bold border border-slate-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-base/20"
+                                                    className="text-xs font-bold border border-slate-200 rounded-full px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/20"
                                                     onChange={(e) => {
                                                         const val = e.target.value;
                                                         if (val) onToggleDocenteCurso(cursoId, val, 'co-docente', asig.id);
@@ -88,9 +88,8 @@ const VincularDocentesModal: React.FC<VincularDocentesModalProps> = ({
                             </div>
                         );
                     })}
-                </div>
             </div>
-        </div>
+        </CieloModal>
     );
 };
 

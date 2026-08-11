@@ -8,7 +8,7 @@ export function LandingFooter() {
         <div className="col-span-1 md:col-span-2 space-y-6">
           <Link to="/" className="flex items-center gap-3 w-fit">
             <div className="bg-white rounded-xl p-1">
-              <img src={logo} alt="CIELO Logo" className="w-8 h-8 object-contain" />
+              <img src={logo} alt="CIELO Logo" className="w-16 h-16 object-contain" />
             </div>
             <span className="text-white font-black text-xl tracking-tighter">CIELO</span>
           </Link>

@@ -46,7 +46,7 @@ export function DemoRubric({ studentId, activityId, onClose }: Props) {
         <div className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between bg-[#FDFBF7]">
           <div>
             <h3 className="text-lg md:text-xl font-black text-[#2E3330]">Evaluando a {student?.name}</h3>
-            <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+            <p className="text-xs md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
               {demoRubricTemplate.title}
             </p>
           </div>
@@ -63,7 +63,7 @@ export function DemoRubric({ studentId, activityId, onClose }: Props) {
             <div key={crit.id}>
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-black text-[#2E3330]">{crit.name}</h4>
-                <span className="text-[10px] font-bold px-2 py-1 bg-[#EAE4DA] rounded-full text-[#ADC762] uppercase tracking-wider">
+                <span className="text-xs font-bold px-2 py-1 bg-[#EAE4DA] rounded-full text-primary uppercase tracking-wider">
                   Valor: {crit.weight}%
                 </span>
               </div>
@@ -76,16 +76,16 @@ export function DemoRubric({ studentId, activityId, onClose }: Props) {
                       onClick={() => handleSelect(crit.id, level.id)}
                       className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all ${
                         isSelected 
-                          ? 'border-[#ADC762] bg-[#86A792]/10 shadow-sm' 
-                          : 'border-slate-100 bg-white hover:border-[#ADC762]/30 hover:shadow-md'
+                          ? 'border-primary bg-primary/10 shadow-sm' 
+                          : 'border-slate-100 bg-white hover:border-primary/30 hover:shadow-md'
                       }`}
                     >
                       {isSelected && (
-                        <div className="absolute top-3 right-3 text-[#ADC762]">
+                        <div className="absolute top-3 right-3 text-primary">
                           <Check size={16} strokeWidth={3} />
                         </div>
                       )}
-                      <div className={`text-xl font-black mb-2 ${isSelected ? 'text-[#ADC762]' : 'text-slate-300'}`}>
+                      <div className={`text-xl font-black mb-2 ${isSelected ? 'text-primary' : 'text-slate-300'}`}>
                         {level.score}
                       </div>
                       <p className={`text-xs font-medium leading-relaxed ${isSelected ? 'text-[#2E3330]' : 'text-slate-500'}`}>

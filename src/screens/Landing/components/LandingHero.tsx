@@ -24,8 +24,8 @@ export function LandingHero() {
   return (
     <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden flex flex-col items-center justify-center min-h-[90vh]">
       {/* Background ambient glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-[#E88C6B]/10 rounded-full blur-[120px] pointer-events-none -z-10" />
-      <div className="absolute top-0 right-0 w-100 h-100 bg-[#86A792]/10 rounded-full blur-[100px] pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-attention/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+      <div className="absolute top-0 right-0 w-100 h-100 bg-primary/10 rounded-full blur-[100px] pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto px-6 text-center z-10 w-full relative">
         <motion.div
@@ -36,8 +36,8 @@ export function LandingHero() {
         >
           <motion.div variants={itemVariants} className="mb-6 flex justify-center">
             <div className="inline-flex items-center gap-2 bg-[#EAE4DA]/50 px-4 py-2 rounded-full border border-[rgba(46,51,48,0.08)] backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-[#ADC762] animate-pulse" />
-              <span className="text-[10px] font-black text-[#5F665E] uppercase tracking-widest">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-black text-[#5F665E] uppercase tracking-widest">
                 Si algo merece hacerse, merece hacerse bien
               </span>
             </div>
@@ -48,7 +48,7 @@ export function LandingHero() {
             className="text-4xl sm:text-5xl md:text-7xl lg:text-[5rem] font-black text-[#2E3330] tracking-tighter leading-[1.1] mb-6 md:mb-8"
           >
             Evalua competencias para{' '}
-            <span className="text-transparent bg-clip-text bg-linear-to-r from-[#ADC762] to-[#6C7E5C]">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-[var(--primary)] to-[#6C7E5C]">
               instituciones de vanguardia.
             </span>
           </motion.h1>
@@ -64,7 +64,7 @@ export function LandingHero() {
             <button className="px-8 py-4 rounded-full bg-[#2E3330] text-white text-sm font-black uppercase tracking-widest hover:bg-[#1a1c1a] hover:-translate-y-0.5 transition-all shadow-xl shadow-black/10 w-full sm:w-auto">
               Explorar Demostración
             </button>
-            <button className="px-8 py-4 rounded-full bg-white text-[#2E3330] text-sm font-black uppercase tracking-widest border border-slate-200 hover:border-[#ADC762] hover:bg-[#FDFBF7] hover:-translate-y-0.5 transition-all w-full sm:w-auto">
+            <button className="px-8 py-4 rounded-full bg-white text-[#2E3330] text-sm font-black uppercase tracking-widest border border-slate-200 hover:border-primary hover:bg-[#FDFBF7] hover:-translate-y-0.5 transition-all w-full sm:w-auto">
               Conocer Características
             </button>
           </motion.div>

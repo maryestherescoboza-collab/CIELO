@@ -24,7 +24,7 @@ const getTagStyles = (tipo: Post['tipo']) => {
     switch (tipo) {
         case 'rubrica': return 'bg-red-100/80 text-red-800 border-red-400 font-black shadow-sm';
         case 'cotejo': return 'bg-amber-100/80 text-amber-800 border-amber-400 font-black shadow-sm';
-        case 'secuencia': return 'bg-[#BFC9A6]/30 text-[#475438] border-[#BFC9A6] font-black shadow-sm';
+        case 'secuencia': return 'bg-primary/30 text-[#475438] border-primary font-black shadow-sm';
         default: return 'bg-[#EAE4DA] text-[#2E3330] border-[#2E3330]/20 font-black shadow-sm';
     }
 };
@@ -65,7 +65,7 @@ export default function ComunidadFeed({
                 ) : (
                         <div className="col-span-full py-24 text-center bg-white border border-dashed border-slate-200 rounded-[24px] shadow-sm">
                         <Globe size={48} className="text-slate-200 mb-4 mx-auto" />
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No hay resultados</p>
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No hay resultados</p>
                     </div>
                 )}
             </section>

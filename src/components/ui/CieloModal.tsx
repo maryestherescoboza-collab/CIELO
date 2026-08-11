@@ -1,0 +1,125 @@
+import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
+
+export interface CieloModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title?: React.ReactNode;
+    subtitle?: React.ReactNode;
+    children: React.ReactNode;
+    footer?: React.ReactNode;
+    maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl';
+    hideCloseButton?: boolean;
+    className?: string;
+    icon?: React.ReactNode;
+}
+
+const maxWidthMap = {
+    'sm': 'max-w-sm',
+    'md': 'max-w-md',
+    'lg': 'max-w-lg',
+    'xl': 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
+    '5xl': 'max-w-5xl',
+    '6xl': 'max-w-6xl',
+    '7xl': 'max-w-7xl',
+};
+
+export const CieloModal: React.FC<CieloModalProps> = ({
+    isOpen,
+    onClose,
+    title,
+    subtitle,
+    children,
+    footer,
+    maxWidth = '2xl',
+    hideCloseButton = false,
+    className = '',
+    icon,
+}) => {
+    // Close on Escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
+    // Prevent body scroll when open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div 
+            className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-200"
+            onClick={onClose}
+        >
+            <div 
+                className={`w-full ${maxWidthMap[maxWidth]} bg-white border border-slate-200 shadow-2xl shadow-slate-200/50 rounded-[24px] flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200 ${className}`}
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                {(title || !hideCloseButton) && (
+                    <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between bg-white shrink-0">
+                        <div className="flex items-center gap-3">
+                            {icon && (
+                                <div className="p-2.5 rounded-xl bg-slate-50 text-slate-700 border border-slate-100 shadow-sm">
+                                    {icon}
+                                </div>
+                            )}
+                            <div>
+                                {title && (
+                                    <h2 className="text-lg font-black text-slate-900 tracking-tight uppercase">
+                                        {title}
+                                    </h2>
+                                )}
+                                {subtitle && (
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                        {subtitle}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        
+                        {!hideCloseButton && (
+                            <button 
+                                onClick={onClose}
+                                className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-900 shrink-0 ml-4"
+                                aria-label="Cerrar modal"
+                            >
+                                <X size={20} />
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto p-6">
+                    {children}
+                </div>
+
+                {/* Footer */}
+                {footer && (
+                    <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 shrink-0">
+                        {footer}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};

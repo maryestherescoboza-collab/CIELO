@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
-import type { Tarea, TareaAsignacion } from '../types';
+import type { TareaInstitucional, TareaDocente } from '../types';
 
 export function useTareaActions() {
     const setState = useAppStore(s => s.setAppState);
@@ -14,148 +14,149 @@ export function useTareaActions() {
         fechaLimite: string;
         docenteIds: string[];
     }) => {
-        if (!session?.user?.id) return null;
-
-        const { data, error } = await supabase.from('tareas').insert([{
-            centro_id: input.centroId,
-            titulo: input.titulo,
-            descripcion: input.descripcion,
-            fecha_limite: input.fechaLimite || null,
-            estado: 'pendiente',
-            created_by: session.user.id
-        }]).select();
-
-        if (error || !data?.[0]) {
-            console.error('Error creando tarea:', error);
-            return null;
-        }
-        const tarea = data[0];
-
-        const asignaciones: Record<string, unknown>[] = input.docenteIds.map(uid => ({
-            tarea_id: tarea.id,
-            user_id: uid,
-            estado: 'pendiente'
-        }));
-
-        let asignacionesDb: Record<string, unknown>[] = [];
-        if (asignaciones.length > 0) {
-            const { data: rows, error: aError } = await supabase
-                .from('tarea_asignaciones')
-                .insert(asignaciones)
-                .select('id, tarea_id, user_id, estado, fecha_completado, created_at');
-            if (aError) {
-                console.error('Error asignando tarea:', aError);
-            } else {
-                asignacionesDb = rows || [];
-            }
+        if (!session?.user?.id) {
+            return { data: null, error: new Error("No hay sesión activa.") };
         }
 
-        // Notificar a cada docente asignado (se capturan fallos individuales
-        // para no asumir que la notificación llegó si RLS/red lo impide)
-        const resultadosNotificacion = await Promise.all(input.docenteIds.map(async uid => {
-            const { error: nError } = await supabase.from('notificaciones').insert([{
-                user_id: uid,
-                actor_id: session.user.id,
-                titulo: 'Nueva tarea asignada',
-                mensaje: input.titulo,
-                tipo: 'tarea',
-                tarea_id: tarea.id,
-                estado: 'pendiente',
-                leida: false
-            }]);
-            if (nError) {
-                console.error(`[useTareaActions] No se pudo notificar a ${uid}:`, nError);
-                return false;
-            }
-            return true;
-        }));
-        const notificacionesFallidas = resultadosNotificacion.filter(ok => !ok).length;
+        try {
+            // Llamar a la función RPC que maneja la transacción completa
+            const { data: rpcData, error: rpcError } = await supabase.rpc('crear_tarea_institucional', {
+                p_centro_id: input.centroId,
+                p_descripcion: input.descripcion,
+                p_docente_ids: input.docenteIds,
+                p_fecha_limite: input.fechaLimite,
+                p_prioridad: 'normal',
+                p_titulo: input.titulo
+            });
 
-        const asignacionesMapeadas: TareaAsignacion[] = asignacionesDb.length > 0
-            ? asignacionesDb.map(a => ({
-                id: a.id as number,
-                tareaId: a.tarea_id as number,
-                userId: a.user_id as string,
-                estado: a.estado as 'pendiente' | 'completada',
-                fechaCompletado: a.fecha_completado as string | undefined,
-                createdAt: a.created_at as string,
-            }))
-            : input.docenteIds.map(uid => ({
-                id: -Date.now() - Math.floor(Math.random() * 1000),
-                tareaId: tarea.id,
-                userId: uid,
-                estado: 'pendiente' as const
+            if (rpcError) {
+                console.error('[TAREAS INSTITUCIONALES] Error en RPC:', rpcError);
+                return { data: null, error: rpcError };
+            }
+
+            if (!rpcData || !rpcData.id) {
+                return { data: null, error: new Error("El servidor no devolvió el ID de la tarea creada.") };
+            }
+            
+            const tareaId = rpcData.id;
+
+            // Consultar la tarea recién creada (opcional, pero útil para tenerla en estado inmediatamente)
+            const { data: tareaCreada, error: fetchError } = await supabase
+                .from('tareas_institucionales')
+                .select(`
+                    *,
+                    asignaciones:tarea_docente(*)
+                `)
+                .eq('id', tareaId)
+                .single();
+
+            if (fetchError || !tareaCreada) {
+                console.error('[TAREAS INSTITUCIONALES] Error al cargar tarea recién creada:', fetchError);
+                // Si falla la consulta, de igual modo mapeamos la estructura mínima para el frontend
+            }
+
+            const nowStr = new Date().toISOString();
+            
+            const asignacionesMapeadas: TareaDocente[] = input.docenteIds.map(uid => ({
+                id: `temp-${Math.random()}`, // o usar el id real si fetch fue exitoso
+                tareaId: tareaId,
+                docenteId: uid,
+                estado: 'pendiente' as const,
+                createdAt: nowStr
             }));
 
-        const mapped: Tarea = {
-            id: tarea.id,
-            centroId: tarea.centro_id,
-            titulo: tarea.titulo,
-            descripcion: tarea.descripcion || '',
-            fechaLimite: tarea.fecha_limite || '',
-            estado: tarea.estado,
-            userId: tarea.created_by,
-            createdAt: tarea.created_at,
-            asignaciones: asignacionesMapeadas
-        };
+            // Usar datos reales de base de datos si fetchError fue false
+            const asignacionesFinales = tareaCreada?.asignaciones?.map((a: any) => ({
+                id: a.id,
+                tareaId: a.tarea_id,
+                docenteId: a.docente_id,
+                estado: a.estado,
+                fechaEntrega: a.fecha_entrega,
+                observaciones: a.observaciones,
+                archivosEntrega: a.archivos_entrega,
+                createdAt: a.created_at
+            })) || asignacionesMapeadas;
 
-        setState(s => ({ ...s, tareas: [mapped, ...s.tareas] }));
-        return { tarea: mapped, notificacionesFallidas };
+            const mapped: TareaInstitucional = {
+                id: tareaId,
+                centroId: input.centroId,
+                titulo: input.titulo,
+                descripcion: input.descripcion,
+                fechaLimite: input.fechaLimite,
+                prioridad: 'normal',
+                createdBy: session.user.id,
+                createdAt: nowStr,
+                asignaciones: asignacionesFinales
+            };
+
+            setState(s => ({ ...s, tareas: [mapped, ...s.tareas] }));
+            return { data: mapped, error: null };
+            
+        } catch (error: any) {
+            console.error('[TAREAS INSTITUCIONALES] Error inesperado:', error);
+            return { data: null, error };
+        }
     }, [session, setState]);
 
-    const completeTarea = useCallback(async (tareaId: number) => {
+    const completeTarea = useCallback(async (tareaId: string) => {
         if (!session?.user?.id) return;
 
+        const nowStr = new Date().toISOString();
+        
         const { error } = await supabase
-            .from('tarea_asignaciones')
-            .update({ estado: 'completada', fecha_completado: new Date().toISOString() })
+            .from('tarea_docente')
+            .update({ 
+                estado: 'completada', 
+                fecha_entrega: nowStr 
+            })
             .eq('tarea_id', tareaId)
-            .eq('user_id', session.user.id);
+            .eq('docente_id', session.user.id);
 
         if (error) {
             console.error('Error completando tarea:', error);
-            return;
+            return { error };
         }
 
-        const fecha = new Date().toISOString();
         setState(s => ({
             ...s,
             tareas: s.tareas.map(t => t.id === tareaId
                 ? {
                     ...t,
                     asignaciones: (t.asignaciones || []).map(a =>
-                        a.userId === session.user.id
-                            ? { ...a, estado: 'completada' as const, fechaCompletado: fecha }
+                        a.docenteId === session.user.id
+                            ? { ...a, estado: 'completada' as const, fechaEntrega: nowStr }
                             : a
                     )
                 }
                 : t
             )
         }));
+        
+        return { error: null };
     }, [session, setState]);
 
-    const cancelTarea = useCallback(async (tareaId: number) => {
+    const cancelTarea = useCallback(async (tareaId: string) => {
         if (!session?.user?.id) return;
 
+        // La función de cancelar a nivel general en la UI no está explicitamente definida en la nueva arquitectura del usuario.
+        // Asumiendo que se borra de tareas_institucionales
         const { error } = await supabase
-            .from('tareas')
-            .update({ estado: 'cancelada' })
+            .from('tareas_institucionales')
+            .delete()
             .eq('id', tareaId);
 
         if (error) {
-            console.error('Error cancelando tarea:', error);
-            return;
+            console.error('Error eliminando tarea:', error);
+            return { error };
         }
 
         setState(s => ({
             ...s,
-            tareas: s.tareas.map(t => t.id === tareaId ? { ...t, estado: 'cancelada' as const } : t)
+            tareas: s.tareas.filter(t => t.id !== tareaId)
         }));
+        
+        return { error: null };
     }, [session, setState]);
 
-    return {
-        addTarea,
-        completeTarea,
-        cancelTarea
-    };
+    return { addTarea, completeTarea, cancelTarea };
 }

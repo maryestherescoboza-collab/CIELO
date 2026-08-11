@@ -46,7 +46,7 @@ export default function FeaturedSection({ featuredPosts, setUiState }: Props) {
                     return (
                         <div key={post.id} className="bg-white rounded-[24px] p-8 border border-slate-200 shadow-xl shadow-slate-200/50 flex flex-col relative group transition-all hover:-translate-y-1">
                             {/* Featured Tag */}
-                            <div className={`absolute top-0 right-10 -translate-y-1/2 px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest ${labelStyles[idx % 3]} shadow-sm`}>
+                            <div className={`absolute top-0 right-10 -translate-y-1/2 px-4 py-1.5 rounded-full text-xs font-black tracking-widest ${labelStyles[idx % 3]} shadow-sm`}>
                                 {labels[idx % 3]}
                             </div>
 
@@ -63,10 +63,10 @@ export default function FeaturedSection({ featuredPosts, setUiState }: Props) {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-sm font-bold text-slate-900">{post.autor}</span>
-                                    <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">TRENDING</span>
+                                    <span className="text-xs text-emerald-600 font-bold uppercase tracking-wider">TRENDING</span>
                                 </div>
                                 <div className="ml-auto flex flex-wrap gap-1.5 justify-end shrink-0 max-w-[45%]">
-                                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest whitespace-nowrap truncate ${getTagStyles(post.tipo)}`}>
+                                    <span className={`px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-widest whitespace-nowrap truncate ${getTagStyles(post.tipo)}`}>
                                         {getTipoLabel(post.tipo)}
                                     </span>
                                 </div>

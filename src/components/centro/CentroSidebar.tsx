@@ -26,12 +26,12 @@ export default function CentroSidebar({ active, onSelect, onLogout }: Props) {
         <aside className="w-[260px] shrink-0 hidden md:block">
             <div className="sticky top-4 h-[calc(100vh-2rem)] flex flex-col rounded-2xl bg-white border border-[#E6E1D8] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_rgba(0,0,0,0.05)] overflow-hidden">
                 <div className="px-5 py-4 border-b border-[#E6E1D8] flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#6F94AF]/10 border border-[#6F94AF]/20 flex items-center justify-center shrink-0">
-                        <img src={logo} alt="CIELO" className="w-5 h-5 object-contain" />
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                        <img src={logo} alt="CIELO" className="w-12 h-12 object-contain" />
                     </div>
                     <div className="min-w-0 leading-tight">
                         <h1 className="text-[14px] font-semibold text-[#3F3C36] truncate">Panel de Dirección</h1>
-                        <p className="text-[11px] text-[#6B7280] truncate">Centro educativo</p>
+                        <p className="text-xs text-[#6B7280] truncate">Centro educativo</p>
                     </div>
                 </div>
 
@@ -45,7 +45,7 @@ export default function CentroSidebar({ active, onSelect, onLogout }: Props) {
                                 onClick={() => onSelect(item.id)}
                                 className={`w-full inline-flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors ${
                                     isActive
-                                        ? 'bg-[#6F94AF]/10 text-[#6F94AF] border border-[#6F94AF]/30'
+                                        ? 'bg-primary/10 text-primary border border-primary/30'
                                         : 'text-[#6B7280] hover:bg-[#F9F8F6] hover:text-[#3F3C36] border border-transparent'
                                 }`}
                             >

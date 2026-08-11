@@ -171,11 +171,11 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                                     <>
                                         <span className="w-1 h-1 rounded-full bg-(--line)"></span>
                                         {currentCourseRole.rol === 'tutor' ? (
-                                            <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border text-white" style={{ backgroundColor: '#689C63', borderColor: '#689C63' }}>
+                                            <span className="px-2 py-0.5 rounded text-xs font-black uppercase tracking-wider border text-white" style={{ backgroundColor: '#689C63', borderColor: '#689C63' }}>
                                                 Tutor
                                             </span>
                                         ) : (
-                                            <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border border-amber-100">
+                                            <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-xs font-black uppercase tracking-wider border border-amber-100">
                                                 Co-docente ({getAsignaturaNombre(currentCourseRole.asignatura)})
                                             </span>
                                         )}
@@ -221,19 +221,19 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                                 </th>
                             </tr>
                             <tr className="bg-slate-50">
-                                <th className="border border-black text-[10px] py-2 px-1 font-bold leading-tight" colSpan={4}>
+                                <th className="border border-black text-xs py-2 px-1 font-bold leading-tight" colSpan={4}>
                                     PROMEDIO DE GRUPOS DE<br />COMPETENCIAS ESPECÍFICAS
                                 </th>
                                 <th className="border border-black text-xs font-black p-2" rowSpan={2}>C.F</th>
 
-                                <th className="border border-black bg-slate-100 text-[10px] font-black p-1" rowSpan={2}>50%<br />C.F.</th>
-                                <th className="border border-black bg-slate-100 text-[10px] font-black p-1" rowSpan={2}>C.E.C</th>
-                                <th className="border border-black bg-slate-100 text-[10px] font-black p-1" rowSpan={2}>50%<br />C.E.C</th>
+                                <th className="border border-black bg-slate-100 text-xs font-black p-1" rowSpan={2}>50%<br />C.F.</th>
+                                <th className="border border-black bg-slate-100 text-xs font-black p-1" rowSpan={2}>C.E.C</th>
+                                <th className="border border-black bg-slate-100 text-xs font-black p-1" rowSpan={2}>50%<br />C.E.C</th>
                                 <th className="border border-black bg-slate-100 text-xs font-black p-2" rowSpan={2}>C.C.F</th>
 
-                                <th className="border border-black text-[10px] font-black p-1" rowSpan={2}>30%<br />C.F</th>
-                                <th className="border border-black text-[10px] font-black p-1" rowSpan={2}>C.<br />E.EX</th>
-                                <th className="border border-black text-[10px] font-black p-1" rowSpan={2}>70%<br />C.E.EX</th>
+                                <th className="border border-black text-xs font-black p-1" rowSpan={2}>30%<br />C.F</th>
+                                <th className="border border-black text-xs font-black p-1" rowSpan={2}>C.<br />E.EX</th>
+                                <th className="border border-black text-xs font-black p-1" rowSpan={2}>70%<br />C.E.EX</th>
                                 <th className="border border-black text-xs font-black p-2" rowSpan={2}>C.EX.F</th>
 
                                 <th className="border border-black bg-slate-100 text-xs font-black p-2" rowSpan={2}>C.F</th>
@@ -242,7 +242,7 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                                 <th className="border border-black text-xs font-black p-2" rowSpan={2}>A</th>
                                 <th className="border border-black text-xs font-black p-2" rowSpan={2}>R</th>
                             </tr>
-                            <tr className="bg-slate-50 text-[10px] font-black">
+                            <tr className="bg-slate-50 text-xs font-black">
                                 <th className="border border-black p-1">PC1</th>
                                 <th className="border border-black p-1">PC2</th>
                                 <th className="border border-black p-1">PC3</th>
@@ -252,7 +252,7 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                         <tbody>
                             {reportData.map((row) => (
                                 <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="border border-black font-black text-center bg-slate-50 p-1 text-[11px]">{row.num}</td>
+                                    <td className="border border-black font-black text-center bg-slate-50 p-1 text-xs">{row.num}</td>
                                     <td className="border border-black px-4 py-1.5 font-bold text-left">{row.name}</td>
                                     <td className="border border-black p-1 text-center font-bold">{row.pc1 || ''}</td>
                                     <td className="border border-black p-1 text-center font-bold">{row.pc2 || ''}</td>
@@ -321,7 +321,7 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                 </div>
 
                 <footer className="mt-8 pt-8 border-t border-(--line)">
-                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[10px] font-black uppercase tracking-wider text-(--ink-soft) opacity-40">
+                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-black uppercase tracking-wider text-(--ink-soft) opacity-40">
                         <span><strong>PC=</strong> Promedio Grupo de Competencias Específicas.</span>
                         <span><strong>C.F.=</strong> Calificación Final.</span>
                         <span><strong>C.E.C.=</strong> Calificación Evaluación Completiva.</span>
@@ -335,7 +335,7 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
             </main>
 
             <div className="max-w-300 mx-auto mt-6 px-4 print:hidden">
-                <div className="flex items-center gap-2 text-(--ink-soft) text-[10px] font-black uppercase tracking-widest bg-white/50 p-4 rounded-2xl border border-(--line)">
+                <div className="flex items-center gap-2 text-(--ink-soft) text-xs font-black uppercase tracking-widest bg-white/50 p-4 rounded-2xl border border-(--line)">
                     <Users size={14} />
                     <span>Mostrando registros de {students.length} estudiantes según los datos almacenados en curso_detalle.</span>
                 </div>

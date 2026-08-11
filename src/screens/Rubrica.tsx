@@ -19,6 +19,7 @@ import type {
 
 import { getAsignaturaNombre } from '../constants/asignaturas';
 import { RubricaRow, COMPETENCIAS, NIVEL_FIELDS, toRichHtml } from '../components/RubricaRow';
+import { CieloPill } from '../components/ui/CieloPill';
 
 interface Props {
     currentCourseRole?: CursoDocente;
@@ -511,7 +512,7 @@ export default function Rubrica({
                 <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                        className="absolute top-4 -right-1 z-50 p-1.5 bg-[#ADC762] text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
+                        className="absolute top-4 -right-1 z-50 p-1.5 bg-primary text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
                     >
                         {isSidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                     </button>
@@ -519,11 +520,11 @@ export default function Rubrica({
                     {!isSidebarCollapsed ? (
                         <div className="flex flex-col h-full overflow-y-auto relative z-10">
                             <div className="p-5 border-b border-slate-250 flex items-center gap-2.5">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ADC762] text-white">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white">
                                     <ClipboardList size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#2E3330]">Instrumento</p>
+                                    <p className="text-xs font-black uppercase tracking-widest text-[#2E3330]">Instrumento</p>
                                     <h1 className="text-lg font-black text-[#2E3330] truncate font-notion-title">Rúbrica</h1>
                                 </div>
                             </div>
@@ -532,14 +533,14 @@ export default function Rubrica({
                                 <div className="space-y-4">
                                     <div className="space-y-3">
                                         <div className="px-1">
-                                            <p className="text-[11px] font-black uppercase tracking-widest text-[#2E3330] mb-0.5">Enfoque</p>
-                                            <p className="text-[11px] font-medium text-[#2E3330]/80">Configura el entorno de evaluación.</p>
+                                            <p className="text-xs font-black uppercase tracking-widest text-[#2E3330] mb-0.5">Enfoque</p>
+                                            <p className="text-xs font-medium text-[#2E3330]/80">Configura el entorno de evaluación.</p>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
+                                            <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
                                             <select
                                                 data-guide="selector-curso"
-                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedCursoId}
                                                 onChange={(event) => {
                                                     setSelectedCursoId(Number(event.target.value));
@@ -555,10 +556,10 @@ export default function Rubrica({
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
+                                            <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
                                             <select
                                                 data-guide="selector-actividad"
-                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-[#ADC762] focus-visible:ring-2 focus-visible:ring-[#ADC762]/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedAct?.id ?? ''}
                                                 onChange={(event) => setSelectedActId(Number(event.target.value) || null)}
                                             >
@@ -576,11 +577,11 @@ export default function Rubrica({
 
                                     <div className="space-y-3">
                                         <div className="px-1 flex items-center justify-between">
-                                            <p className="text-[11px] font-black uppercase tracking-widest text-[#2E3330]">Plantillas</p>
-                                            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-[8px] font-black text-[#2E3330]">{rubricaPlantillas.length}</div>
+                                            <p className="text-xs font-black uppercase tracking-widest text-[#2E3330]">Plantillas</p>
+                                            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-[#2E3330]">{rubricaPlantillas.length}</div>
                                         </div>
                                         <div className="space-y-2">
-                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-[#ADC762] focus-within:ring-2 focus-within:ring-[#ADC762]/20 transition-all shadow-sm artisan-pill artisan-btn-white">
+                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm artisan-pill artisan-btn-white">
                                                 <BookMarked size={14} className="text-[#2E3330]" />
                                                 <select
                                                     data-guide="selector-plantilla"
@@ -605,7 +606,7 @@ export default function Rubrica({
                                             </div>
                                             <button
                                                 onClick={handleSaveTemplate}
-                                                className="w-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-[10px] py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
                                             >
                                                 Guardar como Plantilla
                                             </button>
@@ -639,13 +640,11 @@ export default function Rubrica({
                                 {readOnly ? 'Vista Previa de Rúbrica' : 'Evaluación por Rúbrica'}
                             </h1>
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2 bg-[#EAE4DA] px-3 py-1 rounded-full border border-[rgba(46,51,48,0.08)]">
-                                    <span className="text-[9px] font-bold text-[#2E3330] uppercase tracking-[0.08em]">
-                                        Desempeño Detallado
-                                    </span>
-                                </div>
+                                <CieloPill variant="neutral" uppercase className="px-3 text-black" style={{ backgroundColor: '#DDD5C8', borderColor: '#DDD5C8', color: '#000000' }}>
+                                    Desempeño Detallado
+                                </CieloPill>
                                 <div className="h-1.5 w-1.5 rounded-full bg-slate-350"></div>
-                                <span className="text-[9px] font-bold text-[#5F665E] uppercase tracking-[0.08em]">Instrumento Escolar</span>
+                                <span className="text-xs font-bold text-[#5F665E] uppercase tracking-[0.08em]">Instrumento Escolar</span>
                             </div>
                         </div>
 
@@ -654,12 +653,12 @@ export default function Rubrica({
                                 {selectedEst && (
                                     <div className="flex bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] px-4 py-2.5 items-center gap-4 shadow-sm">
                                         <div className="flex flex-col items-center">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">
                                                 Puntaje Actual
                                             </p>
                                             <p className="mt-0.5 text-xl font-black tracking-tighter text-[#2E3330]">
                                                 {calcPuntajeTotalWithSelection(selection)}
-                                                <span className="ml-1 text-[11px] font-bold text-slate-400">/100</span>
+                                                <span className="ml-1 text-xs font-bold text-slate-400">/100</span>
                                             </p>
                                         </div>
                                         <div className="h-8 w-px bg-slate-200" />
@@ -671,8 +670,8 @@ export default function Rubrica({
                                                 {selectedEst.nombre[0]}
                                             </div>
                                             <div className="flex flex-col">
-                                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Estudiante</p>
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-[#2E3330]">
+                                                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Estudiante</p>
+                                                <span className="text-xs font-black uppercase tracking-widest text-[#2E3330]">
                                                     {selectedEst.nombre} {selectedEst.apellido}
                                                 </span>
                                             </div>
@@ -682,38 +681,37 @@ export default function Rubrica({
 
                                 {activeCell && (
                                     <div className="flex bg-[#FAF6F0] border border-slate-200 rounded-[20px] px-4 py-2.5 items-center gap-3 shadow-sm animate-pulse">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#ADC762] text-white shadow-sm">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white shadow-sm">
                                             <Plus size={16} />
                                         </div>
                                         <div className="flex flex-col">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Asignando Descriptor</p>
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-[#2E3330]">
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Asignando Descriptor</p>
+                                            <span className="text-xs font-black uppercase tracking-widest text-[#2E3330]">
                                                 {localDescriptors.find(d => d.id === activeCell.id)?.indicador.substring(0, 20)}...
                                             </span>
                                         </div>
                                         <button
                                             onClick={() => setActiveCell(null)}
-                                            className="ml-1 text-[9px] font-black text-[#EB8847] uppercase tracking-widest hover:underline"
+                                            className="ml-1 text-xs font-black text-attention uppercase tracking-widest hover:underline"
                                         >
                                             Cancelar
                                         </button>
                                     </div>
                                 )}
 
-                                <button
+                                <CieloPill
+                                    as="button"
                                     id="btn-evaluar-alumnos"
+                                    variant={((!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving) ? 'disabled' : 'primary'}
                                     disabled={(!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving}
                                     onClick={Object.keys(multiEvaluations).length > 0 ? handleFinalizeGroupEvaluation : handleSave}
-                                    className={`flex h-10 min-w-58 items-center justify-center gap-2.5 rounded-full px-5 text-xs font-black text-white shadow-sm transition-all artisan-pill ${((!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving)
-                                        ? 'bg-slate-300 cursor-not-allowed opacity-50'
-                                        : 'bg-[#ADC762] hover:bg-[#6C7E5C] hover:-translate-y-0.5 active:scale-[0.98]'
-                                        }`}
+                                    className="px-5 gap-2.5 h-10"
                                 >
                                     {isSaving ? <Loader2 size={16} className="animate-spin" /> : (savedFlash ? <CheckCircle size={18} /> : <Target size={18} />)}
                                     <span className="uppercase tracking-[0.08em]">
                                         {savedFlash ? '¡Registrada!' : Object.keys(multiEvaluations).length > 1 ? `Evaluar ${Object.keys(multiEvaluations).length} Alumnos` : 'Finalizar Evaluación'}
                                     </span>
-                                </button>
+                                </CieloPill>
                             </div>
                         )}
                         </div>
@@ -728,9 +726,9 @@ export default function Rubrica({
 
                                     </div>
                                     {selectedAct && (
-                                        <div className="rounded-full border border-[rgba(46,51,48,0.08)] bg-[#FAF6F0] px-3.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-[#ADC762] shadow-sm">
+                                        <CieloPill variant="primary" uppercase className="px-3.5 bg-[#FAF6F0] text-primary shadow-sm tracking-[0.16em]">
                                             Actividad: {selectedAct.nombre} ({selectedAct.periodo})
-                                        </div>
+                                        </CieloPill>
                                     )}
                                 </div>
 
@@ -751,9 +749,9 @@ export default function Rubrica({
                                                 >
                                                     <div
                                                         className={`flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-black text-white transition-all ring-offset-2 ${isViewing
-                                                            ? 'scale-105 ring-2 ring-turf-green-base shadow-lg'
+                                                            ? 'scale-105 ring-2 ring-primary shadow-lg'
                                                             : 'opacity-50 grayscale hover:scale-105 hover:opacity-100 hover:grayscale-0'
-                                                            } ${isInActiveCell ? 'ring-2 ring-turf-green-base opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
+                                                            } ${isInActiveCell ? 'ring-2 ring-primary opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
                                                         style={{ background: estudiante.avatarColor }}
                                                     >
                                                         {estudiante.nombre[0]}
@@ -763,13 +761,13 @@ export default function Rubrica({
                                                             </div>
                                                         )}
                                                         {isInActiveCell && (
-                                                            <div className="absolute -bottom-1 -right-1 bg-turf-green-base text-white h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white shadow-sm">
+                                                            <div className="absolute -bottom-1 -right-1 bg-primary text-white h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white shadow-sm">
                                                                 <CheckCircle size={9} />
                                                             </div>
                                                         )}
                                                     </div>
                                                     <span
-                                                        className={`text-center text-[8px] font-black uppercase tracking-[0.14em] transition-colors ${isViewing || isInActiveCell ? 'text-[#1E293B]' : 'text-slate-400'
+                                                        className={`text-center text-xs font-black uppercase tracking-[0.14em] transition-colors ${isViewing || isInActiveCell ? 'text-[#1E293B]' : 'text-slate-400'
                                                             }`}
                                                     >
                                                         {idx + 1}. {estudiante.nombre.split(' ')[0]}
@@ -833,12 +831,12 @@ export default function Rubrica({
                                                         <div className="flex items-center justify-center gap-1">
                                                             <div className={`flex h-6 w-11 items-center justify-center rounded-md border ${field.headerTextColor === 'text-[#1E293B]' ? 'bg-black/10 border-black/20' : 'bg-white/15 border-white/40'}`}>
                                                                 {readOnly ? (
-                                                                    <span className={`text-center text-[11px] font-bold ${field.headerTextColor || 'text-white'}`}>
+                                                                    <span className={`text-center text-xs font-bold ${field.headerTextColor || 'text-white'}`}>
                                                                         {nivelActual?.puntaje ?? 0}
                                                                     </span>
                                                                 ) : (
                                                                     <input
-                                                                        className={`w-full bg-transparent text-center text-[11px] font-bold outline-none ${field.headerTextColor || 'text-white'}`}
+                                                                        className={`w-full bg-transparent text-center text-xs font-bold outline-none ${field.headerTextColor || 'text-white'}`}
                                                                         value={nivelActual?.puntaje ?? 0}
                                                                         onChange={(event) => {
                                                                             const value = parseInt(event.target.value, 10);
@@ -856,7 +854,7 @@ export default function Rubrica({
                                                                     />
                                                                 )}
                                                             </div>
-                                                            <p className={`text-[10px] font-bold opacity-60 ${field.headerTextColor || 'text-white'}`}>pts</p>
+                                                            <p className={`text-xs font-bold opacity-60 ${field.headerTextColor || 'text-white'}`}>pts</p>
                                                         </div>
                                                     </div>
                                                 </th>
@@ -903,7 +901,7 @@ export default function Rubrica({
 
 
                     <div className="pb-10 text-center">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest italic">
                             {readOnly ? 'Modo de Vista Previa: Solo Lectura.' : 'Los datos de los descriptores se guardan globalmente al finalizar la evaluación.'}
                         </p>
                     </div>

@@ -24,6 +24,7 @@ interface ProfileSettingsProps {
   onUpdateAvatarColor: (color: string) => Promise<void>;
   perfilAvatarColor: string;
   onResetSchoolYear: () => void;
+  onLogout?: () => void;
   onChangeCentro?: (nuevoCentroId: string) => Promise<{ ok: boolean; error?: string; message?: string }>;
   onClose: () => void;
   centro?: any;
@@ -60,6 +61,7 @@ export default function ProfileSettings({
   centro,
   centroId,
   centroNombre,
+  onLogout
 }: ProfileSettingsProps) {
   const [activeSection, setActiveSection] = useState<SectionId>('perfil');
   const contentRef = useRef<HTMLDivElement>(null);
@@ -124,7 +126,7 @@ export default function ProfileSettings({
           avatarUrl={perfilAvatarUrl}
           avatarColor={perfilAvatarColor}
           onResetSchoolYear={onResetSchoolYear}
-          onLogout={() => supabase.auth.signOut()}
+          onLogout={onLogout || (() => supabase.auth.signOut())}
         />
 
         <div className="flex-1 flex flex-col min-w-0 bg-[#FDFBF7]">
@@ -204,7 +206,7 @@ const Sidebar = React.memo(function Sidebar({
         onClick={() => onSectionChange(id)}
         className={`w-full flex items-center gap-3 px-4 py-2 rounded-full transition-all text-xs font-bold ${
           selected 
-            ? 'bg-[#BFC9A6] text-[#2E3330] shadow-sm' 
+            ? 'bg-primary text-[#2E3330] shadow-sm' 
             : 'text-[#5F665E] hover:bg-[#D4CCBE] hover:text-[#2E3330]'
         }`}
         style={{ height: '36px' }}
@@ -249,14 +251,14 @@ const Sidebar = React.memo(function Sidebar({
                 onResetSchoolYear();
               }
             }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest text-[#EB8847] bg-[#EB8847]/10 hover:bg-[#EB8847]/20 transition-all border border-[#EB8847]/20"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-black uppercase tracking-widest text-attention bg-attention/10 hover:bg-attention/20 transition-all border border-attention/20"
          >
             <AlertCircle size={14} />
             Reiniciar Año
          </button>
          <button 
             onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-full text-xs font-bold text-[#5F665E] hover:text-[#EB8847] hover:bg-[#EB8847]/10 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-full text-xs font-bold text-[#5F665E] hover:text-attention hover:bg-attention/10 transition-colors"
          >
             <LogOut size={14} />
             Cerrar Sesión
@@ -329,13 +331,13 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
   return (
     <form onSubmit={handleSave} className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {error && (
-        <div className="p-4 rounded-xl bg-cielo-terracotta/5 border border-cielo-terracotta/20 text-cielo-terracotta text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-danger/5 border border-danger/20 text-danger text-xs font-bold uppercase tracking-wider flex items-center gap-2">
           <AlertCircle size={16} />
           {error}
         </div>
       )}
       {saved && (
-        <div className="p-4 rounded-xl bg-cielo-olive/5 border border-cielo-olive/20 text-cielo-olive text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-2">
           <CheckCircle size={16} />
           Cambios guardados con éxito
         </div>
@@ -345,7 +347,7 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Docente</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold"
             value={nombreDocente}
             onChange={e => setNombreDocente(e.target.value)}
             placeholder="Nombre del docente"
@@ -365,7 +367,7 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
       <div className="space-y-1.5">
         <label className="text-xs font-black uppercase tracking-widest text-slate-500">Biografía</label>
         <textarea
-          className="w-full h-40 p-4 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none resize-none transition-all font-medium"
+          className="w-full h-40 p-4 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none resize-none transition-all font-medium"
           value={bio}
           onChange={e => setBio(e.target.value)}
           placeholder="Escribe tu trayectoria, metodologías o intereses..."
@@ -376,7 +378,7 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
         <button
           type="submit"
           disabled={saving}
-          className="h-11 px-8 rounded-xl bg-cielo-olive text-white text-xs font-black uppercase tracking-widest hover:bg-cielo-olive/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-cielo-olive/10 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          className="h-11 px-8 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:bg-primary/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/10 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
           {saving ? (
             <>
@@ -506,20 +508,20 @@ function DatosProfesionalesTab({
   return (
     <form onSubmit={handleSave} className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {error && (
-        <div className="p-4 rounded-xl bg-cielo-terracotta/5 border border-cielo-terracotta/20 text-cielo-terracotta text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-danger/5 border border-danger/20 text-danger text-xs font-bold uppercase tracking-wider flex items-center gap-2">
           <AlertCircle size={16} />
           {error}
         </div>
       )}
       {saved && (
-        <div className="p-4 rounded-xl bg-cielo-olive/5 border border-cielo-olive/20 text-cielo-olive text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-2">
           <CheckCircle size={16} />
           Cambios guardados con éxito
         </div>
       )}
 
       {loadingCentro && (
-        <div className="flex items-center gap-2 text-xs font-semibold text-cielo-blue animate-pulse">
+        <div className="flex items-center gap-2 text-xs font-semibold text-primary animate-pulse">
           <Loader2 size={14} className="animate-spin" />
           Cargando datos institucionales reales...
         </div>
@@ -529,7 +531,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Centro educativo</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.instituto}
             placeholder={tieneCentro ? "Nombre del centro educativo" : "Sin centro vinculado"}
             disabled={true}
@@ -539,7 +541,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Código del centro</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.codigoCentro}
             placeholder={tieneCentro ? "Código del centro" : "Sin centro vinculado"}
             disabled={true}
@@ -556,7 +558,7 @@ function DatosProfesionalesTab({
                 onClick={() => setForm(p => ({ ...p, tipoInstitucion: t }))}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                   form.tipoInstitucion === t 
-                    ? 'bg-cielo-blue text-white border-transparent shadow-md font-bold' 
+                    ? 'bg-primary text-white border-transparent shadow-md font-bold' 
                     : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
@@ -569,7 +571,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Tanda</label>
           <select
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold cursor-not-allowed"
             value={form.tanda}
             disabled={true}
           >
@@ -583,7 +585,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Teléfono del centro</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.telefonoCentro}
             placeholder={tieneCentro ? "Teléfono del centro" : "Sin centro vinculado"}
             disabled={true}
@@ -593,7 +595,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Distrito educativo</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.distrito}
             placeholder={tieneCentro ? "Distrito educativo" : "Sin centro vinculado"}
             disabled={true}
@@ -603,7 +605,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Regional de educación</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.regional}
             placeholder={tieneCentro ? "Regional de educación" : "Sin centro vinculado"}
             disabled={true}
@@ -613,7 +615,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Provincia</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.provincia}
             placeholder={tieneCentro ? "Provincia" : "Sin centro vinculado"}
             disabled={true}
@@ -623,7 +625,7 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-slate-500">Municipio</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.municipio}
             placeholder={tieneCentro ? "Municipio" : "Sin centro vinculado"}
             disabled={true}
@@ -635,7 +637,7 @@ function DatosProfesionalesTab({
         <button
           type="submit"
           disabled={saving}
-          className="h-11 px-8 rounded-xl bg-cielo-olive text-white text-xs font-black uppercase tracking-widest hover:bg-cielo-olive/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-cielo-olive/10 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          className="h-11 px-8 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:bg-primary/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/10 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
           {saving ? (
             <>
@@ -796,7 +798,7 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
           <SimplePasswordField label="Confirmar Contraseña" value={confirmPassword} onChange={setConfirmPassword} show={showConfirmPw} onToggle={() => setShowConfirmPw(!showConfirmPw)} />
           
           {message && (
-            <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${message.type === 'success' ? 'bg-cielo-olive/5 text-cielo-olive border border-cielo-olive/20' : 'bg-cielo-terracotta/5 text-cielo-terracotta border border-cielo-terracotta/20'}`}>
+            <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${message.type === 'success' ? 'bg-primary/5 text-primary border border-primary/20' : 'bg-danger/5 text-danger border border-danger/20'}`}>
                 {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
                 {message.text}
             </div>
@@ -807,7 +809,7 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
           <button 
             onClick={handleSubmit}
             disabled={saving || !newPassword || newPassword !== confirmPassword}
-            className="w-full py-3 bg-cielo-blue text-white rounded-xl text-sm font-semibold hover:bg-cielo-blue/90 transition-colors shadow-sm disabled:opacity-50"
+            className="w-full py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
           >
             {saving ? "Actualizando Seguridad..." : "Cambiar Contraseña"}
           </button>
@@ -829,12 +831,12 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
             <div className="p-4 rounded-xl border border-slate-200 bg-[#F9F8F6]">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">ID del centro</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400">ID del centro</p>
                   <p className="font-mono text-sm font-bold text-slate-800 break-all mt-0.5">
                     {showCentroId ? centroId : MASKED_ID}
                   </p>
                   {centroNombre && (
-                    <p className="text-xs font-semibold text-cielo-blue mt-1 truncate">{centroNombre}</p>
+                    <p className="text-xs font-semibold text-primary mt-1 truncate">{centroNombre}</p>
                   )}
                 </div>
                 <button
@@ -850,14 +852,14 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
             {!mostrarFormulario ? (
               <button
                 onClick={() => { setMostrarFormulario(true); setCentroError(null); setCentroEncontrado(null); }}
-                className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-sm font-bold text-slate-600 hover:border-cielo-blue hover:text-cielo-blue transition-colors"
+                className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-sm font-bold text-slate-600 hover:border-primary hover:text-primary transition-colors"
               >
                 Cambiar centro educativo
               </button>
             ) : (
-              <div className="p-4 rounded-xl border border-cielo-blue/20 bg-cielo-blue/5 space-y-3 mt-1">
+              <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-3 mt-1">
                 <div className="flex items-start gap-2 text-xs font-medium text-slate-600">
-                  <AlertCircle size={15} className="text-cielo-blue shrink-0 mt-0.5" />
+                  <AlertCircle size={15} className="text-primary shrink-0 mt-0.5" />
                   <p>
                     Al cambiar de centro dejarás de trabajar con los cursos e información del centro
                     anterior. Tus datos históricos se conservan, solo pierdes acceso a ellos.
@@ -870,19 +872,19 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
                     value={nuevoCentroId}
                     onChange={(e) => { setNuevoCentroId(e.target.value); setCentroEncontrado(null); setCentroError(null); }}
                     placeholder="00000000-0000-0000-0000-000000000000"
-                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-white focus:bg-white focus:border-cielo-blue hover:border-slate-300 outline-none transition-all font-mono"
+                    className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-white focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-mono"
                   />
                 </div>
 
                 {centroError && (
-                  <div className="p-3 rounded-xl bg-cielo-terracotta/5 border border-cielo-terracotta/20 text-cielo-terracotta text-xs font-bold leading-5 flex items-start gap-2">
+                  <div className="p-3 rounded-xl bg-danger/5 border border-danger/20 text-danger text-xs font-bold leading-5 flex items-start gap-2">
                     <AlertCircle size={15} className="shrink-0 mt-0.5" />
                     {centroError}
                   </div>
                 )}
 
                 {cambioExitoso && (
-                  <div className="p-3 rounded-xl bg-cielo-olive/5 border border-cielo-olive/20 text-cielo-olive text-xs font-bold leading-5 flex items-start gap-2">
+                  <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-primary text-xs font-bold leading-5 flex items-start gap-2">
                     <CheckCircle size={15} className="shrink-0 mt-0.5" />
                     Centro educativo cambiado correctamente. Reiniciando tu entorno...
                   </div>
@@ -891,13 +893,13 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
                 {centroEncontrado && !cambioExitoso && (
                   <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-3">
                     <div className="flex items-center gap-2">
-                      <CheckCircle size={16} className="text-cielo-olive shrink-0" />
+                      <CheckCircle size={16} className="text-primary shrink-0" />
                       <div className="min-w-0">
                         <p className="text-xs font-black text-slate-700">Centro encontrado</p>
                         <p className="text-sm font-bold text-slate-800 truncate">{centroEncontrado.nombre}</p>
                       </div>
                     </div>
-                    <p className="text-[11px] text-slate-500 leading-5">
+                    <p className="text-xs text-slate-500 leading-5">
                       Se cambiará tu vinculación a este centro. No se elimina ni se modifica
                       información del centro anterior: solo dejas de tenerla disponible en tu entorno.
                     </p>
@@ -916,7 +918,7 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
                     <button
                       onClick={buscarCentro}
                       disabled={buscando || cambiando}
-                      className="flex-1 py-2.5 rounded-xl bg-cielo-blue text-white text-sm font-semibold hover:bg-cielo-blue/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                      className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                     >
                       {buscando ? (<><Loader2 size={14} className="animate-spin" /> Buscando...</>) : 'Buscar centro'}
                     </button>
@@ -924,7 +926,7 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
                     <button
                       onClick={confirmarCambio}
                       disabled={cambiando || cambioExitoso}
-                      className="flex-1 py-2.5 rounded-xl bg-cielo-olive text-white text-sm font-semibold hover:bg-cielo-olive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                      className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                     >
                       {cambiando ? (<><Loader2 size={14} className="animate-spin" /> Cambiando...</>) : 'Confirmar cambio'}
                     </button>
@@ -1004,7 +1006,7 @@ function AparienciaTab({
                     aria-label={`Seleccionar color ${color}`}
                     className={`w-12 h-12 rounded-full transition-all focus:outline-none focus:ring-4 focus:ring-slate-200 shadow-sm ${
                       avatarColor === color 
-                        ? 'ring-2 ring-offset-2 ring-cielo-blue scale-110' 
+                        ? 'ring-2 ring-offset-2 ring-primary scale-110' 
                         : 'hover:scale-110'
                     }`}
                     style={{ background: color }}

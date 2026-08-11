@@ -77,7 +77,7 @@ export default function CentroIncidencias({ centroId, centroNombre, centroCodigo
     return (
         <section className="bg-[#F9F8F6] border border-[#E6E1D8] rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_rgba(0,0,0,0.05)] overflow-hidden">
             <header className="px-5 py-3.5 border-b border-[#E6E1D8] flex items-center gap-3">
-                <span className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center text-[#6F94AF] shrink-0">
+                <span className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center text-primary shrink-0">
                     <AlertTriangle size={16} />
                 </span>
                 <div>
@@ -88,7 +88,7 @@ export default function CentroIncidencias({ centroId, centroNombre, centroCodigo
 
             <div className="px-5 py-3.5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2 bg-white border border-[#E6E1D8] rounded-xl px-3.5 focus-within:border-[#6F94AF] focus-within:ring-2 focus-within:ring-[#6F94AF]/20 transition-all shadow-sm">
+                    <div className="flex items-center gap-2 bg-white border border-[#E6E1D8] rounded-xl px-3.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm">
                         <Search size={14} className="text-[#6B7280] shrink-0" />
                         <input
                             type="text"
@@ -98,7 +98,7 @@ export default function CentroIncidencias({ centroId, centroNombre, centroCodigo
                             className="bg-transparent border-none outline-none text-[13px] text-[#3F3C36] placeholder:text-[#6B7280]/60 w-full py-2.5"
                         />
                     </div>
-                    <div className="flex items-center gap-2 bg-white border border-[#E6E1D8] rounded-xl px-3.5 focus-within:border-[#6F94AF] focus-within:ring-2 focus-within:ring-[#6F94AF]/20 transition-all shadow-sm">
+                    <div className="flex items-center gap-2 bg-white border border-[#E6E1D8] rounded-xl px-3.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm">
                         <Search size={14} className="text-[#6B7280] shrink-0" />
                         <input
                             type="text"
@@ -126,30 +126,30 @@ export default function CentroIncidencias({ centroId, centroNombre, centroCodigo
                                 <article key={inc.id} className="bg-white border border-[#E6E1D8] rounded-xl p-4 shadow-sm">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex items-center gap-2.5 min-w-0">
-                                            <span className="w-8 h-8 rounded-full bg-[#6F94AF]/10 text-[#6F94AF] flex items-center justify-center text-[12px] font-bold shrink-0">
+                                            <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[12px] font-bold shrink-0">
                                                 {iniciales}
                                             </span>
                                             <div className="min-w-0">
                                                 <h3 className="text-[13px] font-semibold text-[#3F3C36] truncate">
                                                     {estudiante?.nombre} {estudiante?.apellido}
                                                 </h3>
-                                                <p className="text-[11px] text-[#6B7280]">
+                                                <p className="text-xs text-[#6B7280]">
                                                     {inc.categoria} · {GRAVEDAD_LABELS[inc.gravedad] || inc.gravedad}
                                                 </p>
                                             </div>
                                         </div>
-                                        <span className="text-[11px] text-[#6B7280] shrink-0">{inc.fecha}</span>
+                                        <span className="text-xs text-[#6B7280] shrink-0">{inc.fecha}</span>
                                     </div>
 
                                     <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
                                         <div>
-                                            <dt className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280]">Curso</dt>
+                                            <dt className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">Curso</dt>
                                             <dd className="mt-0.5 text-[12px] font-medium text-[#3F3C36]">
                                                 {curso ? `${curso.grado} ${curso.seccion}` : '—'}
                                             </dd>
                                         </div>
                                         <div>
-                                            <dt className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280]">Docente</dt>
+                                            <dt className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">Docente</dt>
                                             <dd className="mt-0.5 text-[12px] font-medium text-[#3F3C36] truncate">{docente?.nombreDocente || 'Docente'}</dd>
                                         </div>
                                     </dl>
@@ -163,13 +163,13 @@ export default function CentroIncidencias({ centroId, centroNombre, centroCodigo
                                     {expanded && (
                                         <div className="mt-3 rounded-lg bg-[#F9F8F6] border border-[#E6E1D8] p-3 space-y-2.5">
                                             <div>
-                                                <p className="text-[10px] font-medium uppercase tracking-wide text-[#6B7280]">Acciones pedagógicas</p>
+                                                <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">Acciones pedagógicas</p>
                                                 <p className="mt-0.5 text-[12px] text-[#3F3C36]">
                                                     {inc.accionesTomadas?.length ? inc.accionesTomadas.join(' · ') : 'Sin acciones registradas'}
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className="text-[10px] font-medium uppercase tracking-wide text-[#6B7280]">Acuerdos y compromisos</p>
+                                                <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">Acuerdos y compromisos</p>
                                                 <p className="mt-0.5 text-[12px] text-[#3F3C36]">{inc.acuerdos || 'Sin acuerdos registrados'}</p>
                                             </div>
                                         </div>

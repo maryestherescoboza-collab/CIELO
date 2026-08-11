@@ -60,7 +60,7 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
     return (
         <section className="bg-[#F9F8F6] border border-[#E6E1D8] rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_rgba(0,0,0,0.05)] overflow-hidden">
             <header className="px-5 py-3.5 border-b border-[#E6E1D8] flex items-center gap-3">
-                <span className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center text-[#6F94AF] shrink-0">
+                <span className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center text-primary shrink-0">
                     <Building2 size={16} />
                 </span>
                 <div className="min-w-0">
@@ -68,10 +68,10 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
                     <p className="text-[12px] text-[#6B7280] mt-0.5">Datos generales del centro y estado de operación</p>
                 </div>
                 <div className="ml-auto flex items-center gap-2.5 shrink-0">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium ${ESTADO_CENTRO_COLORS[estadoCentroVisual] || ESTADO_CENTRO_COLORS.activo}`}>
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${ESTADO_CENTRO_COLORS[estadoCentroVisual] || ESTADO_CENTRO_COLORS.activo}`}>
                         {ESTADO_CENTRO_LABELS[estadoCentroVisual] || '—'}
                     </span>
-                    <span className="text-[11px] font-medium text-[#6B7280]">
+                    <span className="text-xs font-medium text-[#6B7280]">
                         Actualizado: {centro.updatedAt ? formatFechaCorta(centro.updatedAt) : '—'}
                     </span>
                 </div>
@@ -81,7 +81,7 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
                 {/* Bloque · Información general */}
                 <div className="rounded-xl bg-white border border-[#E6E1D8] p-4 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
-                        <Building2 size={14} className="text-[#6F94AF]" />
+                        <Building2 size={14} className="text-primary" />
                         <h3 className="text-[13px] font-semibold text-[#3F3C36]">Información general</h3>
                     </div>
                     {/* Bloque · ID del centro (solo lectura, compartible con docentes) */}
@@ -122,7 +122,7 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
                 {/* Bloque · Contacto y ubicación */}
                 <div className="rounded-xl bg-white border border-[#E6E1D8] p-4 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
-                        <MapPin size={14} className="text-[#6F94AF]" />
+                        <MapPin size={14} className="text-primary" />
                         <h3 className="text-[13px] font-semibold text-[#3F3C36]">Contacto y ubicación</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -168,7 +168,7 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
                 {/* Bloque · Estado del centro */}
                 <div className="rounded-xl bg-white border border-[#E6E1D8] p-4 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle size={14} className="text-[#6F94AF]" />
+                        <AlertTriangle size={14} className="text-primary" />
                         <h3 className="text-[13px] font-semibold text-[#3F3C36]">Estado del centro</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -184,7 +184,7 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
                             </select>
                         </Campo>
                     </div>
-                    <p className="mt-2.5 text-[11px] text-[#6B7280]">
+                    <p className="mt-2.5 text-xs text-[#6B7280]">
                         Al marcar el centro como <span className="font-medium text-[#3F3C36]">suspendido</span> o <span className="font-medium text-[#3F3C36]">cancelado</span> se detiene la vinculación de nuevos docentes.
                     </p>
                 </div>
@@ -194,7 +194,7 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
                     <button
                         onClick={guardarCentro}
                         disabled={guardandoCentro}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#6F94AF] text-white text-[13px] font-semibold px-4 py-2 hover:bg-[#5F839E] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary text-white text-[13px] font-semibold px-4 py-2 hover:bg-[#5F839E] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         <Save size={15} />
                         {guardandoCentro ? 'Guardando…' : 'Guardar cambios'}

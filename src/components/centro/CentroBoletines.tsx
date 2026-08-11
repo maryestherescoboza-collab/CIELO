@@ -55,7 +55,7 @@ export default function CentroBoletines({ centroId, centroNombre }: Props) {
     return (
         <section className="bg-[#F9F8F6] border border-[#E6E1D8] rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_rgba(0,0,0,0.05)] overflow-hidden">
             <header className="px-5 py-3.5 border-b border-[#E6E1D8] flex items-center gap-3">
-                <span className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center text-[#6F94AF] shrink-0">
+                <span className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center text-primary shrink-0">
                     <FileDown size={16} />
                 </span>
                 <div>
@@ -70,7 +70,7 @@ export default function CentroBoletines({ centroId, centroNombre }: Props) {
                     <select
                         value={selectedCursoId ?? ''}
                         onChange={(e) => setSelectedCursoId(e.target.value ? Number(e.target.value) : null)}
-                        className="w-full appearance-none bg-white border border-[#E6E1D8] rounded-xl pl-4 pr-10 py-3 text-[13px] text-[#3F3C36] outline-none focus:border-[#6F94AF] focus:ring-2 focus:ring-[#6F94AF]/20 transition-all shadow-sm cursor-pointer"
+                        className="w-full appearance-none bg-white border border-[#E6E1D8] rounded-xl pl-4 pr-10 py-3 text-[13px] text-[#3F3C36] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-sm cursor-pointer"
                     >
                         <option value="">Elegir un curso…</option>
                         {cursosCentro.map(c => (
@@ -90,22 +90,22 @@ export default function CentroBoletines({ centroId, centroNombre }: Props) {
                     <div className="mt-6 rounded-2xl bg-white border border-[#E6E1D8] p-6 shadow-sm">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                             <div>
-                                <p className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280]">Curso</p>
+                                <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">Curso</p>
                                 <p className="mt-1 text-[14px] font-semibold text-[#3F3C36]">{selectedCurso.grado} {selectedCurso.seccion}</p>
                                 <p className="text-[12px] text-[#6B7280]">{getAsignaturaNombre(selectedCurso.asignatura)}</p>
                             </div>
                             <div>
-                                <p className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280]">Docente</p>
+                                <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">Docente</p>
                                 <p className="mt-1 text-[14px] font-semibold text-[#3F3C36]">{docenteBoletin}</p>
                             </div>
                             <div>
-                                <p className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280]">Estudiantes</p>
+                                <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">Estudiantes</p>
                                 <p className="mt-1 text-[14px] font-semibold text-[#3F3C36]">{estudiantesCurso.length}</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setPrintCurso(selectedCurso)}
-                            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#6F94AF] text-white text-[13px] font-semibold px-4 py-2.5 hover:bg-[#5F839E] transition-colors"
+                            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary text-white text-[13px] font-semibold px-4 py-2.5 hover:bg-[#5F839E] transition-colors"
                         >
                             <Download size={15} />
                             Descargar boletines

@@ -441,8 +441,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         <main className="w-full max-w-sm flex flex-col gap-6">
         {/* Brand Identity */}
         <div className="flex flex-col items-center">
-          <div className="w-40 h-40 md:w-48 md:h-48 flex items-center justify-center mb-1">
-            <img alt="Brand Logo" className="app-logo w-full h-full" src={logo} />
+          <div className="w-56 h-56 md:w-64 md:h-64 flex items-center justify-center mb-2">
+            <img alt="Brand Logo" className="app-logo w-full h-full object-contain" src={logo} />
           </div>
           <div className="text-center">
             <p className="text-xs font-bold tracking-tight text-[#716868] max-w-70 mx-auto">
@@ -457,20 +457,20 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
             <form onSubmit={handleForgotPassword} className="space-y-4 animate-fade-in">
               <div className="mb-1">
                 <h2 className="text-xs font-black uppercase tracking-widest text-[#3E3838]">Recuperar Contraseña</h2>
-                <p className="text-[9px] font-bold text-[#3E3838]/60 uppercase tracking-wider mt-1">
+                <p className="text-xs font-bold text-[#3E3838]/60 uppercase tracking-wider mt-1">
                   Ingresa tu correo para recibir instrucciones.
                 </p>
               </div>
 
               {error && (
-                <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-[10px] font-bold text-[#D45050] flex items-center gap-2">
+                <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-xs font-bold text-[#D45050] flex items-center gap-2">
                   <span className="w-1 h-1 bg-[#D45050] rounded-full"></span>
                   {error}
                 </div>
               )}
 
               {forgotSuccess && (
-                <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-[10px] font-bold text-[#689C63] flex items-center gap-2">
+                <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-xs font-bold text-[#689C63] flex items-center gap-2">
                   <span className="w-1 h-1 bg-[#689C63] rounded-full"></span>
                   {forgotSuccess}
                 </div>
@@ -479,7 +479,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
               {!forgotSuccess && (
                 <>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Email</label>
+                    <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Email</label>
                     <div className="relative">
                       <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#689C63]" />
                       <input
@@ -492,7 +492,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
                   <button
                     disabled={loading}
-                    className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
+                    className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                   >
                     {loading ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -509,7 +509,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
               <button
                 type="button"
                 onClick={() => { setIsForgotPassword(false); setError(null); setForgotSuccess(null); }}
-                className="w-full text-center text-[9px] font-black text-[#3E3838]/50 hover:text-[#689C63] transition-colors uppercase tracking-widest pt-1"
+                className="w-full text-center text-xs font-black text-[#3E3838]/50 hover:text-[#689C63] transition-colors uppercase tracking-widest pt-1"
               >
                 Volver al inicio de sesión
               </button>
@@ -521,14 +521,14 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                 <button
                   type="button"
                   onClick={() => { setIsSignUp(false); resetRegistro(); }}
-                  className={`flex-1 pb-2 text-[9px] font-black tracking-widest transition-all ${!isSignUp ? 'border-b-2 border-[#689C63] text-[#689C63]' : 'text-[#3E3838]/40 hover:text-[#3E3838]'}`}
+                  className={`flex-1 pb-2 text-xs font-black tracking-widest transition-all ${!isSignUp ? 'border-b-2 border-[#689C63] text-[#689C63]' : 'text-[#3E3838]/40 hover:text-[#3E3838]'}`}
                 >
                   INICIAR SESIÓN
                 </button>
                 <button
                   type="button"
                   onClick={() => { setIsSignUp(true); resetRegistro(); }}
-                  className={`flex-1 pb-2 text-[9px] font-black tracking-widest transition-all ${isSignUp ? 'border-b-2 border-[#689C63] text-[#689C63]' : 'text-[#3E3838]/40 hover:text-[#3E3838]'}`}
+                  className={`flex-1 pb-2 text-xs font-black tracking-widest transition-all ${isSignUp ? 'border-b-2 border-[#689C63] text-[#689C63]' : 'text-[#3E3838]/40 hover:text-[#3E3838]'}`}
                 >
                   REGISTRARSE
                 </button>
@@ -540,14 +540,14 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                    ──────────────────────────── */
                 <div className="animate-fade-in">
                   {error && (
-                    <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-[10px] font-bold text-[#D45050] flex items-center gap-2 mb-4">
+                    <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-xs font-bold text-[#D45050] flex items-center gap-2 mb-4">
                       <span className="w-1 h-1 bg-[#D45050] rounded-full"></span>
                       {error}
                     </div>
                   )}
 
                   {resendSuccess && (
-                    <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-[10px] font-bold text-[#689C63] flex items-center gap-2 mb-4">
+                    <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-xs font-bold text-[#689C63] flex items-center gap-2 mb-4">
                       <span className="w-1 h-1 bg-[#689C63] rounded-full"></span>
                       {resendSuccess}
                     </div>
@@ -558,14 +558,14 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       <div className="p-6 bg-[#689C63]/5 rounded-2xl border border-[#689C63]/15">
                         <Check className="w-10 h-10 text-[#689C63] mx-auto mb-3" />
                         <h3 className="text-sm font-black text-[#3E3838] mb-1">¡Centro educativo creado!</h3>
-                        <p className="text-[10px] font-bold text-[#3E3838]/60">
+                        <p className="text-xs font-bold text-[#3E3838]/60">
                           Tu cuenta y tu centro se crearon correctamente. Ya puedes ingresar.
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => { setIsSignUp(false); resetRegistro(); onAuthSuccess(); }}
-                        className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] uppercase"
+                        className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] uppercase"
                       >
                         Ir a mi panel
                       </button>
@@ -575,11 +575,11 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
                         <Mail className="w-10 h-10 text-[#689C63] mx-auto mb-3" />
                         <h3 className="text-sm font-black text-[#3E3838] mb-1">Revisa tu correo electrónico</h3>
-                        <p className="text-[10px] font-bold text-[#3E3838]/60">
+                        <p className="text-xs font-bold text-[#3E3838]/60">
                           Enviamos un enlace de confirmación a <span className="text-[#689C63]">{email}</span>. Confirma tu cuenta para poder iniciar sesión.
                         </p>
                         {crearCentro && (
-                          <p className="text-[9px] font-bold text-[#3E3838]/50 mt-2">
+                          <p className="text-xs font-bold text-[#3E3838]/50 mt-2">
                             Al confirmar tu correo y entrar, tu centro educativo se creará automáticamente y quedarás como administrador.
                           </p>
                         )}
@@ -588,7 +588,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         type="button"
                         onClick={handleResendEmail}
                         disabled={resendLoading || resendCooldown > 0}
-                        className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-[9px] tracking-widest transition-all disabled:opacity-50 flex items-center justify-center uppercase shadow-sm active:scale-[0.98]"
+                        className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-xs tracking-widest transition-all disabled:opacity-50 flex items-center justify-center uppercase shadow-sm active:scale-[0.98]"
                       >
                         {resendLoading ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -603,7 +603,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                     /* PASO 1: datos básicos */
                     <form onSubmit={goToPaso2} className="space-y-4">
                       <div className="space-y-1">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Nombre Completo</label>
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Nombre Completo</label>
                         <div className="relative">
                           <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#689C63]" />
                           <input
@@ -615,7 +615,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Email</label>
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Email</label>
                         <div className="relative">
                           <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#689C63]" />
                           <input
@@ -627,7 +627,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Contraseña</label>
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Contraseña</label>
                         <div className="relative">
                           <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3E3838]/40" />
                           <input
@@ -640,7 +640,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
                       <button
                         disabled={loading}
-                        className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
+                        className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
                         {loading ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -657,7 +657,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                     <div className="space-y-4">
                       <div className="p-4 bg-[#EAE4DA]/40 border border-[#EAE4DA] rounded-2xl">
                         <h3 className="text-xs font-black text-[#3E3838] mb-1">¿Deseas registrar un centro educativo?</h3>
-                        <p className="text-[10px] font-bold text-[#3E3838]/60">
+                        <p className="text-xs font-bold text-[#3E3838]/60">
                           Si eres la persona responsable de una institución, podrás crear tu centro y administrarlo.
                         </p>
                       </div>
@@ -666,7 +666,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         type="button"
                         onClick={() => { setCrearCentro(true); setRegStep(3); }}
                         disabled={loading}
-                        className="w-full py-3 bg-[#3E3838] hover:bg-[#3E3838]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
+                        className="w-full py-3 bg-[#3E3838] hover:bg-[#3E3838]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
                         <Building2 size={14} />
                         Sí, crear un centro educativo
@@ -676,7 +676,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         type="button"
                         onClick={() => { setCrearCentro(false); setBusquedaCentro(''); loadCentros(); setRegStep(4); }}
                         disabled={loading}
-                        className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-[9px] tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase shadow-sm active:scale-[0.98]"
+                        className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-xs tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase shadow-sm active:scale-[0.98]"
                       >
                         No, continuar como usuario
                       </button>
@@ -685,7 +685,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         type="button"
                         onClick={() => setRegStep(1)}
                         disabled={loading}
-                        className="w-full text-center text-[9px] font-black text-[#3E3838]/40 hover:text-[#689C63] transition-colors uppercase tracking-widest"
+                        className="w-full text-center text-xs font-black text-[#3E3838]/40 hover:text-[#689C63] transition-colors uppercase tracking-widest"
                       >
                         <ChevronLeft className="inline w-3 h-3" /> Volver
                       </button>
@@ -704,11 +704,11 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]">Datos del centro educativo</h3>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-[#3E3838]">Datos del centro educativo</h3>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Nombre del Centro</label>
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Nombre del Centro</label>
                         <div className="relative">
                           <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#689C63]" />
                           <input
@@ -722,7 +722,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Código (Opcional)</label>
+                          <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Código (Opcional)</label>
                           <input
                             type="text" value={centroForm.codigoCentro}
                             onChange={(e) => setCentroForm({ ...centroForm, codigoCentro: e.target.value.toUpperCase() })}
@@ -731,7 +731,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Teléfono (Opcional)</label>
+                          <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Teléfono (Opcional)</label>
                           <input
                             type="text" value={centroForm.telefono}
                             onChange={(e) => setCentroForm({ ...centroForm, telefono: e.target.value })}
@@ -743,7 +743,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
                       <button
                         disabled={loading || centroForm.nombre.trim().length < 3}
-                        className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
+                        className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
                         {loading ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -766,15 +766,15 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]">Busca tu centro educativo</h3>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-[#3E3838]">Busca tu centro educativo</h3>
                       </div>
 
-                      <p className="text-[10px] font-bold text-[#3E3838]/60 mb-3">
+                      <p className="text-xs font-bold text-[#3E3838]/60 mb-3">
                         Escribe el nombre de tu centro y elígelo de la lista. Tu selección determinará automáticamente cómo te vinculas.
                       </p>
 
                       <div className="space-y-1 mb-3">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Centro educativo</label>
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Centro educativo</label>
                         <div className="relative">
                           <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#689C63]" />
                           <input
@@ -788,7 +788,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
                       <div className="max-h-52 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 mb-3 bg-white">
                         {centrosFiltrados.length === 0 ? (
-                          <p className="p-3 text-center text-[10px] font-bold text-[#3E3838]/50">
+                          <p className="p-3 text-center text-xs font-bold text-[#3E3838]/50">
                             No hay centros que coincidan. Si tu centro no aparece, regístralo abajo.
                           </p>
                         ) : centrosFiltrados.map((c) => (
@@ -799,13 +799,13 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                             className="w-full text-left px-4 py-3 hover:bg-[#689C63]/5 transition-colors disabled:opacity-50 flex items-center gap-2"
                           >
                             <Building2 className="w-3.5 h-3.5 text-[#689C63] shrink-0" />
-                            <span className="text-[11px] font-bold text-[#3E3838]">{c.nombre}</span>
+                            <span className="text-xs font-bold text-[#3E3838]">{c.nombre}</span>
                           </button>
                         ))}
                       </div>
 
                       {detectandoSuscripcion && (
-                        <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-[10px] font-bold text-[#689C63] flex items-center gap-2 mb-3">
+                        <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-xs font-bold text-[#689C63] flex items-center gap-2 mb-3">
                           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verificando la suscripción del centro...
                         </div>
                       )}
@@ -813,7 +813,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       <button
                         type="button"
                         onClick={() => setRegStep(7)}
-                        className="w-full text-center text-[9px] font-black text-[#689C63] hover:text-[#689C63]/90 transition-colors uppercase tracking-widest pt-1"
+                        className="w-full text-center text-xs font-black text-[#689C63] hover:text-[#689C63]/90 transition-colors uppercase tracking-widest pt-1"
                       >
                         Mi centro educativo no aparece en la lista
                       </button>
@@ -829,16 +829,16 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]">Tu centro paga tu acceso</h3>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-[#3E3838]">Tu centro paga tu acceso</h3>
                       </div>
 
                       <div className="p-3 bg-[#EAE4DA]/40 border border-[#EAE4DA] rounded-xl flex items-center gap-2 mb-3">
                         <Building2 className="w-4 h-4 text-[#689C63] shrink-0" />
-                        <span className="text-[11px] font-bold text-[#3E3838]">{centroSelNombre}</span>
+                        <span className="text-xs font-bold text-[#3E3838]">{centroSelNombre}</span>
                       </div>
 
                       <div className="space-y-1 mb-3">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Código de acceso</label>
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Código de acceso</label>
                         <input
                           type="text" value={codigoAcceso}
                           onChange={(e) => { setCodigoAcceso(e.target.value.toUpperCase()); setCodigoInfo(null); }}
@@ -850,13 +850,13 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       <button
                         type="button" onClick={validarCodigo}
                         disabled={codigoValidando || loading}
-                        className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-[9px] tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase shadow-sm active:scale-[0.98] mb-3"
+                        className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-xs tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase shadow-sm active:scale-[0.98] mb-3"
                       >
                         {codigoValidando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Validar código'}
                       </button>
 
                       {codigoInfo && codigoInfo.valido && (
-                        <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-[10px] font-bold text-[#689C63] flex items-center gap-2 mb-3">
+                        <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-xs font-bold text-[#689C63] flex items-center gap-2 mb-3">
                           <Check className="w-3.5 h-3.5" /> Código válido. Quedarás cubierto por la suscripción institucional.
                         </div>
                       )}
@@ -865,7 +865,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         type="button"
                         onClick={() => handleRegistro('codigo')}
                         disabled={loading || codigoValidando || !codigoInfo?.valido}
-                        className="w-full py-3 bg-[#5F665E] hover:bg-[#5F665E]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-2 uppercase"
+                        className="w-full py-3 bg-[#5F665E] hover:bg-[#5F665E]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-2 uppercase"
                       >
                         {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear mi cuenta y acceder'}
                       </button>
@@ -881,23 +881,23 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]">Me vinculo a un centro existente</h3>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-[#3E3838]">Me vinculo a un centro existente</h3>
                       </div>
 
-                      <p className="text-[10px] font-bold text-[#3E3838]/60 mb-3">
+                      <p className="text-xs font-bold text-[#3E3838]/60 mb-3">
                         Tu cuenta quedará asociada a este centro. Tu suscripción es independiente: pagas tu propio plan.
                       </p>
 
                       <div className="p-3 bg-[#EAE4DA]/40 border border-[#EAE4DA] rounded-xl flex items-center gap-2 mb-3">
                         <Building2 className="w-4 h-4 text-[#689C63] shrink-0" />
-                        <span className="text-[11px] font-bold text-[#3E3838]">{centroSelNombre}</span>
+                        <span className="text-xs font-bold text-[#3E3838]">{centroSelNombre}</span>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => handleRegistro('propia')}
                         disabled={loading || !centroSel}
-                        className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
+                        className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
                         {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear mi cuenta y vincularme a este centro'}
                       </button>
@@ -913,15 +913,15 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]">Mi centro educativo no aparece</h3>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-[#3E3838]">Mi centro educativo no aparece</h3>
                       </div>
 
-                      <p className="text-[10px] font-bold text-[#3E3838]/60 mb-3">
+                      <p className="text-xs font-bold text-[#3E3838]/60 mb-3">
                         Registra la información de tu centro. Quedará asociado como referencia y pagarás tu propia suscripción.
                       </p>
 
                       <div className="space-y-1 mb-3">
-                        <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Nombre del centro educativo</label>
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Nombre del centro educativo</label>
                         <input
                           type="text" required value={centroForm.nombre}
                           onChange={(e) => setCentroForm({ ...centroForm, nombre: e.target.value })}
@@ -934,7 +934,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         type="button"
                         onClick={() => handleRegistro('referencia')}
                         disabled={loading || centroForm.nombre.trim().length < 3}
-                        className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
+                        className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
                         {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear mi cuenta y vincularme'}
                       </button>
@@ -947,21 +947,21 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                    ──────────────────────────── */
                 <form onSubmit={handleAuth} className="space-y-4">
                   {error && (
-                    <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-[10px] font-bold text-[#D45050] flex items-center gap-2">
+                    <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-xs font-bold text-[#D45050] flex items-center gap-2">
                       <span className="w-1 h-1 bg-[#D45050] rounded-full"></span>
                       {error}
                     </div>
                   )}
 
                   {resendSuccess && (
-                    <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-[10px] font-bold text-[#689C63] flex items-center gap-2">
+                    <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-xs font-bold text-[#689C63] flex items-center gap-2">
                       <span className="w-1 h-1 bg-[#689C63] rounded-full"></span>
                       {resendSuccess}
                     </div>
                   )}
 
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Email</label>
+                    <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Email</label>
                     <div className="relative">
                       <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#689C63]" />
                       <input
@@ -974,7 +974,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
                   <div className="space-y-1">
                     <div className="flex justify-between items-baseline">
-                      <label className="text-[9px] font-black text-[#3E3838]/60 uppercase tracking-widest">Contraseña</label>
+                      <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Contraseña</label>
                     </div>
                     <div className="relative">
                       <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3E3838]/40" />
@@ -988,7 +988,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
                   <button
                     disabled={loading}
-                    className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-[9px] tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
+                    className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                   >
                     {loading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1005,7 +1005,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       type="button"
                       onClick={handleResendEmail}
                       disabled={resendLoading || resendCooldown > 0}
-                      className="w-full mt-2 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-[9px] tracking-widest transition-all disabled:opacity-50 flex items-center justify-center uppercase shadow-sm active:scale-[0.98]"
+                      className="w-full mt-2 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-xs tracking-widest transition-all disabled:opacity-50 flex items-center justify-center uppercase shadow-sm active:scale-[0.98]"
                     >
                       {resendLoading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1024,11 +1024,11 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                   <button
                     type="button"
                     onClick={() => { setIsForgotPassword(true); setError(null); }}
-                    className="text-[9px] font-black text-[#689C63] hover:text-[#689C63]/90 transition-colors tracking-widest uppercase"
+                    className="text-xs font-black text-[#689C63] hover:text-[#689C63]/90 transition-colors tracking-widest uppercase"
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
-                  <button className="text-[9px] font-black text-[#3E3838]/40 hover:text-[#3E3838] transition-colors tracking-widest uppercase">
+                  <button className="text-xs font-black text-[#3E3838]/40 hover:text-[#3E3838] transition-colors tracking-widest uppercase">
                     ¿Necesitas soporte?
                   </button>
                 </footer>
@@ -1038,7 +1038,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         </div>
 
           {/* Brand Meta */}
-          <p className="text-center text-[8px] font-black text-[#3E3838]/30 uppercase tracking-[0.25em]">CIELO • 2026</p>
+          <p className="text-center text-xs font-black text-[#3E3838]/30 uppercase tracking-[0.25em]">CIELO • 2026</p>
         </main>
       </div>
 

@@ -12,7 +12,7 @@ export function LandingStats() {
     <section className="py-24 bg-[#1a1c1a] relative overflow-hidden text-white">
       {/* Background decoration */}
       <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
-      <div className="absolute bottom-0 right-0 w-125 h-125 bg-[#ADC762]/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-125 h-125 bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
@@ -24,7 +24,7 @@ export function LandingStats() {
               className="text-4xl md:text-5xl font-black tracking-tighter mb-6 leading-tight"
             >
               CIELO conecta cada etapa <br />
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-[#86A792] to-[#BFC9A6]">del proceso educativo.</span>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-[var(--primary)] to-[var(--primary)]">del proceso educativo.</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -51,7 +51,7 @@ export function LandingStats() {
                   <span className="text-4xl md:text-5xl font-black text-white tracking-tighter">
                     {stat.value}
                   </span>
-                  <span className="text-xl font-bold text-[#86A792]">{stat.suffix}</span>
+                  <span className="text-xl font-bold text-primary">{stat.suffix}</span>
                 </div>
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
                   {stat.label}

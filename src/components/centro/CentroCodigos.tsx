@@ -79,7 +79,7 @@ export default function CentroCodigos({ centroId }: Props) {
     return (
         <section className="bg-[#F9F8F6] border border-[#E6E1D8] rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_rgba(0,0,0,0.05)] overflow-hidden">
             <header className="px-5 py-3.5 border-b border-[#E6E1D8] flex items-center gap-3">
-                <span className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center text-[#6F94AF] shrink-0">
+                <span className="w-9 h-9 rounded-xl bg-white border border-[#E6E1D8] flex items-center justify-center text-primary shrink-0">
                     <KeyRound size={16} />
                 </span>
                 <div className="min-w-0">
@@ -91,7 +91,7 @@ export default function CentroCodigos({ centroId }: Props) {
             <div className="px-5 py-3.5">
                 {cargandoCodigos ? (
                     <div className="flex items-center justify-center gap-3 py-10 text-[12px] font-medium text-[#6B7280]">
-                        <span className="h-4 w-4 rounded-full border-2 border-[#6F94AF] border-t-transparent animate-spin" />
+                        <span className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                         Cargando códigos de acceso…
                     </div>
                 ) : errorCodigos ? (
@@ -115,7 +115,7 @@ export default function CentroCodigos({ centroId }: Props) {
                                         <span className="font-mono text-[17px] font-bold tracking-[0.08em] text-[#3F3C36]">
                                             {cod.codigo}
                                         </span>
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${ESTADO_CODIGO_COLORS[estadoVisual]}`}>
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_CODIGO_COLORS[estadoVisual]}`}>
                                             {ESTADO_CODIGO_LABELS[estadoVisual]}
                                         </span>
                                     </div>
@@ -136,7 +136,7 @@ export default function CentroCodigos({ centroId }: Props) {
                                         className={`mt-auto inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-semibold transition-colors ${
                                             esCopiado
                                                 ? 'bg-[#188038]/10 border-[#188038]/30 text-[#188038]'
-                                                : 'bg-white border-[#E6E1D8] text-[#6F94AF] hover:border-[#6F94AF]'
+                                                : 'bg-white border-[#E6E1D8] text-primary hover:border-primary'
                                         }`}
                                         title="Copiar código"
                                     >

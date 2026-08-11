@@ -84,7 +84,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             if (col.type === 'estudiantes') {
                                 return (
                                     <div key={col.id} className="sticky left-0 z-50 bg-[#F8F3ED] px-2 py-2 text-left border-r border-[rgba(46,51,48,0.08)] flex items-center justify-between box-border" style={style}>
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] italic text-[#2E3330]">Estudiantes</span>
+                                        <span className="text-xs font-black uppercase tracking-[0.2em] italic text-[#2E3330]">Estudiantes</span>
                                         <button onClick={onAddEstudiante} className="w-4 h-4 flex items-center justify-center hover:bg-[#FDFBF7] rounded-full transition-all text-[#5F665E] hover:text-[#2E3330] border border-transparent hover:border-[rgba(46,51,48,0.08)]"><Plus size={14} /></button>
                                     </div>
                                 );
@@ -95,7 +95,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                     <div key={col.id} className="px-1 py-2 border-r border-[rgba(46,51,48,0.08)] relative group flex flex-col items-center justify-center box-border" style={style}>
                                         <div className="flex flex-col items-center gap-1 w-full">
                                             <div className="flex items-center gap-1 w-full justify-center px-1">
-                                                <button onClick={() => onDeleteActividad(act.id)} className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center hover:bg-[#EB8847] rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><Trash2 size={10} /></button>
+                                                <button onClick={() => onDeleteActividad(act.id)} className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center hover:bg-attention rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><Trash2 size={10} /></button>
                                                 <input 
                                                     defaultValue={act.nombre.replace(/^Actividad\s+/i, 'ACTIV. ')}
                                                     onFocus={(e) => { e.target.value = act.nombre; }}
@@ -114,7 +114,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                             e.currentTarget.blur();
                                                         }
                                                     }}
-                                                    className="text-[10px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] focus:text-[#2E3330] bg-transparent outline-none text-center w-full max-w-30 truncate focus:border-b focus:border-[#ADC762]/30 transition-all placeholder:text-[#5F665E]/40"
+                                                    className="text-xs font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] focus:text-[#2E3330] bg-transparent outline-none text-center w-full max-w-30 truncate focus:border-b focus:border-primary/30 transition-all placeholder:text-[#5F665E]/40"
                                                     placeholder="NOMBRE"
                                                 />
                                             </div>
@@ -138,9 +138,9 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             }
                             if (col.type === 'destaca') {
                                 return (
-                                    <div key={col.id} className="px-1 py-2 border-r border-[rgba(46,51,48,0.08)] bg-[#F5BC5D]/10 flex flex-col items-center justify-center box-border" style={style}>
-                                        <Target size={14} className="text-[#B87449]" />
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-[#B87449]/70 mt-2">Destaca</span>
+                                    <div key={col.id} className="px-1 py-2 border-r border-[rgba(46,51,48,0.08)] bg-warning/10 flex flex-col items-center justify-center box-border" style={style}>
+                                        <Target size={14} className="text-danger" />
+                                        <span className="text-xs font-black uppercase tracking-widest text-danger/70 mt-2">Destaca</span>
                                     </div>
                                 );
                             }
@@ -154,8 +154,8 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             }
                             if (col.type === 'bc-rec') {
                                 return (
-                                    <div key={col.id} className="px-1 py-4 border-r border-[rgba(46,51,48,0.08)] bg-[#ADC762]/5 flex flex-col items-center justify-center box-border" style={style}>
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-[#ADC762]/70">Rec.</span>
+                                    <div key={col.id} className="px-1 py-4 border-r border-[rgba(46,51,48,0.08)] bg-primary/5 flex flex-col items-center justify-center box-border" style={style}>
+                                        <span className="text-xs font-black uppercase tracking-widest text-primary/70">Rec.</span>
                                     </div>
                                 );
                             }
@@ -179,7 +179,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                             return (
                                                 <div key={col.id} className="sticky left-0 z-20 bg-inherit px-3 py-2 border-r border-[rgba(46,51,48,0.08)] font-semibold text-[#2E3330] flex items-center box-border" style={style}>
                                                     <div className="flex items-center gap-1 w-full">
-                                                        <span className="text-[10px] font-black text-[#5F665E]/40 w-4 shrink-0">{est.numeroLista || eIdx + 1}</span>
+                                                        <span className="text-xs font-black text-[#5F665E]/40 w-4 shrink-0">{est.numeroLista || eIdx + 1}</span>
                                                         <div className="flex flex-col overflow-hidden w-full">
                                                             <input 
                                                                 defaultValue={est.displayName}
@@ -201,9 +201,9 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                                         e.currentTarget.blur();
                                                                     }
                                                                 }}
-                                                                className="text-[10px] font-black uppercase tracking-tight truncate bg-transparent outline-none w-full hover:bg-[#F8F3ED] focus:bg-white focus:ring-1 focus:ring-[rgba(46,51,48,0.15)] rounded px-1 transition-all"
+                                                                className="text-xs font-black uppercase tracking-tight truncate bg-transparent outline-none w-full hover:bg-[#F8F3ED] focus:bg-white focus:ring-1 focus:ring-[rgba(46,51,48,0.15)] rounded px-1 transition-all"
                                                             />
-                                                            <span className="text-[9px] font-bold text-[#5F665E] uppercase tracking-widest truncate px-1">ID: {est.id.toString().slice(-6)}</span>
+                                                            <span className="text-xs font-bold text-[#5F665E] uppercase tracking-widest truncate px-1">ID: {est.id.toString().slice(-6)}</span>
                                                         </div>
                                                     </div>
                                                 </div>

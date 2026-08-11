@@ -8,14 +8,14 @@ const cursoDemo: Curso = {
     asignatura: 'Lengua Española',
     periodo: 'P1',
     diasSemana: [],
-    color: '#ADC762',
+    color: 'var(--primary)',
     grupoId: 1
 };
 
 const estudiantesDemo: Estudiante[] = [
-    { id: 1001, nombre: 'Isabella', apellido: 'Rosario', avatarColor: '#B87449', cursoId: 999, grupoId: 1, nivel: 1, puntaje: 0, bc1: {nivel: 1, puntaje: 0}, bc2: {nivel: 1, puntaje: 0}, bc3: {nivel: 1, puntaje: 0}, bc4: {nivel: 1, puntaje: 0}, actividadesRecientes: 0, enRiesgo: false, numeroLista: 1 },
-    { id: 1002, nombre: 'Mateo', apellido: 'Jiménez', avatarColor: '#ADC762', cursoId: 999, grupoId: 1, nivel: 1, puntaje: 0, bc1: {nivel: 1, puntaje: 0}, bc2: {nivel: 1, puntaje: 0}, bc3: {nivel: 1, puntaje: 0}, bc4: {nivel: 1, puntaje: 0}, actividadesRecientes: 0, enRiesgo: false, numeroLista: 2 },
-    { id: 1003, nombre: 'Valentina', apellido: 'Cruz', avatarColor: '#EB8847', cursoId: 999, grupoId: 1, nivel: 1, puntaje: 0, bc1: {nivel: 1, puntaje: 0}, bc2: {nivel: 1, puntaje: 0}, bc3: {nivel: 1, puntaje: 0}, bc4: {nivel: 1, puntaje: 0}, actividadesRecientes: 0, enRiesgo: false, numeroLista: 3 },
+    { id: 1001, nombre: 'Isabella', apellido: 'Rosario', avatarColor: 'var(--danger)', cursoId: 999, grupoId: 1, nivel: 1, puntaje: 0, bc1: {nivel: 1, puntaje: 0}, bc2: {nivel: 1, puntaje: 0}, bc3: {nivel: 1, puntaje: 0}, bc4: {nivel: 1, puntaje: 0}, actividadesRecientes: 0, enRiesgo: false, numeroLista: 1 },
+    { id: 1002, nombre: 'Mateo', apellido: 'Jiménez', avatarColor: 'var(--primary)', cursoId: 999, grupoId: 1, nivel: 1, puntaje: 0, bc1: {nivel: 1, puntaje: 0}, bc2: {nivel: 1, puntaje: 0}, bc3: {nivel: 1, puntaje: 0}, bc4: {nivel: 1, puntaje: 0}, actividadesRecientes: 0, enRiesgo: false, numeroLista: 2 },
+    { id: 1003, nombre: 'Valentina', apellido: 'Cruz', avatarColor: 'var(--attention)', cursoId: 999, grupoId: 1, nivel: 1, puntaje: 0, bc1: {nivel: 1, puntaje: 0}, bc2: {nivel: 1, puntaje: 0}, bc3: {nivel: 1, puntaje: 0}, bc4: {nivel: 1, puntaje: 0}, actividadesRecientes: 0, enRiesgo: false, numeroLista: 3 },
 ];
 
 const actividadesDemo: Actividad[] = [
@@ -72,10 +72,10 @@ export const simulatorData: AppState = {
     posts: [],
     descriptoresRubrica: [],
     nivelesPuntaje: [
-        { nivel: 4, nombre: 'Estratégico', puntaje: 100, color: '#22c55e', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
-        { nivel: 3, nombre: 'Autónomo', puntaje: 85, color: '#eab308', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
-        { nivel: 2, nombre: 'Resolutivo', puntaje: 70, color: '#f97316', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
-        { nivel: 1, nombre: 'Receptivo', puntaje: 55, color: '#94a3b8', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' },
+        { nivel: 4, nombre: 'Estratégico', puntaje: 100, color: '#5F9563', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
+        { nivel: 3, nombre: 'Autónomo', puntaje: 85, color: '#79C599', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
+        { nivel: 2, nombre: 'Resolutivo', puntaje: 70, color: '#D68253', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
+        { nivel: 1, nombre: 'Receptivo', puntaje: 55, color: '#C63D3D', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' },
     ],
     evaluacionesRubrica: [],
     criteriosCotejo: [],

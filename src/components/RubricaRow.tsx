@@ -16,11 +16,11 @@ export const NIVEL_FIELDS = [
         key: 'estrategico' as keyof DescriptorRubrica,
         nivel: 4 as Nivel,
         label: 'ESTRATÉGICO',
-        text: 'text-[#7C9672]',
+        text: 'text-primary',
         pointsColor: 'text-slate-400',
-        activeBorder: 'border-[#7C9672]',
+        activeBorder: 'border-primary',
         activeBg: 'bg-[#F2F5F1]',
-        headerBg: '#7C9672',
+        headerBg: 'var(--primary)',
         headerTextColor: 'text-white',
         cellBg: '#F2F5F1',
     },
@@ -28,11 +28,11 @@ export const NIVEL_FIELDS = [
         key: 'autonomo' as keyof DescriptorRubrica,
         nivel: 3 as Nivel,
         label: 'AUTÓNOMO',
-        text: 'text-[#D8B55A]',
+        text: 'text-warning',
         pointsColor: 'text-slate-400',
-        activeBorder: 'border-[#D8B55A]',
+        activeBorder: 'border-warning',
         activeBg: 'bg-[#FAF6ED]',
-        headerBg: '#D8B55A',
+        headerBg: 'var(--warning)',
         headerTextColor: 'text-[#1E293B]',
         cellBg: '#FAF6ED',
     },
@@ -40,11 +40,11 @@ export const NIVEL_FIELDS = [
         key: 'resolutivo' as keyof DescriptorRubrica,
         nivel: 2 as Nivel,
         label: 'RESOLUTIVO',
-        text: 'text-[#CB4834]',
+        text: 'text-danger',
         pointsColor: 'text-slate-400',
-        activeBorder: 'border-[#CB4834]',
+        activeBorder: 'border-danger',
         activeBg: 'bg-[#FDF1EF]',
-        headerBg: '#CB4834',
+        headerBg: 'var(--danger)',
         headerTextColor: 'text-white',
         cellBg: '#FDF1EF',
     },
@@ -176,7 +176,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                         data-guide="celda-rubrica"
                         className={`w-[17.5%] p-2 align-middle text-center transition-all border-r border-slate-100 last:border-r-0 ${readOnly ? 'cursor-default' : 'cursor-pointer'} relative group-cell 
                             ${isSelected ? 'after:absolute after:inset-0 after:border-2 after:border-[#1E293B]' : ''}
-                            ${isActive ? 'ring-2 ring-inset ring-turf-green-base shadow-inner z-10' : ''}`}
+                            ${isActive ? 'ring-2 ring-inset ring-primary shadow-inner z-10' : ''}`}
                         style={{ backgroundColor: field.cellBg }}
                         onClick={(e) => {
                             if (readOnly) return;
@@ -189,7 +189,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                 <div className="absolute top-1 right-1 z-20 flex items-center gap-1 rounded-md border border-slate-300 bg-white px-1.5 py-1 shadow-sm">
                                     <button
                                         type="button"
-                                        className="h-5 w-5 rounded border border-slate-300 text-[11px] font-bold text-slate-800 hover:bg-slate-100"
+                                        className="h-5 w-5 rounded border border-slate-300 text-xs font-bold text-slate-800 hover:bg-slate-100"
                                         onMouseDown={(event) => {
                                             event.preventDefault();
                                             event.stopPropagation();
@@ -200,7 +200,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                     </button>
                                     <button
                                         type="button"
-                                        className="h-5 w-5 rounded border border-slate-300 text-[11px] italic text-slate-800 hover:bg-slate-100"
+                                        className="h-5 w-5 rounded border border-slate-300 text-xs italic text-slate-800 hover:bg-slate-100"
                                         onMouseDown={(event) => {
                                             event.preventDefault();
                                             event.stopPropagation();
@@ -226,7 +226,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                 </div>
                             )}
                             {(isSelected || isActive) && (
-                                <div className={`absolute top-2.5 right-2.5 z-10 ${isActive ? 'text-turf-green-base' : 'text-[#1E293B]'}`}>
+                                <div className={`absolute top-2.5 right-2.5 z-10 ${isActive ? 'text-primary' : 'text-[#1E293B]'}`}>
                                     <CheckCircle size={14} />
                                 </div>
                             )}
@@ -237,7 +237,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                         <div
                                             key={s.id}
                                             title={`${s.nombre} ${s.apellido}`}
-                                            className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white shadow-sm"
+                                            className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
                                             style={{ background: s.avatarColor }}
                                         >
                                             {i}
