@@ -30,7 +30,7 @@ export function CalendarWidget({ eventos, actividades, tareas = [], onSelectDate
     const allItems = [
         ...eventos.map(e => ({ id: `e${e.id}`, title: e.titulo, date: e.fecha, type: 'evento', color: 'bg-[#3F3C36]' })),
         ...actividades.map(a => ({ id: `a${a.id}`, title: a.nombre, date: a.fecha, type: 'actividad', color: 'bg-primary' })),
-        ...tareas.filter(t => t.asignaciones?.some(a => a.docenteId === session?.user?.id && a.estado !== 'completada')).map(t => ({ id: `t${t.id}`, title: t.titulo, date: t.fechaLimite || today.toISOString().split('T')[0], type: 'tarea', color: 'bg-[#F5BC5D]' }))
+        ...tareas.filter(t => t.asignaciones?.some(a => a.docenteId === session?.user?.id)).map(t => ({ id: `t${t.id}`, title: t.titulo, date: t.fechaLimite || today.toISOString().split('T')[0], type: 'tarea', color: 'bg-[#F5BC5D]' }))
     ];
 
     const prevMonth = () => setViewDate(new Date(year, month - 1, 1));

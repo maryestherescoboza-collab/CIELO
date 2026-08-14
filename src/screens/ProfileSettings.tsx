@@ -115,7 +115,7 @@ export default function ProfileSettings({
 
       {/* Modal Container */}
       <div 
-        className="relative w-full h-dvh md:h-auto md:max-h-[85vh] md:max-w-5xl bg-[#FDFBF7] md:rounded-[20px] border border-[rgba(46,51,48,0.08)] shadow-sm flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full h-dvh md:h-auto md:max-h-[85vh] md:max-w-5xl bg-base-creme md:rounded-[20px] border border-[#E8C166] shadow-sm flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         <Sidebar 
@@ -129,7 +129,7 @@ export default function ProfileSettings({
           onLogout={onLogout || (() => supabase.auth.signOut())}
         />
 
-        <div className="flex-1 flex flex-col min-w-0 bg-[#FDFBF7]">
+        <div className="flex-1 flex flex-col min-w-0 bg-base-creme">
           <Header activeSection={activeSection} onClose={onClose} />
           
           <div ref={contentRef} className="flex-1 overflow-y-auto px-6 py-8 custom-scrollbar">
@@ -220,8 +220,8 @@ const Sidebar = React.memo(function Sidebar({
   };
 
   return (
-    <aside className="w-full md:w-70 shrink-0 flex flex-col bg-[#F9F8F6] border-b md:border-b-0 md:border-r border-[rgba(46,51,48,0.08)]">
-      <div className="p-6 border-b border-[rgba(46,51,48,0.08)] flex items-center gap-4 bg-[#F9F8F6]/25">
+    <aside className="w-full md:w-70 shrink-0 flex flex-col bg-[#F9F8F6] border-b md:border-b-0 md:border-r border-[#E8C166]">
+      <div className="p-6 border-b border-[#E8C166] flex items-center gap-4 bg-[#F9F8F6]/25">
          <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-sm" style={{ background: avatarColor || 'white' }}>
             {!avatarColor ? (
               <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
@@ -244,7 +244,7 @@ const Sidebar = React.memo(function Sidebar({
         <NavItem id="apariencia" label="Apariencia" icon={<Palette size={16} />} />
       </nav>
 
-      <div className="p-4 border-t border-[rgba(46,51,48,0.08)] bg-[#F9F8F6]/10 space-y-3">
+      <div className="p-4 border-t border-[#E8C166] bg-[#F9F8F6]/10 space-y-3">
          <button
             onClick={() => {
               if (window.confirm('¿Estás SEGURO de que deseas reiniciar tu año escolar? Esta acción es irreversible.')) {
@@ -277,7 +277,7 @@ function Header({ activeSection, onClose }: { activeSection: SectionId; onClose:
   };
 
   return (
-    <header className="px-6 py-4 flex items-center justify-between border-b border-[rgba(46,51,48,0.08)] bg-[#FDFBF7] sticky top-0 z-10">
+    <header className="px-6 py-4 flex items-center justify-between border-b border-[#E8C166] bg-base-creme sticky top-0 z-10">
        <h3 className="font-bold text-base text-[#2E3330] tracking-tight">
           {titles[activeSection]}
        </h3>

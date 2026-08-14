@@ -107,7 +107,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
         });
 
     return (
-        <div className="flex flex-col flex-1 h-full overflow-hidden bg-[#FDFBF7]">
+        <div className="flex flex-col flex-1 h-full overflow-hidden bg-base-creme">
             <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 flex flex-col gap-6 scroll-smooth scrollbar-hide">
                 {/* Main Header */}
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -134,7 +134,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
 
                 <main className="flex flex-col gap-6 items-start w-full">
                     {/* HORIZONTAL FORM BANNER */}
-                    <div className="w-full flex flex-col xl:flex-row gap-6 bg-white rounded-[24px] p-6 shadow-sm border border-[rgba(46,51,48,0.08)] items-start xl:items-stretch animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+                    <div className="w-full flex flex-col xl:flex-row gap-6 bg-white rounded-[24px] p-6 shadow-sm border border-[#E8C166] items-start xl:items-stretch animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
                         {/* Section 1: Estudiantes Vinculados */}
                         <section className="flex flex-col gap-2 flex-1 xl:max-w-62.5 relative">
                             <h2 className="text-xs font-black uppercase tracking-[0.15em] text-[#7D847A] flex items-center gap-1">
@@ -153,7 +153,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                     onChange={(e) => setBuscarEst(e.target.value)}
                                 />
                                 {buscarEst.trim() !== '' && (
-                                    <div className="absolute top-full mt-2 w-full z-10 max-h-48 overflow-y-auto border border-slate-300 rounded-[20px] bg-[#FDFBF7] shadow-lg p-2 flex flex-col gap-1">
+                                    <div className="absolute top-full mt-2 w-full z-10 max-h-48 overflow-y-auto border border-slate-300 rounded-[20px] bg-base-creme shadow-lg p-2 flex flex-col gap-1">
                                         {estudiantesFilt.map(e => (
                                             <button
                                                 key={e.id}
@@ -172,7 +172,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                             {estudiantesSeleccionados.length > 0 && (
                                 <div className="mt-2 flex flex-wrap gap-1.5 animate-in fade-in duration-300 max-h-30 overflow-y-auto scrollbar-hide">
                                     {estudiantesSeleccionados.map(e => (
-                                        <div key={e.id} className="flex items-center justify-between gap-1.5 bg-[#EAE4DA]/50 pl-3 pr-2 py-1.5 rounded-full border border-[rgba(46,51,48,0.08)] w-full">
+                                        <div key={e.id} className="flex items-center justify-between gap-1.5 bg-[#EAE4DA]/50 pl-3 pr-2 py-1.5 rounded-full border border-[#E8C166] w-full">
                                             <span className="text-xs font-bold text-[#2E3330] truncate">{e.nombre} {e.apellido}</span>
                                             <button onClick={() => toggleEstudiante(e.id)} className="text-[#7D847A] hover:text-red-500 font-bold transition-all text-xs flex items-center justify-center shrink-0 w-5 h-5 rounded-full hover:bg-white">
                                                 &times;
@@ -297,9 +297,9 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                     </div>
 
                     {/* BOTTOM AREA: History Table Container */}
-                    <div className="w-full flex flex-col bg-white rounded-[24px] shadow-sm border border-[rgba(46,51,48,0.08)] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                    <div className="w-full flex flex-col bg-white rounded-[24px] shadow-sm border border-[#E8C166] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                         {/* Table Header Area */}
-                        <div className="p-6 border-b border-[rgba(46,51,48,0.08)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-4 border-[#E8C166]" style={{ backgroundColor: 'rgba(214, 130, 83, 0.08)' }}>
+                        <div className="p-6 border-b border-[#E8C166] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-4 border-[#E8C166]" style={{ backgroundColor: 'rgba(214, 130, 83, 0.08)' }}>
                             <div>
                                 <h2 className="text-lg font-black text-[#2E3330]">Bitácora de Acontecimientos</h2>
                                 <p className="text-xs font-black text-[#7D847A] uppercase tracking-widest mt-1">HISTORIAL DEL AÑO ESCOLAR EN CURSO</p>
@@ -323,7 +323,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                         <div className="overflow-x-auto p-0 scrollbar-hide">
                             <table className="w-full text-left border-collapse min-w-225">
                                 <thead>
-                                    <tr className="bg-[#D68253]/5 border-b border-[rgba(46,51,48,0.08)]">
+                                    <tr className="bg-[#D68253]/5 border-b border-[#E8C166]">
                                         <th className="p-4 text-[10px] font-black text-[#7D847A] uppercase tracking-widest w-55">Estudiante</th>
                                         <th className="p-4 text-[10px] font-black text-[#7D847A] uppercase tracking-widest">Categoría</th>
                                         <th className="p-4 text-[10px] font-black text-[#7D847A] uppercase tracking-widest">Gravedad</th>

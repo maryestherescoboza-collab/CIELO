@@ -197,7 +197,7 @@ export default function Estudiante() {
                 isTutor={isTutor}
             />
 
-            <div className="w-[98%] max-w-310 bg-[#FDFBF7] shadow-sm border border-[rgba(46,51,48,0.08)] rounded-[20px] p-6 relative">
+            <div className={`w-[98%] max-w-310 shadow-sm border border-[rgba(46,51,48,0.08)] rounded-[20px] p-6 relative ${activeTab === 'Perfil' ? 'bg-white' : 'bg-[#FDFBF7]'}`}>
                 {activeTab === 'Perfil' && (
                     <PerfilTab 
                         est={est}

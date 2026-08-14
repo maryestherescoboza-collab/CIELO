@@ -43,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({
         };
     }, []);
     return (
-        <header className="flex items-center justify-between px-4 py-2 bg-[#F9F8F6] border-b border-[rgba(46,51,48,0.08)] sticky top-0 z-40 transition-all">
+        <header className="flex items-center justify-between px-4 py-2 bg-[#F9F8F6] border-b border-[#E8C166] sticky top-0 z-40 transition-all">
             <div className="flex items-center gap-2">
                 <img src={logo} alt="CIELO Logo" className="h-10 w-auto object-contain" />
                 <div className="hidden sm:block">
@@ -52,7 +52,7 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
             </div>
 
-            <div className="flex-1 mx-4 max-w-md hidden md:flex items-center gap-2 px-[18px] min-h-[36px] bg-white border border-primary/35 rounded-full hover:border-primary transition-colors relative artisan-pill">
+            <div className="flex-1 mx-4 max-w-md hidden md:flex items-center gap-2 px-4.5 min-h-9 bg-white border border-primary/35 rounded-full hover:border-primary transition-colors relative artisan-pill">
                 <Search size={14} className="text-[#5F665E]" />
                 <input
                     type="text"
@@ -72,9 +72,9 @@ const Header: React.FC<HeaderProps> = ({
                                         <button 
                                             key={e.id} 
                                             onClick={() => onSelectSearchResult('estudiante', e.id)}
-                                            className="w-full flex items-center gap-2.5 p-2 hover:bg-[#FDFBF7] rounded-xl transition-all group"
+                                            className="w-full flex items-center gap-2.5 p-2 hover:bg-base-creme rounded-xl transition-all group"
                                         >
-                                            <div className="w-7 h-7 rounded-full bg-[#EAE4DA] flex items-center justify-center text-xs font-black text-[#5F665E] border border-[rgba(46,51,48,0.08)]">
+                                            <div className="w-7 h-7 rounded-full bg-[#EAE4DA] flex items-center justify-center text-xs font-black text-[#5F665E] border border-[#E8C166]">
                                                 {e.nombre[0]}
                                             </div>
                                             <div className="text-left">
@@ -88,14 +88,14 @@ const Header: React.FC<HeaderProps> = ({
                         )}
 
                         {searchResults.cursos.length > 0 && (
-                            <div className="p-2 border-t border-[rgba(46,51,48,0.08)]">
+                            <div className="p-2 border-t border-[#E8C166]">
                                 <p className="text-xs font-black uppercase text-[#5F665E] tracking-widest mb-1 px-1">Cursos</p>
                                 <div className="space-y-1">
                                     {searchResults.cursos.map((c) => (
                                         <button 
                                             key={c.id} 
                                             onClick={() => onSelectSearchResult('curso', c.id)}
-                                            className="w-full flex items-center gap-2.5 p-2 hover:bg-[#FDFBF7] rounded-xl transition-all group"
+                                            className="w-full flex items-center gap-2.5 p-2 hover:bg-base-creme rounded-xl transition-all group"
                                         >
                                             <div className="w-7 h-7 rounded-lg bg-[#EAE4DA]/50 flex items-center justify-center text-primary">
                                                 <Search size={12} />
@@ -111,14 +111,14 @@ const Header: React.FC<HeaderProps> = ({
                         )}
 
                         {searchResults.actividades.length > 0 && (
-                            <div className="p-2 border-t border-[rgba(46,51,48,0.08)]">
+                            <div className="p-2 border-t border-[#E8C166]">
                                 <p className="text-xs font-black uppercase text-[#5F665E] tracking-widest mb-1 px-1">Evaluaciones</p>
                                 <div className="space-y-1">
                                     {searchResults.actividades.map((a) => (
                                         <button 
                                             key={a.id} 
                                             onClick={() => onSelectSearchResult('actividad', a.id)}
-                                            className="w-full flex items-center gap-2.5 p-2 hover:bg-[#FDFBF7] rounded-xl transition-all group"
+                                            className="w-full flex items-center gap-2.5 p-2 hover:bg-base-creme rounded-xl transition-all group"
                                         >
                                             <div className="w-7 h-7 rounded-lg bg-[#EAE4DA]/50 flex items-center justify-center text-warning">
                                                 <Bell size={12} />
@@ -145,7 +145,7 @@ const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-2">
                 <PresentationToggle checked={isPresenting} onChange={() => { void togglePresentation(); }} />
                 <button 
-                    className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-[rgba(122,141,105,0.35)] text-[#5F665E] hover:bg-[#F9F8F6] hover:border-primary transition-all px-[18px] py-[8px] min-h-[36px] font-semibold text-xs tracking-[0.08em] artisan-pill" 
+                    className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-[rgba(122,141,105,0.35)] text-[#5F665E] hover:bg-[#F9F8F6] hover:border-primary transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill" 
                     onClick={() => setShowNotifs(prev => !prev)} 
                     aria-label="Ver pendientes"
                 >
@@ -160,7 +160,7 @@ const Header: React.FC<HeaderProps> = ({
                 <div className="relative" ref={tutorialRef}>
                     <button 
                         id="btn-tutorial"
-                        className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-[rgba(122,141,105,0.35)] text-[#5F665E] hover:bg-[#F9F8F6] hover:border-primary transition-all px-[18px] py-[8px] min-h-[36px] font-semibold text-xs tracking-[0.08em] artisan-pill" 
+                        className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-[rgba(122,141,105,0.35)] text-[#5F665E] hover:bg-[#F9F8F6] hover:border-primary transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill" 
                         onClick={() => setShowTutorialMenu(prev => !prev)}
                         aria-label="Ver tutoriales"
                     >
@@ -169,7 +169,7 @@ const Header: React.FC<HeaderProps> = ({
                     </button>
                     
                     {showTutorialMenu && (
-                        <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[rgba(46,51,48,0.08)] shadow-lg py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#E8C166] shadow-lg py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                             {[
                                 { id: 'crear-curso', label: 'Crear un curso' },
                                 { id: 'crear-actividades-alumnos', label: 'Crear actividades y agregar alumnos' },
@@ -194,12 +194,12 @@ const Header: React.FC<HeaderProps> = ({
 
                 <div className="h-6 w-px bg-[rgba(46,51,48,0.08)] mx-1 hidden sm:block"></div>
 
-                <div className="flex items-center gap-2 cursor-pointer group px-[18px] py-[8px] min-h-[36px] rounded-full border border-transparent bg-[#DDD5C8] transition-all artisan-pill" onClick={onOpenSettings}>
+                <div className="flex items-center gap-2 cursor-pointer group px-4.5 py-2 min-h-9 rounded-full border border-transparent bg-neutral-warm transition-all artisan-pill" onClick={onOpenSettings}>
                     <div className="text-right hidden sm:block">
                         <p className="text-xs font-black text-[#5F665E] uppercase tracking-widest m-0 leading-none">Perfil Docente</p>
                         <p className="text-xs font-black text-black m-0 leading-tight">{docenteNombre}</p>
                     </div>
-                    <div className="w-6 h-6 rounded-full border border-[rgba(46,51,48,0.08)] overflow-hidden bg-white">
+                    <div className="w-6 h-6 rounded-full border border-[#E8C166] overflow-hidden bg-white">
                         <img
                             src={avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(docenteNombre)}&background=F9F8F6&color=2E3330&bold=true&size=128`}
                             alt="avatar"

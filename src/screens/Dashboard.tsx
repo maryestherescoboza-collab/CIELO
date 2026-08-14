@@ -489,7 +489,7 @@ export default function Dashboard({ docenteNombre }: Props) {
 
 
   return (
-    <div className="flex flex-1 h-full overflow-hidden bg-[#FDFBF7]">
+    <div className="flex flex-1 h-full overflow-hidden bg-base-creme">
       <div className="flex-1 overflow-y-auto px-6 py-6 md:px-10 scroll-smooth scrollbar-hide">
 
         {/* ═══ HEADER ═══ */}
@@ -573,11 +573,11 @@ export default function Dashboard({ docenteNombre }: Props) {
             <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-[0.25em]">Promedio de calificaciones</h3>
             </div>
-            <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-5 min-h-95 flex flex-col justify-between">
+            <div className="bg-base-creme border border-[#E8C166] rounded-[20px] shadow-sm p-5 min-h-95 flex flex-col justify-between">
               <div className="flex-1 flex items-center justify-center p-2 relative">
                 <SmoothLineChart data={multiLineData} height={220} />
               </div>
-              <div className="mt-4 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-xs text-[#5F665E] font-medium leading-relaxed">
+              <div className="mt-4 p-3 bg-[#EAE4DA]/20 border border-[#E8C166] rounded-xl text-xs text-[#5F665E] font-medium leading-relaxed">
                 {lineChartDescription}
               </div>
             </div>
@@ -588,7 +588,7 @@ export default function Dashboard({ docenteNombre }: Props) {
             <div className="flex items-center justify-between mb-1.5">
                 <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-[0.25em]">Distribución Poblacional</h3>
             </div>
-            <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-4 min-h-80 flex flex-col justify-between relative overflow-hidden group">
+            <div className="bg-base-creme border border-[#E8C166] rounded-[20px] shadow-sm p-4 min-h-80 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex-1 flex flex-col justify-center">
                 <StudentPopulationChart categories={populationData} />
                 <div className="flex gap-3 justify-center mt-2.5 flex-wrap">
@@ -600,7 +600,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                   ))}
                 </div>
               </div>
-              <div className="mt-3 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-xs text-[#5F665E] font-medium leading-relaxed">
+              <div className="mt-3 p-3 bg-[#EAE4DA]/20 border border-[#E8C166] rounded-xl text-xs text-[#5F665E] font-medium leading-relaxed">
                 {populationChartDescription}
               </div>
             </div>
@@ -611,11 +611,11 @@ export default function Dashboard({ docenteNombre }: Props) {
             <div className="flex items-center justify-between mb-1.5">
                 <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-[0.25em]">Distribución del rendimiento académico</h3>
             </div>
-            <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-4 min-h-80 flex flex-col justify-between relative overflow-hidden group">
+            <div className="bg-base-creme border border-[#E8C166] rounded-[20px] shadow-sm p-4 min-h-80 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex-1 flex flex-col justify-center">
                 <DonutChart segments={donutData} />
               </div>
-              <div className="mt-3 p-3 bg-[#EAE4DA]/20 border border-[rgba(46,51,48,0.08)] rounded-xl text-xs text-[#5F665E] font-medium leading-relaxed">
+              <div className="mt-3 p-3 bg-[#EAE4DA]/20 border border-[#E8C166] rounded-xl text-xs text-[#5F665E] font-medium leading-relaxed">
                 Distribución porcentual de las actividades evaluadas según los niveles de desempeño alcanzados. Permite identificar la concentración de
               </div>
             </div>
@@ -624,8 +624,8 @@ export default function Dashboard({ docenteNombre }: Props) {
 
 
       {/* ═══ REGISTRO DEL CURSO SIDEBAR ═══ */}
-      <div className="w-90 border-l border-[rgba(46,51,48,0.08)] bg-[#FDFBF7] h-full hidden lg:flex flex-col shrink-0 shadow-sm">
-        <div className="p-5 border-b border-[rgba(46,51,48,0.08)] flex items-center justify-between">
+      <div className="w-90 border-l border-[#E8C166] bg-base-creme h-full hidden lg:flex flex-col shrink-0 shadow-sm">
+        <div className="p-5 border-b border-[#E8C166] flex items-center justify-between">
           <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-widest">
             Registro Anecdótico
           </h3>
@@ -697,7 +697,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                               src={img.imagenUrl}
                               alt="Thumbnail"
                               loading="lazy"
-                              className="w-14 h-14 object-cover rounded-lg border border-[rgba(46,51,48,0.08)] hover:scale-105 transition-transform cursor-pointer"
+                              className="w-14 h-14 object-cover rounded-lg border border-[#E8C166] hover:scale-105 transition-transform cursor-pointer"
                               onClick={() => {
                                 window.open(img.imagenUrl, '_blank');
                               }}
@@ -728,8 +728,8 @@ export default function Dashboard({ docenteNombre }: Props) {
       {/* ═══ NUEVO REGISTRO MODAL ═══ */}
       {isNewRecordOpen && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm p-6 w-full max-w-md flex flex-col gap-4 animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center pb-2 border-b border-[rgba(46,51,48,0.08)]">
+          <div className="bg-base-creme border border-[#E8C166] rounded-[20px] shadow-sm p-6 w-full max-w-md flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center pb-2 border-b border-[#E8C166]">
               <h3 className="text-xs font-black text-[#2E3330] uppercase tracking-widest">Nuevo Registro Anecdótico</h3>
               <button onClick={() => setIsNewRecordOpen(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer">×</button>
             </div>
@@ -784,7 +784,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                   <label className={`h-10 px-4 flex items-center justify-center border rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                     selectedFiles.length >= 2 || isSaving
                       ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                      : 'bg-[#FDFBF7] hover:bg-[#FAF6F0] border-slate-300 text-slate-500 cursor-pointer'
+                      : 'bg-base-creme hover:bg-[#FAF6F0] border-slate-300 text-slate-500 cursor-pointer'
                   }`}>
                     Seleccionar Fotos
                     <input
@@ -807,7 +807,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                   <div className="flex gap-2 overflow-x-auto mt-3 py-1 scrollbar-hide">
                     {imagePreviews.map((url, idx) => (
                       <div key={idx} className="relative shrink-0">
-                        <img src={url} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-[rgba(46,51,48,0.08)]" />
+                        <img src={url} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-[#E8C166]" />
                         {!isSaving && (
                           <button
                             onClick={() => handleRemoveFile(idx)}
@@ -823,10 +823,10 @@ export default function Dashboard({ docenteNombre }: Props) {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-3 border-t border-[rgba(46,51,48,0.08)]">
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-[#E8C166]">
               <button
                 onClick={() => setIsNewRecordOpen(false)}
-                className="px-4 py-2 bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-xs font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all hover:bg-[#FAF6F0]"
+                className="px-4 py-2 bg-base-creme border border-slate-300 text-[#2E3330] text-xs font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all hover:bg-[#FAF6F0]"
                 disabled={isSaving}
               >
                 Cancelar

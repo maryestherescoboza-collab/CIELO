@@ -362,7 +362,7 @@ export default function Cotejo({
     }
 
     return (
-        <div className="flex flex-col md:flex-row h-full overflow-hidden bg-[#FDFBF7]">
+        <div className="flex flex-col md:flex-row h-full overflow-hidden bg-base-creme">
             {!readOnly && (
                 <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
                     <button
@@ -395,7 +395,7 @@ export default function Cotejo({
                                             <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
                                             <select
                                                 data-guide="selector-curso"
-                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-base-creme border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedCursoId}
                                                 onChange={e => { setSelectedCursoId(Number(e.target.value)); setSelectedActId(null); setSelectedEstId(null); }}
                                             >
@@ -406,7 +406,7 @@ export default function Cotejo({
                                             <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
                                             <select
                                                 data-guide="selector-actividad"
-                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-base-creme border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedAct?.id ?? ''}
                                                 onChange={e => setSelectedActId(Number(e.target.value) || null)}
                                             >
@@ -424,7 +424,7 @@ export default function Cotejo({
                                             <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-[#2E3330]">{cotejoPlantillas.length}</div>
                                         </div>
                                         <div className="space-y-2">
-                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm artisan-pill artisan-btn-white">
+                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-base-creme focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm artisan-pill artisan-btn-white">
                                                 <BookMarked size={14} className="text-[#2E3330]" />
                                                 <select
                                                     data-guide="selector-plantilla"
@@ -479,7 +479,7 @@ export default function Cotejo({
                                                         }
                                                     }
                                                 }}
-                                                className="w-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-base-creme border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
                                             >
                                                 Guardar como Plantilla
                                             </button>
@@ -602,7 +602,7 @@ export default function Cotejo({
                     </div>
 
                     {!readOnly && (
-                        <div className="sticky top-0 z-30 bg-[#FDFBF7]/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
+                        <div className="sticky top-0 z-30 bg-base-creme/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
                             <div className="w-full space-y-3">
                                 <div className="px-1 flex items-center justify-between">
                                     <div className="flex items-center gap-3">

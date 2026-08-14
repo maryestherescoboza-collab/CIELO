@@ -38,7 +38,7 @@ export default function PodiumExcelencia({ periods }: Props) {
       </div>
 
       {/* Contenedor Ultra Compacto en Fila Horizontal */}
-      <div className="w-full bg-[#FDFBF7]/70 rounded-[20px] border border-[rgba(46,51,48,0.05)] p-2">
+      <div className="w-full bg-base-creme/70 rounded-[20px] border border-[rgba(46,51,48,0.05)] p-2">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {visible.map((podium, pIdx) => {
             const periodNum = podium.periodo.replace(/^\D+/g, '') || String(pIdx + 1);
@@ -51,7 +51,7 @@ export default function PodiumExcelencia({ periods }: Props) {
             return (
               <div
                 key={podium.periodo}
-                className="relative rounded-xl border border-[#E8C166]/20 pt-8 pb-3 px-3 flex flex-col justify-between min-h-[140px]"
+                className="relative rounded-xl border border-[#E8C166]/20 pt-8 pb-3 px-3 flex flex-col justify-between min-h-35"
                 style={{ backgroundColor: 'rgba(232, 193, 102, 0.15)' }}
               >
                 {/* Etiqueta del periodo (Absoluta para ahorrar espacio) */}

@@ -117,6 +117,13 @@ export function useTareaActions() {
             return { error };
         }
 
+        // Marcar la notificación como resuelta para que se vea tachada sin borrarse
+        await supabase
+            .from('notificaciones')
+            .update({ estado: 'resuelto' })
+            .eq('tarea_institucional_id', tareaId)
+            .eq('user_id', session.user.id);
+
         setState(s => ({
             ...s,
             tareas: s.tareas.map(t => t.id === tareaId
@@ -129,6 +136,11 @@ export function useTareaActions() {
                     )
                 }
                 : t
+            ),
+            notificaciones: s.notificaciones.map(n => 
+                (n.tareaId === tareaId && n.userId === session.user.id) 
+                    ? { ...n, estado: 'resuelto' } 
+                    : n
             )
         }));
         

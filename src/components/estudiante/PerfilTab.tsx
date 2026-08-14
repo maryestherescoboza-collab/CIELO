@@ -136,8 +136,8 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
     };
 
     return (
-        <div className="w-full space-y-10 animate-in fade-in duration-300 pb-6">
-            <div className="flex items-center justify-between border-b pb-4 border-[rgba(46,51,48,0.08)]">
+        <div className="w-full space-y-10 animate-in fade-in duration-300 pb-6 bg-white">
+            <div className="flex items-center justify-between border-b pb-4 border-[rgba(46,51,48,0.08)] bg-white">
                 <div className="flex items-center gap-6">
                     <div
                         className="w-14 h-14 rounded-full flex items-center justify-center text-white text-[24px] font-black shadow-inner border-2 border-white"
@@ -167,8 +167,8 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center bg-[#F8F3ED] p-4 rounded-[16px] border border-[rgba(46,51,48,0.04)] min-h-22.5">
-                <div className="col-span-3 border-r border-[rgba(46,51,48,0.08)] pr-4 flex items-center gap-6">
+            <div className="grid grid-cols-12 gap-4 items-center bg-white p-4 rounded-[16px] border border-[rgba(46,51,48,0.04)] min-h-22.5">
+                <div className="col-span-3 border-r border-[rgba(46,51,48,0.08)] pr-4 flex items-center gap-6 bg-white">
                     <div>
                         <p className="text-[12px] font-black text-[#5F665E] uppercase mb-1">Promedio</p>
                         <p className="text-2xl font-black text-primary">{promedioPeriodo}%</p>
@@ -188,11 +188,11 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 </div>
             </div>
 
-            <section className="space-y-6 bg-transparent p-0 mt-6">
-                <h3 className="text-[13px] font-black uppercase tracking-[0.3em] text-[#5F665E] text-center">Itinerario Académico</h3>
+            <section className="space-y-6 bg-white p-0 mt-6">
+                <h3 className="text-[13px] font-black uppercase tracking-[0.3em] text-[#5F665E] text-center bg-white">Itinerario Académico</h3>
                 <div className="overflow-x-auto rounded-[16px] border border-[rgba(46,51,48,0.08)] bg-white shadow-sm">
-                    <table className="w-full border-collapse text-left text-sm text-[#2E3330]">
-                        <thead className="bg-[#F8F3ED] text-xs font-black uppercase tracking-wider text-[#2E3330] border-b border-[rgba(46,51,48,0.08)]">
+                    <table className="w-full border-collapse text-left text-sm text-[#2E3330] bg-white">
+                        <thead className="bg-white text-xs font-black uppercase tracking-wider text-[#2E3330] border-b border-[rgba(46,51,48,0.08)]">
                             <tr>
                                 <th scope="col" className="px-6 py-4">Actividad</th>
                                 <th scope="col" className="px-6 py-4">Competencia Evaluada</th>
@@ -211,7 +211,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                     const descriptors = getDescriptorTexts(est.id, act.id);
 
                                     return (
-                                        <tr key={act.id} className="hover:bg-[#F8F3ED] transition-colors duration-150 border-b border-[rgba(46,51,48,0.04)]">
+                                        <tr key={act.id} className="bg-white border-b border-[rgba(46,51,48,0.04)]">
                                             <td className="px-6 py-4">
                                                 <div className="font-bold text-[#2E3330] text-[14px]">{act.nombre}</div>
                                                 <div className="text-xs font-black text-[#5F665E] uppercase mt-0.5">{act.fecha}</div>
@@ -221,7 +221,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                                     {(act.bcAsignados || ['BC1']).map((bc: string) => (
                                                         <span 
                                                             key={bc} 
-                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black tracking-wider bg-[#FDFBF7] text-primary border border-[rgba(46,51,48,0.08)]"
+                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black tracking-wider bg-transparent border border-primary text-[#000000]"
                                                             title={bc}
                                                         >
                                                             {getCompetenciaDisplay(bc)}
@@ -233,10 +233,10 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                                 {isEvaluated ? (
                                                     <span className={`inline-flex items-center justify-center font-black text-[14px] px-2.5 py-1 rounded-lg ${
                                                         score! >= 90 
-                                                            ? 'bg-[#FDFBF7] text-primary border border-primary/20' 
+                                                            ? 'bg-white text-primary border border-primary/20' 
                                                             : score! >= 70 
-                                                            ? 'bg-[#FDFBF7] text-attention border border-attention/20' 
-                                                            : 'bg-[#FDFBF7] text-danger border border-danger/20'
+                                                            ? 'bg-white text-attention border border-attention/20' 
+                                                            : 'bg-white text-danger border border-danger/20'
                                                     }`}>
                                                         {score}%
                                                     </span>
@@ -259,7 +259,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                                 ) : isEvaluated ? (
                                                     <span className="text-[#5F665E]/60 italic">Sin descriptores registrados</span>
                                                 ) : (
-                                                    <span className="text-attention font-semibold italic bg-[#FDFBF7] px-2 py-0.5 rounded border border-attention/20 text-[12px]">
+                                                    <span className="text-attention font-semibold italic bg-white px-2 py-0.5 rounded border border-attention/20 text-[12px]">
                                                         Pendiente de evaluación
                                                     </span>
                                                 )}
@@ -269,7 +269,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-[#5F665E] text-[13px] font-bold uppercase tracking-wider bg-[#F8F3ED]">
+                                    <td colSpan={4} className="px-6 py-12 text-center text-[#5F665E] text-[13px] font-bold uppercase tracking-wider bg-white">
                                         Sin actividades registradas en este periodo
                                     </td>
                                 </tr>
@@ -284,7 +284,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                     <h3 className="text-[13px] font-black uppercase tracking-widest text-[#5F665E]">Bitácora de Convivencia</h3>
                     <div className="space-y-2.5 pr-1 max-h-55 overflow-y-auto no-scrollbar">
                         {incidenciasEstudiante.length > 0 ? incidenciasEstudiante.map((inc, i) => (
-                            <div key={i} className="bg-[#F8F3ED] p-3.5 rounded-[12px] border border-[rgba(46,51,48,0.04)] flex gap-4 items-start">
+                            <div key={i} className="bg-white p-3.5 rounded-[12px] border border-[rgba(46,51,48,0.04)] flex gap-4 items-start">
                                 <div className="text-center min-w-15">
                                     <p className="text-xs font-black text-[#5F665E] uppercase">{inc.fecha}</p>
                                     <span className="text-[12px] font-black text-attention uppercase">{inc.categoria}</span>
@@ -300,8 +300,8 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 </div>
             </div>
 
-            <div className="pt-4 border-t border-[rgba(46,51,48,0.04)] flex justify-between items-center opacity-40 select-none">
-                <p className="text-[12px] font-black uppercase text-[#5F665E] tracking-[0.3em]">Registro Oficial Noether Academia v3.2</p>
+            <div className="pt-4 border-t border-[rgba(46,51,48,0.04)] flex justify-between items-center opacity-40 select-none bg-white">
+                <p className="text-[12px] font-black uppercase text-[#5F665E] tracking-[0.3em] bg-white">Registro Oficial Noether Academia v3.2</p>
                 <div className="w-20 h-0.5 bg-[rgba(46,51,48,0.08)]"></div>
                 <p className="text-[12px] font-black uppercase text-[#5F665E] tracking-[0.3em]">Validación: {new Date().toLocaleDateString()}</p>
             </div>

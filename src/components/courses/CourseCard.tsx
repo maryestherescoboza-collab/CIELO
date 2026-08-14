@@ -39,7 +39,7 @@ export function CourseCard({
     const displayDiasSemana = myLink ? myLink.diasSemana : (curso.diasSemana || []);
 
     return (
-        <div className={`group flex flex-col h-full bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${isSelected ? 'ring-2 ring-primary' : 'hover:border-slate-350'}`}>
+        <div className={`group flex flex-col h-full bg-base-creme border border-[#E8C166] rounded-[20px] shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${isSelected ? 'ring-2 ring-primary' : 'hover:border-slate-350'}`}>
             <div className="p-6 flex-1">
                 <div className="flex items-start justify-between mb-5">
                     <div className="flex items-center gap-4">
@@ -49,8 +49,8 @@ export function CourseCard({
                         </div>
                         <div className="flex flex-col">
                             <div className="flex gap-1.5 mb-1">
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-[0.08em] bg-[#EAE4DA] text-[#2E3330] border border-[rgba(46,51,48,0.08)]">{curso.grado}</span>
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-[0.08em] bg-[#EAE4DA] text-[#2E3330] border border-[rgba(46,51,48,0.08)]">Sección {curso.seccion}</span>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-[0.08em] bg-[#EAE4DA] text-[#2E3330] border border-[#E8C166]">{curso.grado}</span>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-[0.08em] bg-[#EAE4DA] text-[#2E3330] border border-[#E8C166]">Sección {curso.seccion}</span>
                             </div>
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nivel {curso.grado[0]}° Secundaria</span>
                         </div>
@@ -92,7 +92,7 @@ export function CourseCard({
                                 e.stopPropagation();
                                 onEditAsignatura(curso.id);
                             }}
-                            className="px-3 py-1 rounded-full text-xs font-bold tracking-[0.08em] text-[#2E3330] bg-primary border border-[rgba(46,51,48,0.08)] hover:bg-primary hover:text-white transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                            className="px-3 py-1 rounded-full text-xs font-bold tracking-[0.08em] text-[#2E3330] bg-primary border border-[#E8C166] hover:bg-primary hover:text-white transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                             title="Modificar asignatura"
                         >
                             {getAsignaturaNombre(displayAsignatura)}
@@ -130,7 +130,7 @@ export function CourseCard({
                                             </button>
                                         ))}
                                     </div>
-                                    <button onClick={(e) => { e.stopPropagation(); onEditDias(null); }} className="w-full text-center text-xs font-bold uppercase tracking-widest py-2.5 bg-primary text-white rounded-xl shadow-lg shadow-[var(--primary)]/20 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 hover:bg-[#6C7E5C] active:scale-95 transition-all">Listo</button>
+                                    <button onClick={(e) => { e.stopPropagation(); onEditDias(null); }} className="w-full text-center text-xs font-bold uppercase tracking-widest py-2.5 bg-primary text-white rounded-xl shadow-lg shadow-(--primary)/20 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 hover:bg-[#6C7E5C] active:scale-95 transition-all">Listo</button>
                                 </div>
                             ) : (
                                 <button onClick={(e) => { e.stopPropagation(); onEditDias(curso.id); }} className="text-[#2E3330] border-b border-dotted border-slate-350 hover:border-primary hover:text-primary transition-all font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm">
@@ -167,7 +167,7 @@ export function CourseCard({
                                 </div>
                             </div>
                             {isTutor && (
-                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="text-[#2E3330] hover:bg-[#D4CCBE] bg-[#EAE4DA] px-3 py-1.5 rounded-full text-xs font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-colors border border-[rgba(46,51,48,0.08)]">
+                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="text-[#2E3330] hover:bg-[#D4CCBE] bg-[#EAE4DA] px-3 py-1.5 rounded-full text-xs font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-colors border border-[#E8C166]">
                                     Modificar
                                 </button>
                             )}
@@ -203,7 +203,7 @@ export function CourseCard({
 
                 <button
                     data-guide="btn-abrir-registro-academico"
-                    className="w-full flex items-center justify-between px-6 py-4.5 bg-[#FDFBF7] text-xs font-bold text-[#2E3330] uppercase tracking-[0.15em] transition-all duration-200 hover:bg-[#EAE4DA] outline-none focus-visible:bg-[#EAE4DA]"
+                    className="w-full flex items-center justify-between px-6 py-4.5 bg-base-creme text-xs font-bold text-[#2E3330] uppercase tracking-[0.15em] transition-all duration-200 hover:bg-[#EAE4DA] outline-none focus-visible:bg-[#EAE4DA]"
                     onClick={() => onSelect(curso.id, `/curso-detalle/${curso.id}`)}>
                     <span className="flex items-center gap-2">
                         <Search size={13} className="text-slate-400" />

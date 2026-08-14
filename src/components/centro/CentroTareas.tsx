@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
-    ClipboardList, Calendar, Users, Plus, ChevronRight, X
+    ClipboardList, Calendar, Users, Plus, X
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { useTareaActions } from '../../hooks/useTareaActions';
 import type { TareaInstitucional } from '../../types';
-import { Link } from 'react-router-dom';
 
 interface Props {
     centroId: string;
@@ -35,22 +34,6 @@ export default function CentroTareas({ centroId }: Props) {
     const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
     const [creando, setCreando] = useState(false);
 
-    // Semanal Calendar Logic
-    const hoy = new Date();
-    const currentDayOfWeek = hoy.getDay(); // 0 (Domingo) - 6 (Sábado)
-    
-    // Obtener el domingo de la semana actual
-    const domingoSemana = new Date(hoy);
-    domingoSemana.setDate(hoy.getDate() - currentDayOfWeek);
-    domingoSemana.setHours(0, 0, 0, 0);
-
-    const semanaDates = Array.from({ length: 7 }).map((_, i) => {
-        const d = new Date(domingoSemana);
-        d.setDate(domingoSemana.getDate() + i);
-        return d;
-    });
-
-    const daysNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
     const toggleDocente = (uid: string) => {
         setSeleccionados(prev => {
@@ -103,6 +86,7 @@ export default function CentroTareas({ centroId }: Props) {
     };
 
     const getTareaEstado = (tarea: TareaInstitucional) => {
+        const hoy = new Date();
         // TareaInstitucional no tiene "estado", se deduce de las asignaciones y fecha límite.
         const asignaciones = tarea.asignaciones || [];
         if (asignaciones.length > 0 && asignaciones.every(a => a.estado === 'completada')) {
@@ -127,44 +111,7 @@ export default function CentroTareas({ centroId }: Props) {
 
     return (
         <section className="bg-transparent space-y-6">
-            {/* ── Calendario Semanal ─────────────────────────────── */}
-            <div className="bg-white border border-[#EAE4DA] rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-[13px] font-black tracking-widest text-[#3F3C36] uppercase">Calendario Semanal</h2>
-                    <Link to="/" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F8F3ED] text-[#3F3C36] hover:bg-[#EAE4DA] rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors">
-                        Ver completo <ChevronRight size={12} />
-                    </Link>
-                </div>
 
-                <div className="flex w-full items-center justify-between gap-2 overflow-x-auto scrollbar-hide pb-2">
-                    {semanaDates.map((date, i) => {
-                        const dateStr = date.toISOString().split('T')[0];
-                        const isToday = dateStr === hoy.toISOString().split('T')[0];
-                        const tareasDia = tareasCentro.filter(t => t.fechaLimite === dateStr);
-
-                        return (
-                            <div key={i} className={`flex-1 min-w-[50px] max-w-[80px] flex flex-col items-center justify-center py-3 rounded-xl border transition-colors relative ${
-                                isToday 
-                                    ? 'bg-[#3F3C36] border-[#3F3C36] text-[#F8F3ED] shadow-sm' 
-                                    : 'bg-white border-[#EAE4DA] text-[#3F3C36]'
-                            }`}>
-                                <span className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-[#EAE4DA]' : 'text-[#7A8D69]'}`}>
-                                    {daysNames[i]}
-                                </span>
-                                <span className="text-lg font-black mt-1">
-                                    {date.getDate()}
-                                </span>
-                                {/* Indicador de tareas */}
-                                {tareasDia.length > 0 && (
-                                    <div className="absolute bottom-2 flex gap-0.5">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-[#BFC9A6]' : 'bg-[#B87449]'}`} />
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
 
             {/* ── Lista de Tareas ─────────────────────────────── */}
             <div className="bg-white border border-[#EAE4DA] rounded-2xl p-5 shadow-sm">
@@ -253,7 +200,7 @@ export default function CentroTareas({ centroId }: Props) {
 
             {/* ── Modal Nueva Tarea ─────────────────────────────── */}
             {showForm && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white border border-[#EAE4DA] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="px-6 py-4 border-b border-[#EAE4DA] flex items-center justify-between bg-[#F8F3ED]">
                             <h3 className="text-[13px] font-black tracking-widest text-[#3F3C36] uppercase">Nueva Tarea</h3>

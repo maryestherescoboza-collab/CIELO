@@ -14,36 +14,6 @@ import { CieloPill } from '../components/ui/CieloPill';
 
 export type SeccionCentro = 'centro' | 'tareas' | 'boletines' | 'incidencias';
 
-function CentroStructureItem({
-    active, title, desc, tagLabel, tagColor, isLast = false, onClick
-}: {
-    active: boolean; title: string; desc: string; tagLabel: string; tagColor: string; isLast?: boolean; onClick: () => void;
-}) {
-    return (
-        <div className="relative pl-6 py-1 group cursor-pointer" onClick={onClick}>
-            {!isLast && <div className="absolute left-[11px] top-0 bottom-0 w-px bg-[#EAE4DA] transition-colors group-hover:bg-[#BFC9A6]" />}
-            {isLast && <div className="absolute left-[11px] top-0 h-[50%] w-px bg-[#EAE4DA] transition-colors group-hover:bg-[#BFC9A6]" />}
-            
-            <div className="absolute left-[11px] top-[50%] w-4 h-px bg-[#EAE4DA] transition-colors group-hover:bg-[#BFC9A6]" />
-
-            <div className={`relative z-10 transition-all duration-300 rounded-xl p-3 border ${active ? 'bg-white border-[#EAE4DA] shadow-[0_4px_20px_rgba(0,0,0,0.03)] translate-x-1' : 'border-transparent hover:bg-white/40'}`}>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4">
-                    <div>
-                        <h3 className={`text-[12px] font-black tracking-[0.15em] uppercase transition-colors ${active ? 'text-[#3F3C36]' : 'text-[#3F3C36]/70 group-hover:text-[#3F3C36]'}`}>
-                            {title}
-                        </h3>
-                        <p className="text-[10px] font-bold text-[#7A8D69] uppercase tracking-widest mt-0.5">{desc}</p>
-                    </div>
-                    {tagLabel && (
-                        <span className={`self-start sm:self-auto text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-[6px] border border-white/40 shadow-sm ${tagColor}`}>
-                            {tagLabel}
-                        </span>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-}
 
 interface Props {
     onLogout: () => void;
@@ -169,72 +139,33 @@ export default function CentroPanel({ onLogout }: Props) {
                     </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex items-center gap-2 bg-white border border-[#EAE4DA] rounded-[8px] px-3 py-1.5 shadow-sm">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#7A8D69] animate-pulse" />
-                        <span className="text-[9px] font-black text-[#3F3C36] uppercase tracking-[0.15em]">Operativo</span>
-                    </div>
+
                     <button onClick={onLogout} className="text-[9px] font-black uppercase tracking-[0.15em] text-[#B87449] hover:text-[#3F3C36] transition-colors bg-white/50 px-3 py-1.5 rounded-[8px] border border-[#EAE4DA] hover:bg-white shadow-sm">
                         Cerrar Sesión
                     </button>
                 </div>
             </header>
 
-            <div className="flex-1 flex flex-col lg:flex-row w-full max-w-[1800px] mx-auto">
-                {/* ── Arquitectura / Mapa de Navegación ─────────────────────────────── */}
-                <nav className="w-full lg:w-[380px] xl:w-[420px] p-6 lg:p-8 shrink-0 lg:border-r border-[#EAE4DA] lg:h-[calc(100vh-73px)] lg:sticky lg:top-[73px] overflow-y-auto scrollbar-hide">
-                    <div className="mb-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-6 h-6 bg-[#3F3C36] rounded-[6px] flex items-center justify-center shadow-sm">
-                                <Building2 size={12} className="text-[#F8F3ED]" />
-                            </div>
-                            <span className="text-[11px] font-black tracking-[0.2em] text-[#3F3C36] uppercase">Arquitectura del Centro</span>
-                        </div>
-                        
-                        <div className="relative ml-3">
-                            {/* Línea principal vertical (Tronco) */}
-                            <div className="absolute left-0 top-3 bottom-[30px] w-px bg-[#EAE4DA]" />
-
-                            <div className="relative ml-2">
-                                <CentroStructureItem 
-                                    active={activeSection === 'centro'}
-                                    onClick={() => setActiveSection('centro')}
-                                    title="CONFIGURACIÓN"
-                                    desc="Información del centro"
-                                    tagLabel="principal"
-                                    tagColor="text-[#3F3C36] bg-[#3F3C36]/10"
-                                />
-                                <CentroStructureItem 
-                                    active={activeSection === 'tareas'}
-                                    onClick={() => setActiveSection('tareas')}
-                                    title="TAREAS"
-                                    desc="Seguimiento docente"
-                                    tagLabel="activo"
-                                    tagColor="text-[#F5BC5D] bg-[#F5BC5D]/15"
-                                />
-                                <CentroStructureItem 
-                                    active={activeSection === 'boletines'}
-                                    onClick={() => setActiveSection('boletines')}
-                                    title="BOLETINES"
-                                    desc="Generación y descarga"
-                                    tagLabel="disponible"
-                                    tagColor="text-[#6D8FB9] bg-[#6D8FB9]/10"
-                                />
-                                <CentroStructureItem 
-                                    active={activeSection === 'incidencias'}
-                                    onClick={() => setActiveSection('incidencias')}
-                                    title="INCIDENCIAS"
-                                    desc="Registro y reportes"
-                                    tagLabel="activo"
-                                    tagColor="text-[#B87449] bg-[#B87449]/10"
-                                    isLast={true}
-                                />
-                            </div>
-                        </div>
-                    </div>
+            <div className="flex-1 flex flex-col w-full max-w-7xl mx-auto">
+                {/* ── Navegación Horizontal ─────────────────────────────── */}
+                <nav className="w-full px-6 py-4 flex gap-8 border-b border-[#EAE4DA] bg-white sticky top-0 z-30 overflow-x-auto scrollbar-hide">
+                    {['centro', 'tareas', 'boletines', 'incidencias'].map((seccion) => (
+                        <button 
+                            key={seccion}
+                            onClick={() => setActiveSection(seccion as SeccionCentro)}
+                            className={`text-[12px] font-black uppercase tracking-widest pb-1 border-b-2 transition-colors whitespace-nowrap ${
+                                activeSection === seccion 
+                                    ? 'text-[#3F3C36] border-[#3F3C36]' 
+                                    : 'text-[#7A8D69] border-transparent hover:text-[#3F3C36]'
+                            }`}
+                        >
+                            {seccion === 'centro' ? 'Configuración' : seccion}
+                        </button>
+                    ))}
                 </nav>
 
                 {/* ── Contenido Principal ─────────────────────────────── */}
-                <main className="flex-1 min-w-0 p-4 lg:p-10 bg-white lg:shadow-[-20px_0_60px_rgba(0,0,0,0.02)] lg:rounded-tl-[40px] relative z-10 lg:min-h-[calc(100vh-73px-32px)]">
+                <main className="flex-1 min-w-0 p-4 lg:p-10 bg-[#F8F3ED] relative z-10">
                     <div className="max-w-5xl mx-auto h-full flex flex-col pb-16">
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
                             {activeSection === 'centro' && (
@@ -258,19 +189,7 @@ export default function CentroPanel({ onLogout }: Props) {
                 </main>
             </div>
 
-            {/* ── Estado del Sistema (Footer) ─────────────────────────────── */}
-            <footer className="fixed bottom-0 left-0 w-full bg-[#3F3C36] text-[#EAE4DA] py-2 px-6 flex flex-col sm:flex-row justify-between items-center text-[9px] font-black uppercase tracking-[0.2em] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
-                <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-[#BFC9A6] rounded-full"></div> Sincronizado</span>
-                    <span className="hidden sm:inline text-[#EAE4DA]/30">|</span>
-                    <span className="hidden sm:inline">4 Módulos operativos</span>
-                </div>
-                <div className="flex gap-4 items-center">
-                    <span className="opacity-70">Última actualización: {hoy.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
-                    <span className="hidden sm:inline text-[#EAE4DA]/30">|</span>
-                    <span className="text-[#BFC9A6]">CIELO · V3</span>
-                </div>
-            </footer>
+
         </div>
     );
 }

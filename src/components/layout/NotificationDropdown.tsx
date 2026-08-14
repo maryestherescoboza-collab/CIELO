@@ -63,7 +63,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             onCompleteTarea(n.tareaId!);
-                                                            onMarkNotifyRead?.(n.id);
                                                         }}
                                                         className="mt-2 h-8 inline-flex items-center gap-1.5 px-4 rounded-full bg-primary text-white text-xs font-black uppercase tracking-widest hover:bg-[#6C7E5C] transition-colors"
                                                     >
@@ -93,7 +92,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                                     onClick={() => {
                                         if (!isCompleted && onCompleteTarea) {
                                             onCompleteTarea(n.tareaId!);
-                                            onMarkNotifyRead?.(n.id);
                                         }
                                     }}
                                 >

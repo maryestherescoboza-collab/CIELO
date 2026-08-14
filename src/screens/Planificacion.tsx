@@ -42,7 +42,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
     if (readOnly && initialDatos) {
         return (
-            <div className="flex h-full w-full flex-col overflow-hidden bg-[#FDFBF7]">
+            <div className="flex h-full w-full flex-col overflow-hidden bg-base-creme">
                 <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 bg-white px-8 py-6">
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1.5">
@@ -180,7 +180,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
 
     return (
-        <div className="flex flex-col flex-1 h-full overflow-hidden bg-[#FDFBF7]">
+        <div className="flex flex-col flex-1 h-full overflow-hidden bg-base-creme">
             <div className="flex-1 overflow-y-auto px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div>
@@ -188,7 +188,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                             Secuencias Didácticas
                         </h1>
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 bg-[#EAE4DA] px-3 py-1 rounded-full border border-[rgba(46,51,48,0.08)]">
+                            <div className="flex items-center gap-2 bg-[#EAE4DA] px-3 py-1 rounded-full border border-[#E8C166]">
                                 <span className="text-xs font-bold text-[#2E3330] uppercase tracking-[0.08em]">
                                     Pedagogía y Secuencias
                                 </span>
@@ -201,7 +201,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                     <div className="flex flex-col items-stretch sm:items-center gap-3 sm:flex-row">
                         <div className="relative group">
                             <select
-                                className="pl-5 pr-10 appearance-none rounded-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] text-xs font-bold uppercase tracking-[0.08em] shadow-sm outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 cursor-pointer transition-all hover:bg-[#FAF6F0] min-w-60 artisan-pill"
+                                className="pl-5 pr-10 appearance-none rounded-full bg-base-creme border border-slate-300 text-[#2E3330] text-xs font-bold uppercase tracking-[0.08em] shadow-sm outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 cursor-pointer transition-all hover:bg-[#FAF6F0] min-w-60 artisan-pill"
                                 value={cursoSel}
                                 onChange={(event) => setCursoSel(Number(event.target.value))}
                             >
@@ -235,7 +235,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                         <button
                             type="button"
                             onClick={() => window.open('/especificaciones.html', '_blank')}
-                            className="group flex flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-[20px] p-5 transition-all bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] shadow-sm hover:shadow-md hover:bg-[#F8F3ED]/30 hover:-translate-y-1"
+                            className="group flex flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-[20px] p-5 transition-all bg-base-creme border border-[#E8C166] shadow-sm hover:shadow-md hover:bg-[#F8F3ED]/30 hover:-translate-y-1"
                         >
                             <div className="relative flex h-40 items-end justify-center mb-4">
                                 <img
@@ -277,7 +277,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                     key={seq.id}
                                     type="button"
                                     onClick={() => setViewerSeq(seq)}
-                                    className="group flex flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-[20px] p-5 transition-all bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] shadow-sm hover:shadow-md hover:bg-[#F8F3ED]/30 hover:-translate-y-1"
+                                    className="group flex flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-[20px] p-5 transition-all bg-base-creme border border-[#E8C166] shadow-sm hover:shadow-md hover:bg-[#F8F3ED]/30 hover:-translate-y-1"
                                 >
                                     <div className="relative flex h-40 items-end justify-center mb-4">
                                         <img
@@ -320,12 +320,12 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                       {viewerSeq && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F8F3ED]/90 p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-200">
                     <div
-                        className="flex h-[min(92vh,58rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[20px] border border-[rgba(46,51,48,0.08)] bg-[#FDFBF7] shadow-2xl animate-in zoom-in-95 duration-300"
+                        className="flex h-[min(92vh,58rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[20px] border border-[#E8C166] bg-base-creme shadow-2xl animate-in zoom-in-95 duration-300"
                     >
-                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 bg-[#FDFBF7] px-8 py-6">
+                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 bg-base-creme px-8 py-6">
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 mb-1.5">
-                                    <span className="text-xs font-bold uppercase tracking-widest text-[#2E3330] bg-primary/30 px-2.5 py-1 rounded-full border border-[rgba(46,51,48,0.08)]">
+                                    <span className="text-xs font-bold uppercase tracking-widest text-[#2E3330] bg-primary/30 px-2.5 py-1 rounded-full border border-[#E8C166]">
                                         Vista de Lectura
                                     </span>
                                 </div>
@@ -347,7 +347,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
                             <div className="flex flex-wrap items-center gap-2.5">
                                 <select
-                                    className="px-3 rounded-full border border-slate-350 bg-[#FDFBF7] text-xs font-bold text-[#2E3330] uppercase tracking-[0.08em] outline-none transition-all focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 appearance-none relative shadow-sm artisan-pill artisan-btn-white"
+                                    className="px-3 rounded-full border border-slate-350 bg-base-creme text-xs font-bold text-[#2E3330] uppercase tracking-[0.08em] outline-none transition-all focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 appearance-none relative shadow-sm artisan-pill artisan-btn-white"
                                     value={viewerSeq.estado}
                                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232e3330'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '0.8rem', paddingRight: '2rem' }}
                                     onChange={(event) => {
@@ -389,7 +389,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                                 void handleCloseViewer();
                                             }
                                         }}
-                                        className="w-9 h-9 flex items-center justify-center rounded-full bg-[#FDFBF7] border border-slate-350 text-slate-400 hover:text-attention hover:bg-attention/5 hover:border-attention/20 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-attention/50"
+                                        className="w-9 h-9 flex items-center justify-center rounded-full bg-base-creme border border-slate-350 text-slate-400 hover:text-attention hover:bg-attention/5 hover:border-attention/20 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-attention/50"
                                     >
                                         <Trash2 size={14} />
                                     </button>
@@ -398,7 +398,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                 <button
                                     type="button"
                                     onClick={handleCloseViewer}
-                                    className="w-9 h-9 flex items-center justify-center rounded-full bg-[#FDFBF7] border border-slate-350 text-slate-400 hover:text-[#2E3330] hover:bg-slate-100 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                                    className="w-9 h-9 flex items-center justify-center rounded-full bg-base-creme border border-slate-350 text-slate-400 hover:text-[#2E3330] hover:bg-slate-100 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                                 >
                                     <X size={15} strokeWidth={2.5} />
                                 </button>

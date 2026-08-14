@@ -80,7 +80,7 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
                 isActivity: true, 
                 cursoId: a.cursoId 
             })),
-            ...state.tareas.filter(t => !userId || t.asignaciones?.some(asig => asig.docenteId === userId && asig.estado !== 'completada')).map(t => ({
+            ...state.tareas.filter(t => !userId || t.asignaciones?.some(asig => asig.docenteId === userId)).map(t => ({
                 id: `tar-${t.id}`,
                 originalId: t.id,
                 titulo: t.titulo,

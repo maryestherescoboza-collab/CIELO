@@ -103,7 +103,7 @@ export default function Cursos({
     }, [onToggleDocenteCurso]);
 
     return (
-        <div className="flex flex-col flex-1 h-full overflow-hidden bg-[#FDFBF7]">
+        <div className="flex flex-col flex-1 h-full overflow-hidden bg-base-creme">
             <div className="flex-1 overflow-y-auto px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div>

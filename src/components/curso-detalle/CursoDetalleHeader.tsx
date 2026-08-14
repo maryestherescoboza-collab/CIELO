@@ -61,12 +61,12 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     isTutor = true
 }) => {
     return (
-        <div className="flex flex-col gap-6 p-6 md:p-8 bg-white border-b border-[rgba(46,51,48,0.08)] shadow-sm relative z-20">
+        <div className="flex flex-col gap-6 p-6 md:p-8 bg-white border-b border-[#E8C166] shadow-sm relative z-20">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-6">
                     <button
                         onClick={onBack}
-                        className="p-3 hover:bg-[#F8F3ED] text-[#5F665E] hover:text-[#2E3330] transition-all rounded-full border border-transparent hover:border-[rgba(46,51,48,0.08)] group"
+                        className="p-3 hover:bg-[#F8F3ED] text-[#5F665E] hover:text-[#2E3330] transition-all rounded-full border border-transparent hover:border-[#E8C166] group"
                     >
                         <ChevronLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
                     </button>
@@ -87,7 +87,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <input
                             type="text"
                             placeholder="BUSCAR ESTUDIANTE..."
-                            className="pl-12 pr-6 py-2.5 min-h-10 bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-full text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white focus:border-primary/30 transition-all w-64 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
+                            className="pl-12 pr-6 py-2.5 min-h-10 bg-base-creme border border-[#E8C166] rounded-full text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white focus:border-primary/30 transition-all w-64 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
                             value={buscar}
                             onChange={(e) => setBuscar(e.target.value)}
                         />
@@ -98,7 +98,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         onClick={onSave}
                         disabled={!isDirty || isSaving}
                         variant={isSaving || !isDirty ? 'disabled' : 'primary'}
-                        className={`gap-3 px-4.5 min-h-10 border ${isSaving ? 'bg-attention border-attention text-white cursor-wait' : isDirty ? 'bg-primary border-primary' : 'bg-white text-primary border-[rgba(46,51,48,0.08)] cursor-default'}`}
+                        className={`gap-3 px-4.5 min-h-10 border ${isSaving ? 'bg-attention border-attention text-white cursor-wait' : isDirty ? 'bg-primary border-primary' : 'bg-white text-primary border-[#E8C166] cursor-default'}`}
                     >
                         {isSaving ? (
                             <Loader2 size={16} className="animate-spin" />
@@ -112,7 +112,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
 
                     <button
                         onClick={onToggleFullScreen}
-                        className="w-10 h-10 flex items-center justify-center bg-white border border-[rgba(46,51,48,0.08)] text-[#5F665E] hover:text-[#2E3330] hover:border-[rgba(46,51,48,0.15)] transition-all rounded-full shadow-sm active:scale-95"
+                        className="w-10 h-10 flex items-center justify-center bg-white border border-[#E8C166] text-[#5F665E] hover:text-[#2E3330] hover:border-[rgba(46,51,48,0.15)] transition-all rounded-full shadow-sm active:scale-95"
                     >
                         {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
                     </button>
@@ -135,13 +135,13 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 border-r border-[rgba(46,51,48,0.08)] pr-4 mr-2">
+                    <div className="flex items-center gap-2 border-r border-[#E8C166] pr-4 mr-2">
                         <CieloPill
                             as="button"
                             data-guide="btn-agregar-actividad"
                             variant="ghost"
                             onClick={onAddActividad}
-                            className="gap-2 px-4.5 min-h-9 bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]"
+                            className="gap-2 px-4.5 min-h-9 bg-white text-[#5F665E] border border-[#E8C166] hover:bg-[#F8F3ED] hover:text-[#2E3330]"
                         >
                             + AGREGAR ACTIVIDAD
                         </CieloPill>
@@ -149,7 +149,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             as="button"
                             variant={showRecoveryOnly ? 'danger' : 'ghost'}
                             onClick={() => setShowRecoveryOnly(!showRecoveryOnly)}
-                            className={`gap-2 px-4.5 min-h-9 transition-all border ${showRecoveryOnly ? 'bg-attention/10 text-attention border-attention/30 hover:bg-attention/20 hover:text-attention' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
+                            className={`gap-2 px-4.5 min-h-9 transition-all border ${showRecoveryOnly ? 'bg-attention/10 text-attention border-attention/30 hover:bg-attention/20 hover:text-attention' : 'bg-white text-[#5F665E] border-[#E8C166] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
                         >
                             {showRecoveryOnly ? 'VER TODOS' : 'VER RIESGO'}
                         </CieloPill>
@@ -157,7 +157,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             as="button"
                             variant={isPointMode ? 'primary' : 'ghost'}
                             onClick={() => setIsPointMode(!isPointMode)}
-                            className={`gap-2 px-4.5 min-h-9 transition-all border ${isPointMode ? 'bg-[#2E3330] text-white border-[#2E3330]' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
+                            className={`gap-2 px-4.5 min-h-9 transition-all border ${isPointMode ? 'bg-[#2E3330] text-white border-[#2E3330]' : 'bg-white text-[#5F665E] border-[#E8C166] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
                         >
                             MODO PINCEL
                         </CieloPill>
@@ -182,7 +182,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             } else {
                                 colorClasses = isActive
                                     ? 'bg-[#2E3330] text-white border-2 border-transparent'
-                                    : 'bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] hover:bg-[#FDFBF7] hover:text-[#2E3330]';
+                                    : 'bg-white text-[#5F665E] border border-[#E8C166] hover:bg-base-creme hover:text-[#2E3330]';
                             }
 
                             return (
@@ -200,10 +200,10 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
 
                     {isTutor && (
                         <div className="flex items-center gap-3">
-                            <CieloPill as="button" variant="ghost" onClick={onShowVincular} className="gap-2 px-4.5 min-h-9 bg-white border border-[rgba(46,51,48,0.08)] text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330]">
+                            <CieloPill as="button" variant="ghost" onClick={onShowVincular} className="gap-2 px-4.5 min-h-9 bg-white border border-[#E8C166] text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330]">
                                 CARGA
                             </CieloPill>
-                            <CieloPill as="button" variant="danger" onClick={onShowEliminarEstudiantes} className="gap-2 px-4.5 min-h-9 bg-white border border-[rgba(46,51,48,0.08)] text-attention hover:border-attention/30 hover:bg-attention/10">
+                            <CieloPill as="button" variant="danger" onClick={onShowEliminarEstudiantes} className="gap-2 px-4.5 min-h-9 bg-white border border-[#E8C166] text-attention hover:border-attention/30 hover:bg-attention/10">
                                 <UserMinus size={14} /> LIMPIAR
                             </CieloPill>
                         </div>

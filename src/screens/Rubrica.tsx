@@ -507,7 +507,7 @@ export default function Rubrica({
     }
 
     return (
-        <div className="flex flex-1 h-full overflow-hidden bg-[#FDFBF7]">
+        <div className="flex flex-1 h-full overflow-hidden bg-base-creme">
             {!readOnly && (
                 <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
                     <button
@@ -540,7 +540,7 @@ export default function Rubrica({
                                             <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
                                             <select
                                                 data-guide="selector-curso"
-                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-base-creme border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedCursoId}
                                                 onChange={(event) => {
                                                     setSelectedCursoId(Number(event.target.value));
@@ -559,7 +559,7 @@ export default function Rubrica({
                                             <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
                                             <select
                                                 data-guide="selector-actividad"
-                                                className="w-full bg-[#FDFBF7] border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-base-creme border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
                                                 value={selectedAct?.id ?? ''}
                                                 onChange={(event) => setSelectedActId(Number(event.target.value) || null)}
                                             >
@@ -581,7 +581,7 @@ export default function Rubrica({
                                             <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-[#2E3330]">{rubricaPlantillas.length}</div>
                                         </div>
                                         <div className="space-y-2">
-                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-[#FDFBF7] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm artisan-pill artisan-btn-white">
+                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-base-creme focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm artisan-pill artisan-btn-white">
                                                 <BookMarked size={14} className="text-[#2E3330]" />
                                                 <select
                                                     data-guide="selector-plantilla"
@@ -606,7 +606,7 @@ export default function Rubrica({
                                             </div>
                                             <button
                                                 onClick={handleSaveTemplate}
-                                                className="w-full bg-[#FDFBF7] border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-base-creme border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
                                             >
                                                 Guardar como Plantilla
                                             </button>
@@ -651,7 +651,7 @@ export default function Rubrica({
                         {!readOnly && (
                             <div className="flex items-center gap-2.5">
                                 {selectedEst && (
-                                    <div className="flex bg-[#FDFBF7] border border-[rgba(46,51,48,0.08)] rounded-[20px] px-4 py-2.5 items-center gap-4 shadow-sm">
+                                    <div className="flex bg-base-creme border border-[#E8C166] rounded-[20px] px-4 py-2.5 items-center gap-4 shadow-sm">
                                         <div className="flex flex-col items-center">
                                             <p className="text-xs font-black uppercase tracking-widest text-slate-400">
                                                 Puntaje Actual
@@ -718,7 +718,7 @@ export default function Rubrica({
                     
 
                     {!readOnly && (
-                        <div className="sticky top-0 z-30 bg-[#FDFBF7]/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
+                        <div className="sticky top-0 z-30 bg-base-creme/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
                             <div className="w-full space-y-3">
                                 <div className="px-1 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -732,7 +732,7 @@ export default function Rubrica({
                                     )}
                                 </div>
 
-                                <div className="w-full bg-[#FDFBF7] rounded-[20px] p-2 border border-[rgba(46,51,48,0.08)] shadow-sm">
+                                <div className="w-full bg-base-creme rounded-[20px] p-2 border border-[#E8C166] shadow-sm">
                                     <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide py-1 px-2.5">
                                         {sortedEsts.map((estudiante, idx) => {
                                             const isViewing = selectedEstId === estudiante.id;

@@ -106,7 +106,7 @@ export function useSupabaseData() {
                 supabase.from('historial_colaboradores').select('*'),
                 supabase.from('suscripciones').select('*'),
                 supabase.from('centro_roles').select('*'),
-                supabase.from('tareas_institucionales').select('*').eq('activo', true), // o manejar activo si se añade, sino quitar eq
+                supabase.from('tareas_institucionales').select('*'), // o manejar activo si se añade, sino quitar eq
                 supabase.from('tarea_docente').select('*'),
             ]);
 

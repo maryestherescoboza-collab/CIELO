@@ -23,7 +23,7 @@ interface Props {
 
 export default function CentroSidebar({ active, onSelect, onLogout }: Props) {
     return (
-        <aside className="w-[260px] shrink-0 hidden md:block">
+        <aside className="w-65 shrink-0 hidden md:block">
             <div className="sticky top-4 h-[calc(100vh-2rem)] flex flex-col rounded-2xl bg-white border border-[#E6E1D8] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_rgba(0,0,0,0.05)] overflow-hidden">
                 <div className="px-5 py-4 border-b border-[#E6E1D8] flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
