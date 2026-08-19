@@ -509,7 +509,7 @@ export default function Rubrica({
     return (
         <div className="flex flex-1 h-full overflow-hidden bg-base-creme">
             {!readOnly && (
-                <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
+                <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} min-h-screen border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                         className="absolute top-4 -right-1 z-50 p-1.5 bg-primary text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
@@ -651,17 +651,17 @@ export default function Rubrica({
                         {!readOnly && (
                             <div className="flex items-center gap-2.5">
                                 {selectedEst && (
-                                    <div className="flex bg-base-creme border border-[#E8C166] rounded-[20px] px-4 py-2.5 items-center gap-4 shadow-sm">
+                                    <div className="flex bg-(--linen)/10 border border-(--border-soft) rounded-(--radius-md) px-4 py-2.5 items-center gap-4 shadow-sm">
                                         <div className="flex flex-col items-center">
-                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+                                            <p className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">
                                                 Puntaje Actual
                                             </p>
-                                            <p className="mt-0.5 text-xl font-black tracking-tighter text-[#2E3330]">
+                                            <p className="mt-0.5 text-xl font-black tracking-tighter text-(--ink)">
                                                 {calcPuntajeTotalWithSelection(selection)}
-                                                <span className="ml-1 text-xs font-bold text-slate-400">/100</span>
+                                                <span className="ml-1 text-xs font-bold text-(--ink-soft)">/100</span>
                                             </p>
                                         </div>
-                                        <div className="h-8 w-px bg-slate-200" />
+                                        <div className="h-8 w-px bg-(--border-soft)" />
                                         <div className="flex items-center gap-3">
                                             <div
                                                 className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-black text-white shadow-sm"
@@ -670,8 +670,8 @@ export default function Rubrica({
                                                 {selectedEst.nombre[0]}
                                             </div>
                                             <div className="flex flex-col">
-                                                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Estudiante</p>
-                                                <span className="text-xs font-black uppercase tracking-widest text-[#2E3330]">
+                                                <p className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Estudiante</p>
+                                                <span className="text-xs font-black uppercase tracking-widest text-(--ink)">
                                                     {selectedEst.nombre} {selectedEst.apellido}
                                                 </span>
                                             </div>
@@ -680,19 +680,19 @@ export default function Rubrica({
                                 )}
 
                                 {activeCell && (
-                                    <div className="flex bg-[#FAF6F0] border border-slate-200 rounded-[20px] px-4 py-2.5 items-center gap-3 shadow-sm animate-pulse">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white shadow-sm">
+                                    <div className="flex bg-white border border-(--border-soft) rounded-(--radius-md) px-4 py-2.5 items-center gap-3 shadow-sm animate-pulse">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-(--primary) text-white shadow-sm">
                                             <Plus size={16} />
                                         </div>
                                         <div className="flex flex-col">
-                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Asignando Descriptor</p>
-                                            <span className="text-xs font-black uppercase tracking-widest text-[#2E3330]">
+                                            <p className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Asignando Descriptor</p>
+                                            <span className="text-xs font-black uppercase tracking-widest text-(--ink)">
                                                 {localDescriptors.find(d => d.id === activeCell.id)?.indicador.substring(0, 20)}...
                                             </span>
                                         </div>
                                         <button
                                             onClick={() => setActiveCell(null)}
-                                            className="ml-1 text-xs font-black text-attention uppercase tracking-widest hover:underline"
+                                            className="ml-1 text-xs font-black text-(--primary) uppercase tracking-widest hover:underline cursor-pointer"
                                         >
                                             Cancelar
                                         </button>
@@ -718,7 +718,7 @@ export default function Rubrica({
                     
 
                     {!readOnly && (
-                        <div className="sticky top-0 z-30 bg-base-creme/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
+                        <div className="sticky top-0 z-30 bg-(--background)/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
                             <div className="w-full space-y-3">
                                 <div className="px-1 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -726,13 +726,13 @@ export default function Rubrica({
 
                                     </div>
                                     {selectedAct && (
-                                        <CieloPill variant="primary" uppercase className="px-3.5 bg-[#FAF6F0] text-primary shadow-sm tracking-[0.16em]">
+                                        <CieloPill variant="primary" uppercase className="px-3.5 bg-white text-(--primary) shadow-sm tracking-[0.16em]">
                                             Actividad: {selectedAct.nombre} ({selectedAct.periodo})
                                         </CieloPill>
                                     )}
                                 </div>
 
-                                <div className="w-full bg-base-creme rounded-[20px] p-2 border border-[#E8C166] shadow-sm">
+                                <div className="w-full bg-white rounded-(--radius-md) p-2 border border-(--border-soft) shadow-sm">
                                     <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide py-1 px-2.5">
                                         {sortedEsts.map((estudiante, idx) => {
                                             const isViewing = selectedEstId === estudiante.id;
@@ -749,9 +749,9 @@ export default function Rubrica({
                                                 >
                                                     <div
                                                         className={`flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-black text-white transition-all ring-offset-2 ${isViewing
-                                                            ? 'scale-105 ring-2 ring-primary shadow-lg'
+                                                            ? 'scale-105 ring-2 ring-(--primary) shadow-lg'
                                                             : 'opacity-50 grayscale hover:scale-105 hover:opacity-100 hover:grayscale-0'
-                                                            } ${isInActiveCell ? 'ring-2 ring-primary opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
+                                                            } ${isInActiveCell ? 'ring-2 ring-(--primary) opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
                                                         style={{ background: estudiante.avatarColor }}
                                                     >
                                                         {estudiante.nombre[0]}
@@ -761,13 +761,13 @@ export default function Rubrica({
                                                             </div>
                                                         )}
                                                         {isInActiveCell && (
-                                                            <div className="absolute -bottom-1 -right-1 bg-primary text-white h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white shadow-sm">
+                                                            <div className="absolute -bottom-1 -right-1 bg-(--primary) text-white h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white shadow-sm">
                                                                 <CheckCircle size={9} />
                                                             </div>
                                                         )}
                                                     </div>
                                                     <span
-                                                        className={`text-center text-xs font-black uppercase tracking-[0.14em] transition-colors ${isViewing || isInActiveCell ? 'text-[#1E293B]' : 'text-slate-400'
+                                                        className={`text-center text-xs font-black uppercase tracking-[0.14em] transition-colors ${isViewing || isInActiveCell ? 'text-(--ink)' : 'text-(--ink-soft)'
                                                             }`}
                                                     >
                                                         {idx + 1}. {estudiante.nombre.split(' ')[0]}

@@ -54,7 +54,19 @@ export function UpcomingActivities({ events }: UpcomingActivitiesProps) {
                                 <div className="min-w-0 flex-1">
                                     <p className="text-[14px] font-extrabold text-[#2E3330] truncate leading-snug group-hover:text-primary transition-colors">{e.titulo}</p>
                                     <div className="flex items-center gap-2 mt-2">
-                                        <CieloPill variant="neutral" uppercase className="text-xs h-6 px-2.5 bg-slate-100">{e.tipo}</CieloPill>
+                                        {(() => {
+                                            const pillVariants: Record<string, any> = {
+                                                evaluacion: 'orange',
+                                                reunion: 'warning',
+                                                actividad: 'info',
+                                                otro: 'terracotta'
+                                            };
+                                            return (
+                                                <CieloPill variant={pillVariants[e.tipo] || 'neutral'} uppercase className="text-[10px] h-6 px-2">
+                                                    {e.tipo}
+                                                </CieloPill>
+                                            );
+                                        })()}
                                         {e.isActivity && <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>}
                                     </div>
                                 </div>

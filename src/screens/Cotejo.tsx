@@ -16,13 +16,13 @@ interface Props {
 }
 
 const NIVELES = [
-    { val: 0, label: 'No cumple', pts: 0, color: 'bg-danger' },
-    { val: 100, label: 'Logrado', pts: 100, color: 'bg-primary' },
+    { val: 0, label: 'No cumple', pts: 0, color: 'bg-(--danger)' },
+    { val: 100, label: 'Logrado', pts: 100, color: 'bg-(--success)' },
 ];
 
 const COTEJO_COLORES: Record<number, { headerBg: string; cellBg: string }> = {
-    100: { headerBg: 'var(--primary)', cellBg: '#F2F5F1' }, // Logrado
-    0: { headerBg: 'var(--danger)', cellBg: '#FDF1EF' }, // No cumple
+    100: { headerBg: 'var(--success)', cellBg: 'rgba(122, 141, 105, 0.08)' }, // Logrado
+    0: { headerBg: 'var(--danger)', cellBg: 'rgba(231, 54, 60, 0.08)' }, // No cumple
 };
 
 export default function Cotejo({
@@ -364,7 +364,7 @@ export default function Cotejo({
     return (
         <div className="flex flex-col md:flex-row h-full overflow-hidden bg-base-creme">
             {!readOnly && (
-                <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} h-full border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
+                <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} min-h-screen border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                         className="absolute top-4 -right-1 z-50 p-1.5 bg-primary text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
@@ -577,7 +577,7 @@ export default function Cotejo({
                                         </div>
                                         <button
                                             onClick={() => setActiveCell(null)}
-                                            className="ml-1 text-xs font-black text-red-500 uppercase tracking-widest hover:underline transition-all"
+                                            className="ml-1 text-xs font-black text-(--danger) uppercase tracking-widest hover:underline transition-all"
                                         >
                                             Cancelar
                                         </button>
@@ -590,7 +590,7 @@ export default function Cotejo({
                                     onClick={Object.keys(multiEvaluations).length > 0 ? handleFinalizeGroupEvaluation : handleSave}
                                     variant={((!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving) ? 'disabled' : 'primary'}
                                     disabled={(!selectedEst && Object.keys(multiEvaluations).length === 0) || !selectedAct || isSaving}
-                                    className="px-5 gap-2.5 h-12 shadow-xl"
+                                    className="px-5 gap-2.5 h-12 shadow-sm"
                                 >
                                     {isSaving ? <Loader2 size={16} className="animate-spin" /> : (savedFlash ? <CheckCircle size={18} /> : <Save size={18} />)}
                                     <span className="uppercase tracking-widest text-[12px]">
@@ -602,7 +602,7 @@ export default function Cotejo({
                     </div>
 
                     {!readOnly && (
-                        <div className="sticky top-0 z-30 bg-base-creme/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
+                        <div className="sticky top-0 z-30 bg-(--background)/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
                             <div className="w-full space-y-3">
                                 <div className="px-1 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -610,13 +610,13 @@ export default function Cotejo({
 
                                     </div>
                                     {selectedAct && (
-                                        <CieloPill variant="primary" uppercase className="px-3 bg-slate-50 text-primary shadow-sm tracking-[0.16em]">
+                                        <CieloPill variant="primary" uppercase className="px-3 bg-white text-(--primary) shadow-sm tracking-[0.16em]">
                                             Actividad: {selectedAct.nombre} ({selectedAct.periodo})
                                         </CieloPill>
                                     )}
                                 </div>
 
-                                <div className="w-full bg-white rounded-3xl p-2 border border-slate-200 shadow-sm">
+                                <div className="w-full bg-white rounded-(--radius-md) p-2 border border-(--border-soft) shadow-sm">
                                     <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide py-1 px-2.5">
                                         {sortedEsts.map((est, idx) => {
                                             const isSel = selectedEstId === est.id;
@@ -632,9 +632,9 @@ export default function Cotejo({
                                                 >
                                                     <div
                                                         className={`flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-black text-white transition-all ring-offset-2 ${isSel
-                                                            ? 'scale-105 ring-2 ring-primary shadow-lg'
+                                                            ? 'scale-105 ring-2 ring-(--primary) shadow-lg'
                                                             : 'opacity-50 grayscale hover:scale-105 hover:opacity-100 hover:grayscale-0'
-                                                            } ${isInActiveCell ? 'ring-2 ring-primary opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
+                                                            } ${isInActiveCell ? 'ring-2 ring-(--primary) opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
                                                         style={{ background: est.avatarColor }}
                                                     >
                                                         {est.nombre[0]}
@@ -644,13 +644,13 @@ export default function Cotejo({
                                                             </div>
                                                         )}
                                                         {isInActiveCell && (
-                                                            <div className="absolute -bottom-1 -right-1 bg-primary text-white h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white shadow-sm">
+                                                            <div className="absolute -bottom-1 -right-1 bg-(--primary) text-white h-4.5 w-4.5 rounded-full flex items-center justify-center border border-white shadow-sm">
                                                                 <CheckCircle size={9} />
                                                             </div>
                                                         )}
                                                     </div>
                                                     <span
-                                                        className={`text-center text-xs font-black uppercase tracking-[0.14em] transition-colors ${isSel || isInActiveCell ? 'text-[#1E293B]' : 'text-slate-400'
+                                                        className={`text-center text-xs font-black uppercase tracking-[0.14em] transition-colors ${isSel || isInActiveCell ? 'text-(--ink)' : 'text-(--ink-soft)'
                                                             }`}
                                                     >
                                                         {idx + 1}. {est.nombre.split(' ')[0]}
@@ -664,7 +664,7 @@ export default function Cotejo({
                         </div>
                     )}
 
-                    <div className="w-full rounded-[24px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50 overflow-hidden">
+                    <div className="w-full rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-sm overflow-hidden">
                         <table
                             onContextMenu={(e) => {
                                 if (readOnly) return;
@@ -677,8 +677,8 @@ export default function Cotejo({
                             className="table-compact w-full border-collapse font-['Inter',sans-serif] text-[16px]"
                         >
                             <thead>
-                                <tr className="border-b border-slate-200 bg-[#1E293B] text-white">
-                                    <th className="w-[76%] border-r border-white/30 px-4 py-1.5 text-left align-middle text-[16px] font-bold">
+                                <tr className="border-b border-(--border-soft) bg-(--linen)/45 text-(--ink)">
+                                    <th className="w-[76%] border-r border-(--border-soft) px-4 py-1.5 text-left align-middle text-[16px] font-bold">
                                         Indicadores de Logro
                                     </th>
                                     {localNiveles.map(n => {
@@ -686,7 +686,7 @@ export default function Cotejo({
                                         return (
                                             <th
                                                 key={n.val}
-                                                className="w-[10%] border-r border-white/30 px-2 py-1.5 text-center align-middle last:border-r-0"
+                                                className="w-[10%] border-r border-(--border-soft) px-2 py-1.5 text-center align-middle last:border-r-0"
                                                 style={{ backgroundColor: colors.headerBg }}
                                             >
                                                 <div className="flex flex-col items-center justify-center gap-1">
@@ -699,7 +699,7 @@ export default function Cotejo({
                                     })}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-(--border-soft)/50">
                                 {localCriterios.length === 0 ? (
                                     <tr>
                                         <td colSpan={localNiveles.length + 1} className="py-20 text-center">
@@ -711,21 +711,21 @@ export default function Cotejo({
                                                 }}
                                                 className="flex flex-col items-center gap-2 mx-auto focus:outline-none hover:opacity-85 transition-all select-none cursor-pointer group"
                                             >
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500 group-hover:bg-slate-200 transition-all shadow-sm">
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-(--linen)/20 text-(--ink-soft) group-hover:bg-(--linen)/45 transition-all shadow-sm">
                                                     <Plus size={24} />
                                                 </div>
-                                                <p className="text-[16px] font-bold text-slate-700 mt-2">No hay criterios definidos</p>
-                                                <p className="text-xs text-slate-400">Haga clic para crear una fila.</p>
+                                                <p className="text-[16px] font-bold text-(--ink) mt-2">No hay criterios definidos</p>
+                                                <p className="text-xs text-(--ink-soft)">Haga clic para crear una fila.</p>
                                             </button>
                                         </td>
                                     </tr>
                                 ) : localCriterios.map(crit => (
-                                    <tr key={crit.id} className="group hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-4 py-1.5 align-middle border-r border-slate-100">
+                                    <tr key={crit.id} className="group hover:bg-(--linen)/10 transition-colors">
+                                        <td className="px-4 py-1.5 align-middle border-r border-(--border-soft)">
                                             <div className="space-y-2 table-stack-tight">
                                                 {readOnly ? (
                                                     <div className="text-left space-y-1">
-                                                        <p className="text-[16px] font-medium text-[#1E293B]">{crit.descripcion}</p>
+                                                        <p className="text-[16px] font-medium text-(--ink)">{crit.descripcion}</p>
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center gap-2 relative w-full">
@@ -734,13 +734,13 @@ export default function Cotejo({
                                                                 e.stopPropagation();
                                                                 handleInsertRowAfter(crit.id);
                                                             }}
-                                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary hover:text-primary/80 text-xl font-bold select-none px-1"
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-(--primary) hover:text-(--primary)/80 text-xl font-bold select-none px-1"
                                                             title="Insertar indicador"
                                                         >
                                                             +
                                                         </button>
                                                         <textarea
-                                                            className="flex-1 bg-transparent outline-none text-[16px] font-medium text-[#1E293B] resize-none h-12 scrollbar-hide text-left"
+                                                            className="flex-1 bg-transparent outline-none text-[16px] font-medium text-(--ink) resize-none h-12 scrollbar-hide text-left"
                                                             placeholder="Descripción del indicador..."
                                                             value={crit.descripcion}
                                                             onChange={e => {
@@ -753,7 +753,7 @@ export default function Cotejo({
                                                                 e.stopPropagation();
                                                                 setLocalCriterios(p => p.filter(c => c.id !== crit.id));
                                                             }}
-                                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-danger hover:text-danger/80 text-xl font-bold select-none px-1"
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-(--danger) hover:text-(--danger)/80 text-xl font-bold select-none px-1"
                                                             title="Eliminar indicador"
                                                         >
                                                             ×
@@ -773,9 +773,9 @@ export default function Cotejo({
                                                 <td
                                                     key={n.val}
                                                     data-guide="celda-cotejo"
-                                                    className={`px-2 py-1 align-middle text-center border-r border-slate-100 last:border-r-0 ${readOnly ? 'cursor-default' : 'cursor-pointer'} transition-colors relative
-                                                        ${isSelected ? 'after:absolute after:inset-0 after:border-2 after:border-[#1E293B]' : readOnly ? '' : 'hover:bg-slate-50'}
-                                                        ${isActive ? 'ring-2 ring-inset ring-primary shadow-inner' : ''}`}
+                                                    className={`px-2 py-1 align-middle text-center border-r border-(--border-soft) last:border-r-0 ${readOnly ? 'cursor-default' : 'cursor-pointer'} transition-colors relative
+                                                        ${isSelected ? 'after:absolute after:inset-0 after:border-2 after:border-(--ink)' : readOnly ? '' : 'hover:bg-(--linen)/10'}
+                                                        ${isActive ? 'ring-2 ring-inset ring-(--primary) shadow-inner' : ''}`}
                                                     style={{ backgroundColor: colors.cellBg }}
                                                     onClick={() => {
                                                         if (readOnly) return;
@@ -804,7 +804,7 @@ export default function Cotejo({
                                                                 e.stopPropagation();
                                                                 handleSelectCell(crit.id, n.val);
                                                             }}
-                                                            className={`w-8 h-8 rounded-full transition-all border-2 flex items-center justify-center group-option ${isSelected ? `${n.color} border-white shadow-xl scale-105` : 'border-transparent bg-slate-100 hover:bg-slate-200'}`}
+                                                            className={`w-8 h-8 rounded-full transition-all border-2 flex items-center justify-center group-option ${isSelected ? `${n.color} border-white shadow-xl scale-105` : 'border-transparent bg-(--linen)/20 hover:bg-(--linen)/50'}`}
                                                         >
                                                             {isSelected && <CheckCircle size={14} className="text-white" />}
                                                         </button>
@@ -822,26 +822,26 @@ export default function Cotejo({
             </main>
 
             {!readOnly && showAddCrit && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1E293B]/20 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowAddCrit(false)}>
-                    <div className="w-full max-w-md bg-white rounded-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                            <h2 className="text-lg font-black text-[#1E293B] font-notion-title">Añadir Indicador</h2>
-                            <button onClick={() => setShowAddCrit(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-500"><X size={20} /></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-(--ink)/20 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowAddCrit(false)}>
+                    <div className="w-full max-w-md bg-white rounded-(--radius-lg) shadow-md overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-(--border-soft) flex items-center justify-between">
+                            <h2 className="text-lg font-black text-(--ink) font-notion-title">Añadir Indicador</h2>
+                            <button onClick={() => setShowAddCrit(false)} className="p-2 hover:bg-(--linen)/20 rounded-xl transition-all text-(--ink-soft) cursor-pointer"><X size={20} /></button>
                         </div>
                         <div className="p-6 space-y-5">
                             <div className="space-y-2">
-                                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Descripción del Criterio</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Descripción del Criterio</label>
                                 <textarea
-                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-[#1E293B] min-h-25 outline-none transition-all focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/50"
+                                    className="w-full bg-white border border-(--border-soft) rounded-(--radius-sm) px-4 py-3 text-xs font-medium text-(--ink) min-h-25 outline-none transition-all focus-visible:border-(--primary) focus-visible:ring-2 focus-visible:ring-(--primary)/50"
                                     placeholder="Detalle el criterio de observación..."
                                     value={newCrit.descripcion}
                                     onChange={e => setNewCrit({ ...newCrit, descripcion: e.target.value })}
                                 />
                             </div>
                         </div>
-                        <div className="p-6 bg-slate-50 flex gap-4 border-t border-slate-100">
-                            <button className="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl py-3 text-xs font-black uppercase tracking-widest transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400" onClick={() => setShowAddCrit(false)}>Cancelar</button>
-                            <button className="flex-1 bg-primary text-white hover:bg-primary/90 rounded-xl py-3 text-xs font-black uppercase tracking-widest transition-all shadow-md outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:-translate-y-0.5 active:scale-95" onClick={() => {
+                        <div className="p-6 bg-(--linen)/10 flex gap-4 border-t border-(--border-soft)">
+                            <button className="flex-1 bg-white border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/20 rounded-xl py-3 text-xs font-black uppercase tracking-widest transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 cursor-pointer" onClick={() => setShowAddCrit(false)}>Cancelar</button>
+                            <button className="flex-1 bg-(--primary) text-white hover:opacity-90 rounded-full py-3 text-xs font-black uppercase tracking-widest transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 hover:-translate-y-0.5 active:scale-95 cursor-pointer" onClick={() => {
                                 if (newCrit.descripcion.trim()) {
                                     const id = Math.max(0, ...localCriterios.map(c => c.id)) + 1;
                                     setLocalCriterios([...localCriterios, { id, titulo: newCrit.descripcion.trim(), descripcion: newCrit.descripcion.trim() }]);

@@ -5,28 +5,38 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        "color-1": "#5F9563",
-        "color-2": "#79C599",
-        "color-3": "#D68253",
-        "color-4": "#C63D3D",
-        "color-5": "#E8C166",
-        "neutral-warm": "#DDD5C8",
-        "primary": "#79C599",
-        "primary-soft": "#79C59926", // 15% opacity
-        "success": "#5F9563",
-        "warning-soft": "#E8C16626", // 15% opacity
-        "warning": "#E8C166",
-        "attention": "#D68253",
-        "danger": "#C63D3D",
-        "risk": "#E8C166",
+        // New CIELO Artisan Palette
+        "olive-branch": "#BFC9A6",
+        "herb-garden": "#7A8D69",
+        "french-blue": "#6D8FB9",
+        "clementine": "#EB8847",
+        "calendula": "#F5BC5D",
+        "sicilian-sky": "#B8CADC",
+        "terra-cotta": "#B87449",
+        "linen": "#EAE4DA",
+        "ink": "#2E3330",
+        "background": "#F8F3ED",
+
+        // Semantic bindings mapped to new palette
+        "color-1": "#BFC9A6",
+        "color-2": "#7A8D69",
+        "color-3": "#EB8847",
+        "color-4": "#B87449",
+        "color-5": "#F5BC5D",
+        "neutral-warm": "#EAE4DA",
+        "primary": "#6D8FB9",
+        "primary-soft": "#6D8FB926",
+        "success": "#7A8D69",
+        "warning-soft": "#F5BC5D26",
+        "warning": "#F5BC5D",
+        "attention": "#EB8847",
+        "danger": "#E7363C",
+        "risk": "#E7363C",
         
-        // Manteniendo los neutrales sin modificar mucho la estética original,
-        // pero eliminando las referencias a la paleta antigua (cielo-high, turf-green, etc).
-        "background": "#FDFBF7",
-        "on-background": "#8695A7",
+        "on-background": "#2E3330",
         "surface": "#FFFFFF",
-        "outline": "#6E8CA0",
-        "cielo-bg-main": "#FDFBF7",
+        "outline": "rgba(46, 51, 48, 0.12)",
+        "cielo-bg-main": "#F8F3ED",
         "cielo-sidebar": "#EAE4DA"
       },
       fontFamily: {

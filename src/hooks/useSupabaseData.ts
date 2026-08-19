@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, EvaluacionRubrica, EvaluacionCotejo, CriterioCotejo, DescriptorRubrica, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, Nivel, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, TareaInstitucional, TareaDocente, Centro } from '../types';
 import { useAppStore } from '../store/appStore';
@@ -24,10 +24,10 @@ const parseObservaciones = (val: any): string[] => {
 
 const sanitizeNivelesPuntaje = (fetchedNiveles: any[] | null | undefined): NivelPuntaje[] => {
     const defaults: Record<number, { puntaje: number; nombre: string; color: string; description: string }> = {
-        4: { puntaje: 100, nombre: 'Estratégico', color: '#5F9563', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
-        3: { puntaje: 85, nombre: 'Autónomo', color: '#79C599', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
-        2: { puntaje: 70, nombre: 'Resolutivo', color: '#D68253', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
-        1: { puntaje: 55, nombre: 'Receptivo', color: '#C63D3D', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' }
+        4: { puntaje: 100, nombre: 'Estratégico', color: '#F5BC5D', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
+        3: { puntaje: 85, nombre: 'Autónomo', color: '#537BAC', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
+        2: { puntaje: 70, nombre: 'Resolutivo', color: '#689C63', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
+        1: { puntaje: 55, nombre: 'Receptivo', color: '#EB8847', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' }
     };
 
     const result: NivelPuntaje[] = [];
@@ -77,91 +77,24 @@ export function useSupabaseData() {
     const fetchData = useCallback(async (isSilent = false) => {
         if (!session?.user?.id) return;
         if (!isSilent) setLoading(true);
+        console.log('[PLANIFICACION] inicio carga global (useSupabaseData)');
         try {
-            const results = await Promise.all([
+            console.log('[PLANIFICACION] antes de consultar contexto de usuario y cursos');
+            const phase1 = await Promise.all([
                 supabase.from('perfiles').select('*, centros!perfiles_centro_id_fkey(*)'),
-                supabase.from('cursos').select('*'),
-                supabase.from('estudiantes').select('*').eq('activo', true),
-                supabase.from('actividades').select('*').eq('activo', true),
-                supabase.from('calificaciones').select('*').eq('activo', true),
-                supabase.from('recuperaciones').select('*').eq('activo', true),
-                supabase.from('secuencias').select('*').eq('activo', true),
-                supabase.from('incidencias').select('*').eq('activo', true),
-                supabase.from('eventos').select('*'),
-                supabase.from('posts').select('*, profiles:perfiles(nombre_docente, avatar_url, bio)').order('id', { ascending: false }),
-                supabase.from('docentes').select('*'),
-                supabase.from('evaluaciones_rubrica').select('*'),
-                supabase.from('evaluaciones_cotejo').select('*'),
-                supabase.from('criterios_cotejo').select('*'),
-                supabase.from('descriptores_rubrica').select('*'),
-                supabase.from('niveles_puntaje').select('*'),
-                supabase.from('plantillas').select('*').eq('archivado', false).order('created_at', { ascending: false }),
-                supabase.from('curso_detalle').select('*'),
-                supabase.from('notificaciones').select('*').eq('leida', false).order('created_at', { ascending: false }),
-
-                supabase.from('curso_docentes').select('*').eq('activo', true),
-                supabase.from('grupos').select('*'),
-                supabase.from('registros_anecdoticos').select('*').eq('activo', true).order('fecha', { ascending: false }),
-                supabase.from('registro_imagenes').select('*'),
-                supabase.from('historial_colaboradores').select('*'),
-                supabase.from('suscripciones').select('*'),
                 supabase.from('centro_roles').select('*'),
-                supabase.from('tareas_institucionales').select('*'), // o manejar activo si se añade, sino quitar eq
-                supabase.from('tarea_docente').select('*'),
+                supabase.from('cursos').select('*'),
+                supabase.from('curso_docentes').select('*').eq('activo', true),
+                supabase.from('suscripciones').select('*'),
+                supabase.from('historial_colaboradores').select('*')
             ]);
 
-            // Nombres de tabla para logging de errores
-            const tableNames = [
-                'perfiles', 'cursos', 'estudiantes', 'actividades', 'calificaciones',
-                'recuperaciones', 'secuencias', 'incidencias', 'eventos', 'posts',
-                'docentes', 'evaluaciones_rubrica', 'evaluaciones_cotejo', 'criterios_cotejo',
-                'descriptores_rubrica', 'niveles_puntaje', 'plantillas', 'curso_detalle',
-                'notificaciones', 'curso_docentes', 'grupos',
-                'registros_anecdoticos', 'registro_imagenes', 'historial_colaboradores',
-                'suscripciones', 'centro_roles', 'tareas_institucionales', 'tarea_docente'
-            ];
-
-            // Detectar y reportar errores de consulta sin silenciarlos
-            const queryErrors: string[] = [];
-            results.forEach((result, idx) => {
-                if (result.error) {
-                    queryErrors.push(`[${tableNames[idx]}] ${result.error.message} (code: ${result.error.code})`);
-                    console.error(`[Supabase fetchData] Error en tabla "${tableNames[idx]}":`, result.error);
-                }
-            });
-            if (queryErrors.length > 0) {
-                console.warn(`[Supabase fetchData] ${queryErrors.length} consulta(s) fallaron. Las tablas afectadas conservarán sus valores previos.`);
-            }
-
-            // Extraer data con seguridad: si una consulta falló, su data será null
-            const perfiles = results[0].data;
-            const cursos = results[1].data;
-            const estudiantes = results[2].data;
-            const actividades = results[3].data;
-            const calificaciones = results[4].error ? null : results[4].data;
-            const recuperaciones = results[5].error ? null : results[5].data;
-            const secuencias = results[6].data;
-            const incidencias = results[7].data;
-            const eventos = results[8].data;
-            const posts = results[9].data;
-            const docentes = results[10].data;
-            const evaluacionesRubrica = results[11].data;
-            const evaluacionesCotejo = results[12].data;
-            const criteriosCotejo = results[13].data;
-            const descriptoresRubrica = results[14].data;
-            const nivelesPuntaje = results[15].data;
-            const plantillas = results[16].data;
-            const cursoDetalle = results[17].data;
-            const notificaciones = results[18].data;
-            const cursoDocentes = results[19].data;
-            const grupos = results[20].data;
-            const registrosAnecdoticos = results[21].data;
-            const registroImagenes = results[22].data;
-            const historialColaboradores = results[23].data;
-            const suscripciones = results[24].data;
-            const centroRoles = results[25].data;
-            const tareas = results[26].data;
-            const tareaAsignaciones = results[27].data;
+            const perfiles = phase1[0].data;
+            const centroRoles = phase1[1].data;
+            const cursos = phase1[2].data;
+            const cursoDocentes = phase1[3].data;
+            const suscripciones = phase1[4].data;
+            const historialColaboradores = phase1[5].data;
 
             const mappedPerfiles = (perfiles || []).map((p: Record<string, unknown>): UserProfile => {
                 const cArray = p.centros;
@@ -203,7 +136,6 @@ export function useSupabaseData() {
                 };
             });
 
-            // Compute current subscription and role
             const currentUserProfile = mappedPerfiles.find(p => p.userId === session.user.id);
             const userCentroId = currentUserProfile?.centro_id;
 
@@ -221,13 +153,7 @@ export function useSupabaseData() {
                     resolvedSuscripcionActual = promocionales[0];
                 }
             }
-            
-            // La ÚNICA fuente de verdad es perfiles.rol. 'administrador' => gestión
-            // de Centro. Cualquiera de los roles administrativos (incluidos los
-            // 4 del modelo: administrador, administrador_centro, administrador_global y
-            // el heredado director) habilita el rol del centro activo; los demás
-            // valores (docente, NULL, desconocidos) no son administrativos y se
-            // resuelven mediante el flujo normal de docente.
+
             const resolvedCentroRolActual = (() => {
                 if (!esRolAdministrador(currentUserProfile?.rol)) return undefined;
                 const userCentroRoles = (centroRoles || []).filter((cr: any) => cr.user_id === session.user.id);
@@ -239,6 +165,94 @@ export function useSupabaseData() {
                     rol: 'administrador' as const,
                 };
             })();
+
+            const isCentroAdmin = !!resolvedCentroRolActual && resolvedCentroRolActual.rol === 'administrador';
+
+            const misCursosTutor = (cursos || [])
+                .filter((c: any) => c.is_tutor_oficial && String(c.user_id) === session.user.id)
+                .map((c: any) => c.id);
+
+            const userFilter = (query: any) => {
+                if (isCentroAdmin) return query;
+                return query.eq('user_id', session.user.id);
+            };
+
+            const userOrTutorFilter = (query: any) => {
+                if (isCentroAdmin) return query;
+                if (misCursosTutor.length > 0) {
+                    return query.or(`user_id.eq.${session.user.id},curso_id.in.(${misCursosTutor.join(',')})`);
+                }
+                return query.eq('user_id', session.user.id);
+            };
+
+            const activeQuery = (table: string) => supabase.from(table).select('*').eq('activo', true);
+            const baseQuery = (table: string) => supabase.from(table).select('*');
+
+            console.log(`[PLANIFICACION] Fase 2: solicitando tablas secundarias para usuario (isCentroAdmin: ${isCentroAdmin}, tutorOficialEn: ${misCursosTutor.length} cursos)`);
+            
+            const results = await Promise.all([
+                supabase.from('estudiantes').select('*').eq('activo', true),
+                userFilter(activeQuery('actividades')),
+                userOrTutorFilter(activeQuery('calificaciones')),
+                userOrTutorFilter(activeQuery('recuperaciones')),
+                userFilter(activeQuery('secuencias')),
+                userFilter(activeQuery('incidencias')),
+                supabase.from('eventos').select('*'),
+                supabase.from('posts').select('*, profiles:perfiles(nombre_docente, avatar_url, bio)').order('id', { ascending: false }),
+                userFilter(baseQuery('evaluaciones_rubrica')),
+                userFilter(baseQuery('evaluaciones_cotejo')),
+                supabase.from('criterios_cotejo').select('*'),
+                supabase.from('descriptores_rubrica').select('*'),
+                supabase.from('niveles_puntaje').select('*'),
+                supabase.from('plantillas').select('*').eq('archivado', false).order('created_at', { ascending: false }),
+                supabase.from('curso_detalle').select('*'),
+                userFilter(baseQuery('notificaciones')).eq('leida', false).order('created_at', { ascending: false }),
+                supabase.from('grupos').select('*'),
+                userFilter(activeQuery('registros_anecdoticos')).order('fecha', { ascending: false }),
+                supabase.from('registro_imagenes').select('*'),
+                supabase.from('tareas_institucionales').select('*'),
+                supabase.from('tarea_docente').select('*')
+            ]);
+
+            const tableNames = [
+                'estudiantes', 'actividades', 'calificaciones', 'recuperaciones', 'secuencias', 'incidencias',
+                'eventos', 'posts', 'evaluaciones_rubrica', 'evaluaciones_cotejo', 'criterios_cotejo', 'descriptores_rubrica',
+                'niveles_puntaje', 'plantillas', 'curso_detalle', 'notificaciones', 'grupos', 'registros_anecdoticos',
+                'registro_imagenes', 'tareas_institucionales', 'tarea_docente'
+            ];
+
+            const queryErrors: string[] = [];
+            results.forEach((result, idx) => {
+                if (result.error) {
+                    queryErrors.push(`[${tableNames[idx]}] ${result.error.message} (code: ${result.error.code})`);
+                    console.error(`[Supabase fetchData] Error en tabla "${tableNames[idx]}":`, result.error);
+                }
+            });
+            if (queryErrors.length > 0) {
+                console.warn(`[Supabase fetchData] ${queryErrors.length} consulta(s) fallaron. Las tablas afectadas conservarán sus valores previos.`);
+            }
+
+            const estudiantes = results[0].data;
+            const actividades = results[1].data;
+            const calificaciones = results[2].error ? null : results[2].data;
+            const recuperaciones = results[3].error ? null : results[3].data;
+            const secuencias = results[4].data;
+            const incidencias = results[5].data;
+            const eventos = results[6].data;
+            const posts = results[7].data;
+            const evaluacionesRubrica = results[8].data;
+            const evaluacionesCotejo = results[9].data;
+            const criteriosCotejo = results[10].data;
+            const descriptoresRubrica = results[11].data;
+            const nivelesPuntaje = results[12].data;
+            const plantillas = results[13].data;
+            const cursoDetalle = results[14].data;
+            const notificaciones = results[15].data;
+            const grupos = results[16].data;
+            const registrosAnecdoticos = results[17].data;
+            const registroImagenes = results[18].data;
+            const tareas = results[19].data;
+            const tareaAsignaciones = results[20].data;
 
             setState(prev => {
                 const mappedPosts = (posts || []).map((p: Record<string, unknown>): Post => {
@@ -339,7 +353,8 @@ export function useSupabaseData() {
                     isRec: a.is_rec as boolean,
                     userId: a.user_id as string,
                     asignatura: a.asignatura as string,
-                    sharedCourseId: a.shared_course_id as string || (cursos?.find(cur => cur.id === a.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === a.curso_id)?.grupo_id}` : String(a.curso_id))
+                    sharedCourseId: a.shared_course_id as string || (cursos?.find(cur => cur.id === a.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === a.curso_id)?.grupo_id}` : String(a.curso_id)),
+                    indicador: a.indicador as string
                 })),
                 // Si la consulta de calificaciones falló (RLS/permisos), conservar estado previo
                 calificaciones: calificaciones === null ? prev.calificaciones : calificaciones.map((c: Record<string, unknown>): CalificacionActividad => ({
@@ -379,7 +394,8 @@ export function useSupabaseData() {
                     archivoNombre: s.archivo_nombre as string | undefined,
                     archivoSize: s.archivo_size as number | undefined,
                     archivoTipo: s.archivo_tipo as string | undefined,
-                    archivoFechaCarga: s.archivo_fecha_carga as string | undefined
+                    archivoFechaCarga: s.archivo_fecha_carga as string | undefined,
+                    recursos: Array.isArray(s.recursos) ? s.recursos : (typeof s.recursos === 'string' ? (() => { try { return JSON.parse(s.recursos); } catch(e) { return []; } })() : [])
                 })),
                                 incidencias: (incidencias || []).map((i: Record<string, unknown>): Incidencia => ({
                     id: i.id as number,
@@ -401,13 +417,6 @@ export function useSupabaseData() {
                 })),
                 posts: [...optimisticPosts, ...mappedPosts],
                 docentes: Array.from(new Map<string, Docente>([
-                    ...(docentes || []).map((d: Record<string, unknown>): [string, Docente] => [d.nombre as string || '', {
-                        id: d.id as string | number,
-                        userId: d.user_id as string,
-                        nombre: d.nombre as string || 'Colega',
-                        asignatura: d.asignatura as string || '',
-                        avatarColor: d.avatar_color as string || '#3b82f6'
-                    }]),
                     ...(perfiles || []).map((p: Record<string, unknown>): [string, Docente] => [p.nombre_docente as string || p.nombre as string, {
                         id: p.user_id as string,
                         userId: p.user_id as string,
@@ -548,41 +557,54 @@ export function useSupabaseData() {
                             createdAt: ta.created_at as string
                         }))
                 })),
-                
+
                 suscripcionActual: resolvedSuscripcionActual,
                 centroRolActual: resolvedCentroRolActual
             };});
         } catch (error) {
             console.error('Error fetching data from Supabase:', error);
+            console.error('[PLANIFICACION] error', error);
         } finally {
+            console.log('[PLANIFICACION] finalizando carga global. isSilent:', isSilent);
             if (!isSilent) setLoading(false);
         }
     }, [session]);
 
+    const debouncedFetchDataRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const debouncedFetchData = useCallback(() => {
+        if (debouncedFetchDataRef.current) {
+            clearTimeout(debouncedFetchDataRef.current);
+        }
+        debouncedFetchDataRef.current = setTimeout(() => {
+            fetchData(true);
+        }, 3000); // Debounce de 3 segundos para amortiguar eventos Realtime
+    }, [fetchData]);
+
     useEffect(() => {
         if (session) {
             fetchData();
-            // Intervalo silencioso de respaldo más largo
-            const interval = setInterval(() => fetchData(true), 120000);
+            // Intervalo silencioso de respaldo muy largo (15 minutos)
+            const interval = setInterval(() => fetchData(true), 900000);
 
-            // Realtime para evitar recargas constantes pero mantener sincronización
+            // Realtime para evitar recargas constantes pero mantener sincronización (Optimizado con Debounce)
             const channel = supabase.channel(`db-changes-${session.user.id}-${Date.now()}`)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'historial_colaboradores' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'notificaciones', filter: `user_id=eq.${session.user.id}` }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_detalle' }, () => fetchData(true))
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'historial_colaboradores' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'notificaciones', filter: `user_id=eq.${session.user.id}` }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_detalle' }, debouncedFetchData)
 
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'calificaciones' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_docentes' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'cursos' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'estudiantes' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'actividades' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'grupos' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'registros_anecdoticos', filter: `profile_id=eq.${session.user.id}` }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'registro_imagenes' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tareas_institucionales' }, () => fetchData(true))
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tarea_docente' }, () => fetchData(true))
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'calificaciones' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_docentes' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'cursos' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'estudiantes' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'actividades' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'grupos' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'registros_anecdoticos', filter: `profile_id=eq.${session.user.id}` }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'registro_imagenes' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tareas_institucionales' }, debouncedFetchData)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'tarea_docente' }, debouncedFetchData)
                 .subscribe();
 
             return () => {
@@ -592,7 +614,7 @@ export function useSupabaseData() {
         } else {
             setLoading(false);
         }
-    }, [session, fetchData]);
+    }, [session, fetchData, debouncedFetchData]);
 
 
     const syncUpsert = useCallback(async (table: string, data: Record<string, unknown> | Record<string, unknown>[]) => {

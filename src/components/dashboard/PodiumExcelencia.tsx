@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface PodiumStudent {
@@ -19,8 +19,14 @@ interface Props {
   periods: PodiumPeriod[];
 }
 
+// Variables para fácil reemplazo de imágenes en el Podium
+const podiumTop1Image = "/images/podium/top-1.png";
+const podiumTop2Image = "/images/podium/top-2.png";
+const podiumTop3Image = "/images/podium/top-3.png";
+
 export default function PodiumExcelencia({ periods }: Props) {
   const navigate = useNavigate();
+  const [imgError, setImgError] = useState<Record<string, boolean>>({});
   const visible = useMemo(() => periods.filter(p => p.top10.length > 0), [periods]);
 
   if (visible.length === 0) return null;
@@ -51,8 +57,7 @@ export default function PodiumExcelencia({ periods }: Props) {
             return (
               <div
                 key={podium.periodo}
-                className="relative rounded-xl border border-[#E8C166]/20 pt-8 pb-3 px-3 flex flex-col justify-between min-h-35"
-                style={{ backgroundColor: 'rgba(232, 193, 102, 0.15)' }}
+                className="relative rounded-xl border border-(--border-soft) pt-8 pb-3 px-3 flex flex-col justify-between min-h-35 bg-(--linen)/40"
               >
                 {/* Etiqueta del periodo (Absoluta para ahorrar espacio) */}
                 <div className="absolute top-2 left-2 px-2 py-0.5 bg-[#EAE4DA]/50 rounded-full text-[#2E3330] font-black text-[10px] tracking-widest z-10">
@@ -60,40 +65,79 @@ export default function PodiumExcelencia({ periods }: Props) {
                 </div>
 
                 <div className="flex flex-col items-center justify-between w-full h-full pt-2">
-                  {/* TOP 1 - Centrado y Elevado */}
+                  {/* 1.º Lugar - Centrado y Elevado */}
                   <div 
                     onClick={() => navigate(`/estudiante/${p1.id}`)}
-                    className="text-center cursor-pointer hover:opacity-85 transition-opacity mb-3"
+                    className="text-center cursor-pointer hover:opacity-85 transition-opacity mb-3 flex flex-col items-center"
                   >
-                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">TOP 1</p>
+                    <div className="flex justify-center mb-1.5">
+                      {podiumTop1Image && !imgError.top1 ? (
+                        <img 
+                          src={podiumTop1Image} 
+                          alt="1.º Lugar" 
+                          className="w-8 h-8 object-contain"
+                          onError={() => setImgError(prev => ({ ...prev, top1: true }))}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 flex items-center justify-center bg-yellow-500/10 text-yellow-600 border border-yellow-500/20 rounded-full font-black text-[10px]">
+                          1.º
+                        </div>
+                      )}
+                    </div>
                     <p className="text-xs font-black text-[#2E3330] leading-tight mt-0.5">{p1.nombre} {p1.apellido.charAt(0)}.</p>
                     <p className="text-xs font-black text-primary mt-0.5">{p1.periodAvg}%</p>
                   </div>
 
-                  {/* Fila Inferior (TOP 2 y TOP 3) */}
+                  {/* Fila Inferior (2.º y 3.º Lugar) */}
                   <div className="w-full grid grid-cols-2 gap-1 pt-2">
-                    {/* TOP 2 */}
+                    {/* 2.º Lugar */}
                     {p2 ? (
                       <div 
                         onClick={() => navigate(`/estudiante/${p2.id}`)}
-                        className="text-center cursor-pointer hover:opacity-85 transition-opacity"
+                        className="text-center cursor-pointer hover:opacity-85 transition-opacity flex flex-col items-center"
                       >
-                        <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">TOP 2</p>
-                        <p className="text-[11px] font-bold text-[#5F665E] truncate px-1 mt-0.5">{p2.nombre} {p2.apellido.charAt(0)}.</p>
+                        <div className="flex justify-center mb-1">
+                          {podiumTop2Image && !imgError.top2 ? (
+                            <img 
+                              src={podiumTop2Image} 
+                              alt="2.º Lugar" 
+                              className="w-6 h-6 object-contain"
+                              onError={() => setImgError(prev => ({ ...prev, top2: true }))}
+                            />
+                          ) : (
+                            <div className="w-6 h-6 flex items-center justify-center bg-slate-500/10 text-slate-600 border border-slate-500/20 rounded-full font-black text-[9px]">
+                              2.º
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-[11px] font-bold text-[#5F665E] truncate w-full max-w-17.5 text-center mt-0.5">{p2.nombre} {p2.apellido.charAt(0)}.</p>
                         <p className="text-[11px] font-bold text-slate-500 mt-0.5">{p2.periodAvg}%</p>
                       </div>
                     ) : (
                       <div className="text-center opacity-0">--</div>
                     )}
 
-                    {/* TOP 3 */}
+                    {/* 3.º Lugar */}
                     {p3 ? (
                       <div 
                         onClick={() => navigate(`/estudiante/${p3.id}`)}
-                        className="text-center cursor-pointer hover:opacity-85 transition-opacity"
+                        className="text-center cursor-pointer hover:opacity-85 transition-opacity flex flex-col items-center"
                       >
-                        <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">TOP 3</p>
-                        <p className="text-[11px] font-bold text-[#5F665E] truncate px-1 mt-0.5">{p3.nombre} {p3.apellido.charAt(0)}.</p>
+                        <div className="flex justify-center mb-1">
+                          {podiumTop3Image && !imgError.top3 ? (
+                            <img 
+                              src={podiumTop3Image} 
+                              alt="3.º Lugar" 
+                              className="w-6 h-6 object-contain"
+                              onError={() => setImgError(prev => ({ ...prev, top3: true }))}
+                            />
+                          ) : (
+                            <div className="w-6 h-6 flex items-center justify-center bg-amber-700/10 text-amber-800 border border-amber-700/20 rounded-full font-black text-[9px]">
+                              3.º
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-[11px] font-bold text-[#5F665E] truncate w-full max-w-17.5 text-center mt-0.5">{p3.nombre} {p3.apellido.charAt(0)}.</p>
                         <p className="text-[11px] font-bold text-slate-500 mt-0.5">{p3.periodAvg}%</p>
                       </div>
                     ) : (

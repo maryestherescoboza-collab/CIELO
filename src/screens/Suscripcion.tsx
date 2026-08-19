@@ -62,42 +62,42 @@ export default function Suscripcion() {
   const anual = mensual * 12;
 
   return (
-    <div className="min-h-screen bg-[#FCFBFA] pt-6 pb-20 px-4 md:px-8">
+    <div className="min-h-screen bg-(--background) pt-6 pb-20 px-4 md:px-8">
       {hasPremium && suscripcionActual ? (
-        <div className="max-w-4xl mx-auto mb-8 bg-green-50 border border-green-200 rounded-2xl p-6 flex items-start gap-4">
-          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-green-600 font-bold text-xl">✓</span>
+        <div className="max-w-4xl mx-auto mb-8 bg-(--linen)/50 border border-(--border-soft) rounded-2xl p-6 flex items-start gap-4">
+          <div className="w-12 h-12 bg-(--linen) rounded-full flex items-center justify-center shrink-0">
+            <span className="text-(--primary) font-bold text-xl">✓</span>
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-green-900 mb-1">
+            <h3 className="text-lg font-bold text-(--ink) mb-1">
               Acceso Premium Activo ({suscripcionActual.tipo === 'institucional' ? 'Institucional' : 'Individual'})
             </h3>
             {suscripcionActual.tipo === 'institucional' ? (
-              <p className="text-green-700 text-sm">
+              <p className="text-(--ink) text-sm">
                 Tienes acceso completo provisto por tu centro educativo.
               </p>
             ) : (
-              <p className="text-green-700 text-sm">
+              <p className="text-(--ink) text-sm">
                 Tu plan de Docente Independiente está activo. Disfrutas de todas las herramientas avanzadas.
               </p>
             )}
             <div className="mt-4 flex gap-3">
-              <CieloPill as="button" variant="primary" className="px-4 bg-white border border-green-200 text-green-700 hover:bg-green-50 shadow-sm">
+              <CieloPill as="button" variant="primary" className="px-4 bg-white border border-(--border-soft) text-(--ink) hover:bg-(--linen)/20 shadow-sm cursor-pointer">
                 Gestionar Suscripción
               </CieloPill>
             </div>
           </div>
         </div>
       ) : suscripcionActual && suscripcionActual.estado === 'pendiente' ? (
-        <div className="max-w-4xl mx-auto mb-8 bg-yellow-50 border border-yellow-200 rounded-2xl p-6 flex items-start gap-4">
-          <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-yellow-600 font-bold text-xl">!</span>
+        <div className="max-w-4xl mx-auto mb-8 bg-(--linen)/50 border border-(--border-soft) rounded-2xl p-6 flex items-start gap-4">
+          <div className="w-12 h-12 bg-(--linen) rounded-full flex items-center justify-center shrink-0">
+            <span className="text-(--primary) font-bold text-xl">!</span>
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-yellow-900 mb-1">
+            <h3 className="text-lg font-bold text-(--ink) mb-1">
               Suscripción Pendiente de Pago
             </h3>
-            <p className="text-yellow-700 text-sm">
+            <p className="text-(--ink-soft) text-sm">
               Tienes una suscripción {suscripcionActual.tipo} iniciada. Completa el pago para activar tu cuenta premium.
             </p>
             <div className="mt-4 flex gap-3">
@@ -106,7 +106,7 @@ export default function Suscripcion() {
                 onClick={() => handleSubscribe(suscripcionActual.tipo === 'institucional' ? 'institucion' : 'docente')}
                 disabled={loadingPlan !== null}
                 variant={loadingPlan !== null ? 'disabled' : 'primary'}
-                className="px-4 bg-yellow-600 hover:bg-yellow-700 text-white gap-2 shadow-sm"
+                className="px-4 bg-(--primary) hover:opacity-90 text-white gap-2 shadow-sm cursor-pointer"
               >
                 {loadingPlan !== null ? <Loader2 size={14} className="animate-spin" /> : 'Pagar Ahora (Tilopay)'}
               </CieloPill>
@@ -118,17 +118,17 @@ export default function Suscripcion() {
       <div className="w-full max-w-5xl mx-auto relative z-10">
         {/* Header Section */}
         <div className="text-center mb-8 max-w-2xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-light text-zinc-900 tracking-tight mb-2">
+          <h2 className="text-2xl md:text-3xl font-light text-(--ink) tracking-tight mb-2">
             Planes diseñados para tu realidad.
           </h2>
-          <p className="text-zinc-500 text-sm">
+          <p className="text-(--ink-soft) text-sm">
             Elige el plan ideal para continuar utilizando todas las funcionalidades avanzadas de evaluación por competencias.
           </p>
         </div>
 
         {/* Blueprint Grid Container */}
-        <div className="border border-dashed border-[rgba(120,135,110,0.25)] bg-white rounded-lg overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
-          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-dashed divide-[rgba(120,135,110,0.25)]">
+        <div className="border border-dashed border-(--border-soft) bg-white rounded-lg overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-dashed divide-(--border-soft)">
 
             {/* Column 1: Plan Docente */}
             <motion.div
@@ -139,31 +139,31 @@ export default function Suscripcion() {
               className="flex flex-col justify-between h-full"
             >
               {/* Top part: Header & Price */}
-              <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+              <div className="p-6 md:p-8 border-b border-dashed border-(--border-soft)">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-(--primary) mb-1">
                   {planDocente.name}
                 </h3>
-                <p className="text-xs text-zinc-400 mb-4 leading-normal">
+                <p className="text-xs text-(--ink-soft) mb-4 leading-normal">
                   {planDocente.subtitle}
                 </p>
                 <div className="flex flex-col">
-                  <div className="text-4xl font-light text-zinc-900 tracking-tight">
-                    {planDocente.price} <span className="text-lg font-normal text-zinc-400">USD</span>
+                  <div className="text-4xl font-light text-(--ink) tracking-tight">
+                    {planDocente.price} <span className="text-lg font-normal text-(--ink-soft)">USD</span>
                   </div>
-                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5">
+                  <div className="text-xs text-(--ink-soft) uppercase tracking-wider mt-0.5">
                     por mes
                   </div>
                 </div>
               </div>
 
               {/* Middle part: Features (flex-1 forces same height across columns) */}
-              <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
+              <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-(--border-soft) bg-(--linen)/5">
                 {planDocente.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
+                    <span className="w-3.5 h-3.5 rounded-full bg-(--linen) border border-(--border-soft) text-(--primary) flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
                       ✓
                     </span>
-                    <span className="text-xs text-zinc-600 leading-tight">
+                    <span className="text-xs text-(--ink) leading-tight">
                       {feat}
                     </span>
                   </div>
@@ -172,11 +172,11 @@ export default function Suscripcion() {
 
               {/* Bottom part: Secondary & Button */}
               <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
+                <p className="text-xs text-(--ink-soft) italic leading-relaxed mb-4">
                   {planDocente.secondary}
                 </p>
                 {hasPremium && suscripcionActual?.tipo === 'individual' ? (
-                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-green-50 border border-green-200 text-green-600 shadow-sm">
+                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-(--linen) border border-(--border-soft) text-(--primary) shadow-sm">
                     Plan Actual
                   </CieloPill>
                 ) : (
@@ -185,7 +185,7 @@ export default function Suscripcion() {
                     onClick={() => handleSubscribe('docente')}
                     disabled={loadingPlan !== null || hasPremium}
                     variant={(loadingPlan !== null || hasPremium) ? 'disabled' : 'ghost'}
-                    className="w-full px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] gap-2 flex justify-center shadow-sm h-10"
+                    className="w-full px-4 bg-white border border-dashed border-(--border-soft) text-(--ink) hover:bg-(--linen)/10 hover:border-(--primary) gap-2 flex justify-center shadow-sm h-10 cursor-pointer"
                   >
                     {loadingPlan === 'docente' ? <Loader2 size={16} className="animate-spin" /> : 'Comprar Plan'}
                   </CieloPill>
@@ -202,31 +202,31 @@ export default function Suscripcion() {
               className="flex flex-col justify-between h-full"
             >
               {/* Top part: Header & Price */}
-              <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+              <div className="p-6 md:p-8 border-b border-dashed border-(--border-soft)">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-(--primary) mb-1">
                   {planInst.name}
                 </h3>
-                <p className="text-xs text-zinc-400 mb-4 leading-normal">
+                <p className="text-xs text-(--ink-soft) mb-4 leading-normal">
                   {planInst.subtitle}
                 </p>
                 <div className="flex flex-col">
-                  <div className="text-4xl font-light text-zinc-900 tracking-tight">
-                    {planInst.price} <span className="text-lg font-normal text-zinc-400">USD</span>
+                  <div className="text-4xl font-light text-(--ink) tracking-tight">
+                    {planInst.price} <span className="text-lg font-normal text-(--ink-soft)">USD</span>
                   </div>
-                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5">
+                  <div className="text-xs text-(--ink-soft) uppercase tracking-wider mt-0.5">
                     por docente al mes
                   </div>
                 </div>
               </div>
 
               {/* Middle part: Features */}
-              <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
+              <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-(--border-soft) bg-(--linen)/5">
                 {planInst.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
+                    <span className="w-3.5 h-3.5 rounded-full bg-(--linen) border border-(--border-soft) text-(--primary) flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
                       ✓
                     </span>
-                    <span className="text-xs text-zinc-600 leading-tight">
+                    <span className="text-xs text-(--ink) leading-tight">
                       {feat}
                     </span>
                   </div>
@@ -235,35 +235,35 @@ export default function Suscripcion() {
 
               {/* Bottom part: Calculator, Secondary & Button */}
               <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-                <div className="border border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/80 rounded p-3 mb-4">
+                <div className="border border-dashed border-(--border-soft) bg-(--background) rounded p-3 mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-zinc-500">Número de docentes</span>
+                    <span className="text-xs font-medium text-(--ink-soft)">Número de docentes</span>
                     <input
                       type="number"
                       min="1"
                       value={docentes || ''}
                       onChange={(e) => setDocentes(parseInt(e.target.value) || 0)}
-                      className="w-14 px-1.5 py-0.5 bg-white border border-dashed border-[rgba(120,135,110,0.3)] rounded text-right text-xs font-semibold text-zinc-800 focus:outline-none"
+                      className="w-14 px-1.5 py-0.5 bg-white border border-dashed border-(--border-soft) rounded text-right text-xs font-semibold text-(--ink) focus:outline-none"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-[rgba(120,135,110,0.2)]">
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-(--border-soft)/50">
                     <div>
-                      <span className="text-xs text-zinc-400 uppercase tracking-wider block">Mensual</span>
-                      <span className="text-xs font-semibold text-zinc-700">${mensual} <span className="text-xs font-normal text-zinc-400">USD</span></span>
+                      <span className="text-xs text-(--ink-soft) uppercase tracking-wider block">Mensual</span>
+                      <span className="text-xs font-semibold text-(--ink)">${mensual} <span className="text-xs font-normal text-(--ink-soft)">USD</span></span>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs text-zinc-400 uppercase tracking-wider block">Anual</span>
-                      <span className="text-xs font-semibold text-zinc-700">${anual} <span className="text-xs font-normal text-zinc-400">USD</span></span>
+                      <span className="text-xs text-(--ink-soft) uppercase tracking-wider block">Anual</span>
+                      <span className="text-xs font-semibold text-(--ink)">${anual} <span className="text-xs font-normal text-(--ink-soft)">USD</span></span>
                     </div>
                   </div>
                 </div>
 
-                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
+                <p className="text-xs text-(--ink-soft) italic leading-relaxed mb-4">
                   {planInst.secondary}
                 </p>
 
                 {hasPremium && suscripcionActual?.tipo === 'institucional' ? (
-                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-green-50 border border-green-200 text-green-600 shadow-sm">
+                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-(--linen) border border-(--border-soft) text-(--primary) shadow-sm">
                     Plan Actual
                   </CieloPill>
                 ) : isDirector ? (
@@ -272,7 +272,7 @@ export default function Suscripcion() {
                     onClick={() => handleSubscribe('institucion')}
                     disabled={loadingPlan !== null}
                     variant={loadingPlan !== null ? 'disabled' : 'ghost'}
-                    className="w-full px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.7)] gap-2 flex justify-center shadow-sm h-10"
+                    className="w-full px-4 bg-white border border-dashed border-(--border-soft) text-(--ink) hover:bg-(--linen)/10 hover:border-(--primary) gap-2 flex justify-center shadow-sm h-10 cursor-pointer"
                   >
                     {loadingPlan === 'institucion' ? <Loader2 size={16} className="animate-spin" /> : 'Pagar Institucional'}
                   </CieloPill>

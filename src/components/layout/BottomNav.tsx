@@ -26,12 +26,11 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
             {NAV_ITEMS.map(item => {
                 const isActive = currentScreen === item.screen && !item.isClose;
                 
-                let btnBg = 'bg-transparent';
+                let btnBg = 'bg-transparent text-(--ink)';
                 if (isActive) {
-                    btnBg = 'bg-primary';
+                    btnBg = 'bg-(--primary) text-white shadow-sm';
                 } else if (item.label === 'Comunidad') {
-                    // Let's make Comunidad have the highlight background F5BC5D
-                    btnBg = 'hover:bg-[#D4CCBE]';
+                    btnBg = 'hover:bg-(--linen) text-(--ink)';
                 }
 
                 return (
@@ -39,13 +38,13 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                         key={item.label} 
                         id={item.screen === 'cursos' ? 'nav-cursos' : undefined}
                         onClick={() => onNavigate(item.screen)} 
-                        className={`flex flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 ${btnBg} hover:bg-slate-100 text-[#2E3330]`}
+                        className={`flex flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 ${btnBg} hover:bg-(--linen)/40`}
                         style={{ minWidth: '72px', height: '40px' }}
                     >
-                        <div className="text-[#2E3330]">
+                        <div className={isActive ? 'text-white' : 'text-(--ink)'}>
                             {item.icon}
                         </div>
-                        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[#2E3330]">{item.label}</span>
+                        <span className={`text-[10px] font-bold uppercase tracking-[0.05em] ${isActive ? 'text-white' : 'text-(--ink)'}`}>{item.label}</span>
                     </button>
                 );
             })}

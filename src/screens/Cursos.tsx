@@ -103,14 +103,14 @@ export default function Cursos({
     }, [onToggleDocenteCurso]);
 
     return (
-        <div className="flex flex-col flex-1 h-full overflow-hidden bg-base-creme">
+        <div className="flex flex-col flex-1 h-full overflow-hidden bg-(--background)">
             <div className="flex-1 overflow-y-auto px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div>
-                        <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2.5 font-notion-title">
+                        <h1 className="text-3xl font-black text-(--ink) tracking-tight mb-2.5 font-notion-title">
                             Gestión Académica
                         </h1>
-                        <p className="text-xs font-bold text-[#5F665E] uppercase tracking-[0.08em]">
+                        <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-[0.08em]">
                             Administra tus aulas, estudiantes y registros de evaluación.
                         </p>
                     </div>
@@ -128,18 +128,18 @@ export default function Cursos({
 
                 <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
                     {cursosWithCounts.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-24 px-8 border-2 border-dashed border-slate-300 rounded-4xl bg-white/50 text-center shadow-sm">
-                            <div className="w-20 h-20 bg-slate-100/80 rounded-full flex items-center justify-center mb-6 shadow-inner border border-slate-200/50">
-                                <BookOpen size={40} className="text-slate-400" />
+                        <div className="flex flex-col items-center justify-center py-24 px-8 border-2 border-dashed border-(--border-soft) rounded-(--radius-lg) bg-white/50 text-center shadow-sm">
+                            <div className="w-20 h-20 bg-(--linen)/50 rounded-full flex items-center justify-center mb-6 shadow-inner border border-(--border-soft)">
+                                <BookOpen size={40} className="text-(--ink-soft)" />
                             </div>
-                            <h2 className="text-2xl font-black text-[#1E293B] tracking-tight font-notion-title mb-2">No hay cursos registrados</h2>
-                            <p className="text-slate-500 font-medium max-w-md mx-auto leading-relaxed text-sm">
+                            <h2 className="text-2xl font-black text-(--ink) tracking-tight font-notion-title mb-2">No hay cursos registrados</h2>
+                            <p className="text-(--ink-soft) font-medium max-w-md mx-auto leading-relaxed text-sm">
                                 Comienza configurando tu primer curso para empezar a llevar el control de tus evaluaciones por competencias.
                             </p>
                             <CieloPill
                                 as="button"
                                 variant="primary"
-                                className="mt-8 h-12 px-8 bg-[#1E293B] hover:bg-slate-800 gap-2 shadow-lg shadow-slate-900/20"
+                                className="mt-8 h-12 px-8"
                                 onClick={() => setShowModal(true)}
                             >
                                 Crear mi primer curso

@@ -59,7 +59,7 @@ export default function Comunidad({
     };
 
     return (
-        <div className="flex flex-col flex-1 min-h-screen bg-[#FDFBF7]">
+        <div className="flex flex-col flex-1 min-h-screen bg-(--background)">
             <main className="flex-1 px-6 py-10 md:pl-8 md:pr-12 scroll-smooth scrollbar-hide">
                 <div className="max-w-350 ml-0 mr-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both grid grid-cols-1 lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-3 hidden lg:block">
@@ -75,22 +75,22 @@ export default function Comunidad({
                     <div className="lg:col-span-9 space-y-8">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-2">
                             <div>
-                                <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2.5 font-notion-title">
+                                <h1 className="text-3xl font-black text-(--ink) tracking-tight mb-2.5 font-notion-title">
                                     Comunidad Educativa
                                 </h1>
                                 <div className="flex items-center gap-3">
                                     <CieloPill variant="neutral" className="gap-2 px-3">
-                                        <span className="text-xs font-bold text-[#2E3330] uppercase tracking-[0.08em]">
+                                        <span className="text-xs font-bold text-(--ink) uppercase tracking-[0.08em]">
                                             Recursos Compartidos
                                         </span>
                                     </CieloPill>
                                     <div className="h-1.5 w-1.5 rounded-full bg-slate-350"></div>
-                                    <span className="text-xs font-bold text-[#5F665E] uppercase tracking-[0.08em]">Intercambio Docente</span>
+                                    <span className="text-xs font-bold text-(--ink-soft) uppercase tracking-[0.08em]">Intercambio Docente</span>
                                 </div>
                             </div>
                         </div>
 
-                        <section className="bg-[#FDFBF7] rounded-[20px] p-4 border border-[rgba(46,51,48,0.08)] shadow-sm mb-6">
+                        <section className="bg-white rounded-(--radius-md) p-4 border border-(--border-soft) shadow-sm mb-6">
                             <PostComposer
                                 state={globalState}
                                 onAddPost={onAddPost}
@@ -121,9 +121,9 @@ export default function Comunidad({
             />
 
             <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
-                <div className="bg-[#1E293B] text-white px-6 h-12 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700/50 scale-90 md:scale-100 shadow-slate-900/50">
-                    <Info size={16} className="text-primary" />
-                    <span className="text-xs font-black uppercase tracking-widest">Los recursos expiran automáticamente cada 15 días</span>
+                <div className="bg-(--ink) text-white px-6 h-12 rounded-2xl shadow-sm flex items-center gap-3 border border-(--border-soft)/20 scale-90 md:scale-100">
+                    <Info size={16} className="text-(--primary)" />
+                    <span className="text-xs font-black uppercase tracking-widest text-[#EAE4DA]">Los recursos expiran automáticamente cada 15 días</span>
                 </div>
             </div>
         </div>

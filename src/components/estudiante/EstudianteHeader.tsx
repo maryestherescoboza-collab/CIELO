@@ -21,14 +21,14 @@ const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
         <>
             <div className="w-[92%] max-w-7xl flex justify-between items-center mb-8 px-4 mt-2">
                 <div className="flex items-center gap-4">
-                    <button onClick={onBack} className="text-[#5F665E] font-semibold hover:text-[#2E3330] flex items-center gap-2 transition-all text-xs uppercase tracking-[0.08em] hover:bg-[#F8F3ED] px-4 py-2 rounded-full">
+                    <button onClick={onBack} className="text-[#5F665E] font-semibold hover:text-[#2E3330] flex items-center gap-2 transition-all text-xs uppercase tracking-[0.08em] hover:bg-(--background) px-4 py-2 rounded-full">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
                         </svg>
                         VOLVER AL REGISTRO
                     </button>
                 </div>
-                <div className="flex bg-[#F8F3ED] p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
+                <div className="flex bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
                     {['P1', 'P2', 'P3', 'P4'].map(p => (
                         <button 
                             key={p} 
@@ -48,8 +48,8 @@ const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
                         onClick={() => setActiveTab(tab as 'Perfil' | 'Evaluación')}
                         className={`px-8 sm:px-12 py-3.5 text-xs font-semibold uppercase tracking-[0.08em] rounded-t-[16px] border-x border-t transition-all ${
                             activeTab === tab 
-                            ? 'bg-[#FDFBF7] border-[rgba(46,51,48,0.08)] border-b-[#FDFBF7] z-10 text-[#2E3330] shadow-sm' 
-                            : 'bg-[#F8F3ED] border-transparent border-b-transparent z-0 text-[#5F665E] hover:bg-[#F0EBE3] hover:text-[#2E3330]'
+                            ? 'bg-white border-[rgba(46,51,48,0.08)] border-b-white z-10 text-[#2E3330] shadow-sm' 
+                            : 'bg-(--background) border-transparent border-b-transparent z-0 text-[#5F665E] hover:bg-(--linen)/40 hover:text-[#2E3330]'
                         }`}
                     >
                         {tab}

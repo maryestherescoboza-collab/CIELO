@@ -48,7 +48,7 @@ export function LandingHero() {
             className="text-4xl sm:text-5xl md:text-7xl lg:text-[5rem] font-black text-[#2E3330] tracking-tighter leading-[1.1] mb-6 md:mb-8"
           >
             Evalua competencias para{' '}
-            <span className="text-transparent bg-clip-text bg-linear-to-r from-[var(--primary)] to-[#6C7E5C]">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-(--primary) to-[#6C7E5C]">
               instituciones de vanguardia.
             </span>
           </motion.h1>

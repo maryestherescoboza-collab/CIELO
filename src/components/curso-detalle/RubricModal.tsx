@@ -89,10 +89,10 @@ const RubricModal: React.FC<RubricModalProps> = ({
                                             const isSelected = v.rec === score;
                                             const isReceptivo = sIdx === 3;
                                             const bgColors = [
-                                                'bg-success', // 100 -> Estratégico
-                                                'bg-primary', // 85 -> Autónomo
-                                                'bg-attention', // 70 -> Resolutivo
-                                                'bg-danger'  // Receptivo
+                                                'bg-(--success)', // 100 -> Estratégico
+                                                'bg-(--success-soft)', // 85 -> Autónomo
+                                                'bg-(--primary)', // 70 -> Resolutivo
+                                                'bg-(--danger)'  // Receptivo
                                             ];
                                             const selectedBg = bgColors[sIdx];
 
@@ -103,7 +103,7 @@ const RubricModal: React.FC<RubricModalProps> = ({
                                                         className={`w-full h-16 flex items-center justify-center transition-all ${isSelected ? selectedBg : 'hover:bg-slate-100'}`}
                                                     >
                                                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-white bg-white shadow-lg' : 'border-slate-300'}`}>
-                                                            {isSelected && <div className={`w-2 h-2 rounded-full ${sIdx === 1 ? 'bg-[#8C6D1F]' : selectedBg}`} />}
+                                                            {isSelected && <div className={`w-2 h-2 rounded-full ${sIdx === 1 ? 'bg-(--success)' : selectedBg}`} />}
                                                         </div>
                                                         {isReceptivo && isSelected && <span className="absolute mt-10 text-xs font-black text-white/50">{score} pts</span>}
                                                     </button>

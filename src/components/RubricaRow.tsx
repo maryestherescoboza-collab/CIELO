@@ -16,49 +16,49 @@ export const NIVEL_FIELDS = [
         key: 'estrategico' as keyof DescriptorRubrica,
         nivel: 4 as Nivel,
         label: 'ESTRATÉGICO',
-        text: 'text-primary',
-        pointsColor: 'text-slate-400',
-        activeBorder: 'border-primary',
-        activeBg: 'bg-[#F2F5F1]',
-        headerBg: 'var(--primary)',
+        text: 'text-(--herb-garden)',
+        pointsColor: 'text-(--ink-soft)',
+        activeBorder: 'border-(--herb-garden)',
+        activeBg: 'bg-(--herb-garden)/10',
+        headerBg: 'var(--herb-garden)',
         headerTextColor: 'text-white',
-        cellBg: '#F2F5F1',
+        cellBg: 'rgba(104, 156, 99, 0.1)',
     },
     {
         key: 'autonomo' as keyof DescriptorRubrica,
         nivel: 3 as Nivel,
         label: 'AUTÓNOMO',
-        text: 'text-warning',
-        pointsColor: 'text-slate-400',
-        activeBorder: 'border-warning',
-        activeBg: 'bg-[#FAF6ED]',
-        headerBg: 'var(--warning)',
+        text: 'text-(--calendula)',
+        pointsColor: 'text-(--ink-soft)',
+        activeBorder: 'border-(--calendula)',
+        activeBg: 'bg-(--calendula)/15',
+        headerBg: 'var(--calendula)',
         headerTextColor: 'text-[#1E293B]',
-        cellBg: '#FAF6ED',
+        cellBg: 'rgba(222, 174, 77, 0.15)',
     },
     {
         key: 'resolutivo' as keyof DescriptorRubrica,
         nivel: 2 as Nivel,
         label: 'RESOLUTIVO',
-        text: 'text-danger',
-        pointsColor: 'text-slate-400',
-        activeBorder: 'border-danger',
-        activeBg: 'bg-[#FDF1EF]',
-        headerBg: 'var(--danger)',
+        text: 'text-(--terra-cotta)',
+        pointsColor: 'text-(--ink-soft)',
+        activeBorder: 'border-(--terra-cotta)',
+        activeBg: 'bg-(--terra-cotta)/10',
+        headerBg: 'var(--terra-cotta)',
         headerTextColor: 'text-white',
-        cellBg: '#FDF1EF',
+        cellBg: 'rgba(219, 91, 72, 0.1)',
     },
     {
         key: 'receptivo' as keyof DescriptorRubrica,
         nivel: 1 as Nivel,
         label: 'RECEPTIVO',
-        text: 'text-[#3F3C36]',
-        pointsColor: 'text-slate-400',
-        activeBorder: 'border-[#3F3C36]',
-        activeBg: 'bg-[#F3F3F2]',
-        headerBg: '#3F3C36',
+        text: 'text-(--ink-soft)',
+        pointsColor: 'text-(--ink-soft)',
+        activeBorder: 'border-(--ink-soft)',
+        activeBg: 'bg-(--ink-soft)/12',
+        headerBg: 'var(--ink-soft)',
         headerTextColor: 'text-white',
-        cellBg: '#F3F3F2',
+        cellBg: 'rgba(95, 102, 94, 0.12)',
     },
 ];
 
@@ -131,14 +131,14 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
     }
 
     return (
-        <tr className="group hover:bg-slate-50/50 transition-colors" onContextMenu={onContextMenu}>
-            <td className="w-[30%] border-r border-slate-100 px-2 py-2 align-middle text-center relative">
+        <tr className="group hover:bg-(--linen)/10 transition-colors" onContextMenu={onContextMenu}>
+            <td className="w-[30%] border-r border-(--border-soft) px-2 py-2 align-middle text-center relative">
                 <div className="flex min-h-26 items-center justify-center gap-2">
                     {(() => {
                         const CompetenciaIcon = COMPETENCIAS[index % COMPETENCIAS.length].icon;
-                        return <CompetenciaIcon size={16} className="text-[#111827]" />;
+                        return <CompetenciaIcon size={16} className="text-(--ink)" />;
                     })()}
-                    <span className="text-[12px] leading-tight text-[#111827] font-bold">
+                    <span className="text-[12px] leading-tight text-(--ink) font-bold">
                         {COMPETENCIAS_LABEL[COMPETENCIAS[index % COMPETENCIAS.length].bc]}
                     </span>
 
@@ -150,7 +150,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                   onDecouple();
                             }}
                             title="Desacoplar competencia"
-                            className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-slate-200 rounded text-slate-500"
+                            className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-(--linen)/20 rounded text-(--ink-soft) cursor-pointer"
                         >
                             <span className="material-symbols-outlined text-[16px]">open_in_new</span>
                         </button>
@@ -174,9 +174,9 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                     <td
                         key={field.key}
                         data-guide="celda-rubrica"
-                        className={`w-[17.5%] p-2 align-middle text-center transition-all border-r border-slate-100 last:border-r-0 ${readOnly ? 'cursor-default' : 'cursor-pointer'} relative group-cell 
-                            ${isSelected ? 'after:absolute after:inset-0 after:border-2 after:border-[#1E293B]' : ''}
-                            ${isActive ? 'ring-2 ring-inset ring-primary shadow-inner z-10' : ''}`}
+                        className={`w-[17.5%] p-2 align-middle text-center transition-all border-r border-(--border-soft) last:border-r-0 ${readOnly ? 'cursor-default' : 'cursor-pointer'} relative group-cell 
+                            ${isSelected ? 'after:absolute after:inset-0 after:border-2 after:border-(--ink)' : ''}
+                            ${isActive ? 'ring-2 ring-inset ring-(--primary) shadow-inner z-10' : ''}`}
                         style={{ backgroundColor: field.cellBg }}
                         onClick={(e) => {
                             if (readOnly) return;
@@ -186,10 +186,10 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                     >
                         <div className="flex flex-col items-center justify-center h-full min-h-26 gap-2">
                             {!readOnly && isFormattingCell && applyInlineFormat && (
-                                <div className="absolute top-1 right-1 z-20 flex items-center gap-1 rounded-md border border-slate-300 bg-white px-1.5 py-1 shadow-sm">
+                                <div className="absolute top-1 right-1 z-20 flex items-center gap-1 rounded-md border border-(--border-soft) bg-white px-1.5 py-1 shadow-sm">
                                     <button
                                         type="button"
-                                        className="h-5 w-5 rounded border border-slate-300 text-xs font-bold text-slate-800 hover:bg-slate-100"
+                                        className="h-5 w-5 rounded border border-(--border-soft) text-xs font-bold text-(--ink) hover:bg-(--linen)/20 cursor-pointer"
                                         onMouseDown={(event) => {
                                             event.preventDefault();
                                             event.stopPropagation();
@@ -200,7 +200,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                     </button>
                                     <button
                                         type="button"
-                                        className="h-5 w-5 rounded border border-slate-300 text-xs italic text-slate-800 hover:bg-slate-100"
+                                        className="h-5 w-5 rounded border border-(--border-soft) text-xs italic text-(--ink) hover:bg-(--linen)/20 cursor-pointer"
                                         onMouseDown={(event) => {
                                             event.preventDefault();
                                             event.stopPropagation();
@@ -213,7 +213,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                         <button
                                             key={color}
                                             type="button"
-                                            className="h-4 w-4 rounded-full border border-slate-300"
+                                            className="h-4 w-4 rounded-full border border-(--border-soft) cursor-pointer"
                                             style={{ backgroundColor: color }}
                                             onMouseDown={(event) => {
                                                 event.preventDefault();
@@ -226,7 +226,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                 </div>
                             )}
                             {(isSelected || isActive) && (
-                                <div className={`absolute top-2.5 right-2.5 z-10 ${isActive ? 'text-primary' : 'text-[#1E293B]'}`}>
+                                <div className={`absolute top-2.5 right-2.5 z-10 ${isActive ? 'text-(--primary)' : 'text-(--ink)'}`}>
                                     <CheckCircle size={14} />
                                 </div>
                             )}

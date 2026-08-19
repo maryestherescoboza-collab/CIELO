@@ -181,16 +181,16 @@ export const FloatingRubricManager: React.FC = () => {
                             top: win.position.y,
                             left: win.position.x,
                         }}
-                        className="absolute w-150 sm:w-175 md:w-212.5 bg-white border border-slate-200 rounded-2xl flex flex-col pointer-events-auto transition-shadow z-150 shadow-2xl hover:shadow-slate-300 pip-window-animate"
+                        className="absolute w-150 sm:w-175 md:w-212.5 bg-white border border-(--border-soft) rounded-(--radius-lg) flex flex-col pointer-events-auto transition-shadow z-150 shadow-2xl hover:shadow-slate-300 pip-window-animate"
                     >
                         {/* Header block */}
                         <div
                             onMouseDown={(e) => handleMouseDown(win.id, e)}
-                            className="flex items-center justify-between px-4 py-2.5 bg-[#1E293B] text-white rounded-t-2xl cursor-move"
+                            className="flex items-center justify-between px-4 py-2.5 bg-(--linen)/45 text-(--ink) border-b border-(--border-soft) rounded-t-(--radius-lg) cursor-move"
                         >
                             <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                <span className="text-xs font-black uppercase tracking-widest text-slate-300">
+                                <div className="h-2 w-2 rounded-full bg-(--primary) animate-pulse" />
+                                <span className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">
                                     Evaluación PiP: {descriptor.bc}
                                 </span>
                             </div>
@@ -199,7 +199,7 @@ export const FloatingRubricManager: React.FC = () => {
                             <div className="flex items-center gap-1.5">
                                 <button
                                     onClick={() => removeFloatingRubric(win.id)}
-                                    className="p-1 hover:bg-red-500/20 rounded transition-colors text-slate-400 hover:text-red-400"
+                                    className="p-1 hover:bg-(--danger)/20 rounded transition-colors text-(--ink-soft) hover:text-(--danger) cursor-pointer"
                                     title="Cerrar"
                                 >
                                     <X size={13} />
@@ -210,7 +210,7 @@ export const FloatingRubricManager: React.FC = () => {
                         {/* Body content */}
                         <div className="p-4 space-y-3">
                             {/* Student selection bar */}
-                            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-1.5">
+                            <div className="bg-(--linen)/10 border border-(--border-soft)/60 rounded-(--radius-md) p-1.5">
                                 <div className="flex gap-2.5 overflow-x-auto scrollbar-hide py-0.5 px-1">
                                     {sortedEsts.map((estudiante, idx) => {
                                         const isViewing = (selectedEstId || sortedEsts[0]?.id) === estudiante.id;
@@ -227,9 +227,9 @@ export const FloatingRubricManager: React.FC = () => {
                                                 <div
                                                     className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white transition-all ring-offset-2 ${
                                                         isViewing
-                                                            ? 'scale-105 ring-2 ring-primary shadow-md'
+                                                            ? 'scale-105 ring-2 ring-(--primary) shadow-md'
                                                             : 'opacity-60 grayscale hover:scale-105 hover:opacity-100 hover:grayscale-0'
-                                                    } ${isInActiveCell ? 'ring-2 ring-primary opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
+                                                    } ${isInActiveCell ? 'ring-2 ring-(--primary) opacity-100 grayscale-0 ring-offset-2 scale-105' : ''}`}
                                                     style={{ background: estudiante.avatarColor }}
                                                 >
                                                     {estudiante.nombre[0]}
@@ -239,14 +239,14 @@ export const FloatingRubricManager: React.FC = () => {
                                                         </div>
                                                     )}
                                                     {isInActiveCell && (
-                                                        <div className="absolute -bottom-1 -right-1 bg-primary text-white h-3.5 w-3.5 rounded-full flex items-center justify-center border border-white shadow-sm">
+                                                        <div className="absolute -bottom-1 -right-1 bg-(--primary) text-white h-3.5 w-3.5 rounded-full flex items-center justify-center border border-white shadow-sm">
                                                             <CheckCircle size={7} />
                                                         </div>
                                                     )}
                                                 </div>
                                                 <span
                                                     className={`text-center text-[7px] font-black uppercase tracking-[0.12em] truncate w-12 transition-colors ${
-                                                        isViewing || isInActiveCell ? 'text-[#1E293B]' : 'text-slate-400'
+                                                        isViewing || isInActiveCell ? 'text-(--ink)' : 'text-(--ink-soft)'
                                                     }`}
                                                 >
                                                     {idx + 1}. {estudiante.nombre.split(' ')[0]}
@@ -258,11 +258,11 @@ export const FloatingRubricManager: React.FC = () => {
                             </div>
 
                             {/* Single Row Table */}
-                            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                            <div className="border border-(--border-soft) rounded-(--radius-md) overflow-hidden bg-white">
                                 <table className="w-full border-collapse font-sans text-xs table-fixed">
                                     <thead>
-                                        <tr className="border-b border-slate-200 bg-slate-900 text-white">
-                                            <th className="w-[30%] border-r border-white/20 px-2 py-1.5 text-center text-xs font-bold">
+                                        <tr className="border-b border-(--border-soft) bg-(--linen)/45 text-(--ink)">
+                                            <th className="w-[30%] border-r border-(--border-soft) px-2 py-1.5 text-center text-xs font-bold">
                                                 Competencia
                                             </th>
                                             {NIVEL_FIELDS.map((field) => {
@@ -270,7 +270,7 @@ export const FloatingRubricManager: React.FC = () => {
                                                 return (
                                                     <th
                                                         key={field.key}
-                                                        className={`w-[17.5%] border-r border-white/20 px-2 py-1.5 text-center text-xs font-bold last:border-r-0 ${field.headerTextColor || 'text-white'}`}
+                                                        className={`w-[17.5%] border-r border-(--border-soft) px-2 py-1.5 text-center text-xs font-bold last:border-r-0 ${field.headerTextColor || 'text-white'}`}
                                                         style={{ backgroundColor: field.headerBg }}
                                                     >
                                                         <div className="flex flex-col items-center justify-center">
@@ -282,7 +282,7 @@ export const FloatingRubricManager: React.FC = () => {
                                             })}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-(--border-soft)/50">
                                         <RubricaRow
                                             desc={descriptor}
                                             index={descIndex}

@@ -61,29 +61,29 @@ export function DonutChart({ segments, size = 130, strokeWidth = 14 }: {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -130%)',
-              background: '#FDFBF7',
+              background: '#FFFFFF',
               padding: '10px 12px',
               borderRadius: '12px',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              border: '1px solid rgba(46, 51, 48, 0.08)',
+              border: '1px solid var(--border-soft)',
               minWidth: '180px',
               zIndex: 20,
               pointerEvents: 'none',
               animation: 'dash-fade-in 0.2s ease-out'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, borderBottom: '1px solid rgba(46, 51, 48, 0.08)', paddingBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, borderBottom: '1px solid var(--border-soft)', paddingBottom: 6 }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: segments[hoveredIndex].color }} />
-                <span style={{ fontWeight: 950, color: '#2E3330', fontSize: 11 }}>
+                <span style={{ fontWeight: 950, color: 'var(--ink)', fontSize: 11 }}>
                   {segments[hoveredIndex].label} {segments[hoveredIndex].range ? `(${segments[hoveredIndex].range})` : ''}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginBottom: 4 }}>
-                <span style={{ color: '#5F665E', fontWeight: 600 }}>Actividades:</span>
-                <span style={{ fontWeight: 800, color: '#2E3330' }}>{segments[hoveredIndex].value}</span>
+                <span style={{ color: 'var(--ink-soft)', fontWeight: 600 }}>Actividades:</span>
+                <span style={{ fontWeight: 800, color: 'var(--ink)' }}>{segments[hoveredIndex].value}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10 }}>
-                <span style={{ color: '#5F665E', fontWeight: 600 }}>Porcentaje:</span>
-                <span style={{ fontWeight: 800, color: '#2E3330' }}>
+                <span style={{ color: 'var(--ink-soft)', fontWeight: 600 }}>Porcentaje:</span>
+                <span style={{ fontWeight: 800, color: 'var(--ink)' }}>
                   {Math.round((segments[hoveredIndex].value / (total || 1)) * 100)}%
                 </span>
               </div>
@@ -181,7 +181,7 @@ export function BarChart({ data, height = 180, colors }: {
   
   if (!data.length) return null;
   const max = Math.max(100, Math.max(...data.map(d => d.value)) * 1.15);
-  const defaultColors = ['var(--primary)', 'var(--warning)', 'var(--attention)', '#6E8CA0'];
+  const defaultColors = ['#537BAC', '#689C63', '#EB8847', '#F5BC5D', '#BFC9A6', '#DB5B48'];
   const w = 100;
   const h = 55;
   const barW = Math.min(12, (w - 10) / data.length - 2);
@@ -540,10 +540,10 @@ export function SmoothLineChart({ data, height = 350 }: { data: any[], height?: 
   const yScale = (val: number) => padding.top + innerHeight - (val / 100) * innerHeight;
 
   const series = [
-    { key: 'bc1', color: 'var(--primary)', label: 'BC1' },
-    { key: 'bc2', color: 'var(--warning)', label: 'BC2' },
-    { key: 'bc3', color: 'var(--attention)', label: 'BC3' },
-    { key: 'bc4', color: '#6E8CA0', label: 'BC4' },
+    { key: 'bc1', color: '#537BAC', label: 'PC1' }, // Azul
+    { key: 'bc2', color: '#F5BC5D', label: 'PC2' }, // Amarillo
+    { key: 'bc3', color: '#EB8847', label: 'PC3' }, // Rojo
+    { key: 'bc4', color: '#689C63', label: 'PC4' }, // Verde
   ];
   
   const createSmoothPath = (pts: number[][]) => {
@@ -625,7 +625,7 @@ export function SmoothLineChart({ data, height = 350 }: { data: any[], height?: 
                   cy={yScale(d[s.key])} 
                   r={4} 
                   fill={s.color} 
-                  stroke="#FDFBF7" 
+                  stroke="#FFFFFF" 
                   strokeWidth={1.5} 
                   style={{ filter: 'drop-shadow(0 3px 4px rgba(0,0,0,0.15))' }}
                 />
@@ -641,27 +641,27 @@ export function SmoothLineChart({ data, height = 350 }: { data: any[], height?: 
             left: `calc(${(xScale(hoveredIndex) / width) * 100}%)`,
             top: '30px',
             transform: 'translateX(-50%)',
-            background: '#FDFBF7',
+            background: '#FFFFFF',
             padding: '10px 12px',
             borderRadius: '10px',
             boxShadow: '0 12px 28px -6px rgba(0,0,0,0.12), 0 6px 12px -6px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(46,51,48,0.08)',
+            border: '1px solid var(--border-soft)',
             minWidth: '160px',
             zIndex: 10,
             pointerEvents: 'none',
             animation: 'dash-fade-in 0.2s ease-out'
           }}>
-            <div style={{ fontWeight: 900, color: '#2E3330', fontSize: 12, marginBottom: 6, borderBottom: '1px solid rgba(46,51,48,0.08)', paddingBottom: 6 }}>
+            <div style={{ fontWeight: 900, color: 'var(--ink)', fontSize: 12, marginBottom: 6, borderBottom: '1px solid var(--border-soft)', paddingBottom: 6 }}>
               {data[hoveredIndex].fullName}
             </div>
             {series.map(s => data[hoveredIndex][s.key] !== null && (
               <div key={s.key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4, alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
-                  <span style={{ color: '#5F665E', fontWeight: 600 }}>{s.label}:</span>
+                  <span style={{ color: 'var(--ink-soft)', fontWeight: 600 }}>{s.label}:</span>
                 </div>
                 <span style={{ fontWeight: 900, color: s.color }}>
-                  {data[hoveredIndex][s.key]}%
+                  {data[hoveredIndex][s.key]}
                 </span>
               </div>
             ))}
@@ -673,7 +673,7 @@ export function SmoothLineChart({ data, height = 350 }: { data: any[], height?: 
           {series.map(s => (
               <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#5F665E' }}>{s.label}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink-soft)' }}>{s.label}</span>
               </div>
           ))}
         </div>

@@ -70,26 +70,26 @@ export const CieloModal: React.FC<CieloModalProps> = ({
             onClick={onClose}
         >
             <div 
-                className={`w-full ${maxWidthMap[maxWidth]} bg-white border border-slate-200 shadow-2xl shadow-slate-200/50 rounded-[24px] flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200 ${className}`}
+                className={`w-full ${maxWidthMap[maxWidth]} bg-white border border-(--border-soft) shadow-md rounded-(--radius-lg) flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200 ${className}`}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
                 {(title || !hideCloseButton) && (
-                    <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between bg-white shrink-0">
+                    <div className="px-6 py-5 border-b border-(--border-soft) flex items-start justify-between bg-white shrink-0">
                         <div className="flex items-center gap-3">
                             {icon && (
-                                <div className="p-2.5 rounded-xl bg-slate-50 text-slate-700 border border-slate-100 shadow-sm">
+                                <div className="p-2.5 rounded-xl bg-(--linen)/50 text-(--ink) border border-(--border-soft) shadow-sm">
                                     {icon}
                                 </div>
                             )}
                             <div>
                                 {title && (
-                                    <h2 className="text-lg font-black text-slate-900 tracking-tight uppercase">
+                                    <h2 className="text-lg font-black text-(--ink) tracking-tight uppercase">
                                         {title}
                                     </h2>
                                 )}
                                 {subtitle && (
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                    <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mt-0.5">
                                         {subtitle}
                                     </p>
                                 )}
@@ -99,7 +99,7 @@ export const CieloModal: React.FC<CieloModalProps> = ({
                         {!hideCloseButton && (
                             <button 
                                 onClick={onClose}
-                                className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-900 shrink-0 ml-4"
+                                className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-(--linen) transition-colors text-(--ink-soft) hover:text-(--ink) shrink-0 ml-4"
                                 aria-label="Cerrar modal"
                             >
                                 <X size={20} />
@@ -115,7 +115,7 @@ export const CieloModal: React.FC<CieloModalProps> = ({
 
                 {/* Footer */}
                 {footer && (
-                    <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 shrink-0">
+                    <div className="px-6 py-4 bg-(--linen)/30 border-t border-(--border-soft) shrink-0">
                         {footer}
                     </div>
                 )}

@@ -140,7 +140,7 @@ export default function CursoDetalle(props: Props) {
     if (!curso) return null;
 
     return (
-        <div className={`fixed inset-0 z-50 flex flex-col bg-slate-50 transition-all duration-500 ${isFullScreen ? 'm-0' : 'm-4 rounded-3xl overflow-hidden shadow-2xl border border-slate-200'}`} onMouseDown={() => isPointMode && setIsDragging(true)}>
+        <div className={`fixed inset-0 z-50 flex flex-col bg-(--background) transition-all duration-500 ${isFullScreen ? 'm-0' : 'm-4 rounded-(--radius-lg) overflow-hidden shadow-md border border-(--border-soft)'}`} onMouseDown={() => isPointMode && setIsDragging(true)}>
             <CursoDetalleHeader 
                 curso={curso}
                 buscar={buscar}

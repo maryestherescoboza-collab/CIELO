@@ -24,7 +24,7 @@ export function LandingStats() {
               className="text-4xl md:text-5xl font-black tracking-tighter mb-6 leading-tight"
             >
               CIELO conecta cada etapa <br />
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-[var(--primary)] to-[var(--primary)]">del proceso educativo.</span>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-(--primary) to-(--primary)">del proceso educativo.</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}

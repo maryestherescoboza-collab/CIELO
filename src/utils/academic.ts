@@ -10,10 +10,10 @@ export const normalizeArea = (a?: string | null) =>
 
 export const getGradeClass = (score: number | null) => {
     if (score === null) return 'bg-slate-50 text-slate-400';
-    if (score >= 100) return 'bg-success/10 text-success'; // Estratégico
-    if (score >= 85) return 'bg-primary/10 text-primary'; // Autónomo
-    if (score >= 70) return 'bg-attention/10 text-attention'; // Resolutivo
-    return 'bg-danger/10 text-danger'; // Receptivo
+    if (score >= 100) return 'bg-(--success)/15 text-(--success) font-bold'; // Estratégico (#7A8D69)
+    if (score >= 85) return 'bg-(--success-soft)/30 text-[#657655] font-bold'; // Logrado (#BFC9A6)
+    if (score >= 70) return 'bg-(--primary)/15 text-(--primary) font-bold'; // Resolutivo (#6D8FB9)
+    return 'bg-(--danger)/10 text-(--danger) font-bold'; // Riesgo (#DB5B48)
 };
 
 export interface ComputeBCOptions {

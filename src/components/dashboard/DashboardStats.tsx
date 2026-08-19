@@ -7,10 +7,10 @@ interface DashboardStatsProps {
 
 export function DashboardStats({ totalEstudiantes, actividadesEvaluadas, avgGeneral, totalCursos }: DashboardStatsProps) {
     const stats = [
-        { label: 'Estudiantes', value: totalEstudiantes, bgImage: 'estudiantes.png', bg: 'bg-attention', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-attention/20' },
-        { label: 'Actividades', value: actividadesEvaluadas, bgImage: 'actividades.png', bg: 'bg-warning', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-warning/20' },
-        { label: 'Promedio G.', value: `${avgGeneral}%`, bgImage: 'promedio.png', bg: 'bg-[#DDD5C8]', text: 'text-[#000000]', labelColor: 'text-[#000000]/80', lineBg: 'bg-[#000000]', accent: 'border-[#DDD5C8]/20' },
-        { label: 'Cursos Act.', value: totalCursos, bgImage: 'libro.png', bg: 'bg-primary', text: 'text-black', labelColor: 'text-black/80', lineBg: 'bg-black', accent: 'border-primary/20' },
+        { label: 'Estudiantes', value: totalEstudiantes, bgImage: 'estudiantes.png', bg: 'bg-[#BFC9A6]', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-[#BFC9A6]' },
+        { label: 'Actividades', value: actividadesEvaluadas, bgImage: 'actividades.png', bg: 'bg-[#689C63]', text: 'text-white', labelColor: 'text-white/80', lineBg: 'bg-white', accent: 'border-[#689C63]' },
+        { label: 'Promedio G.', value: `${avgGeneral}%`, bgImage: 'promedio.png', bg: 'bg-[#EB8847]', text: 'text-white', labelColor: 'text-white/80', lineBg: 'bg-white', accent: 'border-[#EB8847]' },
+        { label: 'Cursos Act.', value: totalCursos, bgImage: 'libro.png', bg: 'bg-[#DEAE4D]', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-[#DEAE4D]' },
     ];
 
     return (

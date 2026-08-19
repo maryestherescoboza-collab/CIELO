@@ -202,7 +202,7 @@ export default function CentroTareas({ centroId }: Props) {
             {showForm && (
                 <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white border border-[#EAE4DA] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="px-6 py-4 border-b border-[#EAE4DA] flex items-center justify-between bg-[#F8F3ED]">
+                        <div className="px-6 py-4 border-b border-[#EAE4DA] flex items-center justify-between bg-(--background)">
                             <h3 className="text-[13px] font-black tracking-widest text-[#3F3C36] uppercase">Nueva Tarea</h3>
                             <button onClick={resetForm} className="text-[#3F3C36]/50 hover:text-[#3F3C36] transition-colors p-1">
                                 <X size={18} />
@@ -252,8 +252,8 @@ export default function CentroTareas({ centroId }: Props) {
                                             onClick={() => setAsignacionTodos(true)}
                                             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors border ${
                                                 asignacionTodos
-                                                    ? 'bg-[#3F3C36] text-[#F8F3ED] border-[#3F3C36] shadow-sm'
-                                                    : 'bg-white text-[#7A8D69] border-[#EAE4DA] hover:bg-[#F8F3ED]'
+                                                    ? 'bg-[#3F3C36] text-white border-[#3F3C36] shadow-sm'
+                                                    : 'bg-white text-[#7A8D69] border-[#EAE4DA] hover:bg-(--background)'
                                             }`}
                                         >
                                             <Users size={14} /> Todos
@@ -262,8 +262,8 @@ export default function CentroTareas({ centroId }: Props) {
                                             onClick={() => setAsignacionTodos(false)}
                                             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors border ${
                                                 !asignacionTodos
-                                                    ? 'bg-[#3F3C36] text-[#F8F3ED] border-[#3F3C36] shadow-sm'
-                                                    : 'bg-white text-[#7A8D69] border-[#EAE4DA] hover:bg-[#F8F3ED]'
+                                                    ? 'bg-[#3F3C36] text-white border-[#3F3C36] shadow-sm'
+                                                    : 'bg-white text-[#7A8D69] border-[#EAE4DA] hover:bg-(--background)'
                                             }`}
                                         >
                                             <ClipboardList size={14} /> Seleccionar
@@ -271,7 +271,7 @@ export default function CentroTareas({ centroId }: Props) {
                                     </div>
                                     
                                     {!asignacionTodos && (
-                                        <div className="p-3 bg-[#F8F3ED]/40 border border-[#EAE4DA] rounded-xl flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                                        <div className="p-3 bg-(--background)/40 border border-[#EAE4DA] rounded-xl flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                                             {docentesCentro.map(d => {
                                                 const sel = seleccionados.has(d.userId);
                                                 return (
@@ -293,7 +293,7 @@ export default function CentroTareas({ centroId }: Props) {
                                 </div>
                             </div>
                         </div>
-                        <div className="p-6 border-t border-[#EAE4DA] bg-[#F8F3ED]/50 flex justify-end gap-3">
+                        <div className="p-6 border-t border-[#EAE4DA] bg-(--background)/50 flex justify-end gap-3">
                             <button
                                 onClick={resetForm}
                                 className="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest text-[#3F3C36] bg-white border border-[#EAE4DA] hover:bg-slate-50 transition-colors"

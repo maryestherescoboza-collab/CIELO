@@ -39,7 +39,7 @@ export function CourseCard({
     const displayDiasSemana = myLink ? myLink.diasSemana : (curso.diasSemana || []);
 
     return (
-        <div className={`group flex flex-col h-full bg-base-creme border border-[#E8C166] rounded-[20px] shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${isSelected ? 'ring-2 ring-primary' : 'hover:border-slate-350'}`}>
+        <div className={`group flex flex-col h-full bg-white border border-(--border-soft) rounded-(--radius-md) shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${isSelected ? 'ring-2 ring-(--primary)' : 'hover:border-(--primary)/30'}`}>
             <div className="p-6 flex-1">
                 <div className="flex items-start justify-between mb-5">
                     <div className="flex items-center gap-4">
@@ -49,14 +49,14 @@ export function CourseCard({
                         </div>
                         <div className="flex flex-col">
                             <div className="flex gap-1.5 mb-1">
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-[0.08em] bg-[#EAE4DA] text-[#2E3330] border border-[#E8C166]">{curso.grado}</span>
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-[0.08em] bg-[#EAE4DA] text-[#2E3330] border border-[#E8C166]">Sección {curso.seccion}</span>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-[0.08em] bg-(--linen)/80 text-(--ink) border border-(--border-soft)">{curso.grado}</span>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-[0.08em] bg-(--linen)/80 text-(--ink) border border-(--border-soft)">Sección {curso.seccion}</span>
                             </div>
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nivel {curso.grado[0]}° Secundaria</span>
+                            <span className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest">Nivel {curso.grado[0]}° Secundaria</span>
                         </div>
                     </div>
                     <button
-                        className="opacity-0 group-hover:opacity-100 p-2 rounded-xl text-slate-300 hover:text-attention hover:bg-attention/5 transition-all duration-200 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-attention/50"
+                        className="opacity-0 group-hover:opacity-100 p-2 rounded-xl text-slate-300 hover:text-(--danger) hover:bg-(--tag-rose-bg) transition-all duration-200 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--danger)/50"
                         onClick={(e) => { e.stopPropagation(); onHide(curso.id); }}
                         title="Ocultar curso"
                     >
@@ -64,7 +64,7 @@ export function CourseCard({
                     </button>
                 </div>
 
-                <h3 className="text-lg font-black text-[#2E3330] tracking-tight leading-snug group-hover:text-primary transition-colors mb-3 font-notion-title">{curso.nombre}</h3>
+                <h3 className="text-lg font-black text-(--ink) tracking-tight leading-snug group-hover:text-(--primary) transition-colors mb-3 font-notion-title">{curso.nombre}</h3>
 
                 <div className="inline-flex items-center gap-2 mb-5">
                     {editingAsignaturaId === curso.id ? (
@@ -77,7 +77,7 @@ export function CourseCard({
                             }}
                             onBlur={() => onEditAsignatura(null)}
                             onClick={(e) => e.stopPropagation()}
-                            className="px-3 py-1.5 text-xs rounded-lg font-bold bg-white border border-primary text-[#2E3330] outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                            className="px-3 py-1.5 text-xs rounded-lg font-bold bg-white border border-(--primary) text-(--ink) outline-none focus:ring-2 focus:ring-(--primary)/50 transition-all"
                             autoFocus
                         >
                             {ASIGNATURAS_CATALOGO.map(asig => (
@@ -92,7 +92,7 @@ export function CourseCard({
                                 e.stopPropagation();
                                 onEditAsignatura(curso.id);
                             }}
-                            className="px-3 py-1 rounded-full text-xs font-bold tracking-[0.08em] text-[#2E3330] bg-primary border border-[#E8C166] hover:bg-primary hover:text-white transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                            className="px-3 py-1 rounded-full text-xs font-bold tracking-[0.08em] text-(--primary) bg-(--primary)/10 border border-(--primary)/20 hover:bg-(--primary) hover:text-white transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50"
                             title="Modificar asignatura"
                         >
                             {getAsignaturaNombre(displayAsignatura)}
@@ -101,21 +101,21 @@ export function CourseCard({
                 </div>
 
                 <div className="space-y-3.5">
-                    <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
-                        <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center">
-                            <Users size={12} className="text-slate-400" />
+                    <div className="flex items-center gap-3 text-xs font-medium text-(--ink-soft)">
+                        <div className="w-6 h-6 rounded-lg bg-(--linen)/20 border border-(--border-soft) flex items-center justify-center">
+                            <Users size={12} className="text-(--ink-soft)" />
                         </div>
                         <span>{curso.count} Estudiantes Inscritos</span>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs font-medium text-slate-500 relative">
-                        <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center">
-                            <Clock size={12} className="text-slate-400" />
+                    <div className="flex items-center gap-3 text-xs font-medium text-(--ink-soft) relative">
+                        <div className="w-6 h-6 rounded-lg bg-(--linen)/20 border border-(--border-soft) flex items-center justify-center">
+                            <Clock size={12} className="text-(--ink-soft)" />
                         </div>
                         <div className="flex-1">
                             <span className="mr-1">Días:</span>
                             {editingDiasId === curso.id ? (
-                                <div className="absolute left-0 bottom-full mb-3 bg-white border border-slate-200 shadow-2xl rounded-2xl p-4 z-50 w-56 animate-in slide-in-from-bottom-2 duration-200">
+                                <div className="absolute left-0 bottom-full mb-3 bg-white border border-(--border-soft) shadow-sm rounded-xl p-4 z-50 w-56 animate-in slide-in-from-bottom-2 duration-200">
                                     <div className="flex gap-1.5 flex-wrap mb-4">
                                         {['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb'].map(d => (
                                             <button
@@ -124,16 +124,16 @@ export function CourseCard({
                                                     e.stopPropagation();
                                                     onSaveDias(curso, d);
                                                 }}
-                                                className={`px-3 py-1.5 text-xs rounded-lg font-bold uppercase transition-all border outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${displayDiasSemana.includes(d) ? 'bg-[#2E3330] border-[#2E3330] text-white shadow-sm' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-350'}`}
+                                                className={`px-3 py-1.5 text-xs rounded-lg font-bold uppercase transition-all border outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 ${displayDiasSemana.includes(d) ? 'bg-(--ink) border-(--ink) text-white shadow-sm' : 'bg-(--linen)/20 border-(--border-soft) text-(--ink-soft) hover:border-(--primary)/30'}`}
                                             >
                                                 {d}
                                             </button>
                                         ))}
                                     </div>
-                                    <button onClick={(e) => { e.stopPropagation(); onEditDias(null); }} className="w-full text-center text-xs font-bold uppercase tracking-widest py-2.5 bg-primary text-white rounded-xl shadow-lg shadow-(--primary)/20 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 hover:bg-[#6C7E5C] active:scale-95 transition-all">Listo</button>
+                                    <button onClick={(e) => { e.stopPropagation(); onEditDias(null); }} className="w-full text-center text-xs font-bold uppercase tracking-widest py-2.5 bg-(--primary) text-white rounded-xl shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 focus-visible:ring-offset-2 hover:opacity-90 active:scale-95 transition-all">Listo</button>
                                 </div>
                             ) : (
-                                <button onClick={(e) => { e.stopPropagation(); onEditDias(curso.id); }} className="text-[#2E3330] border-b border-dotted border-slate-350 hover:border-primary hover:text-primary transition-all font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm">
+                                <button onClick={(e) => { e.stopPropagation(); onEditDias(curso.id); }} className="text-(--ink) border-b border-dotted border-(--border-soft) hover:border-(--primary) hover:text-(--primary) transition-all font-semibold outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 rounded-sm">
                                     {displayDiasSemana.length ? displayDiasSemana.join(', ') : 'Click para asignar días'}
                                 </button>
                             )}
@@ -141,9 +141,9 @@ export function CourseCard({
                     </div>
 
                     {curso.docentesVinculadosRel && curso.docentesVinculadosRel.length > 0 ? (
-                        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-100 justify-between">
+                        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-(--border-soft) justify-between">
                             <div className="flex items-center gap-3">
-                                <span className="text-xs font-bold uppercase text-slate-400 tracking-widest">Co-docentes:</span>
+                                <span className="text-xs font-bold uppercase text-(--ink-soft) tracking-widest">Co-docentes:</span>
                                 <div className="flex -space-x-2">
                                     {curso.docentesVinculadosRel.slice(0, 4).map((cd: any, idx: number) => {
                                         const profile = state.perfiles.find(p => p.userId === cd.userId);
@@ -151,7 +151,7 @@ export function CourseCard({
                                         return (
                                             <div
                                                 key={idx}
-                                                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white shadow-sm ring-1 ring-slate-100 hover:z-10 transition-all hover:scale-110 cursor-help"
+                                                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white shadow-sm ring-1 ring-(--border-soft) hover:z-10 transition-all hover:scale-110 cursor-help"
                                                 style={{ background: profile.avatarColor || '#64748b' }}
                                                 title={`${profile.nombreDocente} - ${cd.asignatura}`}
                                             >
@@ -160,22 +160,22 @@ export function CourseCard({
                                         );
                                     })}
                                     {curso.docentesVinculadosRel.length > 4 && (
-                                        <div className="w-8 h-8 rounded-full bg-slate-50 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-400 ring-1 ring-slate-100 italic">
+                                        <div className="w-8 h-8 rounded-full bg-(--linen)/30 border-2 border-white flex items-center justify-center text-xs font-bold text-(--ink-soft) ring-1 ring-(--border-soft) italic">
                                             +{curso.docentesVinculadosRel.length - 4}
                                         </div>
                                     )}
                                 </div>
                             </div>
                             {isTutor && (
-                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="text-[#2E3330] hover:bg-[#D4CCBE] bg-[#EAE4DA] px-3 py-1.5 rounded-full text-xs font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-colors border border-[#E8C166]">
+                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="text-(--ink) hover:bg-(--linen) bg-(--linen)/50 px-3 py-1.5 rounded-full text-xs font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 transition-colors border border-(--border-soft)">
                                     Modificar
                                 </button>
                             )}
                         </div>
                     ) : (
                         isTutor && (
-                            <div className="mt-4 pt-4 border-t border-slate-100">
-                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-slate-250 rounded-xl text-slate-400 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
+                            <div className="mt-4 pt-4 border-t border-(--border-soft)">
+                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-(--border-soft) rounded-xl text-(--ink-soft) hover:text-(--primary) hover:border-(--primary)/30 hover:bg-(--primary)/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 focus-visible:ring-offset-2">
                                     <Plus size={14} /> <span className="text-xs font-bold uppercase tracking-widest">Añadir Co-docentes</span>
                                 </button>
                             </div>
@@ -184,29 +184,29 @@ export function CourseCard({
                 </div>
             </div>
 
-            <div className="flex flex-col border-t border-slate-100 bg-[#F8F3ED]/30">
+            <div className="flex flex-col border-t border-(--border-soft) bg-(--linen)/10">
                 <button
-                    className="w-full flex items-center justify-between px-6 py-3.5 hover:bg-[#F8F3ED]/60 text-xs font-bold text-[#2E3330] uppercase tracking-widest transition-all duration-200 border-b border-slate-200/50 outline-none focus-visible:bg-slate-100"
+                    className="w-full flex items-center justify-between px-6 py-3.5 hover:bg-(--linen)/30 text-xs font-bold text-(--ink) uppercase tracking-widest transition-all duration-200 border-b border-(--border-soft)/50 outline-none focus-visible:bg-(--linen)/20"
                     onClick={(e) => { e.stopPropagation(); onSelect(curso.id, `/calificaciones-anuales/${curso.id}`); }}
                 >
-                    <span className="flex items-center gap-2"><Layers size={13} className="text-slate-400" /> Histórico Anual</span>
+                    <span className="flex items-center gap-2"><Layers size={13} className="text-(--ink-soft)" /> Histórico Anual</span>
                     <ChevronRight size={13} className="text-slate-350" />
                 </button>
 
                 <button
-                    className="w-full flex items-center justify-between px-6 py-3.5 hover:bg-[#F8F3ED]/60 text-xs font-bold text-[#2E3330] uppercase tracking-widest transition-all duration-200 border-b border-slate-200/50 outline-none focus-visible:bg-slate-100"
+                    className="w-full flex items-center justify-between px-6 py-3.5 hover:bg-(--linen)/30 text-xs font-bold text-(--ink) uppercase tracking-widest transition-all duration-200 border-b border-(--border-soft)/50 outline-none focus-visible:bg-(--linen)/20"
                     onClick={(e) => { e.stopPropagation(); window.open(`/print-boletines/${curso.id}`, '_blank'); }}
                 >
-                    <span className="flex items-center gap-2"><FileText size={13} className="text-slate-400" /> Descargar Boletines</span>
+                    <span className="flex items-center gap-2"><FileText size={13} className="text-(--ink-soft)" /> Descargar Boletines</span>
                     <ChevronRight size={13} className="text-slate-350" />
                 </button>
 
                 <button
                     data-guide="btn-abrir-registro-academico"
-                    className="w-full flex items-center justify-between px-6 py-4.5 bg-base-creme text-xs font-bold text-[#2E3330] uppercase tracking-[0.15em] transition-all duration-200 hover:bg-[#EAE4DA] outline-none focus-visible:bg-[#EAE4DA]"
+                    className="w-full flex items-center justify-between px-6 py-4.5 bg-white text-xs font-bold text-(--ink) uppercase tracking-[0.15em] transition-all duration-200 hover:bg-(--linen)/50 outline-none focus-visible:bg-(--linen)"
                     onClick={() => onSelect(curso.id, `/curso-detalle/${curso.id}`)}>
                     <span className="flex items-center gap-2">
-                        <Search size={13} className="text-slate-400" />
+                        <Search size={13} className="text-(--ink-soft)" />
                         Abrir Registro Académico
                     </span>
                     <ChevronRight size={15} />

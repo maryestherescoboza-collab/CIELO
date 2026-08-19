@@ -85,17 +85,20 @@ export default function Estudiante() {
         // Filter activities, qualifications, and recoveries for this subject using the exact same logic as PrintBoletines.tsx
         const activities = state.actividades.filter(a => 
             (a.cursoId === cursoId || (curso?.sharedCourseId && state.cursos.find(cx => cx.id === a.cursoId)?.sharedCourseId === curso.sharedCourseId)) &&
-            a.asignatura === asig.id
+            a.asignatura === asig.id &&
+            a.userId === session?.user?.id
         );
 
         const qualifications = state.calificaciones.filter(c => 
             c.estudianteId === est.id && 
-            c.asignatura === asig.id
+            c.asignatura === asig.id &&
+            c.userId === session?.user?.id
         );
 
         const recoveries = state.recuperaciones.filter(r => 
             r.estudianteId === est.id && 
-            r.asignatura === asig.id
+            r.asignatura === asig.id &&
+            r.userId === session?.user?.id
         );
 
         periods.forEach(p => {
@@ -145,13 +148,13 @@ export default function Estudiante() {
                 const isRecovered = rec !== null && (avgVal === null || avgVal < 70);
 
                 return (
-                    <td key={`${p}-${bc}`} className="px-3 py-4 text-center border border-[rgba(46,51,48,0.08)]">
+                    <td key={`${p}-${bc}`} className="px-3 py-4 text-center border border-(--border-soft)">
                         {finalVal !== null && finalVal !== undefined ? (
-                            <span className={`text-[13px] font-black ${isRecovered ? 'text-danger bg-[#FDFBF7] px-1.5 py-0.5 rounded border border-danger/20' : 'text-[#2E3330]'}`}>
+                            <span className={`text-[13px] font-black ${isRecovered ? 'text-(--danger) bg-white px-1.5 py-0.5 rounded border border-(--danger)/20' : 'text-(--ink)'}`}>
                                 {finalVal}
                             </span>
                         ) : (
-                            <span className="text-[12px] font-bold text-[#5F665E]/40">-</span>
+                            <span className="text-[12px] font-bold text-(--ink-soft)/40">-</span>
                         )}
                     </td>
                 );
@@ -165,29 +168,29 @@ export default function Estudiante() {
         return (
             <>
                 {cells}
-                <td className="px-2 font-black text-[13px] text-[#2E3330] bg-[#FDFBF7] border-x-2 border-[rgba(46,51,48,0.08)]">
-                    {finalGrade !== null ? finalGrade : <span className="text-[#5F665E]/40">-</span>}
+                <td className="px-2 font-black text-[13px] text-(--ink) bg-white border-x-2 border-(--border-soft)">
+                    {finalGrade !== null ? finalGrade : <span className="text-(--ink-soft)/40">-</span>}
                 </td>
-                <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
-                <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
-                <td className="px-2 border-r border-[rgba(46,51,48,0.08)]"><span className="text-[#5F665E]/40">-</span></td>
-                <td className="px-2 text-primary font-black text-[14px] bg-[#FDFBF7] border-x border-[rgba(46,51,48,0.08)]">{sitA}</td>
-                <td className="px-2 text-danger font-black text-[14px] bg-[#FDFBF7] border-r border-[rgba(46,51,48,0.08)]">{sitR}</td>
+                <td className="px-2 border-r border-(--border-soft)"><span className="text-(--ink-soft)/40">-</span></td>
+                <td className="px-2 border-r border-(--border-soft)"><span className="text-(--ink-soft)/40">-</span></td>
+                <td className="px-2 border-r border-(--border-soft)"><span className="text-(--ink-soft)/40">-</span></td>
+                <td className="px-2 text-(--primary) font-black text-[14px] bg-white border-x border-(--border-soft)">{sitA}</td>
+                <td className="px-2 text-(--danger) font-black text-[14px] bg-white border-r border-(--border-soft)">{sitR}</td>
             </>
         );
     }, [curso, est, state.actividades, state.calificaciones, state.recuperaciones, state.cursos]);
 
     if (!est) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                <h2 className="text-xl font-bold text-slate-800">Estudiante no encontrado</h2>
-                <button onClick={() => navigate('/cursos')} className="mt-4 text-slate-600 font-bold underline">Volver a Cursos</button>
+            <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-(--radius-lg) border-2 border-dashed border-(--border-soft)">
+                <h2 className="text-xl font-bold text-(--ink)">Estudiante no encontrado</h2>
+                <button onClick={() => navigate('/cursos')} className="mt-4 text-(--ink-soft) font-bold underline">Volver a Cursos</button>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col items-center w-full min-h-screen bg-[#FDFBF7] text-[#2E3330] pb-16">
+        <div className="flex flex-col items-center w-full min-h-screen bg-(--background) text-(--ink) pb-16">
             <EstudianteHeader 
                 periodo={periodo} 
                 setPeriodo={setPeriodo} 
@@ -197,7 +200,7 @@ export default function Estudiante() {
                 isTutor={isTutor}
             />
 
-            <div className={`w-[98%] max-w-310 shadow-sm border border-[rgba(46,51,48,0.08)] rounded-[20px] p-6 relative ${activeTab === 'Perfil' ? 'bg-white' : 'bg-[#FDFBF7]'}`}>
+            <div className={`w-[98%] max-w-310 shadow-sm border border-(--border-soft) rounded-(--radius-md) p-6 relative ${activeTab === 'Perfil' ? 'bg-white' : 'bg-(--linen)/10'}`}>
                 {activeTab === 'Perfil' && (
                     <PerfilTab 
                         est={est}
@@ -215,12 +218,12 @@ export default function Estudiante() {
 
                 {activeTab === 'Evaluación' && isTutor && (
                     <div className="space-y-6 animate-in fade-in duration-500">
-                        <div className="flex justify-between items-center border-b pb-5 border-[rgba(46,51,48,0.08)]">
+                        <div className="flex justify-between items-center border-b pb-5 border-(--border-soft)">
                             <div>
-                                <h2 className="text-xl font-black text-[#2E3330] tracking-tight">REGISTRO ANUAL</h2>
-                                <p className="text-xs font-bold text-[#5F665E] uppercase tracking-widest">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
+                                <h2 className="text-xl font-black text-(--ink) tracking-tight">REGISTRO ANUAL</h2>
+                                <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
                             </div>
-                            <button onClick={() => window.print()} className="flex items-center gap-2 px-[18px] py-[8px] min-h-[36px] leading-none bg-primary text-white rounded-full font-semibold text-xs hover:bg-[#6C7E5C] transition-all uppercase tracking-[0.08em] shadow-sm">
+                            <button onClick={() => window.print()} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-(--primary) text-white rounded-full font-semibold text-xs hover:opacity-90 active:scale-95 transition-all uppercase tracking-[0.08em] shadow-sm">
                                 <Printer size={15} /> Imprimir
                             </button>
                         </div>
@@ -233,8 +236,8 @@ export default function Estudiante() {
             </div>
 
             <footer className="w-[92%] max-w-7xl mt-16 text-center py-10 opacity-40 select-none">
-                <p className="text-[#5F665E] text-[14px] font-bold uppercase tracking-[0.5em] mb-2">Plataforma Educativa Noether</p>
-                <div className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-[#5F665E]/70">
+                <p className="text-(--ink-soft) text-[14px] font-bold uppercase tracking-[0.5em] mb-2">Plataforma Educativa Noether</p>
+                <div className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-(--ink-soft)/70">
                     <School size={14} />
                     <span>Registro Oficial Validado</span>
                 </div>

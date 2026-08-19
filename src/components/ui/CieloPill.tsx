@@ -10,7 +10,10 @@ export type CieloPillVariant =
   | 'error'
   | 'disabled'
   | 'ghost'
-  | 'danger';
+  | 'danger'
+  | 'orange'
+  | 'terracotta'
+  | 'info';
 
 interface CieloPillProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: CieloPillVariant;
@@ -28,7 +31,7 @@ export const CieloPill: React.FC<CieloPillProps> = ({
   ...props 
 }) => {
   // Configuración base de geometría y texto (Reglas 22.2, 22.3 y 22.4)
-  let baseClasses = 'inline-flex items-center justify-center rounded-full h-9 px-4 w-fit font-semibold leading-none transition-all duration-200 text-sm';
+  let baseClasses = 'inline-flex items-center justify-center rounded-full h-8 px-3 w-fit font-semibold leading-none transition-all duration-200 text-xs border';
   
   if (uppercase) {
     baseClasses += ' uppercase tracking-[0.08em]';
@@ -36,16 +39,19 @@ export const CieloPill: React.FC<CieloPillProps> = ({
 
   // Estados y variantes de píldoras usando los tokens de CIELO (Regla 22.5 y 27)
   const variants: Record<CieloPillVariant, string> = {
-    primary: 'bg-[var(--primary)] text-black hover:bg-[var(--primary-hover)]', 
-    secondary: 'bg-white border border-[var(--border-soft)] text-[var(--text-secondary)] hover:bg-[var(--bg-main)] hover:border-[var(--primary)]',
-    neutral: 'bg-[var(--tag-sky-bg)] text-[var(--tag-sky-text)] border border-[var(--tag-sky-bg)]', 
-    selected: 'bg-[var(--paper)] border-[2px] border-[var(--primary)] text-[var(--primary)]', 
-    success: 'bg-[var(--tag-emerald-bg)] text-[var(--tag-emerald-text)] border border-[#D1FAE5]', 
-    warning: 'bg-[var(--tag-amber-bg)] text-[var(--tag-amber-text)] border border-[#FEF3C7]', 
-    error: 'bg-[var(--tag-rose-bg)] text-[var(--tag-rose-text)] border border-[#FFE4E6]', 
-    disabled: 'bg-[var(--sidebar)] text-[var(--text-secondary)] cursor-not-allowed opacity-70 border border-transparent',
-    ghost: 'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--tag-sky-bg)] border border-transparent',
-    danger: 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
+    primary: 'bg-(--primary) text-white hover:bg-(--primary-hover) font-bold border-transparent shadow-sm', 
+    secondary: 'bg-white border-(--border-soft) text-(--text-secondary) hover:bg-(--bg-main) hover:border-(--primary)',
+    neutral: 'bg-(--linen) text-(--ink) border-(--border-soft)', 
+    selected: 'bg-(--primary) text-white font-bold border-transparent shadow-sm', 
+    success: 'bg-(--tag-emerald-bg) text-(--tag-emerald-text) border-emerald-500/20', 
+    warning: 'bg-(--tag-amber-bg) text-(--tag-amber-text) border-amber-500/20', 
+    error: 'bg-(--tag-rose-bg) text-(--tag-rose-text) border-red-500/20', 
+    disabled: 'bg-(--linen) text-(--text-secondary) cursor-not-allowed opacity-50 border-transparent',
+    ghost: 'bg-transparent text-(--text-secondary) hover:bg-(--linen) border-transparent',
+    danger: 'bg-(--tag-rose-bg) text-(--tag-rose-text) border-red-500/20 hover:bg-opacity-80',
+    orange: 'bg-(--tag-orange-bg) text-(--tag-orange-text) border-orange-500/20',
+    terracotta: 'bg-(--tag-terracotta-bg) text-(--tag-terracotta-text) border-amber-800/20',
+    info: 'bg-(--tag-sky-bg) text-(--tag-sky-text) border-blue-500/20'
   };
 
   const variantClasses = variants[variant] || variants.neutral;

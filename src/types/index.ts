@@ -67,6 +67,7 @@ export interface Actividad {
     userId?: string;
     asignatura?: string;
     sharedCourseId?: string;
+    indicador?: string;
 }
 
 export interface CalificacionActividad {
@@ -104,6 +105,19 @@ export interface Secuencia {
     archivoSize?: number;
     archivoTipo?: string;
     archivoFechaCarga?: string;
+    recursos?: any[];
+}
+
+export type TipoRecurso = 'documento' | 'video' | 'web' | 'canva' | 'pdf' | 'presentacion' | 'otro';
+
+export interface RecursoPlanificacion {
+    id: number;
+    planificacionId: number;
+    titulo: string;
+    url: string;
+    tipo: TipoRecurso;
+    orden: number;
+    userId: string;
 }
 
 export interface Incidencia {

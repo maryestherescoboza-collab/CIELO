@@ -11,6 +11,7 @@ import Cursos from './screens/Cursos';
 import CursoDetalle from './screens/CursoDetalle';
 import Incidencias from './screens/Incidencias';
 import Planificacion from './screens/Planificacion';
+import PlanificacionDiariaEditor from './screens/PlanificacionDiariaEditor';
 import Comunidad from './screens/Comunidad';
 import Rubrica from './screens/Rubrica';
 import Cotejo from './screens/Cotejo';
@@ -237,6 +238,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/print-boletines/:cursoId" element={<PrintBoletines state={state} docenteNombre={docenteNombre} />} />
       <Route path="/incidencias" element={<Incidencias state={state} onAddIncidencia={addIncidencia} onDeleteIncidencia={deleteIncidencia} />} />
       <Route path="/planificacion" element={<Planificacion onAddSecuencia={addSecuencia} onUpdateSecuencia={updateSecuencia} onDeleteSecuencia={deleteSecuencia} />} />
+      <Route path="/planificacion-diaria/:id" element={<PlanificacionDiariaEditor state={state} onUpdateSecuencia={updateSecuencia} />} />
       <Route path="/comunidad" element={
         <Comunidad
           onAddPost={addPost}

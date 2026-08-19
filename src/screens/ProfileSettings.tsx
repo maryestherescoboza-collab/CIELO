@@ -115,7 +115,7 @@ export default function ProfileSettings({
 
       {/* Modal Container */}
       <div 
-        className="relative w-full h-dvh md:h-auto md:max-h-[85vh] md:max-w-5xl bg-base-creme md:rounded-[20px] border border-[#E8C166] shadow-sm flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full h-dvh md:h-auto md:max-h-[85vh] md:max-w-5xl bg-(--background) md:rounded-(--radius-lg) border border-(--border-soft) shadow-sm flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         <Sidebar 
@@ -129,7 +129,7 @@ export default function ProfileSettings({
           onLogout={onLogout || (() => supabase.auth.signOut())}
         />
 
-        <div className="flex-1 flex flex-col min-w-0 bg-base-creme">
+        <div className="flex-1 flex flex-col min-w-0 bg-(--background)">
           <Header activeSection={activeSection} onClose={onClose} />
           
           <div ref={contentRef} className="flex-1 overflow-y-auto px-6 py-8 custom-scrollbar">
@@ -154,22 +154,22 @@ export default function ProfileSettings({
                  )}
                 
                 {activeSection === 'seguridad' && (
-                  <SeguridadTab 
-                    centroId={centroId}
-                    centroNombre={centroNombre}
-                    onChangeCentro={onChangeCentro}
-                  />
-                )}
+                   <SeguridadTab 
+                     centroId={centroId}
+                     centroNombre={centroNombre}
+                     onChangeCentro={onChangeCentro}
+                   />
+                 )}
                 
                 {activeSection === 'apariencia' && (
-                  <AparienciaTab 
-                    docenteNombre={docenteNombre}
-                    avatarUrl={perfilAvatarUrl}
-                    avatarColor={perfilAvatarColor}
-                    onUpload={onUploadAvatar}
-                    onColorSelect={onUpdateAvatarColor}
-                  />
-                )}
+                   <AparienciaTab 
+                     docenteNombre={docenteNombre}
+                     avatarUrl={perfilAvatarUrl}
+                     avatarColor={perfilAvatarColor}
+                     onUpload={onUploadAvatar}
+                     onColorSelect={onUpdateAvatarColor}
+                   />
+                 )}
              </div>
           </div>
         </div>
@@ -204,14 +204,14 @@ const Sidebar = React.memo(function Sidebar({
     return (
       <button
         onClick={() => onSectionChange(id)}
-        className={`w-full flex items-center gap-3 px-4 py-2 rounded-full transition-all text-xs font-bold ${
+        className={`w-full flex items-center gap-3 px-4 py-2 rounded-full transition-all text-xs font-bold cursor-pointer ${
           selected 
-            ? 'bg-primary text-[#2E3330] shadow-sm' 
-            : 'text-[#5F665E] hover:bg-[#D4CCBE] hover:text-[#2E3330]'
+            ? 'bg-(--primary) text-white shadow-sm' 
+            : 'text-(--ink-soft) hover:bg-(--linen)/20 hover:text-(--ink)'
         }`}
         style={{ height: '36px' }}
       >
-        <span className={`${selected ? 'text-[#2E3330]' : 'text-slate-400'}`}>
+        <span className={`${selected ? 'text-white' : 'text-slate-400'}`}>
           {icon}
         </span>
         {label}
@@ -220,8 +220,8 @@ const Sidebar = React.memo(function Sidebar({
   };
 
   return (
-    <aside className="w-full md:w-70 shrink-0 flex flex-col bg-[#F9F8F6] border-b md:border-b-0 md:border-r border-[#E8C166]">
-      <div className="p-6 border-b border-[#E8C166] flex items-center gap-4 bg-[#F9F8F6]/25">
+    <aside className="w-full md:w-70 shrink-0 flex flex-col bg-(--linen)/10 border-b md:border-b-0 md:border-r border-(--border-soft)">
+      <div className="p-6 border-b border-(--border-soft) flex items-center gap-4 bg-(--linen)/5">
          <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-sm" style={{ background: avatarColor || 'white' }}>
             {!avatarColor ? (
               <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
@@ -232,8 +232,8 @@ const Sidebar = React.memo(function Sidebar({
             )}
          </div>
          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-[#2E3330] truncate tracking-tight">{docenteNombre}</h2>
-            <p className="text-xs text-[#5F665E] truncate">{userEmail}</p>
+            <h2 className="text-sm font-bold text-(--ink) truncate tracking-tight">{docenteNombre}</h2>
+            <p className="text-xs text-(--ink-soft) truncate">{userEmail}</p>
          </div>
       </div>
 
@@ -244,21 +244,21 @@ const Sidebar = React.memo(function Sidebar({
         <NavItem id="apariencia" label="Apariencia" icon={<Palette size={16} />} />
       </nav>
 
-      <div className="p-4 border-t border-[#E8C166] bg-[#F9F8F6]/10 space-y-3">
+      <div className="p-4 border-t border-(--border-soft) bg-(--linen)/5 space-y-3">
          <button
             onClick={() => {
               if (window.confirm('¿Estás SEGURO de que deseas reiniciar tu año escolar? Esta acción es irreversible.')) {
                 onResetSchoolYear();
               }
             }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-black uppercase tracking-widest text-attention bg-attention/10 hover:bg-attention/20 transition-all border border-attention/20"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs font-black uppercase tracking-widest text-attention bg-attention/10 hover:bg-attention/20 transition-all border border-attention/20 cursor-pointer"
          >
             <AlertCircle size={14} />
             Reiniciar Año
          </button>
          <button 
             onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-full text-xs font-bold text-[#5F665E] hover:text-attention hover:bg-attention/10 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-full text-xs font-bold text-(--ink-soft) hover:text-attention hover:bg-attention/10 transition-colors cursor-pointer"
          >
             <LogOut size={14} />
             Cerrar Sesión
@@ -277,13 +277,13 @@ function Header({ activeSection, onClose }: { activeSection: SectionId; onClose:
   };
 
   return (
-    <header className="px-6 py-4 flex items-center justify-between border-b border-[#E8C166] bg-base-creme sticky top-0 z-10">
-       <h3 className="font-bold text-base text-[#2E3330] tracking-tight">
+    <header className="px-6 py-4 flex items-center justify-between border-b border-(--border-soft) bg-(--background) sticky top-0 z-10">
+       <h3 className="font-bold text-base text-(--ink) tracking-tight">
           {titles[activeSection]}
        </h3>
        <button 
          onClick={onClose} 
-         className="p-2 text-slate-400 hover:text-slate-700 hover:bg-[#FAF6F0] rounded-full transition-all"
+         className="p-2 text-slate-400 hover:text-slate-700 hover:bg-(--linen)/20 rounded-full transition-all cursor-pointer"
          aria-label="Cerrar"
        >
           <X size={18} />
@@ -345,9 +345,9 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Docente</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Docente</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold"
             value={nombreDocente}
             onChange={e => setNombreDocente(e.target.value)}
             placeholder="Nombre del docente"
@@ -355,9 +355,9 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Correo Electrónico (Solo Lectura)</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Correo Electrónico (Solo Lectura)</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] text-slate-500 outline-none cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) text-(--ink-soft) outline-none cursor-not-allowed"
             value={userEmail}
             readOnly
           />
@@ -365,9 +365,9 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-black uppercase tracking-widest text-slate-500">Biografía</label>
+        <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Biografía</label>
         <textarea
-          className="w-full h-40 p-4 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none resize-none transition-all font-medium"
+          className="w-full h-40 p-4 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none resize-none transition-all font-medium"
           value={bio}
           onChange={e => setBio(e.target.value)}
           placeholder="Escribe tu trayectoria, metodologías o intereses..."
@@ -378,7 +378,7 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
         <button
           type="submit"
           disabled={saving}
-          className="h-11 px-8 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:bg-primary/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/10 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          className="h-11 px-8 rounded-xl bg-(--primary) text-white text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
           {saving ? (
             <>
@@ -529,9 +529,9 @@ function DatosProfesionalesTab({
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Centro educativo</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Centro educativo</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.instituto}
             placeholder={tieneCentro ? "Nombre del centro educativo" : "Sin centro vinculado"}
             disabled={true}
@@ -539,9 +539,9 @@ function DatosProfesionalesTab({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Código del centro</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Código del centro</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.codigoCentro}
             placeholder={tieneCentro ? "Código del centro" : "Sin centro vinculado"}
             disabled={true}
@@ -549,17 +549,17 @@ function DatosProfesionalesTab({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Tipo de Institución</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Tipo de Institución</label>
           <div className="flex gap-3">
             {(['publica', 'privada'] as const).map((t) => (
               <button
                 type="button"
                 key={t}
                 onClick={() => setForm(p => ({ ...p, tipoInstitucion: t }))}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border cursor-pointer ${
                   form.tipoInstitucion === t 
-                    ? 'bg-primary text-white border-transparent shadow-md font-bold' 
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    ? 'bg-(--primary) text-white border-transparent shadow-sm font-bold' 
+                    : 'bg-white text-(--ink) border-(--border-soft) hover:border-(--border-soft)/80 hover:bg-(--linen)/10'
                 }`}
               >
                 {t === 'publica' ? "Pública" : "Privada"}
@@ -569,9 +569,9 @@ function DatosProfesionalesTab({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Tanda</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Tanda</label>
           <select
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold cursor-not-allowed"
             value={form.tanda}
             disabled={true}
           >
@@ -583,9 +583,9 @@ function DatosProfesionalesTab({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Teléfono del centro</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Teléfono del centro</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.telefonoCentro}
             placeholder={tieneCentro ? "Teléfono del centro" : "Sin centro vinculado"}
             disabled={true}
@@ -593,9 +593,9 @@ function DatosProfesionalesTab({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Distrito educativo</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Distrito educativo</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.distrito}
             placeholder={tieneCentro ? "Distrito educativo" : "Sin centro vinculado"}
             disabled={true}
@@ -603,9 +603,9 @@ function DatosProfesionalesTab({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Regional de educación</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Regional de educación</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.regional}
             placeholder={tieneCentro ? "Regional de educación" : "Sin centro vinculado"}
             disabled={true}
@@ -613,9 +613,9 @@ function DatosProfesionalesTab({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Provincia</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Provincia</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.provincia}
             placeholder={tieneCentro ? "Provincia" : "Sin centro vinculado"}
             disabled={true}
@@ -623,9 +623,9 @@ function DatosProfesionalesTab({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-black uppercase tracking-widest text-slate-500">Municipio</label>
+          <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Municipio</label>
           <input
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-primary hover:border-slate-300 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.municipio}
             placeholder={tieneCentro ? "Municipio" : "Sin centro vinculado"}
             disabled={true}
@@ -637,7 +637,7 @@ function DatosProfesionalesTab({
         <button
           type="submit"
           disabled={saving}
-          className="h-11 px-8 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:bg-primary/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/10 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          className="h-11 px-8 rounded-xl bg-(--primary) text-white text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
           {saving ? (
             <>
@@ -1028,7 +1028,7 @@ function AparienciaTab({
 function SimplePasswordField({ label, value, onChange, show, onToggle }: { label: string; value: string; onChange: (v: string) => void; show: boolean; onToggle: () => void }) {
   return (
     <div className="space-y-1.5 flex flex-col">
-       <label className="text-sm font-semibold text-slate-700">{label}</label>
+       <label className="text-sm font-semibold text-(--ink)">{label}</label>
        <div className="relative">
           <input 
              type={show ? 'text' : 'password'}
@@ -1036,11 +1036,11 @@ function SimplePasswordField({ label, value, onChange, show, onToggle }: { label
              onChange={e => onChange(e.target.value)}
              placeholder="••••••••"
              autoComplete="new-password"
-             className="w-full px-4 py-2.5 pr-10 rounded-xl text-sm border border-slate-200 bg-[#F9F8F6] focus:bg-white focus:border-emerald-500 hover:border-slate-300 outline-none transition-all"
+             className="w-full px-4 py-2.5 pr-10 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all"
           />
           <button 
              onClick={onToggle}
-             className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition-colors"
+             className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-(--ink) rounded-md hover:bg-(--linen)/10 transition-colors cursor-pointer"
              aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
           >
              {show ? <EyeOff size={16} /> : <Eye size={16} />}

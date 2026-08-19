@@ -18,7 +18,8 @@ export function useSecuenciaActions() {
             fecha_inicio: seq.fechaInicio,
             contenido_html: seq.contenidoHtml,
             estado: seq.estado,
-            user_id: session.user.id
+            user_id: session.user.id,
+            recursos: seq.recursos || []
         }]).select();
 
         if (error) {
@@ -32,6 +33,12 @@ export function useSecuenciaActions() {
         }
 
         if (data && data[0]) {
+            let parsedRecursos = [];
+            if (Array.isArray(data[0].recursos)) parsedRecursos = data[0].recursos;
+            else if (typeof data[0].recursos === 'string') {
+                try { parsedRecursos = JSON.parse(data[0].recursos); } catch(e) {}
+            }
+
             const mapped = { 
                 ...data[0], 
                 cursoId: data[0].curso_id, 
@@ -41,7 +48,8 @@ export function useSecuenciaActions() {
                 archivoNombre: data[0].archivo_nombre,
                 archivoSize: data[0].archivo_size,
                 archivoTipo: data[0].archivo_tipo,
-                archivoFechaCarga: data[0].archivo_fecha_carga
+                archivoFechaCarga: data[0].archivo_fecha_carga,
+                recursos: parsedRecursos
             };
             setState(s => ({ ...s, secuencias: [...s.secuencias, mapped] }));
             return mapped;
@@ -52,15 +60,17 @@ export function useSecuenciaActions() {
     const updateSecuencia = useCallback(async (sec: Secuencia) => {
         if (!session?.user?.id) return;
         setState(s => ({ ...s, secuencias: s.secuencias.map(x => x.id === sec.id ? sec : x) }));
-        await supabase.from('secuencias').upsert({
+        const { error } = await supabase.from('secuencias').upsert({
             id: sec.id,
             titulo: sec.titulo,
             curso_id: sec.cursoId,
             fecha_inicio: sec.fechaInicio,
             contenido_html: sec.contenidoHtml,
             estado: sec.estado,
-            user_id: session.user.id
+            user_id: session.user.id,
+            recursos: sec.recursos || []
         });
+        if (error) console.error("Error updating secuencia:", error);
     }, [session, setState]);
 
     const deleteSecuencia = useCallback(async (id: number) => {

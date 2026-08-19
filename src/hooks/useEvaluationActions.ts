@@ -29,7 +29,8 @@ export function useEvaluationActions() {
             is_rec: a.isRec,
             user_id: session.user.id,
             asignatura: a.asignatura || '',
-            shared_course_id: shared_course_id
+            shared_course_id: shared_course_id,
+            indicador: a.indicador
         }]).select();
 
         if (actError) { 
@@ -50,7 +51,8 @@ export function useEvaluationActions() {
                 isRec: actData[0].is_rec,
                 userId: actData[0].user_id,
                 asignatura: actData[0].asignatura,
-                sharedCourseId: actData[0].shared_course_id
+                sharedCourseId: actData[0].shared_course_id,
+                indicador: actData[0].indicador
             };
             setState(s => ({ ...s, actividades: [...s.actividades, newAct] }));
             return newAct;
@@ -131,10 +133,10 @@ export function useEvaluationActions() {
     const updateNivelesPuntaje = useCallback(async (nps: NivelPuntaje[]) => {
         if (!session?.user?.id) return;
         const defaults: Record<number, { puntaje: number; nombre: string; color: string; description: string }> = {
-            4: { puntaje: 100, nombre: 'Estratégico', color: '#5F9563', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
-            3: { puntaje: 85, nombre: 'Autónomo', color: '#79C599', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
-            2: { puntaje: 70, nombre: 'Resolutivo', color: '#D68253', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
-            1: { puntaje: 55, nombre: 'Receptivo', color: '#C63D3D', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' }
+            4: { puntaje: 100, nombre: 'Estratégico', color: '#F5BC5D', description: 'Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },
+            3: { puntaje: 85, nombre: 'Autónomo', color: '#537BAC', description: 'Realiza las tareas por sí solo, cumpliendo los objetivos con eficiencia.' },
+            2: { puntaje: 70, nombre: 'Resolutivo', color: '#689C63', description: 'Identifica el problema y aplica procedimientos básicos para resolverlo.' },
+            1: { puntaje: 55, nombre: 'Receptivo', color: '#EB8847', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' }
         };
 
         const sanitizedNps = nps.map(np => {
@@ -500,7 +502,8 @@ export function useEvaluationActions() {
             is_rec: merged.isRec,
             user_id: session.user.id,
             asignatura: merged.asignatura,
-            shared_course_id: merged.sharedCourseId
+            shared_course_id: merged.sharedCourseId,
+            indicador: merged.indicador
         });
 
         if (!error) {

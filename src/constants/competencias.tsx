@@ -11,23 +11,23 @@ export const BC_ICONS: Record<BCKey, React.ReactNode> = {
 
 export const BC_COLOR_THEMES: Record<BCKey, { bg: string; text: string; active: string }> = {
     BC1: {
-        bg: 'bg-primary/10 text-primary border-primary/20',
-        text: 'text-primary',
-        active: 'bg-primary text-white border-primary'
+        bg: 'bg-cielo-blue/10 text-cielo-blue border-cielo-blue/20',
+        text: 'text-cielo-blue',
+        active: 'bg-cielo-blue text-white border-cielo-blue'
     },
     BC2: {
-        bg: 'bg-warning/15 text-[#8C6D1F] border-warning/30', // darker text for readability on light yellow background
+        bg: 'bg-cielo-gold/15 text-[#8C6D1F] border-cielo-gold/30',
         text: 'text-[#8C6D1F]',
-        active: 'bg-warning text-white border-warning'
+        active: 'bg-cielo-gold text-[#1E293B] border-cielo-gold'
     },
     BC3: {
-        bg: 'bg-danger/10 text-danger border-danger/20',
-        text: 'text-danger',
-        active: 'bg-danger text-white border-danger'
+        bg: 'bg-cielo-terracotta/10 text-cielo-terracotta border-cielo-terracotta/20',
+        text: 'text-cielo-terracotta',
+        active: 'bg-cielo-terracotta text-white border-cielo-terracotta'
     },
     BC4: {
-        bg: 'bg-primary/10 text-primary border-primary/20',
-        text: 'text-primary',
-        active: 'bg-primary text-white border-primary'
+        bg: 'bg-cielo-green/10 text-cielo-green border-cielo-green/20',
+        text: 'text-cielo-green',
+        active: 'bg-cielo-green text-white border-cielo-green'
     }
 };

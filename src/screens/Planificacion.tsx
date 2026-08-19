@@ -1,18 +1,51 @@
-import { useState } from 'react';
-import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark, Link as LinkIcon, Edit2, MessageSquare, Info, Zap, Gamepad2, Presentation, PenTool } from 'lucide-react';
 import blueBookIcon from '../assets/book-blue.png';
 import purpleBookIcon from '../assets/book-purple.png';
-import type { Curso, Secuencia } from '../types';
+import type { Curso, Secuencia, TipoRecurso } from '../types';
 import { getPlanificacionDiariaTemplate } from '../templates/planificacion-diaria';
 import { CieloPill } from '../components/ui/CieloPill';
 import { CieloModal } from '../components/ui/CieloModal';
 
 import { useAppStore } from '../store/appStore';
 
+export function detectResourceType(url: string): TipoRecurso {
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be') || lowerUrl.includes('vimeo.com')) return 'video';
+    if (lowerUrl.includes('docs.google.com/document') || lowerUrl.includes('word') || lowerUrl.includes('drive.google.com')) return 'documento';
+    if (lowerUrl.includes('docs.google.com/presentation') || lowerUrl.includes('slides')) return 'presentacion';
+    if (lowerUrl.includes('canva.com')) return 'canva';
+    if (lowerUrl.endsWith('.pdf') || lowerUrl.includes('pdf')) return 'pdf';
+    return 'web';
+}
+
+export const CATEGORIAS_RECURSOS = [
+    'Reflexión',
+    'Informativo',
+    'Dinámica',
+    'Juego',
+    'Presentación',
+    'Ejercicios',
+    'Otro'
+];
+
+export function getCategoriaConfig(categoria: string) {
+    switch (categoria) {
+        case 'Reflexión': return { icon: MessageSquare, bg: 'bg-(--tag-indigo-bg)', text: 'text-(--tag-indigo-text)', border: 'border-(--tag-indigo-bg)' };
+        case 'Informativo': return { icon: Info, bg: 'bg-(--tag-amber-bg)', text: 'text-(--tag-amber-text)', border: 'border-(--tag-amber-bg)' };
+        case 'Dinámica': return { icon: Zap, bg: 'bg-(--tag-rose-bg)', text: 'text-(--tag-rose-text)', border: 'border-(--tag-rose-bg)' };
+        case 'Juego': return { icon: Gamepad2, bg: 'bg-(--tag-emerald-bg)', text: 'text-(--tag-emerald-text)', border: 'border-(--tag-emerald-bg)' };
+        case 'Presentación': return { icon: Presentation, bg: 'bg-(--tag-purple-bg)', text: 'text-(--tag-purple-text)', border: 'border-(--tag-purple-bg)' };
+        case 'Ejercicios': return { icon: PenTool, bg: 'bg-(--tag-rose-bg)', text: 'text-(--tag-rose-text)', border: 'border-(--tag-rose-bg)' };
+        default: return { icon: LinkIcon, bg: 'bg-(--linen)', text: 'text-(--ink-soft)', border: 'border-(--border-soft)' };
+    }
+}
+
+
 interface Props {
-    onAddSecuencia?: (s: Omit<Secuencia, 'id'>) => void;
-    onUpdateSecuencia?: (seq: Secuencia) => void;
-    onDeleteSecuencia?: (id: number) => void;
+    onAddSecuencia?: (s: Omit<Secuencia, 'id'>) => Promise<any> | any;
+    onUpdateSecuencia?: (seq: Secuencia) => Promise<any> | any;
+    onDeleteSecuencia?: (id: number) => Promise<any> | any;
     readOnly?: boolean;
     initialDatos?: Secuencia;
 }
@@ -24,11 +57,11 @@ function getCursoLabel(curso?: Curso) {
     return `${curso.grado} ${curso.seccion} • ${curso.nombre}`;
 }
 
-function getDisplayStatus(estado: Secuencia['estado']) {
-    if (estado === 'Completada') return 'Completado';
-    if (estado === 'En progreso') return 'En progreso';
-    return 'Sin iniciar';
-}
+// function getDisplayStatus(estado: Secuencia['estado']) {
+//     if (estado === 'Completada') return 'Completado';
+//     if (estado === 'En progreso') return 'En progreso';
+//     return 'Sin iniciar';
+// }
 
 function getDotCount(estado: Secuencia['estado']) {
     if (estado === 'Completada') return 3;
@@ -39,6 +72,7 @@ function getDotCount(estado: Secuencia['estado']) {
 export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecuencia, onDeleteSecuencia, readOnly, initialDatos }: Props) {
     const state = useAppStore((s) => s.state);
     const session = useAppStore((s) => s.session);
+    const loading = useAppStore((s) => s.loading);
 
     if (readOnly && initialDatos) {
         return (
@@ -88,8 +122,83 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
     }
 
     const [cursoSel, setCursoSel] = useState(state.cursos[0]?.id ?? 0);
+
+    useEffect(() => {
+        if ((cursoSel === 0 || !state.cursos.some(c => c.id === cursoSel)) && state.cursos.length > 0) {
+            setCursoSel(state.cursos[0].id);
+        }
+    }, [state.cursos, cursoSel]);
+
+    useEffect(() => {
+        const handleMessage = async (event: MessageEvent) => {
+            if (!event.data || typeof event.data !== 'object') return;
+            const { type, cursoId, html } = event.data;
+
+            if (type === 'GET_ESPECIFICACIONES') {
+                const seq = state.secuencias.find(s => s.cursoId === Number(cursoId) && s.titulo.startsWith('Especificaciones Curriculares'));
+                const sourceWindow = event.source as Window | null;
+                if (sourceWindow) {
+                    if (seq) {
+                        sourceWindow.postMessage({ type: 'LOAD_ESPECIFICACIONES', html: seq.contenidoHtml }, event.origin);
+                    } else {
+                        sourceWindow.postMessage({ type: 'LOAD_ESPECIFICACIONES', html: null }, event.origin);
+                    }
+                }
+            }
+
+            if (type === 'SAVE_ESPECIFICACIONES') {
+                const title = `Especificaciones Curriculares - Curso ${cursoId}`;
+                const matches = state.secuencias.filter(s => s.cursoId === Number(cursoId) && s.titulo.startsWith('Especificaciones Curriculares'));
+
+                if (matches.length > 0) {
+                    const existing = matches[0];
+                    if (onUpdateSecuencia) {
+                        await onUpdateSecuencia({
+                            ...existing,
+                            contenidoHtml: html
+                        });
+                    }
+                    if (matches.length > 1 && onDeleteSecuencia) {
+                        for (let i = 1; i < matches.length; i++) {
+                            await onDeleteSecuencia(matches[i].id);
+                        }
+                    }
+                } else {
+                    if (onAddSecuencia) {
+                        await onAddSecuencia({
+                            titulo: title,
+                            cursoId: Number(cursoId),
+                            fechaInicio: new Date().toISOString().split('T')[0],
+                            contenidoHtml: html,
+                            estado: 'Pendiente'
+                        });
+                    }
+                }
+                const sourceWindow = event.source as Window | null;
+                if (sourceWindow) {
+                    sourceWindow.postMessage({ type: 'SAVE_SUCCESS' }, event.origin);
+                }
+            }
+
+            if (type === 'DELETE_ESPECIFICACIONES') {
+                const matches = state.secuencias.filter(s => s.cursoId === Number(cursoId) && s.titulo.startsWith('Especificaciones Curriculares'));
+                if (matches.length > 0 && onDeleteSecuencia) {
+                    for (const seq of matches) {
+                        await onDeleteSecuencia(seq.id);
+                    }
+                }
+                const sourceWindow = event.source as Window | null;
+                if (sourceWindow) {
+                    sourceWindow.postMessage({ type: 'DELETE_SUCCESS' }, event.origin);
+                }
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [state.secuencias, onAddSecuencia, onUpdateSecuencia, onDeleteSecuencia]);
     const [showModal, setShowModal] = useState(false);
-    const [importStep, setImportStep] = useState<'select' | 'html-form' | 'select-template' | 'template-editor'>('select');
+    const [importStep, setImportStep] = useState<'select-template' | 'template-editor'>('select-template');
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [form, setForm] = useState<{
         titulo: string;
@@ -101,6 +210,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
         archivoSize?: number;
         archivoTipo?: string;
         archivoFechaCarga?: string;
+        recursos?: any[];
     }>({
         titulo: '',
         cursoId: state.cursos[0]?.id ?? 0,
@@ -114,94 +224,172 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
     });
     const [viewerSeq, setViewerSeq] = useState<Secuencia | null>(null);
 
-    const handleHtmlFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const [isAddingRecurso, setIsAddingRecurso] = useState(false);
+    const [editingRecursoId, setEditingRecursoId] = useState<string | null>(null);
+    const [newRecursoUrl, setNewRecursoUrl] = useState('');
+    const [newRecursoCategoria, setNewRecursoCategoria] = useState(CATEGORIAS_RECURSOS[0]);
+    const [newRecursoTargetSeq, setNewRecursoTargetSeq] = useState<'new' | number>('new');
+    const [recursosLoading, setRecursosLoading] = useState(false);
+    const [recursoError, setRecursoError] = useState('');
 
-        setErrorMsg(null);
+    async function handleAddRecurso() {
+        if (!newRecursoUrl.trim() || !newRecursoCategoria) return;
 
-        // Validation: verify file extension
-        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-        if (ext !== '.html' && ext !== '.htm') {
-            setErrorMsg('El archivo seleccionado no es válido. Por favor, cargue un archivo con extensión .html o .htm.');
-            e.target.value = ''; // Reset input
+        try {
+            const urlObj = new URL(newRecursoUrl.trim());
+            if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+                setRecursoError('Introduce un enlace válido.');
+                return;
+            }
+        } catch {
+            setRecursoError('Introduce un enlace válido.');
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const content = event.target?.result as string;
-            const cleanName = file.name.replace(/\.[^/.]+$/, "");
-            setForm({
-                titulo: cleanName,
-                cursoId: state.cursos[0]?.id ?? 0,
-                fechaInicio: new Date().toISOString().split('T')[0],
-                contenidoHtml: content,
-                archivoUrl: undefined,
-                archivoNombre: undefined,
-                archivoSize: undefined,
-                archivoTipo: undefined,
-                archivoFechaCarga: undefined
-            });
-            setImportStep('html-form');
-        };
-        reader.onerror = () => {
-            setErrorMsg('Error al leer el archivo. Inténtelo de nuevo.');
-        };
-        reader.readAsText(file);
-        e.target.value = ''; // Reset input to allow choosing again
-    };
+        setRecursosLoading(true);
+        setRecursoError('');
+        try {
+            const parsedTipo = detectResourceType(newRecursoUrl.trim());
+            if (viewerSeq) {
+                let updatedSecuencia;
+                if (editingRecursoId) {
+                    updatedSecuencia = {
+                        ...viewerSeq,
+                        recursos: (viewerSeq.recursos || []).map((r: any) =>
+                            r.id === editingRecursoId
+                                ? { ...r, titulo: newRecursoCategoria, categoria: newRecursoCategoria, url: newRecursoUrl.trim(), tipo: parsedTipo }
+                                : r
+                        )
+                    };
+                } else {
+                    const newRecurso = {
+                        id: Date.now().toString(),
+                        titulo: newRecursoCategoria,
+                        categoria: newRecursoCategoria,
+                        url: newRecursoUrl.trim(),
+                        tipo: parsedTipo,
+                        orden: (viewerSeq.recursos?.length || 0) + 1
+                    };
+                    updatedSecuencia = {
+                        ...viewerSeq,
+                        recursos: [...(viewerSeq.recursos || []), newRecurso]
+                    };
+                }
 
-    const secuenciasCurso = state.secuencias.filter((secuencia) => secuencia.cursoId === cursoSel && (secuencia.userId === session?.user?.id || !secuencia.userId));
-
-
-    function handleCreate() {
-        if (!form.titulo.trim()) return;
-
-        onAddSecuencia({ ...form, estado: 'Pendiente', cursoId: form.cursoId });
-        setShowModal(false);
-        setForm({
-            titulo: '',
-            cursoId: state.cursos[0]?.id ?? 0,
-            fechaInicio: new Date().toISOString().split('T')[0],
-            contenidoHtml: '',
-            archivoUrl: undefined,
-            archivoNombre: undefined,
-            archivoSize: undefined,
-            archivoTipo: undefined,
-            archivoFechaCarga: undefined
-        });
-        setErrorMsg(null);
+                if (onUpdateSecuencia) {
+                    await onUpdateSecuencia(updatedSecuencia);
+                }
+                setViewerSeq(updatedSecuencia);
+            } else {
+                if (newRecursoTargetSeq !== 'new' && !editingRecursoId) {
+                    const targetSeq = state.secuencias.find(s => s.id === newRecursoTargetSeq);
+                    if (targetSeq) {
+                        const newRecurso = {
+                            id: Date.now().toString(),
+                            titulo: newRecursoCategoria,
+                            categoria: newRecursoCategoria,
+                            url: newRecursoUrl.trim(),
+                            tipo: parsedTipo,
+                            orden: (targetSeq.recursos?.length || 0) + 1
+                        };
+                        const updatedSecuencia = {
+                            ...targetSeq,
+                            recursos: [...(targetSeq.recursos || []), newRecurso]
+                        };
+                        if (onUpdateSecuencia) {
+                            await onUpdateSecuencia(updatedSecuencia);
+                        }
+                    }
+                } else {
+                    let updatedRecursos = form.recursos || [];
+                    if (editingRecursoId) {
+                        updatedRecursos = updatedRecursos.map((r: any) =>
+                            r.id === editingRecursoId
+                                ? { ...r, titulo: newRecursoCategoria, categoria: newRecursoCategoria, url: newRecursoUrl.trim(), tipo: parsedTipo }
+                                : r
+                        );
+                    } else {
+                        const newRecurso = {
+                            id: Date.now().toString(),
+                            titulo: newRecursoCategoria,
+                            categoria: newRecursoCategoria,
+                            url: newRecursoUrl.trim(),
+                            tipo: parsedTipo,
+                            orden: updatedRecursos.length + 1
+                        };
+                        updatedRecursos = [...updatedRecursos, newRecurso];
+                    }
+                    setForm(prev => ({ ...prev, recursos: updatedRecursos }));
+                }
+            }
+            
+            setIsAddingRecurso(false);
+            setEditingRecursoId(null);
+            setNewRecursoUrl('');
+            setNewRecursoCategoria(CATEGORIAS_RECURSOS[0]);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setRecursosLoading(false);
+        }
     }
 
     async function handleCloseViewer() {
         setViewerSeq(null);
     }
 
+    const secuenciasCurso = state.secuencias.filter((secuencia: Secuencia) => secuencia.cursoId === cursoSel && (secuencia.userId === session?.user?.id || !secuencia.userId));
+
+    const allRecursos = secuenciasCurso.flatMap(seq => {
+        let rec = seq.recursos;
+        if (typeof rec === 'string') {
+            try { rec = JSON.parse(rec); } catch(e) { rec = []; }
+        }
+        return (rec || []).map((r: any) => ({ ...r, parentSeqId: seq.id }));
+    });
+    console.log('[DEBUG_RECURSOS] secuenciasCurso:', secuenciasCurso.map(s => ({ id: s.id, recursos: s.recursos })));
+    console.log('[DEBUG_RECURSOS] allRecursos:', allRecursos);
+
+    const viewerRecursos = viewerSeq 
+        ? (viewerSeq.recursos || []).sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0)) 
+        : (form.recursos || []).sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0));
+
+    console.log('[PLANIFICACION] cursoSel:', cursoSel, 'loading:', loading, 'cursos.length:', state.cursos.length);
+
+    if (loading && state.cursos.length === 0) {
+        return (
+            <div className="flex h-full w-full items-center justify-center bg-base-creme">
+                <div className="flex flex-col items-center">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-(--primary) border-t-transparent" />
+                    <p className="mt-4 text-sm font-bold text-(--ink-soft)">Cargando secuencias didácticas...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="flex flex-col flex-1 h-full overflow-hidden bg-base-creme">
+        <div className="flex flex-col flex-1 h-full overflow-hidden bg-(--background)">
             <div className="flex-1 overflow-y-auto px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div>
-                        <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2.5 font-notion-title">
+                        <h1 className="text-3xl font-black text-(--ink) tracking-tight mb-2.5 font-notion-title">
                             Secuencias Didácticas
                         </h1>
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 bg-[#EAE4DA] px-3 py-1 rounded-full border border-[#E8C166]">
-                                <span className="text-xs font-bold text-[#2E3330] uppercase tracking-[0.08em]">
+                            <div className="flex items-center gap-2 bg-(--linen) px-3 py-1 rounded-full border border-(--border-soft)">
+                                <span className="text-xs font-bold text-(--ink) uppercase tracking-[0.08em]">
                                     Pedagogía y Secuencias
                                 </span>
                             </div>
-                            <div className="h-1.5 w-1.5 rounded-full bg-slate-350"></div>
-                            <span className="text-xs font-bold text-[#5F665E] uppercase tracking-[0.08em]">Material Docente</span>
+                            <div className="h-1.5 w-1.5 rounded-full bg-(--border-soft)"></div>
+                            <span className="text-xs font-bold text-(--ink-soft) uppercase tracking-[0.08em]">Material Docente</span>
                         </div>
                     </div>
 
                     <div className="flex flex-col items-stretch sm:items-center gap-3 sm:flex-row">
                         <div className="relative group">
                             <select
-                                className="pl-5 pr-10 appearance-none rounded-full bg-base-creme border border-slate-300 text-[#2E3330] text-xs font-bold uppercase tracking-[0.08em] shadow-sm outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 cursor-pointer transition-all hover:bg-[#FAF6F0] min-w-60 artisan-pill"
+                                className="pl-5 pr-10 appearance-none rounded-full bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-[0.08em] shadow-sm outline-none focus-visible:border-(--primary) focus-visible:ring-2 focus-visible:ring-(--primary)/20 cursor-pointer transition-all hover:bg-(--linen)/45 min-w-60 artisan-pill"
                                 value={cursoSel}
                                 onChange={(event) => setCursoSel(Number(event.target.value))}
                             >
@@ -213,13 +401,13 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                             </select>
                             <ChevronDown
                                 size={14}
-                                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-hover:text-primary"
+                                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-(--ink-soft) transition-colors group-hover:text-(--primary)"
                             />
                         </div>
 
                         <CieloPill
                             as="button"
-                            onClick={() => { setShowModal(true); setImportStep('select'); }}
+                            onClick={() => { setShowModal(true); setImportStep('select-template'); }}
                             variant="primary"
                             className="px-6 gap-2.5 shrink-0 h-9"
                         >
@@ -229,117 +417,178 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                     </div>
                 </div>
 
-                <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
-                    <div className="grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                        {/* Tarjeta Especial de Especificaciones Curriculares */}
-                        <button
-                            type="button"
-                            onClick={() => window.open('/especificaciones.html', '_blank')}
-                            className="group flex flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-[20px] p-5 transition-all bg-base-creme border border-[#E8C166] shadow-sm hover:shadow-md hover:bg-[#F8F3ED]/30 hover:-translate-y-1"
-                        >
-                            <div className="relative flex h-40 items-end justify-center mb-4">
-                                <img
-                                    src="/especificaciones-icon.png"
-                                    alt="Especificaciones Curriculares"
-                                    className="w-28 h-28 object-contain transition-all duration-300 ease-out group-hover:-translate-y-3 group-hover:rotate-1 group-hover:drop-shadow-md"
-                                    onError={(e) => {
-                                        // Fallback a un icono de libro de la app si no se encuentra especificaciones-icon.png
-                                        e.currentTarget.src = BOOK_ICONS[0];
-                                    }}
-                                />
-                                <div className="pointer-events-none absolute bottom-0 h-4 w-16 rounded-full bg-slate-900/5 blur-md transition-all duration-300 group-hover:w-24 group-hover:bg-slate-900/10" />
+                <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
+                    {/* SECCIÓN RECURSOS */}
+                    <div className="mb-10">
+                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-[0.1em] mb-4 border-b border-(--border-soft) pb-2 flex justify-between items-end">
+                            <span>Recursos del Curso</span>
+                        </h2>
+                        
+                        {allRecursos.length > 0 ? (
+                            <div className="flex overflow-x-auto pb-6 gap-5 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                                {allRecursos.map((recurso: any, index: number) => {
+                                    const cat = recurso.categoria || recurso.titulo || 'Otro';
+                                    const { icon: Icon, bg, text, border } = getCategoriaConfig(cat);
+                                    return (
+                                        <div key={`${recurso.id}-${index}`} className="relative group flex flex-col items-center gap-2 w-[80px] shrink-0">
+                                            <button
+                                                onClick={() => window.open(recurso.url, "_blank", "noopener,noreferrer")}
+                                                title="Abrir recurso"
+                                                className={`relative w-[70px] h-[98px] rounded-r-md rounded-l-sm border ${bg} ${border} shadow-sm transition-all duration-300 ease-out flex flex-col items-center justify-center cursor-pointer outline-none group-hover:-translate-y-1.5 group-hover:shadow-md`}
+                                            >
+                                                <div className="absolute left-0 top-0 bottom-0 w-1.5 opacity-15 mix-blend-multiply bg-black rounded-l-sm"></div>
+                                                <Icon size={24} className={`${text} opacity-80`} />
+                                                <div className="absolute bottom-2 left-2 right-2 h-0.5 bg-black/5 rounded-full"></div>
+                                                <div className="absolute bottom-3 left-2 right-3 h-0.5 bg-black/5 rounded-full"></div>
+                                            </button>
+                                            <span className="text-[10px] font-bold text-(--ink-soft) text-center leading-tight w-full line-clamp-2 px-1" title={cat}>
+                                                {cat}
+                                            </span>
+                                            
+                                            <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1 z-10">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        if (window.confirm('¿Eliminar recurso?')) {
+                                                            const parentSeq = secuenciasCurso.find(s => s.id === recurso.parentSeqId);
+                                                            if (parentSeq && onUpdateSecuencia) {
+                                                                const updatedSeq = {
+                                                                    ...parentSeq,
+                                                                    recursos: (parentSeq.recursos || []).filter((r: any) => r.id !== recurso.id)
+                                                                };
+                                                                onUpdateSecuencia(updatedSeq);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="w-6 h-6 rounded-full bg-white border border-(--border-soft) flex items-center justify-center text-(--ink-soft) hover:text-(--danger) hover:border-(--danger)/30 shadow-md transition-colors outline-none"
+                                                    title="Eliminar"
+                                                >
+                                                    <Trash2 size={10} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
                             </div>
+                        ) : (
+                            <div className="py-8 px-6 bg-(--linen)/30 border border-dashed border-(--border-soft) rounded-2xl flex flex-col items-center justify-center text-center">
+                                <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-2">No hay recursos</p>
+                                <p className="text-xs text-(--ink-soft)/70 max-w-sm">Los enlaces y recursos que agregues a las secuencias de este curso aparecerán aquí como acceso rápido.</p>
+                            </div>
+                        )}
+                    </div>
 
-                            <div className="max-w-44 flex-1">
-                                <h3 className="text-sm font-black text-[#2E3330] leading-snug group-hover:text-primary transition-colors font-notion-title">
+                    {/* SECCIÓN PLANTILLAS */}
+                    <div>
+                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-[0.1em] mb-4 border-b border-(--border-soft) pb-2 flex justify-between items-end">
+                            <span>Plantillas y Secuencias</span>
+                        </h2>
+                        
+                        <div className="flex overflow-x-auto pb-8 gap-8 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pt-2 px-2">
+                            {/* Especificaciones Curriculares */}
+                            <button
+                                type="button"
+                                onClick={() => window.open(`/especificaciones.html?cursoId=${cursoSel}`, '_blank')}
+                                className="relative w-[140px] shrink-0 group flex flex-col items-center text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-2"
+                            >
+                                <div className="w-full h-[190px] flex flex-col items-center justify-center mb-3">
+                                    <img
+                                        src="/especificaciones-icon.png"
+                                        alt=""
+                                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-sm"
+                                        onError={(e) => { e.currentTarget.src = BOOK_ICONS[0]; }}
+                                    />
+                                </div>
+                                <h3 className="text-xs font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-center w-full px-1 line-clamp-2 leading-snug">
                                     Especificaciones Curriculares
                                 </h3>
-                                <p className="mt-1 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                    Documento Interactivo
+                                <p className="mt-1.5 text-[10px] font-bold text-(--primary) text-center uppercase tracking-widest bg-(--primary)/10 px-2 py-0.5 rounded-full">
+                                    Interactivo
                                 </p>
-                            </div>
+                            </button>
 
-                            <div className="mt-3.5 flex flex-col items-center gap-2">
-                                <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#2E3330] px-2.5 py-0.5 rounded-full border border-slate-100 group-hover:border-primary/20 group-hover:text-primary bg-[#EAE4DA]/30 transition-colors">
-                                    Abrir Recurso
-                                </p>
-                            </div>
-                        </button>
+                            {/* Resto de secuencias didácticas del curso */}
+                            {secuenciasCurso.map((seq, index) => {
+                                const curso = state.cursos.find((item) => item.id === seq.cursoId);
+                                const bookIcon = BOOK_ICONS[index % BOOK_ICONS.length];
+                                const filledDots = getDotCount(seq.estado);
 
-                        {/* Resto de secuencias didácticas del curso */}
-                        {secuenciasCurso.map((seq, index) => {
-                            const curso = state.cursos.find((item) => item.id === seq.cursoId);
-                            const bookIcon = BOOK_ICONS[index % BOOK_ICONS.length];
-                            const filledDots = getDotCount(seq.estado);
+                                const bgClasses = [
+                                    "bg-white",
+                                    "bg-(--tag-indigo-bg)",
+                                    "bg-(--tag-rose-bg)",
+                                    "bg-white",
+                                    "bg-(--tag-cyan-bg)",
+                                ];
+                                const bgColor = bgClasses[index % bgClasses.length];
 
-                            return (
-                                <button
-                                    key={seq.id}
-                                    type="button"
-                                    onClick={() => setViewerSeq(seq)}
-                                    className="group flex flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-[20px] p-5 transition-all bg-base-creme border border-[#E8C166] shadow-sm hover:shadow-md hover:bg-[#F8F3ED]/30 hover:-translate-y-1"
-                                >
-                                    <div className="relative flex h-40 items-end justify-center mb-4">
-                                        <img
-                                            src={bookIcon}
-                                            alt=""
-                                            className="w-28 transition-all duration-300 ease-out group-hover:-translate-y-3 group-hover:rotate-1 group-hover:drop-shadow-md"
-                                        />
-                                        <div className="pointer-events-none absolute bottom-0 h-4 w-16 rounded-full bg-slate-900/5 blur-md transition-all duration-300 group-hover:w-24 group-hover:bg-slate-900/10" />
-                                    </div>
-
-                                    <div className="max-w-44 flex-1">
-                                        <h3 className="text-sm font-black text-[#2E3330] leading-snug group-hover:text-primary transition-colors font-notion-title">
+                                return (
+                                    <button
+                                        key={seq.id}
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setViewerSeq(seq);
+                                        }}
+                                        className="relative w-[140px] shrink-0 group flex flex-col items-center text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-2"
+                                    >
+                                        <div className="w-full h-[190px] flex flex-col items-center justify-center mb-3">
+                                            <img
+                                                src={bookIcon}
+                                                alt=""
+                                                className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-sm"
+                                            />
+                                        </div>
+                                        
+                                        <h3 className="text-xs font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-center w-full px-1 line-clamp-2 leading-snug" title={seq.titulo}>
                                             {seq.titulo}
                                         </h3>
-                                        <p className="mt-1 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                            {curso?.grado} {curso?.seccion}
-                                        </p>
-                                    </div>
-
-                                    <div className="mt-3.5 flex flex-col items-center gap-2">
-                                        <div className="flex items-center gap-1">
-                                            {[0, 1, 2].map((dot) => (
-                                                <span
-                                                    key={dot}
-                                                    className={`h-1.5 w-1.5 rounded-full ${dot < filledDots ? 'bg-primary' : 'bg-slate-200'}`}
-                                                />
-                                            ))}
+                                        
+                                        <div className="mt-1.5 flex flex-col items-center gap-1.5 w-full">
+                                            <p className="text-[10px] font-bold text-(--ink-soft) uppercase tracking-widest text-center truncate w-full px-2">
+                                                {curso?.grado} {curso?.seccion}
+                                            </p>
+                                            <div className="flex items-center gap-1">
+                                                {[0, 1, 2].map((dot) => (
+                                                    <span
+                                                        key={dot}
+                                                        className={`h-1.5 w-1.5 rounded-full ${dot < filledDots ? 'bg-(--primary)' : 'bg-slate-200'}`}
+                                                    />
+                                                ))}
+                                            </div>
                                         </div>
-                                        <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#2E3330] px-2.5 py-0.5 rounded-full border border-slate-100 group-hover:border-primary/20 group-hover:text-primary bg-[#EAE4DA]/30 transition-colors">
-                                            {getDisplayStatus(seq.estado)}
-                                        </p>
-                                    </div>
-                                </button>
-                            );
-                        })}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>
 
                       {viewerSeq && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F8F3ED]/90 p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-(--ink)/40 p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-200">
                     <div
-                        className="flex h-[min(92vh,58rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[20px] border border-[#E8C166] bg-base-creme shadow-2xl animate-in zoom-in-95 duration-300"
+                        className="flex h-[min(92vh,58rem)] w-full max-w-6xl flex-col overflow-hidden rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-md animate-in zoom-in-95 duration-300"
                     >
-                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 bg-base-creme px-8 py-6">
+                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-(--border-soft) bg-white px-8 py-6">
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 mb-1.5">
-                                    <span className="text-xs font-bold uppercase tracking-widest text-[#2E3330] bg-primary/30 px-2.5 py-1 rounded-full border border-[#E8C166]">
+                                    <span className="text-xs font-bold uppercase tracking-widest text-(--ink) bg-(--primary)/15 px-2.5 py-1 rounded-full border border-(--border-soft)">
                                         Vista de Lectura
                                     </span>
                                 </div>
-                                <h2 className="text-xl font-black tracking-tight text-[#2E3330] font-notion-title">
+                                <h2 className="text-xl font-black tracking-tight text-(--ink) font-notion-title">
                                     {viewerSeq.titulo}
                                 </h2>
-                                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-bold text-[#5F665E] uppercase tracking-widest">
+                                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-bold text-(--ink-soft) uppercase tracking-widest">
                                     <span className="flex items-center gap-1.5">
-                                        <Bookmark size={12} className="text-slate-400" />
+                                        <Bookmark size={12} className="text-(--ink-soft)" />
                                         {getCursoLabel(state.cursos.find((curso) => curso.id === viewerSeq.cursoId))}
                                     </span>
-                                    <span className="text-slate-300">•</span>
+                                    <span className="text-slate-350">•</span>
                                     <span className="inline-flex items-center gap-1.5">
-                                        <Calendar size={12} className="text-slate-400" />
+                                        <Calendar size={12} className="text-(--ink-soft)" />
                                         {new Date(viewerSeq.fechaInicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
                                     </span>
                                 </div>
@@ -347,7 +596,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
                             <div className="flex flex-wrap items-center gap-2.5">
                                 <select
-                                    className="px-3 rounded-full border border-slate-350 bg-base-creme text-xs font-bold text-[#2E3330] uppercase tracking-[0.08em] outline-none transition-all focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 appearance-none relative shadow-sm artisan-pill artisan-btn-white"
+                                    className="px-3 rounded-full border border-(--border-soft) bg-white text-xs font-bold text-(--ink) uppercase tracking-[0.08em] outline-none transition-all focus-visible:border-(--primary) focus-visible:ring-2 focus-visible:ring-(--primary)/20 appearance-none relative shadow-sm artisan-pill artisan-btn-white"
                                     value={viewerSeq.estado}
                                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232e3330'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '0.8rem', paddingRight: '2rem' }}
                                     onChange={(event) => {
@@ -364,20 +613,37 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                 </select>
 
                                 {viewerSeq.contenidoHtml?.includes('contenteditable="true"') && onUpdateSecuencia && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const container = document.getElementById('viewer-content-container');
-                                            if (container && onUpdateSecuencia) {
-                                                onUpdateSecuencia({ ...viewerSeq, contenidoHtml: container.innerHTML });
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const container = document.getElementById('viewer-content-container');
+                                                if (container && onUpdateSecuencia) {
+                                                    onUpdateSecuencia({ ...viewerSeq, contenidoHtml: container.innerHTML });
+                                                }
+                                                window.open(`/planificacion-diaria/${viewerSeq.id}`, '_blank');
                                                 void handleCloseViewer();
-                                            }
-                                        }}
-                                        className="px-4.5 rounded-full bg-primary text-white text-xs font-bold uppercase tracking-[0.08em] shadow-sm hover:bg-primary/90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/50 flex items-center gap-1.5 artisan-pill"
-                                        style={{ height: '36px' }}
-                                    >
-                                        Guardar
-                                    </button>
+                                            }}
+                                            className="px-4.5 rounded-full bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-[0.08em] shadow-sm hover:bg-(--linen)/30 transition-all outline-none flex items-center gap-1.5 artisan-pill"
+                                            style={{ height: '36px' }}
+                                        >
+                                            Abrir en otra pestaña
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const container = document.getElementById('viewer-content-container');
+                                                if (container && onUpdateSecuencia) {
+                                                    onUpdateSecuencia({ ...viewerSeq, contenidoHtml: container.innerHTML });
+                                                    void handleCloseViewer();
+                                                }
+                                            }}
+                                            className="px-4.5 rounded-full bg-(--primary) text-white text-xs font-bold uppercase tracking-[0.08em] shadow-sm hover:opacity-90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 flex items-center gap-1.5 artisan-pill"
+                                            style={{ height: '36px' }}
+                                        >
+                                            Guardar
+                                        </button>
+                                    </>
                                 )}
 
                                 {onDeleteSecuencia && (
@@ -389,7 +655,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                                 void handleCloseViewer();
                                             }
                                         }}
-                                        className="w-9 h-9 flex items-center justify-center rounded-full bg-base-creme border border-slate-350 text-slate-400 hover:text-attention hover:bg-attention/5 hover:border-attention/20 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-attention/50"
+                                        className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-(--border-soft) text-(--ink-soft) hover:text-(--danger) hover:bg-(--tag-rose-bg) hover:border-(--border-soft) transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--danger)/50"
                                     >
                                         <Trash2 size={14} />
                                     </button>
@@ -398,36 +664,152 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                 <button
                                     type="button"
                                     onClick={handleCloseViewer}
-                                    className="w-9 h-9 flex items-center justify-center rounded-full bg-base-creme border border-slate-350 text-slate-400 hover:text-[#2E3330] hover:bg-slate-100 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-(--border-soft) text-(--ink-soft) hover:text-(--ink) hover:bg-(--linen)/30 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--ink-soft)"
                                 >
                                     <X size={15} strokeWidth={2.5} />
                                 </button>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-auto bg-slate-50 p-6 sm:p-10">
+                        <div className="flex-1 overflow-auto bg-(--linen)/20 p-6 sm:p-10">
+                            <div className="w-full max-w-4xl mx-auto mb-6">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {viewerRecursos.map((recurso: any) => {
+                                        const cat = recurso.categoria || recurso.titulo || 'Otro';
+                                        const { icon: Icon, bg, text, border } = getCategoriaConfig(cat);
+                                        return (
+                                            <div key={recurso.id} className="relative group flex items-center">
+                                                <button
+                                                    onClick={() => window.open(recurso.url, "_blank", "noopener,noreferrer")}
+                                                    title="Abrir recurso"
+                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${bg} ${border} ${text} text-xs font-bold uppercase tracking-wider hover:brightness-95 transition-all shadow-sm artisan-pill cursor-pointer outline-none`}
+                                                >
+                                                    <Icon size={14} />
+                                                    {cat}
+                                                </button>
+                                                <div className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 z-10">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setEditingRecursoId(recurso.id);
+                                                            setNewRecursoCategoria(recurso.categoria || recurso.titulo || CATEGORIAS_RECURSOS[0]);
+                                                            setNewRecursoUrl(recurso.url);
+                                                            setRecursoError('');
+                                                            setIsAddingRecurso(false);
+                                                        }}
+                                                        className="w-7 h-7 rounded-full bg-white border border-(--border-soft) flex items-center justify-center text-(--ink-soft) hover:text-(--primary) hover:border-(--primary)/30 shadow-sm transition-colors outline-none"
+                                                        title="Editar recurso"
+                                                    >
+                                                        <Edit2 size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            if (window.confirm('¿Eliminar recurso?')) {
+                                                                if (viewerSeq) {
+                                                                    const updatedSecuencia = {
+                                                                        ...viewerSeq,
+                                                                        recursos: (viewerSeq.recursos || []).filter((r: any) => r.id !== recurso.id)
+                                                                    };
+                                                                    if (onUpdateSecuencia) onUpdateSecuencia(updatedSecuencia);
+                                                                    setViewerSeq(updatedSecuencia);
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="w-7 h-7 rounded-full bg-white border border-(--border-soft) flex items-center justify-center text-(--ink-soft) hover:text-(--danger) hover:border-(--danger)/30 shadow-sm transition-colors outline-none"
+                                                        title="Eliminar recurso"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                    
+                                    {(!isAddingRecurso && !editingRecursoId) && (
+                                        <button
+                                            onClick={() => { setIsAddingRecurso(true); setEditingRecursoId(null); setNewRecursoCategoria(CATEGORIAS_RECURSOS[0]); setNewRecursoUrl(''); setRecursoError(''); }}
+                                            className="px-3 py-1.5 rounded-full bg-(--linen)/30 border border-(--border-soft) text-(--ink-soft) text-xs font-bold uppercase tracking-wider hover:bg-(--linen) hover:text-(--ink) transition-all flex items-center gap-1.5 shadow-sm border-dashed artisan-pill outline-none"
+                                        >
+                                            <Plus size={14} strokeWidth={3} /> Agregar recurso
+                                        </button>
+                                    )}
+                                </div>
+
+                                {(isAddingRecurso || editingRecursoId) && (
+                                    <div className="mt-4 p-5 rounded-2xl bg-white border border-(--border-soft) shadow-sm animate-in fade-in slide-in-from-top-2 max-w-2xl">
+                                        <div className="grid gap-4 sm:grid-cols-12 mb-4">
+                                            <div className="sm:col-span-6">
+                                                <label className="block text-xs font-black uppercase tracking-widest text-(--ink-soft) mb-1.5 ml-1">Categoría</label>
+                                                <div className="relative">
+                                                    <select
+                                                        value={newRecursoCategoria}
+                                                        onChange={(e) => { setNewRecursoCategoria(e.target.value); setRecursoError(''); }}
+                                                        className="w-full px-4 py-2.5 rounded-xl border border-(--border-soft) bg-white text-sm font-bold text-(--ink) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all appearance-none artisan-pill"
+                                                        disabled={recursosLoading}
+                                                    >
+                                                        {CATEGORIAS_RECURSOS.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                                    </select>
+                                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-(--ink-soft) pointer-events-none" />
+                                                </div>
+                                            </div>
+                                            <div className="sm:col-span-6">
+                                                <label className="block text-xs font-black uppercase tracking-widest text-(--ink-soft) mb-1.5 ml-1">URL (Enlace)</label>
+                                                <input
+                                                    type="url"
+                                                    value={newRecursoUrl}
+                                                    onChange={(e) => { setNewRecursoUrl(e.target.value); setRecursoError(''); }}
+                                                    placeholder="https://"
+                                                    className="w-full px-4 py-2.5 rounded-xl border border-(--border-soft) bg-white text-sm font-bold text-(--ink) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all artisan-pill"
+                                                    disabled={recursosLoading}
+                                                />
+                                            </div>
+                                        </div>
+                                        {recursoError && <p className="text-xs font-bold text-(--danger) mb-3 ml-1">{recursoError}</p>}
+                                        <div className="flex gap-3 justify-end">
+                                            <button
+                                                onClick={() => { setIsAddingRecurso(false); setEditingRecursoId(null); setNewRecursoCategoria(CATEGORIAS_RECURSOS[0]); setNewRecursoUrl(''); setRecursoError(''); }}
+                                                className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-(--ink-soft) hover:bg-(--border-soft)/50 transition-colors artisan-pill"
+                                                disabled={recursosLoading}
+                                            >
+                                                Cancelar
+                                            </button>
+                                            <button
+                                                onClick={handleAddRecurso}
+                                                className="px-5 py-2 rounded-xl bg-(--primary) text-white text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50 artisan-pill shadow-sm"
+                                                disabled={recursosLoading || !newRecursoUrl.trim()}
+                                            >
+                                                {recursosLoading ? 'Guardando...' : (editingRecursoId ? 'Actualizar' : 'Guardar')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="flex min-h-full items-start justify-center">
-                                <div className="w-full max-w-4xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-14">
+                                <div className="w-full max-w-4xl rounded-(--radius-lg) border border-(--border-soft) bg-white p-8 shadow-sm sm:p-14">
                                     {viewerSeq.contenidoHtml ? (
                                         <div
                                             id="viewer-content-container"
-                                            className="z-100 prose prose-slate prose-lg mx-auto max-w-none text-slate-800 prose-headings:font-extrabold prose-headings:tracking-tight prose-headings:text-slate-900 prose-p:text-slate-600 prose-strong:text-slate-900 prose-code:text-emerald-600"
+                                            className="z-100 prose prose-slate prose-lg mx-auto max-w-none text-(--ink) prose-headings:font-extrabold prose-headings:tracking-tight prose-headings:text-(--ink) prose-p:text-(--ink-soft) prose-strong:text-(--ink) prose-code:text-(--primary)"
                                             dangerouslySetInnerHTML={{ __html: viewerSeq.contenidoHtml }}
                                         />
                                     ) : (
                                         <div className="flex min-h-96 flex-col items-center justify-center text-center">
-                                            <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-6">
-                                                <BookOpen size={32} className="text-slate-300" />
+                                            <div className="w-16 h-16 rounded-full bg-(--linen)/20 flex items-center justify-center mb-6">
+                                                <BookOpen size={32} className="text-(--ink-soft)" />
                                             </div>
-                                            <h3 className="text-xl font-bold text-slate-900">
+                                            <h3 className="text-xl font-bold text-(--ink)">
                                                 Esta secuencia aún no tiene contenido
                                             </h3>
-                                            <p className="mt-3 max-w-sm text-sm font-medium text-slate-500 leading-relaxed">
+                                            <p className="mt-3 max-w-sm text-sm font-medium text-(--ink-soft) leading-relaxed">
                                                 Puedes editar esta secuencia para agregar el contenido didáctico, imágenes o recursos para tu clase.
                                             </p>
                                         </div>
                                     )}
-                                </div>
+                                         </div>
                             </div>
                         </div>
                     </div>
@@ -440,285 +822,307 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                     setShowModal(false);
                     setErrorMsg(null);
                 }}
-                title={importStep === 'select' ? 'Nueva Planificación' : 'Crear Secuencia HTML'}
+                title="Nueva Planificación"
                 subtitle="Centro de Planificación"
                 icon={<BookOpen size={20} />}
                 maxWidth="3xl"
             >
                 <div className="space-y-4">
                          {errorMsg && (
-                             <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider">
+                             <div className="mb-6 p-4 rounded-xl bg-(--tag-rose-bg) border border-(--border-soft) text-(--tag-rose-text) text-xs font-bold uppercase tracking-wider">
                                  {errorMsg}
                              </div>
                          )}
 
-                         {importStep === 'select' && (
-                             <div className="p-8 space-y-4">
-                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">
-                                     Seleccione el método de creación de su secuencia didáctica
-                                 </p>
-                                 
-                                 <div className="grid gap-4">
-                                     <button
-                                         onClick={() => {
-                                             setForm({
-                                                 titulo: '',
-                                                 cursoId: state.cursos[0]?.id ?? 0,
-                                                 fechaInicio: new Date().toISOString().split('T')[0],
-                                                 contenidoHtml: '',
-                                                 archivoUrl: undefined,
-                                                 archivoNombre: undefined,
-                                                 archivoSize: undefined,
-                                                 archivoTipo: undefined,
-                                                 archivoFechaCarga: undefined
-                                             });
-                                             setErrorMsg(null);
-                                             setImportStep('html-form');
-                                         }}
-                                         className="w-full text-left p-6 rounded-2xl border border-slate-200 bg-white hover:border-primary hover:bg-slate-50/50 transition-all cursor-pointer group"
-                                     >
-                                         <h3 className="text-sm font-black uppercase tracking-wider text-[#1E293B] group-hover:text-primary transition-colors">
-                                             Crear secuencia HTML
-                                         </h3>
-                                         <p className="mt-2 text-xs font-medium text-slate-500 leading-relaxed">
-                                             Diseñe y configure la secuencia estructurando manualmente el título, curso asignado y contenido HTML de la clase.
-                                         </p>
-                                     </button>
-
-                                     <button
-                                         onClick={() => {
-                                             setErrorMsg(null);
-                                             setImportStep('select-template');
-                                         }}
-                                         className="w-full text-left p-6 rounded-2xl border border-slate-200 bg-white hover:border-primary hover:bg-slate-50/50 transition-all cursor-pointer group"
-                                     >
-                                         <h3 className="text-sm font-black uppercase tracking-wider text-[#1E293B] group-hover:text-primary transition-colors">
-                                             Usar una plantilla
-                                         </h3>
-                                         <p className="mt-2 text-xs font-medium text-slate-500 leading-relaxed">
-                                             Seleccione una plantilla predefinida y deje que CIELO autocomplete su información para comenzar.
-                                         </p>
-                                     </button>
-
-                                     <label
-                                         className="w-full text-left p-6 rounded-2xl border border-slate-200 bg-white hover:border-primary hover:bg-slate-50/50 transition-all cursor-pointer group block"
-                                     >
-                                         <input
-                                             type="file"
-                                             accept=".html,.htm"
-                                             className="hidden"
-                                             onChange={handleHtmlFileChange}
-                                         />
-                                         <h3 className="text-sm font-black uppercase tracking-wider text-[#1E293B] group-hover:text-primary transition-colors">
-                                             Subir archivo HTML
-                                         </h3>
-                                         <p className="mt-2 text-xs font-medium text-slate-500 leading-relaxed">
-                                             Seleccione un archivo HTML (.html o .htm) de su computadora para cargar su contenido en el editor.
-                                         </p>
-                                     </label>
-                                 </div>
-                             </div>
-                         )}
-
-                         {importStep === 'html-form' && (
-                             <>
-                                 <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto">
-                                     <div className="grid gap-6 md:grid-cols-2">
-                                         <div className="space-y-2">
-                                             <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">
-                                                 Título de la secuencia
-                                             </label>
-                                             <input
-                                                 className="h-14 w-full px-5 rounded-2xl bg-white border border-slate-200 text-[#1E293B] text-sm font-bold shadow-sm outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/50 transition-all placeholder:font-medium placeholder:text-slate-400"
-                                                 placeholder="Ej. Unidad 1 - Comprensión lectora"
-                                                 value={form.titulo}
-                                                 onChange={(event) => setForm((prev) => ({ ...prev, titulo: event.target.value }))}
-                                             />
-                                         </div>
-
-                                         <div className="space-y-2">
-                                             <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">
-                                                 Curso vinculado
-                                             </label>
-                                             <div className="relative">
-                                                 <select
-                                                     className="h-14 w-full px-5 pr-11 appearance-none rounded-2xl bg-white border border-slate-200 text-[#1E293B] text-sm font-bold shadow-sm outline-none transition-all focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer"
-                                                     value={form.cursoId}
-                                                     onChange={(event) => setForm((prev) => ({ ...prev, cursoId: Number(event.target.value) }))}
-                                                 >
-                                                     {state.cursos.map((curso) => (
-                                                         <option key={curso.id} value={curso.id}>
-                                                             {getCursoLabel(curso)}
-                                                         </option>
-                                                     ))}
-                                                 </select>
-                                                 <ChevronDown
-                                                     size={14}
-                                                     className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
-                                                 />
-                                             </div>
-                                         </div>
-                                     </div>
-
-                                     <div className="space-y-2">
-                                         <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">
-                                             Contenido HTML (Cuerpo de la clase)
-                                         </label>
-                                         <textarea
-                                             className="h-64 w-full rounded-2xl border border-slate-200 bg-slate-900 p-5 font-mono text-sm leading-relaxed text-[#0F753D] outline-none transition-all focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary shadow-sm"
-                                             placeholder="<h2>Introducción</h2>\n<p>Escribe aquí el contenido didáctico de tu clase...</p>"
-                                             value={form.contenidoHtml}
-                                             onChange={(event) => setForm((prev) => ({ ...prev, contenidoHtml: event.target.value }))}
-                                         />
-                                     </div>
-                                 </div>
-
-
-                                 <div className="flex flex-col gap-3 pt-6 sm:flex-row">
-                                     <button
-                                         type="button"
-                                         onClick={() => {
-                                             setErrorMsg(null);
-                                             setImportStep('select');
-                                         }}
-                                         className="h-10 px-6 rounded-full bg-white border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all flex-1"
-                                     >
-                                         Volver
-                                     </button>
-                                     <button
-                                         type="button"
-                                         onClick={handleCreate}
-                                         className="h-10 px-6 rounded-full bg-primary text-white text-xs font-black uppercase tracking-widest shadow-md shadow-primary/20 hover:bg-primary/90 hover:-translate-y-0.5 active:scale-95 transition-all flex-1"
-                                     >
-                                         Publicar Secuencia
-                                     </button>
-                                 </div>
-                             </>
-                         )}
-
                          {importStep === 'select-template' && (
-                             <div className="p-8 space-y-4">
-                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">
-                                     Plantillas Disponibles
-                                 </p>
-                                 <div className="grid gap-4">
-                                     <button
-                                         onClick={() => {
-                                             const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
-                                             const centroNombre = session?.user?.user_metadata?.centro_nombre || 'Mi Centro'; // Simplified fallback
-                                             const codigoCentro = session?.user?.user_metadata?.codigo_centro || '';
-                                             const docenteNombre = session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
-                                             
-                                             const htmlContent = getPlanificacionDiariaTemplate({
-                                                 centro: centroNombre,
-                                                 codigoCentro: codigoCentro,
-                                                 docente: docenteNombre,
-                                                 asignatura: curso?.asignatura || '',
-                                                 grado: curso?.grado || '',
-                                                 seccion: curso?.seccion || '',
-                                                 fecha: form.fechaInicio
-                                             });
+                              <div className="p-8 space-y-4">
+                                         {/* SECCIÓN RECURSOS */}
+                                  <div className="mb-8">
+                                      <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-sm font-bold text-(--ink) uppercase tracking-widest flex items-center gap-2">
+                                            <Bookmark size={16} className="text-(--primary)" /> Recursos Rápidos
+                                        </h3>
+                                      </div>
 
-                                             setForm(prev => ({
-                                                 ...prev,
-                                                 titulo: 'Planificación - ' + (curso?.asignatura || 'Clase'),
-                                                 contenidoHtml: htmlContent
-                                             }));
-                                             setImportStep('template-editor');
-                                         }}
-                                         className="w-full text-left p-6 rounded-2xl border border-slate-200 bg-white hover:border-primary hover:bg-slate-50/50 transition-all cursor-pointer group flex items-start gap-4"
-                                     >
-                                         <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 border border-blue-100">
-                                            <BookOpen size={24} className="text-blue-500" />
-                                         </div>
-                                         <div>
-                                            <h3 className="text-sm font-black uppercase tracking-wider text-[#1E293B] group-hover:text-primary transition-colors">
-                                                Planificación de Clase Diaria
-                                            </h3>
-                                            <p className="mt-1 text-xs font-medium text-slate-500 leading-relaxed">
-                                                Formato estándar MINERD para planificar el día a día, con secciones de inicio, desarrollo, cierre e indicadores de logro.
-                                            </p>
-                                         </div>
-                                     </button>
-                                 </div>
-                                 <div className="mt-6 pt-6 flex justify-start">
-                                     <button
-                                         type="button"
-                                         onClick={() => setImportStep('select')}
-                                         className="px-6 py-2.5 rounded-full border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all"
-                                     >
-                                         Volver
-                                     </button>
-                                 </div>
-                             </div>
-                         )}
-                </div>
-            </CieloModal>
+                                      <div className="flex flex-wrap items-center gap-2 mb-4">
+                                          {viewerRecursos.map((recurso: any) => {
+                                              const cat = recurso.categoria || recurso.titulo || 'Otro';
+                                              const { icon: Icon, bg, text, border } = getCategoriaConfig(cat);
+                                              return (
+                                                  <div key={recurso.id} className="relative group flex items-center">
+                                                      <button
+                                                          onClick={() => window.open(recurso.url, "_blank", "noopener,noreferrer")}
+                                                          title="Abrir recurso"
+                                                          className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${bg} ${border} ${text} text-xs font-bold uppercase tracking-wider hover:brightness-95 transition-all shadow-sm artisan-pill cursor-pointer outline-none`}
+                                                      >
+                                                          <Icon size={14} />
+                                                          {cat}
+                                                      </button>
+                                                      <div className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 z-10">
+                                                          <button
+                                                              onClick={(e) => {
+                                                                  e.preventDefault();
+                                                                  e.stopPropagation();
+                                                                  setEditingRecursoId(recurso.id);
+                                                                  setNewRecursoCategoria(recurso.categoria || recurso.titulo || CATEGORIAS_RECURSOS[0]);
+                                                                  setNewRecursoUrl(recurso.url);
+                                                                  setRecursoError('');
+                                                                  setIsAddingRecurso(false);
+                                                              }}
+                                                              className="w-7 h-7 rounded-full bg-white border border-(--border-soft) flex items-center justify-center text-(--ink-soft) hover:text-(--primary) hover:border-(--primary)/30 shadow-sm transition-colors outline-none"
+                                                              title="Editar recurso"
+                                                          >
+                                                              <Edit2 size={12} />
+                                                          </button>
+                                                          <button
+                                                              onClick={(e) => {
+                                                                  e.preventDefault();
+                                                                  e.stopPropagation();
+                                                                  if (window.confirm('¿Eliminar recurso?')) {
+                                                                      const updatedRecursos = (form.recursos || []).filter((r: any) => r.id !== recurso.id);
+                                                                      setForm(prev => ({ ...prev, recursos: updatedRecursos }));
+                                                                  }
+                                                              }}
+                                                              className="w-7 h-7 rounded-full bg-white border border-(--border-soft) flex items-center justify-center text-(--ink-soft) hover:text-(--danger) hover:border-(--danger)/30 shadow-sm transition-colors outline-none"
+                                                              title="Eliminar recurso"
+                                                          >
+                                                              <Trash2 size={12} />
+                                                          </button>
+                                                      </div>
+                                                  </div>
+                                              )
+                                          })}
+                                          
+                                          {(!isAddingRecurso && !editingRecursoId) && (
+                                              <button
+                                                  onClick={() => { setIsAddingRecurso(true); setEditingRecursoId(null); setNewRecursoCategoria(CATEGORIAS_RECURSOS[0]); setNewRecursoUrl(''); setRecursoError(''); }}
+                                                  className="px-3 py-1.5 rounded-full bg-(--linen)/30 border border-(--border-soft) text-(--ink-soft) text-xs font-bold uppercase tracking-wider hover:bg-(--linen) hover:text-(--ink) transition-all flex items-center gap-1.5 shadow-sm border-dashed artisan-pill outline-none"
+                                              >
+                                                  <Plus size={14} strokeWidth={3} /> Agregar recurso
+                                              </button>
+                                          )}
+                                      </div>
 
-            {showModal && importStep === 'template-editor' && (
-                <div className="fixed inset-0 z-100 bg-slate-50 flex flex-col w-full h-full">
-                    <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0 shadow-sm">
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Título de la Planificación</label>
-                            <input 
-                                className="px-3 py-2 text-sm font-bold border border-slate-200 rounded-lg outline-none focus:border-primary w-72 transition-colors"
-                                value={form.titulo}
-                                onChange={e => setForm(prev => ({...prev, titulo: e.target.value}))}
-                                placeholder="Ej. Unidad 1 - Comprensión lectora"
-                            />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Curso Vinculado</label>
-                            <select 
-                                className="px-3 py-2 text-sm font-bold border border-slate-200 rounded-lg outline-none focus:border-primary w-64 transition-colors"
-                                value={form.cursoId}
-                                onChange={e => setForm(prev => ({...prev, cursoId: Number(e.target.value)}))}
-                            >
-                                {state.cursos.map(c => <option key={c.id} value={c.id}>{getCursoLabel(c)}</option>)}
-                            </select>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setImportStep('select-template')}
-                                className="px-6 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-                            >
-                                Volver
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const container = document.getElementById('template-editor-container');
-                                    if (container) {
-                                        setForm(prev => ({ ...prev, contenidoHtml: container.innerHTML }));
-                                        onAddSecuencia({ ...form, contenidoHtml: container.innerHTML, estado: 'Pendiente', cursoId: form.cursoId });
-                                        setShowModal(false);
-                                        setForm({
-                                           titulo: '',
-                                           cursoId: state.cursos[0]?.id ?? 0,
-                                           fechaInicio: new Date().toISOString().split('T')[0],
-                                           contenidoHtml: '',
-                                        });
-                                    }
-                                }}
-                                className="px-6 py-2.5 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:bg-primary/90 hover:-translate-y-0.5 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                            >
-                                Guardar
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-100/50 flex justify-center">
-                        <div className="w-full max-w-6xl bg-white shadow-xl border border-slate-200 p-8 rounded-xl shrink-0">
-                            <div 
-                                id="template-editor-container"
-                                className="prose prose-slate max-w-none prose-sm w-full"
-                                dangerouslySetInnerHTML={{ __html: form.contenidoHtml }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
+                                      {(isAddingRecurso || editingRecursoId) && (
+                                          <div className="mt-4 p-5 rounded-2xl bg-white border border-(--border-soft) shadow-sm animate-in fade-in slide-in-from-top-2 max-w-2xl">
+                                              <div className="grid gap-4 sm:grid-cols-12 mb-4">
+                                                  <div className={(!viewerSeq && !editingRecursoId) ? "sm:col-span-4" : "sm:col-span-6"}>
+                                                      <label className="block text-xs font-black uppercase tracking-widest text-(--ink-soft) mb-1.5 ml-1">Categoría</label>
+                                                      <div className="relative">
+                                                          <select
+                                                              value={newRecursoCategoria}
+                                                              onChange={(e) => { setNewRecursoCategoria(e.target.value); setRecursoError(''); }}
+                                                              className="w-full px-4 py-2.5 rounded-xl border border-(--border-soft) bg-white text-sm font-bold text-(--ink) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all appearance-none artisan-pill"
+                                                              disabled={recursosLoading}
+                                                          >
+                                                              {CATEGORIAS_RECURSOS.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                                          </select>
+                                                          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-(--ink-soft) pointer-events-none" />
+                                                      </div>
+                                                  </div>
+                                                  <div className={(!viewerSeq && !editingRecursoId) ? "sm:col-span-4" : "sm:col-span-6"}>
+                                                      <label className="block text-xs font-black uppercase tracking-widest text-(--ink-soft) mb-1.5 ml-1">URL (Enlace)</label>
+                                                      <input
+                                                          type="url"
+                                                          value={newRecursoUrl}
+                                                          onChange={(e) => { setNewRecursoUrl(e.target.value); setRecursoError(''); }}
+                                                          placeholder="https://"
+                                                          className="w-full px-4 py-2.5 rounded-xl border border-(--border-soft) bg-white text-sm font-bold text-(--ink) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all artisan-pill"
+                                                          disabled={recursosLoading}
+                                                      />
+                                                  </div>
+                                                  {(!viewerSeq && !editingRecursoId) && (
+                                                      <div className="sm:col-span-4">
+                                                          <label className="block text-xs font-black uppercase tracking-widest text-(--ink-soft) mb-1.5 ml-1">Vincular a</label>
+                                                          <div className="relative">
+                                                              <select
+                                                                  value={newRecursoTargetSeq}
+                                                                  onChange={(e) => { setNewRecursoTargetSeq(e.target.value === 'new' ? 'new' : Number(e.target.value)); setRecursoError(''); }}
+                                                                  className="w-full px-4 py-2.5 rounded-xl border border-(--border-soft) bg-white text-sm font-bold text-(--ink) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all appearance-none artisan-pill truncate"
+                                                                  disabled={recursosLoading}
+                                                              >
+                                                                  <option value="new">Nueva plantilla</option>
+                                                                  {secuenciasCurso.map((seq: Secuencia) => (
+                                                                      <option key={seq.id} value={seq.id}>{seq.titulo}</option>
+                                                                  ))}
+                                                              </select>
+                                                              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-(--ink-soft) pointer-events-none" />
+                                                          </div>
+                                                      </div>
+                                                  )}
+                                              </div>
+                                              {recursoError && <p className="text-xs font-bold text-(--danger) mb-3 ml-1">{recursoError}</p>}
+                                              <div className="flex gap-3 justify-end">
+                                                  <button
+                                                      onClick={() => { setIsAddingRecurso(false); setEditingRecursoId(null); setNewRecursoCategoria(CATEGORIAS_RECURSOS[0]); setNewRecursoUrl(''); setRecursoError(''); }}
+                                                      className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-(--ink-soft) hover:bg-(--border-soft)/50 transition-colors artisan-pill"
+                                                      disabled={recursosLoading}
+                                                  >
+                                                      Cancelar
+                                                  </button>
+                                                  <button
+                                                      onClick={handleAddRecurso}
+                                                      className="px-5 py-2 rounded-xl bg-(--primary) text-white text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50 artisan-pill shadow-sm"
+                                                      disabled={recursosLoading || !newRecursoUrl.trim()}
+                                                  >
+                                                      {recursosLoading ? 'Guardando...' : (editingRecursoId ? 'Actualizar' : 'Guardar')}
+                                                  </button>
+                                              </div>
+                                          </div>
+                                      )}
+                                  </div>
+                                  <div className="border-t border-(--border-soft) pt-8">
+                                      <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-6">
+                                          Plantillas Disponibles
+                                      </p>
+                                      <div className="grid gap-4">
+                                      <button
+                                          onClick={async () => {
+                                               const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                               const centroNombre = session?.user?.user_metadata?.centro_nombre || 'Mi Centro'; // Simplified fallback
+                                               const codigoCentro = session?.user?.user_metadata?.codigo_centro || '';
+                                               const docenteNombre = session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
+                                               
+                                               const htmlContent = getPlanificacionDiariaTemplate({
+                                                   centro: centroNombre,
+                                                   codigoCentro: codigoCentro,
+                                                   docente: docenteNombre,
+                                                   asignatura: curso?.asignatura || '',
+                                                   grado: curso?.grado || '',
+                                                   seccion: curso?.seccion || '',
+                                                   fecha: form.fechaInicio
+                                               });
+                                               
+                                               const title = 'Planificación - ' + (curso?.asignatura || 'Clase');
+                                               if (onAddSecuencia) {
+                                                   const newSeq = await onAddSecuencia({
+                                                       titulo: title,
+                                                       cursoId: form.cursoId,
+                                                       fechaInicio: form.fechaInicio,
+                                                       contenidoHtml: htmlContent,
+                                                       estado: 'Pendiente',
+                                                       recursos: form.recursos || []
+                                                   });
+                                                   if (newSeq) {
+                                                       window.open(`/planificacion-diaria/${newSeq.id}`, '_blank');
+                                                   }
+                                               }
+                                               setShowModal(false);
+                                           }}
+                                          className="w-full text-left p-6 rounded-2xl border border-(--border-soft) bg-white hover:border-(--primary) hover:bg-(--linen)/20 transition-all cursor-pointer group flex items-start gap-4"
+                                      >
+                                          <div className="w-12 h-12 rounded-xl bg-(--tag-indigo-bg) flex items-center justify-center shrink-0 border border-(--border-soft)">
+                                             <BookOpen size={24} className="text-(--primary)" />
+                                          </div>
+                                          <div>
+                                             <h3 className="text-sm font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors">
+                                                 Planificación de Clase Diaria
+                                             </h3>
+                                             <p className="mt-1 text-xs font-medium text-(--ink-soft) leading-relaxed">
+                                                 Formato estándar MINERD para planificar el día a día, con secciones de inicio, desarrollo, cierre e indicadores de logro.
+                                             </p>
+                                          </div>
+                                      </button>
+                                  </div>
+                              </div>
+                              </div>
+                          )}
+                 </div>
+             </CieloModal>
+
+             {showModal && importStep === 'template-editor' && (
+                 <div className="fixed inset-0 z-100 bg-(--background) flex flex-col w-full h-full">
+                     <div className="bg-white border-b border-(--border-soft) px-6 py-4 flex items-center justify-between shrink-0 shadow-sm">
+                         <div className="flex flex-col gap-1">
+                             <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Título de la Planificación</label>
+                             <input 
+                                 className="px-3 py-2 text-sm font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-72 transition-colors"
+                                 value={form.titulo}
+                                 onChange={e => setForm(prev => ({...prev, titulo: e.target.value}))}
+                                 placeholder="Ej. Unidad 1 - Comprensión lectora"
+                             />
+                         </div>
+                         <div className="flex flex-col gap-1">
+                             <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Curso Vinculado</label>
+                             <select 
+                                 className="px-3 py-2 text-sm font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-64 transition-colors"
+                                 value={form.cursoId}
+                                 onChange={e => setForm(prev => ({...prev, cursoId: Number(e.target.value)}))}
+                             >
+                                 {state.cursos.map(c => <option key={c.id} value={c.id}>{getCursoLabel(c)}</option>)}
+                             </select>
+                         </div>
+                         <div className="flex items-center gap-3">
+                              <button
+                                  type="button"
+                                  onClick={() => setImportStep('select-template')}
+                                  className="px-6 py-2.5 rounded-xl bg-white border border-(--border-soft) text-(--ink-soft) text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-(--linen)/30 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                              >
+                                  Volver
+                              </button>
+                              <button
+                                  type="button"
+                                  onClick={async () => {
+                                      const container = document.getElementById('template-editor-container');
+                                      if (container) {
+                                          const html = container.innerHTML;
+                                          const newSeq = await onAddSecuencia({
+                                              titulo: form.titulo,
+                                              cursoId: form.cursoId,
+                                              fechaInicio: form.fechaInicio,
+                                              contenidoHtml: html,
+                                              estado: 'Pendiente'
+                                          });
+                                          if (newSeq) {
+                                              window.open(`/planificacion-diaria/${newSeq.id}`, '_blank');
+                                          }
+                                          setShowModal(false);
+                                          setForm({
+                                             titulo: '',
+                                             cursoId: state.cursos[0]?.id ?? 0,
+                                             fechaInicio: new Date().toISOString().split('T')[0],
+                                             contenidoHtml: '',
+                                          });
+                                      }
+                                  }}
+                                  className="px-6 py-2.5 rounded-xl bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-(--linen)/30 transition-all outline-none"
+                              >
+                                  Abrir en otra pestaña
+                              </button>
+                              <button
+                                  type="button"
+                                  onClick={() => {
+                                      const container = document.getElementById('template-editor-container');
+                                      if (container) {
+                                          setForm(prev => ({ ...prev, contenidoHtml: container.innerHTML }));
+                                          onAddSecuencia({ ...form, contenidoHtml: container.innerHTML, estado: 'Pendiente', cursoId: form.cursoId });
+                                          setShowModal(false);
+                                          setForm({
+                                             titulo: '',
+                                             cursoId: state.cursos[0]?.id ?? 0,
+                                             fechaInicio: new Date().toISOString().split('T')[0],
+                                             contenidoHtml: '',
+                                          });
+                                      }
+                                  }}
+                                  className="px-6 py-2.5 rounded-xl bg-(--primary) text-white text-xs font-black uppercase tracking-widest shadow-sm hover:opacity-90 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50"
+                              >
+                                  Guardar
+                              </button>
+                          </div>
+                     </div>
+                     
+                     <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-(--linen)/20 flex justify-center">
+                         <div className="w-full max-w-6xl bg-white shadow-sm border border-(--border-soft) p-8 rounded-(--radius-md) shrink-0">
+                             <div 
+                                 id="template-editor-container"
+                                 className="prose prose-slate max-w-none prose-sm w-full"
+                                 dangerouslySetInnerHTML={{ __html: form.contenidoHtml }}
+                             />
+                         </div>
+                     </div>
+                 </div>
+             )}
         </div>
     );
 }

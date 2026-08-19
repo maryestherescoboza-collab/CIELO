@@ -38,7 +38,37 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
         const califs = state.calificaciones.filter(
             c => c.estudianteId === studentId && c.actividadId === actividadId
         );
+
+        const grade = califs.length > 0 ? califs[0].puntaje : (evalDetalle?.puntajeTotal ?? null);
+
+        const hasRubrica = !!(evalDetalle?.rubricaData && Object.keys(evalDetalle.rubricaData).length > 0);
+        const hasCotejo = !!(evalDetalle?.cotejoData && Object.keys(evalDetalle.cotejoData).length > 0);
+
+        // 1. Manual Evaluation from CursoDetalle (not Rubric, not Cotejo)
+        if (!hasRubrica && !hasCotejo && grade !== null) {
+            const exactGrades = [100, 85, 70, 55];
+            if (exactGrades.includes(grade)) {
+                let text = '';
+                if (grade === 100) {
+                    text = "Demuestra el indicador completo, correctamente y con autonomía.";
+                } else if (grade === 85) {
+                    text = "Demuestra el indicador completo, pero presenta alguna dificultad, imprecisión o necesidad de orientación.";
+                } else if (grade === 70) {
+                    text = "Demuestra una parte del indicador, pero aún no alcanza el desempeño completo.";
+                } else if (grade === 55) {
+                    text = "Muestra evidencia limitada del indicador y todavía necesita apoyo para alcanzarlo.";
+                }
+
+                const act = state.actividades.find(a => a.id === actividadId);
+                if (act?.indicador) {
+                    return [text, act.indicador];
+                }
+                return [text];
+            }
+            return [];
+        }
         
+        // 2. Saved Descriptors fallback (only for Rubric / Cotejo which populate saved descriptors)
         const savedDescriptors = califs.flatMap(c => c.descriptores || []).filter(Boolean);
         if (savedDescriptors.length > 0) {
             return savedDescriptors;
@@ -47,8 +77,8 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
         if (evalDetalle) {
             const plantilla = state.plantillas.find(p => p.id === evalDetalle.plantillaId);
             
-            // 1. Rubric Evaluation
-            if (evalDetalle.rubricaData && Object.keys(evalDetalle.rubricaData).length > 0) {
+            // 3. Rubric Evaluation
+            if (hasRubrica) {
                 const descriptors: string[] = [];
                 Object.entries(evalDetalle.rubricaData).forEach(([descriptorId, nivel]) => {
                     if (!nivel) return;
@@ -82,8 +112,8 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 if (descriptors.length > 0) return descriptors;
             }
             
-            // 2. Checklist (Cotejo) Evaluation
-            if (evalDetalle.cotejoData && Object.keys(evalDetalle.cotejoData).length > 0) {
+            // 4. Checklist (Cotejo) Evaluation
+            if (hasCotejo) {
                 const templateCriterios = plantilla?.tipo === 'cotejo' 
                     ? (plantilla.datos.criterios as CriterioCotejo[]) 
                     : state.criteriosCotejo;
@@ -115,20 +145,6 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 }
 
                 if (formattedDescriptors.length > 0) return formattedDescriptors;
-            }
-        }
-
-        // 3. Direct numeric grade fallback
-        const grade = califs.length > 0 ? califs[0].puntaje : (evalDetalle?.puntajeTotal ?? null);
-        if (grade !== null && grade !== undefined) {
-            if (grade === 100) {
-                return ["Superó lo esperado y evidenció un dominio estratégico de la competencia, realizando la actividad con autonomía, iniciativa y precisión. Mantuvo una buena comunicación, contribuyó al trabajo en equipo y entregó la actividad a tiempo."];
-            } else if (grade >= 85 && grade <= 99) {
-                return ["Cumplió con lo esperado y evidenció un dominio adecuado de la competencia, realizando correctamente la actividad. Aunque hizo un buen trabajo, le faltó un poco más de iniciativa, profundidad o precisión para alcanzar el nivel estratégico."];
-            } else if (grade >= 70 && grade <= 84) {
-                return ["Cumplió parcialmente con lo esperado y evidenció un dominio básico de la competencia, realizando la actividad con algunas dificultades y requiriendo orientación en distintos momentos."];
-            } else if (grade < 70) {
-                return ["Aún no alcanzó lo esperado en el desarrollo de la competencia, presentando dificultades para realizar la actividad incluso con apoyo y sin lograr completarla de forma satisfactoria."];
             }
         }
         
@@ -247,14 +263,27 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                             <td className="px-6 py-4 text-[#5F665E] whitespace-normal wrap-break-word leading-relaxed text-[13px] font-medium">
                                                 {isEvaluated && descriptors.length > 0 ? (
                                                     <div className="space-y-1">
-                                                        {descriptors.map((desc, idx) => {
-                                                            const isHeader = desc === 'Cumple:' || desc === 'No cumple:';
-                                                            return isHeader ? (
-                                                                <div key={idx} className="font-bold text-[#2E3330] pt-1.5 first:pt-0">{desc}</div>
-                                                            ) : (
-                                                                <div key={idx} className="pl-3">{desc}</div>
-                                                            );
-                                                        })}
+                                                         {descriptors.map((desc, idx) => {
+                                                             const isHeader = desc === 'Cumple:' || desc === 'No cumple:';
+                                                             if (isHeader) {
+                                                                 return <div key={idx} className="font-bold text-[#2E3330] pt-1.5 first:pt-0">{desc}</div>;
+                                                             }
+
+                                                             const evalDetalle = state.cursoDetalle.find(
+                                                                 cd => cd.estudianteId === est.id && cd.actividadId === act.id
+                                                             );
+                                                             const hasRubrica = !!(evalDetalle?.rubricaData && Object.keys(evalDetalle.rubricaData).length > 0);
+                                                             const hasCotejo = !!(evalDetalle?.cotejoData && Object.keys(evalDetalle.cotejoData).length > 0);
+                                                             const isManual = !hasRubrica && !hasCotejo && score !== null && [100, 85, 70, 55].includes(score);
+
+                                                             if (isManual && idx === 0) {
+                                                                 return <div key={idx} className="pl-3 font-bold text-[#2E3330]">{desc}</div>;
+                                                             }
+
+                                                             return (
+                                                                 <div key={idx} className="pl-3">{desc}</div>
+                                                             );
+                                                         })}
                                                     </div>
                                                 ) : isEvaluated ? (
                                                     <span className="text-[#5F665E]/60 italic">Sin descriptores registrados</span>

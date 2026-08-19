@@ -2,93 +2,103 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FDFBF7;
-  --surface: #F8F3ED;
-  --sidebar: #DDD5C8;
   /* New CIELO Official Palette */
-  --color-1: #5F9563;
-  --color-2: #79C599;
-  --color-3: #D68253;
-  --color-4: #C63D3D;
-  --color-5: #E8C166;
-  --neutral-warm: #DDD5C8;
+  --olive-branch: #BFC9A6;
+  --herb-garden: #689C63;
+  --french-blue: #537BAC;
+  --clementine: #EB8847;
+  --calendula: #DEAE4D;
+  --sicilian-sky: #B8CADC;
+  --terra-cotta: #DB5B48;
+  --linen: #E9E9DB;
+  --ink: #2E3330;
+  --background: #FCFCFA;
 
-  --primary: var(--color-2);
-  --primary-hover: #63b387;
-  --success: var(--color-1);
-  --warning-soft: rgba(232, 193, 102, 0.15);
-  --warning: var(--color-5);
-  --attention: var(--color-3);
-  --danger: var(--color-4);
-  --risk: var(--color-5);
+  /* Mappings */
+  --bg-main: var(--background);
+  --paper: #FFFFFF;
+  --paper-soft: var(--linen);
+  --paper-deep: var(--calendula);
+  --surface: #FFFFFF;
+  --ink-color: var(--ink);
+  --ink-soft: #5F665E;
+  --border-unificado: rgba(46, 51, 48, 0.12);
+  --line: var(--border-unificado);
+  --border-soft: var(--border-unificado);
+
+  --primary: var(--olive-branch); /* Default primary to Verde Principal #BFC9A6 */
+  --primary-hover: #AFB996;
+  --success: var(--herb-garden); /* positive states stable */
+  --success-soft: var(--olive-branch); /* positive states soft */
+  --warning-soft: rgba(222, 174, 77, 0.15);
+  --warning: var(--calendula);
+  --attention: var(--clementine);
+  --danger: var(--terra-cotta);
+  --risk: var(--terra-cotta);
 
   /* Legacy variable mappings to prevent breakage */
-  --olive-branch: var(--primary);
-  --herb-garden: var(--primary);
-  --french-blue: var(--primary);
-  --clementine: var(--attention);
-  --calendula: var(--warning);
-  --sicilian-sky: var(--primary);
-  --terra-cotta: var(--danger);
-  --linen: var(--background);
+  --color-1: var(--olive-branch);
+  --color-2: var(--herb-garden);
+  --color-3: var(--clementine);
+  --color-4: var(--terra-cotta);
+  --color-5: var(--calendula);
+  --neutral-warm: var(--linen);
 
-  --text-primary: #2E3330;
-  --text-secondary: #5F665E;
-
-  --border: rgba(46, 51, 48, 0.08);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-soft);
+  --border: var(--border-unificado);
 }
 
 @theme {
-  --color-slate-50: #f4f7f9;
-  --color-slate-100: #e9eff2;
-  --color-slate-200: #d2dfe6;
-  --color-slate-300: #6e8ca0;
-  --color-slate-400: #546c7c;
-  --color-slate-500: #6e8ca0;
-  --color-slate-600: #2f6670;
-  --color-slate-700: #145e66;
-  --color-slate-800: #123c47;
-  --color-slate-900: #8695A7;
-  --color-slate-950: #073843;
+  --color-olive-branch: var(--olive-branch);
+  --color-herb-garden: var(--herb-garden);
+  --color-french-blue: var(--french-blue);
+  --color-clementine: var(--clementine);
+  --color-calendula: var(--calendula);
+  --color-sicilian-sky: var(--sicilian-sky);
+  --color-terra-cotta: var(--terra-cotta);
+  --color-linen: var(--linen);
+  --color-ink: var(--ink);
+  --color-background: var(--background);
 
-   /* CIELO Semantic Palette */
-  --color-color-1: #5F9563;
-  --color-color-2: #79C599;
-  --color-color-3: #D68253;
-  --color-color-4: #C63D3D;
-  --color-color-5: #E8C166;
-  --color-neutral-warm: #DDD5C8;
+  /* CIELO Semantic Palette mapping to theme */
+  --color-color-1: var(--olive-branch);
+  --color-color-2: var(--herb-garden);
+  --color-color-3: var(--clementine);
+  --color-color-4: var(--terra-cotta);
+  --color-color-5: var(--calendula);
+  --color-neutral-warm: var(--linen);
 
-  --color-primary: var(--color-color-2);
-  --color-primary-soft: rgba(121, 197, 153, 0.15);
-  --color-success: var(--color-color-1);
-  --color-warning-soft: rgba(232, 193, 102, 0.15);
-  --color-warning: var(--color-color-5);
-  --color-attention: var(--color-color-3);
-  --color-danger: var(--color-color-4);
-  --color-risk: var(--color-color-5);
+  --color-primary: var(--olive-branch);
+  --color-primary-soft: rgba(191, 201, 166, 0.15);
+  --color-success: var(--herb-garden);
+  --color-warning-soft: rgba(222, 174, 77, 0.15);
+  --color-warning: var(--calendula);
+  --color-attention: var(--clementine);
+  --color-danger: var(--terra-cotta);
+  --color-risk: var(--terra-cotta);
 
   /* Legacy mappings */
   --color-primary-base: var(--color-primary); 
-  --color-primary-dark: #3F3C36;
+  --color-primary-dark: #2E3330;
   --color-primary-light: var(--color-warning-soft);
 
-  --color-secondary-base: #3F3C36;
-  --color-secondary-dark: #073843;
-  --color-secondary-light: var(--color-warning-soft);
+  --color-secondary-base: #2E3330;
+  --color-secondary-dark: #1F2220;
+  --color-secondary-light: var(--color-neutral-warm);
 
-  --color-base-creme: #FDFBF7; 
-  --color-dark-notion: #3F3C36;
+  --color-base-creme: var(--background); 
+  --color-dark-notion: #2E3330;
 
   /* Premium Brand Palette mapped to CIELO palette */
-  --color-red-ochre-base: var(--color-primary);
-  --color-red-ochre-lightest: #FAF6ED;
-  --color-jet-black-base: #3F3C36;
-  --color-jet-black-lightest: #F3F3F2;
-  --color-turf-green-base: var(--color-primary);
-  --color-turf-green-lightest: #F2F5F1;
-  --color-golden-orange-base: var(--color-warning);
-  --color-golden-orange-lightest: #FAF6ED;
+  --color-red-ochre-base: var(--color-danger);
+  --color-red-ochre-lightest: var(--background);
+  --color-jet-black-base: var(--color-ink);
+  --color-jet-black-lightest: var(--color-linen);
+  --color-turf-green-base: var(--color-success);
+  --color-turf-green-lightest: var(--color-olive-branch);
+  --color-golden-orange-base: var(--color-attention);
+  --color-golden-orange-lightest: var(--color-warning-soft);
 
   --color-accent-amber: var(--color-warning);
   --color-accent-rose: var(--color-danger);
@@ -96,24 +106,17 @@
   --color-accent-sky: var(--color-primary);
 
   /* Official secondary palette for CIELO */
-  --color-cielo-blue: var(--color-primary);
-  --color-cielo-olive: var(--color-primary);
-  --color-cielo-gold: var(--color-warning);
-  --color-cielo-terracotta: var(--color-danger);
-
+  --color-cielo-blue: var(--french-blue);
+  --color-cielo-olive: var(--olive-branch);
+  --color-cielo-green: var(--herb-garden);
+  --color-cielo-gold: var(--calendula);
+  --color-cielo-terracotta: var(--terra-cotta);
 
   --animate-float: uiFloat 4s ease-in-out infinite;
 
   @keyframes uiFloat {
-
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-
-    50% {
-      transform: translateY(-3px);
-    }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
   }
 
   --animate-fade-in: fadeIn 0.3s ease-out;
@@ -147,40 +150,40 @@
   --radius-2xl: var(--radius-unificado);
   --radius-3xl: var(--radius-unificado);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
-  --shadow-xl: 0 12px 28px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --shadow-2xl: 0 18px 36px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 10px rgba(46, 51, 48, 0.04);
+  --shadow-lg: 0 8px 20px rgba(46, 51, 48, 0.05);
+  --shadow-xl: 0 12px 24px rgba(46, 51, 48, 0.05);
+  --shadow-2xl: 0 16px 32px rgba(46, 51, 48, 0.06);
 }
 
 @layer base {
   :root {
-    --radius-unificado: 10px;
-    --border-unificado: #6E8CA0;
+    --radius-unificado: 14px; /* Warm rounded style */
+    --border-unificado: rgba(46, 51, 48, 0.12);
 
-    --bg-main: #FDF3EC; /* Conserved background */
+    --bg-main: var(--background);
     --paper: #FFFFFF;
-    --paper-soft: #FAF4E8;
-    --paper-deep: var(--warning);
+    --paper-soft: var(--linen);
+    --paper-deep: var(--calendula);
     --surface: #FFFFFF;
-    --ink: #8695A7;
-    --ink-soft: #6E8CA0;
+    --ink: #2E3330;
+    --ink-soft: #5F665E;
     --line: var(--border-unificado);
-    --text-primary: #8695A7;
-    --text-secondary: #6E8CA0;
-    --text-placeholder: #6E8CA0;
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-soft);
+    --text-placeholder: #8C9590;
     --border-soft: var(--border-unificado);
-    --primary: #2BBAA5;
-    --primary-hover: #229A88; /* Darker turquesa */
+    --primary: var(--french-blue);
+    --primary-hover: #466894;
 
-    --accent-green: #2BBAA5;
-    --accent-orange: #F96635;
-    --accent-yellow: #F9A822;
+    --accent-green: var(--herb-garden);
+    --accent-orange: var(--clementine);
+    --accent-yellow: var(--calendula);
 
-    --shadow-sm: 0px 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0px 4px 12px rgba(0, 0, 0, 0.05);
-    --shadow-lg: 0px 12px 28px rgba(0, 0, 0, 0.06), 0px 2px 4px rgba(0, 0, 0, 0.04);
+    --shadow-sm: 0px 1px 2px rgba(46, 51, 48, 0.03);
+    --shadow-md: 0px 4px 10px rgba(46, 51, 48, 0.04);
+    --shadow-lg: 0px 8px 20px rgba(46, 51, 48, 0.05);
 
     --radius-sm: var(--radius-unificado);
     --radius-md: var(--radius-unificado);
@@ -190,42 +193,46 @@
     --font-notion-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-notion-title: 'Manrope', 'Inter', system-ui, sans-serif;
 
-    --notion-black: #8695A7;
-    --notion-text-primary: rgba(134, 149, 167, 0.9);
-    --notion-text-secondary: rgba(134, 149, 167, 0.6);
-    --notion-text-tertiary: rgba(134, 149, 167, 0.4);
+    --notion-black: var(--ink);
+    --notion-text-primary: rgba(46, 51, 48, 0.95);
+    --notion-text-secondary: rgba(46, 51, 48, 0.7);
+    --notion-text-tertiary: rgba(46, 51, 48, 0.45);
 
-    --tag-emerald-bg: #EAF8F6;
-    --tag-emerald-text: var(--primary);
-    --tag-indigo-bg: #F0FBF4;
-    --tag-indigo-text: var(--success);
-    --tag-amber-bg: #FFF6E6;
-    --tag-amber-text: var(--warning);
-    --tag-rose-bg: #FDEBEB;
-    --tag-rose-text: var(--danger);
-    --tag-sky-bg: #EAF8F6;
-    --tag-sky-text: var(--primary);
+    --tag-emerald-bg: rgba(104, 156, 99, 0.12);
+    --tag-emerald-text: var(--herb-garden);
+    --tag-indigo-bg: rgba(83, 123, 172, 0.12);
+    --tag-indigo-text: var(--french-blue);
+    --tag-amber-bg: rgba(245, 188, 93, 0.15);
+    --tag-amber-text: #B27B2B;
+    --tag-rose-bg: rgba(219, 91, 72, 0.10);
+    --tag-rose-text: var(--terra-cotta);
+    --tag-sky-bg: rgba(184, 202, 220, 0.20);
+    --tag-sky-text: #567296;
+    --tag-orange-bg: rgba(235, 136, 71, 0.12);
+    --tag-orange-text: var(--clementine);
+    --tag-terracotta-bg: rgba(219, 91, 72, 0.12);
+    --tag-terracotta-text: var(--terra-cotta);
   }
 
-  /* Support for Dark Mode and dark cards */
+  /* Support for Dark Mode and dark cards - keep soft warm dark */
   :root.dark {
-    --border-unificado: #2F6670;
-    --bg-main: #131920; /* Conserved background */
-    --paper: #123C47;
-    --paper-soft: #8695A7;
-    --paper-deep: #8695A7;
-    --surface: #123C47;
-    --ink: #FFFFFF;
-    --ink-soft: #C8D8DB;
+    --border-unificado: rgba(234, 228, 218, 0.15);
+    --bg-main: #1C1E1D;
+    --paper: #272B29;
+    --paper-soft: #343A37;
+    --paper-deep: var(--calendula);
+    --surface: #272B29;
+    --ink: #FAF8F5;
+    --ink-soft: #D3DCD7;
     --line: var(--border-unificado);
     --border-soft: var(--border-unificado);
-    --text-primary: #FFFFFF;
-    --text-secondary: #C8D8DB;
+    --text-primary: #FAF8F5;
+    --text-secondary: #D3DCD7;
 
-    --notion-black: #FFFFFF;
-    --notion-text-primary: rgba(255, 255, 255, 0.9);
-    --notion-text-secondary: rgba(255, 255, 255, 0.6);
-    --notion-text-tertiary: rgba(255, 255, 255, 0.4);
+    --notion-black: #FAF8F5;
+    --notion-text-primary: rgba(250, 248, 245, 0.95);
+    --notion-text-secondary: rgba(250, 248, 245, 0.7);
+    --notion-text-tertiary: rgba(250, 248, 245, 0.45);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -527,31 +534,43 @@
   .tag-green {
     background: var(--tag-emerald-bg);
     color: var(--tag-emerald-text);
-    border-color: #D1FAE5;
+    border-color: rgba(122, 141, 105, 0.2);
   }
 
   .tag-indigo {
     background: var(--tag-indigo-bg);
     color: var(--tag-indigo-text);
-    border-color: #E0E7FF;
+    border-color: rgba(109, 143, 185, 0.2);
   }
 
   .tag-amber {
     background: var(--tag-amber-bg);
     color: var(--tag-amber-text);
-    border-color: #FEF3C7;
+    border-color: rgba(245, 188, 93, 0.2);
   }
 
   .tag-rose {
     background: var(--tag-rose-bg);
     color: var(--tag-rose-text);
-    border-color: #FFE4E6;
+    border-color: rgba(231, 54, 60, 0.2);
   }
 
   .tag-sky {
     background: var(--tag-sky-bg);
     color: var(--tag-sky-text);
-    border-color: #E0F2FE;
+    border-color: rgba(184, 202, 220, 0.3);
+  }
+
+  .tag-orange {
+    background: var(--tag-orange-bg);
+    color: var(--tag-orange-text);
+    border-color: rgba(235, 136, 71, 0.2);
+  }
+
+  .tag-terracotta {
+    background: var(--tag-terracotta-bg);
+    color: var(--tag-terracotta-text);
+    border-color: rgba(184, 116, 73, 0.2);
   }
 
   /* Tables */
@@ -829,19 +848,19 @@ input[type="range"]:focus::-webkit-slider-thumb {
 
 /* Sidebar clay tablet style */
 .sidebar-clay {
-  background-color: #FAF6F0 !important;
-  border-right: 1px solid #E2D4C9 !important;
+  background-color: #E9E9DB !important;
+  border-right: 1px solid rgba(46, 51, 48, 0.12) !important;
   box-shadow: 2px 0 12px rgba(63, 60, 54, 0.05) !important;
 }
 
 /* Color de Fondo Principal de la App */
 .bg-artisan-main {
-  background-color: #FDFBF7 !important;
+  background-color: #FCFCFA !important;
 }
 
 /* Panel Lateral con Fondo Rupestre */
 .artisan-sidebar {
-  background-color: #EAE4DA !important;
+  background-color: #E9E9DB !important;
   border-color: rgba(46, 51, 48, 0.08) !important;
   color: #2E3330 !important;
 }
@@ -855,7 +874,7 @@ input[type="range"]:focus::-webkit-slider-thumb {
 
 /* Botón Blanco para Secciones de Cotejo y Rúbricas */
 .artisan-btn-white {
-  background-color: #FDFBF7 !important;
+  background-color: #FFFFFF !important;
   color: #2E3330 !important;
   border: 1px solid rgba(46, 51, 48, 0.08) !important;
 }
@@ -913,7 +932,7 @@ input[type="range"]:focus::-webkit-slider-thumb {
 /* Regla Obligatoria: Texto negro sobre fondo #79C599 (bg-primary / var(--primary)) */
 .bg-primary,
 [class*="bg-primary"],
-[class*="bg-[var(--primary)]"],
+[class*="bg-(--primary)"],
 .bg-primary-hover,
 [class*="bg-primary-hover"] {
   color: #000000 !important;
@@ -923,8 +942,8 @@ input[type="range"]:focus::-webkit-slider-thumb {
 .bg-primary .text-white,
 [class*="bg-primary"].text-white,
 [class*="bg-primary"] .text-white,
-[class*="bg-[var(--primary)]"].text-white,
-[class*="bg-[var(--primary)]"] .text-white,
+[class*="bg-(--primary)"].text-white,
+[class*="bg-(--primary)"] .text-white,
 .bg-primary-hover.text-white,
 .bg-primary-hover .text-white {
   color: #000000 !important;
