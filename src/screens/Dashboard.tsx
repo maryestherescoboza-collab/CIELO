@@ -28,9 +28,6 @@ export default function Dashboard({ docenteNombre }: Props) {
   const [selectedCursoId, setSelectedCursoId] = useState<string>(
     state.cursos.length > 0 ? String(state.cursos[0].id) : 'all'
   );
-  const [selectedPeriodo, setSelectedPeriodo] = useState<string>('P1');
-  const [isPeriodSelectOpen, setIsPeriodSelectOpen] = useState(false);
-  const periodSelectRef = useRef<HTMLDivElement>(null);
 
   const [isNewRecordOpen, setIsNewRecordOpen] = useState(false);
   const [recordDate, setRecordDate] = useState('');
@@ -226,9 +223,6 @@ export default function Dashboard({ docenteNombre }: Props) {
           if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
               setIsSelectOpen(false);
           }
-          if (periodSelectRef.current && !periodSelectRef.current.contains(event.target as Node)) {
-              setIsPeriodSelectOpen(false);
-          }
       };
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -318,19 +312,21 @@ export default function Dashboard({ docenteNombre }: Props) {
         const subjectsGrades = grades[est.id];
         if (!subjectsGrades) return;
         
-        // Extraemos los PC1, PC2, PC3, PC4 del período seleccionado para todas las asignaturas
+        // Extraemos los PC1, PC2, PC3, PC4 de todos los períodos para todas las asignaturas
         const bcs: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
         const bcValues: Record<BCKey, number[]> = { BC1: [], BC2: [], BC3: [], BC4: [] };
 
         Object.values(subjectsGrades).forEach(asigGrades => {
-          const periodData = asigGrades[selectedPeriodo as 'P1' | 'P2' | 'P3' | 'P4'];
-          if (periodData) {
-            bcs.forEach(bc => {
-              if (periodData[bc] !== null && periodData[bc] !== undefined) {
-                bcValues[bc].push(periodData[bc] as number);
-              }
-            });
-          }
+          ['P1', 'P2', 'P3', 'P4'].forEach(p => {
+            const periodData = asigGrades[p as 'P1' | 'P2' | 'P3' | 'P4'];
+            if (periodData) {
+              bcs.forEach(bc => {
+                if (periodData[bc] !== null && periodData[bc] !== undefined) {
+                  bcValues[bc].push(periodData[bc] as number);
+                }
+              });
+            }
+          });
         });
 
         const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((acc, val) => acc + val, 0) / arr.length) : null;
@@ -359,7 +355,7 @@ export default function Dashboard({ docenteNombre }: Props) {
         bc4: g.bc4
       };
     });
-  }, [enhancedStudents, state, selectedPeriodo]);
+  }, [enhancedStudents, state]);
 
   // ── 4 Podiums by Period ──
   const podiumsByPeriod = useMemo(() => {
@@ -489,8 +485,8 @@ export default function Dashboard({ docenteNombre }: Props) {
     if (multiLineData.length === 0) {
       return 'No hay calificaciones registradas para calcular los promedios por competencia fundamental en este curso.';
     }
-    return `La gráfica representa los Promedios de Competencia (PC1, PC2, PC3, PC4) de cada estudiante en el período seleccionado (${selectedPeriodo}). Los valores reflejan el promedio de las asignaturas evaluadas por el docente actual, permitiendo observar el desempeño comparativo en cada competencia fundamental de manera individual.`;
-  }, [multiLineData, selectedPeriodo]);
+    return `La gráfica representa los Promedios de Competencia (PC1, PC2, PC3, PC4) de cada estudiante integrando todos los períodos disponibles. Los valores reflejan el promedio de las asignaturas evaluadas por el docente actual, permitiendo observar el desempeño comparativo global en cada competencia fundamental de manera individual.`;
+  }, [multiLineData]);
 
   const populationChartDescription = useMemo(() => {
     const total = enhancedStudents.length;
@@ -578,40 +574,6 @@ export default function Dashboard({ docenteNombre }: Props) {
                         </div>
                     </CieloPopover>
                 </div>
-            </div>
-
-            <div className="relative group" ref={periodSelectRef}>
-                <CieloPill
-                    as="button"
-                    variant="neutral"
-                    onClick={() => setIsPeriodSelectOpen(!isPeriodSelectOpen)}
-                    className="w-full min-w-32 justify-between px-5 h-10 border-transparent shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-black/50 group"
-                    style={{ backgroundColor: 'var(--linen)', color: 'var(--ink)', borderColor: 'var(--border-soft)' }}
-                >
-                    <span className="truncate pr-4">{selectedPeriodo}</span>
-                    <TC_Flux size={12} className={`text-(--ink) transition-transform duration-200 ${isPeriodSelectOpen ? '-rotate-90 text-(--ink)' : 'rotate-90 group-hover:text-(--ink)'}`} />
-                </CieloPill>
-                
-                <CieloPopover 
-                    isOpen={isPeriodSelectOpen} 
-                    onClose={() => setIsPeriodSelectOpen(false)} 
-                    triggerRef={periodSelectRef}
-                    width="full"
-                    position="bottom-left"
-                    className="p-0!"
-                >
-                    <div className="max-h-62.5 overflow-y-auto py-2 scrollbar-hide bg-white rounded-(--radius-sm)">
-                        {['P1', 'P2', 'P3', 'P4'].map(p => (
-                            <button
-                                key={p}
-                                onClick={() => { setSelectedPeriodo(p); setIsPeriodSelectOpen(false); }}
-                                className={`w-full text-left px-5 py-2.5 text-xs font-black uppercase tracking-widest transition-colors ${selectedPeriodo === p ? 'bg-(--primary)/15 text-(--ink)' : 'text-(--ink-soft) hover:bg-(--linen)/45'}`}
-                            >
-                                {p}
-                            </button>
-                        ))}
-                    </div>
-                </CieloPopover>
             </div>
             
             <CieloPill

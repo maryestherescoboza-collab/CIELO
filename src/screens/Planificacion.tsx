@@ -514,14 +514,6 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                 const bookIcon = BOOK_ICONS[index % BOOK_ICONS.length];
                                 const filledDots = getDotCount(seq.estado);
 
-                                const bgClasses = [
-                                    "bg-white",
-                                    "bg-(--tag-indigo-bg)",
-                                    "bg-(--tag-rose-bg)",
-                                    "bg-white",
-                                    "bg-(--tag-cyan-bg)",
-                                ];
-                                const bgColor = bgClasses[index % bgClasses.length];
 
                                 return (
                                     <button
