@@ -69,6 +69,16 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     if (params.get('plan')) {
       setIsSignUp(true);
     }
+    
+    // Interceptar el error de OTP expirado (causado por escáneres de correo/antivirus)
+    const hash = window.location.hash;
+    if (hash.includes('error_code=otp_expired') || hash.includes('otp_expired')) {
+      // Limpiar el hash de la URL silenciosamente
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      // Mostrar mensaje de éxito/informativo al usuario
+      setResendSuccess('Tu cuenta ha sido verificada correctamente (o el enlace expiró). Por favor, inicia sesión a continuación.');
+      setIsSignUp(false); // Asegurar que estemos en la vista de login
+    }
   }, []);
 
   const resetRegistro = () => {

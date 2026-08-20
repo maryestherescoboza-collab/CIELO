@@ -6,6 +6,7 @@ import Auth from './screens/Auth';
 import ResetPassword from './screens/ResetPassword';
 import AppRoutes from './AppRoutes';
 import Landing from './screens/Landing';
+import ConfirmarCorreo from './screens/ConfirmarCorreo';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import NotificationsOverlay from './components/NotificationsOverlay';
 import InvitationModal from './components/courses/InvitationModal';
@@ -120,6 +121,10 @@ export default function App() {
   );
 
   const pathname = window.location.pathname;
+
+  if (pathname === '/confirmar' || pathname === '/auth/confirm') {
+    return <ConfirmarCorreo />;
+  }
 
   if (!session) {
     if (pathname === '/') {
