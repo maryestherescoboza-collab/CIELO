@@ -512,11 +512,15 @@ export function useEvaluationActions() {
     }, [session, state.actividades, setState]);
 
     const deleteActividad = useCallback(async (id: number) => {
-        // Logical deactivation instead of physical delete
-        const { error } = await supabase.from('actividades').update({ activo: false }).eq('id', id);
-        if (!error) {
-            setState(s => ({ ...s, actividades: s.actividades.filter(a => a.id !== id) }));
+        // Real physical delete
+        const { error } = await supabase.from('actividades').delete().eq('id', id);
+        
+        if (error) {
+            console.error('Error deleting actividad:', error);
+            return;
         }
+        
+        setState(s => ({ ...s, actividades: s.actividades.filter(a => a.id !== id) }));
     }, [setState]);
 
     const resetSchoolYear = useCallback(async () => {

@@ -153,14 +153,31 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                                     : 'bg-white text-[#5F665E] border border-[rgba(46,51,48,0.08)] hover:bg-[#FDFBF7] hover:text-[#2E3330]';
                             }
 
+                            const tooltips: Record<number, { title: string; desc: string }> = {
+                                100: { title: '100 — Dominio completo', desc: 'Domina el indicador con autonomía.' },
+                                85: { title: '85 — Logro esperado', desc: 'Alcanza lo esperado con algunas dificultades.' },
+                                70: { title: '70 — Logro parcial', desc: 'Demuestra parcialmente el indicador.' },
+                                55: { title: '55 — Inicio', desc: 'Evidencia limitada; necesita apoyo.' },
+                            };
+                            const tt = tooltips[val];
+
                             return (
-                                <button
-                                    key={val}
-                                    onClick={() => setActivePaintColor(val)}
-                                    className={`w-9 h-9 rounded-full transition-all flex items-center justify-center font-bold text-xs ${isActive ? 'scale-105 shadow-sm ring-2 ring-white/50' : 'hover:scale-105'} ${colorClasses}`}
-                                >
-                                    {val}
-                                </button>
+                                <div key={val} className="relative group flex items-center justify-center">
+                                    <button
+                                        onClick={() => setActivePaintColor(val)}
+                                        className={`w-9 h-9 rounded-full transition-all flex items-center justify-center font-bold text-xs ${isActive ? 'scale-105 shadow-sm ring-2 ring-white/50' : 'hover:scale-105'} ${colorClasses}`}
+                                    >
+                                        {val}
+                                    </button>
+                                    
+                                    <div className="pointer-events-none absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 flex flex-col items-center">
+                                        <div className="bg-[#2E3330] text-white text-[11px] leading-tight px-3 py-2 rounded-lg shadow-lg w-44 text-center">
+                                            <div className="font-bold mb-0.5">{tt.title}</div>
+                                            <div className="text-white/80">{tt.desc}</div>
+                                        </div>
+                                        <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-[#2E3330]"></div>
+                                    </div>
+                                </div>
                             );
                         })}
                     </div>

@@ -93,7 +93,10 @@ export default function Cotejo({
     }, [selectedEstId, selectedActId, selectedPlantillaId, state?.cursoDetalle, multiEvaluations]);
 
     const selectedCurso = state?.cursos.find(c => c.id === selectedCursoId);
-    const actividades = state?.actividades.filter(a => a.cursoId === selectedCursoId) || [];
+    const actividades = state?.actividades.filter(a => 
+        a.cursoId === selectedCursoId || 
+        (selectedCurso?.sharedCourseId && a.sharedCourseId === selectedCurso.sharedCourseId)
+    ) || [];
     const estudiantes = state?.estudiantes.filter(e => e.sharedCourseId === selectedCurso?.sharedCourseId) || [];
     const sortedEsts = [...estudiantes].sort((a, b) =>
         (a.apellido + a.nombre).localeCompare(b.apellido + b.nombre)

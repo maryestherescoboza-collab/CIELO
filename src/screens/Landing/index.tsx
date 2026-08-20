@@ -3,8 +3,8 @@ import { LandingFooter } from './components/LandingFooter';
 import { LandingHero } from './components/LandingHero';
 import { InteractiveDemo } from './components/InteractiveDemo';
 import { LandingFeatures } from './components/LandingFeatures';
-import { LandingStats } from './components/LandingStats';
 import { LandingPricing } from './components/LandingPricing';
+import { LandingCTA } from './components/LandingCTA';
 import { useEffect } from 'react';
 import { ReactLenis } from 'lenis/react';
 
@@ -23,8 +23,8 @@ export default function Landing() {
           <LandingHero />
           <InteractiveDemo />
           <LandingFeatures />
-          <LandingStats />
           <LandingPricing />
+          <LandingCTA />
         </main>
 
         <LandingFooter />

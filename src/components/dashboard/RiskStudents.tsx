@@ -68,10 +68,7 @@ export function RiskStudents({ enRiesgo, incidencias, calificaciones, actividade
                                     </div>
 
                                     <div className="flex items-center gap-4 self-center md:self-auto">
-                                        <div className="text-right mr-4 hidden sm:block">
-                                            <p className="text-2xl font-bold text-cielo-on-background mb-0 leading-none">{est.puntaje}%</p>
-                                            <p className="text-xs font-black text-slate-600 uppercase tracking-tighter mt-1">Promedio General</p>
-                                        </div>
+                                        {/* Promedio General display removed intentionally as requested */}
                                         <div className="flex gap-2">
                                             <CieloPill as="button" variant="neutral" onClick={() => navigate(`/estudiante/${est.id}`)}>Perfil</CieloPill>
                                             <CieloPill as="button" variant="neutral" onClick={() => navigate(`/curso-detalle/${est.cursoId}`)}>Curso</CieloPill>

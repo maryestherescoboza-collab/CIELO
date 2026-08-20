@@ -44,11 +44,10 @@ const Header: React.FC<HeaderProps> = ({
     }, []);
     return (
         <header className="flex items-center justify-between px-4 py-2 bg-white border-b border-(--border-soft) sticky top-0 z-40 transition-all">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
                 <img src={logo} alt="CIELO Logo" className="h-10 w-auto object-contain" />
-                <div className="hidden sm:block">
+                <div className="hidden sm:block ml-2">
                     <p className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Portafolio Docente</p>
-                    <h1 className="text-xs font-black text-(--ink) leading-tight">CIELO</h1>
                 </div>
             </div>
 

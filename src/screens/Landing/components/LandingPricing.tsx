@@ -51,7 +51,7 @@ export function LandingPricing() {
   const anual = mensual * 12;
 
   return (
-    <section className="py-12 md:py-16 bg-[#FCFBFA] relative">
+    <section id="planes" className="py-24 md:py-32 bg-[#F8F3ED] relative">
       <div className="w-[90%] max-w-250 mx-auto relative z-10">
 
         {/* Header Section */}

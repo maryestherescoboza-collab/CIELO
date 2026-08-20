@@ -435,9 +435,9 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   const centroSelNombre = centrosList.find(c => c.id === centroSel)?.nombre || '';
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-white font-sans text-[#3E3838]">
-      {/* Panel Izquierdo: Formulario */}
-      <div className="flex-1 flex flex-col justify-center items-center px-6 py-8 md:py-12">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-white font-sans text-[#3E3838]">
+      {/* Formulario centrado */}
+      <div className="w-full flex flex-col justify-center items-center px-6 py-8 md:py-12">
         <main className="w-full max-w-sm flex flex-col gap-6">
         {/* Brand Identity */}
         <div className="flex flex-col items-center">
@@ -1041,11 +1041,6 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           <p className="text-center text-xs font-black text-[#3E3838]/30 uppercase tracking-[0.25em]">CIELO • 2026</p>
         </main>
       </div>
-
-      {/* Panel Derecho: Fondo Decorativo */}
-      <div
-        className="hidden md:block md:w-1/2 min-h-screen border-l border-slate-100 bg-[#EAE4DA] opacity-40 hover:opacity-50"
-      />
     </div>
   );
 };

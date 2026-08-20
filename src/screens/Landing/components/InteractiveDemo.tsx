@@ -10,7 +10,7 @@ export function InteractiveDemo() {
   
 
   return (
-    <section className="py-24 relative overflow-hidden bg-[#FDFBF7]">
+    <section id="descubrir" className="py-24 md:py-32 relative overflow-hidden bg-[#F8F3ED]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
         <div className="text-center mb-10 md:mb-16">
           <h2 className="text-3xl md:text-5xl font-black text-[#2E3330] tracking-tighter mb-4">

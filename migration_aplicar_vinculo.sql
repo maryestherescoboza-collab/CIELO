@@ -26,23 +26,30 @@ BEGIN
       RETURN json_build_object('ok', false, 'message', 'El nombre del centro es requerido.');
     END IF;
 
-    -- Crear el nuevo centro (queda como referencia del usuario)
-    -- Se define afiliado en falso como caso de referencia genérico.
-    INSERT INTO centros (
-      nombre,
-      codigo_centro,
-      telefono,
-      estado,
-      afiliado,
-      created_by
-    ) VALUES (
-      trim(p_nombre_centro),
-      NULLIF(trim(p_codigo_centro), ''),
-      NULLIF(trim(p_telefono), ''),
-      'activo',
-      false,
-      v_user_id
-    ) RETURNING id INTO v_final_centro_id;
+    -- Verificar si ya existe un centro con ese nombre (ignorando mayúsculas y espacios extra)
+    SELECT id INTO v_final_centro_id 
+    FROM centros 
+    WHERE lower(trim(nombre)) = lower(trim(p_nombre_centro)) 
+    LIMIT 1;
+
+    -- Si no existe, crear el nuevo centro (queda como referencia del usuario)
+    IF v_final_centro_id IS NULL THEN
+      INSERT INTO centros (
+        nombre,
+        codigo_centro,
+        telefono,
+        estado,
+        afiliado,
+        created_by
+      ) VALUES (
+        trim(p_nombre_centro),
+        NULLIF(trim(p_codigo_centro), ''),
+        NULLIF(trim(p_telefono), ''),
+        'activo',
+        false,
+        v_user_id
+      ) RETURNING id INTO v_final_centro_id;
+    END IF;
 
   -- CASOS PROPIA / CODIGO: "El usuario selecciona un centro"
   ELSIF p_modo IN ('propia', 'codigo') THEN

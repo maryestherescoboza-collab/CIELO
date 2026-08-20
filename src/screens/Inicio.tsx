@@ -52,6 +52,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
     const {
         totalEstudiantes,
         actividadesEvaluadas,
+        incidenciasCount,
         totalCursos,
         avgGeneral,
         enRiesgo,
@@ -168,6 +169,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                         <DashboardStats 
                             totalEstudiantes={totalEstudiantes}
                             actividadesEvaluadas={actividadesEvaluadas}
+                            incidenciasCount={incidenciasCount}
                             avgGeneral={avgGeneral}
                             totalCursos={totalCursos}
                         />

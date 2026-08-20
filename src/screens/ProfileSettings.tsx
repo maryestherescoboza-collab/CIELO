@@ -456,6 +456,7 @@ function DatosProfesionalesTab({
 
   const activeCentro = centroReal || centro;
   const tieneCentro = !!activeCentro;
+  const isEditable = tieneCentro && activeCentro?.afiliado === false;
 
   const [form, setForm] = useState({
     instituto: '',
@@ -496,6 +497,24 @@ function DatosProfesionalesTab({
     setSaving(true);
     try {
       await onSave(form);
+      
+      if (isEditable && centroId) {
+        const { error: errCentro } = await supabase
+          .from('centros')
+          .update({
+            nombre: form.instituto,
+            codigo_centro: form.codigoCentro,
+            tanda: form.tanda,
+            telefono: form.telefonoCentro,
+            distrito_educativo: form.distrito,
+            regional_educacion: form.regional,
+            provincia: form.provincia,
+            municipio: form.municipio
+          })
+          .eq('id', centroId);
+        if (errCentro) throw errCentro;
+      }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
@@ -533,8 +552,9 @@ function DatosProfesionalesTab({
           <input
             className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.instituto}
+            onChange={(e) => setForm(p => ({ ...p, instituto: e.target.value }))}
             placeholder={tieneCentro ? "Nombre del centro educativo" : "Sin centro vinculado"}
-            disabled={true}
+            disabled={!isEditable}
           />
         </div>
 
@@ -543,8 +563,9 @@ function DatosProfesionalesTab({
           <input
             className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.codigoCentro}
+            onChange={(e) => setForm(p => ({ ...p, codigoCentro: e.target.value }))}
             placeholder={tieneCentro ? "Código del centro" : "Sin centro vinculado"}
-            disabled={true}
+            disabled={!isEditable}
           />
         </div>
 
@@ -555,8 +576,9 @@ function DatosProfesionalesTab({
               <button
                 type="button"
                 key={t}
-                onClick={() => setForm(p => ({ ...p, tipoInstitucion: t }))}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border cursor-pointer ${
+                onClick={() => isEditable && setForm(p => ({ ...p, tipoInstitucion: t }))}
+                disabled={!isEditable}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border ${!isEditable ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'} ${
                   form.tipoInstitucion === t 
                     ? 'bg-(--primary) text-white border-transparent shadow-sm font-bold' 
                     : 'bg-white text-(--ink) border-(--border-soft) hover:border-(--border-soft)/80 hover:bg-(--linen)/10'
@@ -571,9 +593,10 @@ function DatosProfesionalesTab({
         <div className="space-y-1.5">
           <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Tanda</label>
           <select
-            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold cursor-not-allowed"
+            className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.tanda}
-            disabled={true}
+            onChange={(e) => setForm(p => ({ ...p, tanda: e.target.value }))}
+            disabled={!isEditable}
           >
             <option value="Jornada Extendida">Jornada Extendida</option>
             <option value="Matutina">Matutina</option>
@@ -587,8 +610,9 @@ function DatosProfesionalesTab({
           <input
             className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.telefonoCentro}
+            onChange={(e) => setForm(p => ({ ...p, telefonoCentro: e.target.value }))}
             placeholder={tieneCentro ? "Teléfono del centro" : "Sin centro vinculado"}
-            disabled={true}
+            disabled={!isEditable}
           />
         </div>
 
@@ -597,8 +621,9 @@ function DatosProfesionalesTab({
           <input
             className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.distrito}
+            onChange={(e) => setForm(p => ({ ...p, distrito: e.target.value }))}
             placeholder={tieneCentro ? "Distrito educativo" : "Sin centro vinculado"}
-            disabled={true}
+            disabled={!isEditable}
           />
         </div>
 
@@ -607,8 +632,9 @@ function DatosProfesionalesTab({
           <input
             className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.regional}
+            onChange={(e) => setForm(p => ({ ...p, regional: e.target.value }))}
             placeholder={tieneCentro ? "Regional de educación" : "Sin centro vinculado"}
-            disabled={true}
+            disabled={!isEditable}
           />
         </div>
 
@@ -617,8 +643,9 @@ function DatosProfesionalesTab({
           <input
             className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.provincia}
+            onChange={(e) => setForm(p => ({ ...p, provincia: e.target.value }))}
             placeholder={tieneCentro ? "Provincia" : "Sin centro vinculado"}
-            disabled={true}
+            disabled={!isEditable}
           />
         </div>
 
@@ -627,8 +654,9 @@ function DatosProfesionalesTab({
           <input
             className="w-full px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) hover:border-(--border-soft)/80 outline-none transition-all font-bold disabled:opacity-75 disabled:cursor-not-allowed"
             value={form.municipio}
+            onChange={(e) => setForm(p => ({ ...p, municipio: e.target.value }))}
             placeholder={tieneCentro ? "Municipio" : "Sin centro vinculado"}
-            disabled={true}
+            disabled={!isEditable}
           />
         </div>
       </div>
@@ -792,8 +820,35 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {/* ── ID del Centro ── */}
+      {centroId && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-black uppercase tracking-widest text-(--ink)">Identificador Institucional</h4>
+          <p className="text-xs text-(--ink-soft) mb-2 font-medium">Comparte este ID con otros docentes para que puedan vincularse a este mismo centro educativo al crear su cuenta.</p>
+          <div className="flex items-center gap-2">
+            <input 
+              type="text" 
+              readOnly 
+              value={centroId} 
+              className="w-full md:max-w-md px-4 py-2.5 rounded-xl text-sm border border-(--border-soft) bg-(--background) focus:outline-none text-(--ink-soft) font-mono"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(centroId);
+                setMessage({ type: 'success', text: 'ID copiado al portapapeles' });
+                setTimeout(() => setMessage(null), 3000);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-(--linen)/30 text-(--ink) border border-(--border-soft) hover:bg-(--linen)/50 hover:border-(--ink-soft) transition-all text-xs font-bold whitespace-nowrap cursor-pointer"
+            >
+              Copiar ID
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Cambiar contraseña ── */}
-      <div className="space-y-4">
+      <div className="space-y-4 pt-4 border-t border-(--border-soft)">
           <SimplePasswordField label="Nueva Contraseña" value={newPassword} onChange={setNewPassword} show={showNewPw} onToggle={() => setShowNewPw(!showNewPw)} />
           <SimplePasswordField label="Confirmar Contraseña" value={confirmPassword} onChange={setConfirmPassword} show={showConfirmPw} onToggle={() => setShowConfirmPw(!showConfirmPw)} />
           

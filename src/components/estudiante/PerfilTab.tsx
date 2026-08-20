@@ -234,15 +234,24 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-wrap gap-1.5">
-                                                    {(act.bcAsignados || ['BC1']).map((bc: string) => (
-                                                        <span 
-                                                            key={bc} 
-                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black tracking-wider bg-transparent border border-primary text-[#000000]"
-                                                            title={bc}
-                                                        >
-                                                            {getCompetenciaDisplay(bc)}
-                                                        </span>
-                                                    ))}
+                                                    {(act.bcAsignados || ['BC1']).map((bc: string) => {
+                                                        const colors: Record<string, string> = {
+                                                            'BC1': 'bg-[#EAF2FA] text-[#2D5A85] border-[#C9DFF2]',
+                                                            'BC2': 'bg-[#EAF5ED] text-[#2C6E49] border-[#C3E8CC]',
+                                                            'BC3': 'bg-[#FDF3E7] text-[#93541A] border-[#F7DEBE]',
+                                                            'BC4': 'bg-[#F4EFFF] text-[#5D4291] border-[#DFD3F8]',
+                                                        };
+                                                        const styleClasses = colors[bc] || 'bg-slate-50 text-slate-700 border-slate-200';
+                                                        return (
+                                                            <span 
+                                                                key={bc} 
+                                                                className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[11px] font-bold tracking-wide border ${styleClasses} leading-snug shadow-sm`}
+                                                                title={bc}
+                                                            >
+                                                                {getCompetenciaDisplay(bc)}
+                                                            </span>
+                                                        );
+                                                    })}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">

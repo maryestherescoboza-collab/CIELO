@@ -29,8 +29,14 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
         return state.calificaciones.filter(c => studentIds.has(c.estudianteId));
     }, [state.calificaciones, myStudents]);
 
+    const filteredIncidencias = useMemo(() => {
+        const studentIds = new Set(myStudents.map(s => s.id));
+        return state.incidencias.filter(i => studentIds.has(i.estudianteId));
+    }, [state.incidencias, myStudents]);
+
     const totalEstudiantes = myStudents.length;
     const actividadesEvaluadas = filteredCalificaciones.filter(c => c.puntaje !== null).length;
+    const incidenciasCount = filteredIncidencias.length;
     const totalCursos = selectedCourseId === 'all' ? state.cursos.length : 1;
 
     const avgBC = (bc: BCKey) => {
@@ -104,6 +110,7 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
         filteredCalificaciones,
         totalEstudiantes,
         actividadesEvaluadas,
+        incidenciasCount,
         totalCursos,
         avgGeneral,
         enRiesgo,

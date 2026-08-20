@@ -1,14 +1,15 @@
 interface DashboardStatsProps {
     totalEstudiantes: number;
     actividadesEvaluadas: number;
+    incidenciasCount: number;
     avgGeneral: number;
     totalCursos: number;
 }
 
-export function DashboardStats({ totalEstudiantes, actividadesEvaluadas, avgGeneral, totalCursos }: DashboardStatsProps) {
+export function DashboardStats({ totalEstudiantes, incidenciasCount, avgGeneral, totalCursos }: DashboardStatsProps) {
     const stats = [
         { label: 'Estudiantes', value: totalEstudiantes, bgImage: 'estudiantes.png', bg: 'bg-[#BFC9A6]', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-[#BFC9A6]' },
-        { label: 'Actividades', value: actividadesEvaluadas, bgImage: 'actividades.png', bg: 'bg-[#689C63]', text: 'text-white', labelColor: 'text-white/80', lineBg: 'bg-white', accent: 'border-[#689C63]' },
+        { label: 'Bitácoras', value: incidenciasCount, bgImage: 'actividades.png', bg: 'bg-[#689C63]', text: 'text-white', labelColor: 'text-white/80', lineBg: 'bg-white', accent: 'border-[#689C63]' },
         { label: 'Promedio G.', value: `${avgGeneral}%`, bgImage: 'promedio.png', bg: 'bg-[#EB8847]', text: 'text-white', labelColor: 'text-white/80', lineBg: 'bg-white', accent: 'border-[#EB8847]' },
         { label: 'Cursos Act.', value: totalCursos, bgImage: 'libro.png', bg: 'bg-[#DEAE4D]', text: 'text-[#2E3330]', labelColor: 'text-[#2E3330]/80', lineBg: 'bg-[#2E3330]', accent: 'border-[#DEAE4D]' },
     ];

@@ -215,7 +215,10 @@ export default function Rubrica({
     const sortedEsts = [...estudiantes].sort((a, b) =>
         (a.apellido + a.nombre).localeCompare(b.apellido + b.nombre)
     );
-    const actividades = state.actividades.filter((actividad) => actividad.cursoId === selectedCursoId);
+    const actividades = state.actividades.filter((actividad) => 
+        actividad.cursoId === selectedCursoId || 
+        (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)
+    );
     const rubricaPlantillas = state.plantillas.filter((plantilla) => plantilla.tipo === 'rubrica');
     const selectedEst = estudiantes.find((estudiante) => estudiante.id === selectedEstId) ?? null;
     const selectedAct = actividades.find((actividad) => actividad.id === selectedActId) ?? null;
