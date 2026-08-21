@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { AppState, CalificacionActividad, RecuperacionBC, BCKey, CursoDocente } from '../types';
 import { calculateStudentPeriodBC } from '../utils/academic';
+import { perteneceAlContextoDelCurso, esEstudianteDelCurso } from '../utils/aislamiento';
 
 interface Params {
     state: AppState;
@@ -27,6 +28,9 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
 
     const sharedCourseId = curso?.sharedCourseId || String(cursoId);
     const myAsignatura = currentCourseRole?.asignatura || curso?.asignatura || '';
+    // Contexto institucional: el centro del propio curso es la autoridad.
+    // sharedCourseId queda subordinado a este centro en todos los filtros.
+    const centroContexto = curso?.centroId || null;
 
     // Local grade/recovery state
     const [localCalifs, setLocalCalifs] = useState<CalificacionActividad[]>([]);
@@ -82,17 +86,19 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
     const actividades = useMemo(() => {
         return state.actividades.filter(a => {
             const isMyAct = a.cursoId === cursoId;
-            const isSharedAct = curso?.sharedCourseId && state.cursos.find(cx => cx.id === a.cursoId)?.sharedCourseId === curso.sharedCourseId;
+            // Frontera institucional: compartido solo dentro del MISMO centro.
+            const isSharedAct = a.cursoId !== cursoId && !!curso &&
+                perteneceAlContextoDelCurso(state.cursos, curso, a.cursoId, centroContexto);
             const matchesPeriod = a.periodo === selectedPeriodo;
             const isMine = a.userId === currentUserId || !a.userId;
             return (isMyAct || isSharedAct) && matchesPeriod && isMine;
         });
-    }, [state.actividades, state.cursos, cursoId, curso?.sharedCourseId, selectedPeriodo, currentUserId]);
+    }, [state.actividades, state.cursos, cursoId, curso, centroContexto, selectedPeriodo, currentUserId]);
 
     const enhancedEstudiantes = useMemo(() => {
         const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         const filtered = state.estudiantes
-            .filter(e => e.sharedCourseId === curso?.sharedCourseId || e.cursoId === cursoId)
+            .filter(e => curso ? esEstudianteDelCurso(state.cursos, curso, e, centroContexto) : e.cursoId === cursoId)
             .filter(e => {
                 if (!buscar) return true;
                 const fullName = `${e.nombre || ''} ${e.apellido || ''}`;
@@ -115,7 +121,10 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                     sharedCourseId: curso?.sharedCourseId,
                     targetAsignatura: myAsignatura,
                     bcSel,
-                    currentUserId
+                    currentUserId,
+                    centroId: centroContexto,
+                    cursos: state.cursos,
+                    curso
                 });
                 return { bc, avg, rec, final };
             });
@@ -136,7 +145,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
 
             return { ...est, bcValues, promTotal, destaca, displayName, calificaciones: califsMap };
         });
-    }, [state.estudiantes, curso?.sharedCourseId, cursoId, buscar, actividades, bcSel, localCalifs, localRecs, selectedPeriodo]);
+    }, [state.estudiantes, state.cursos, curso, centroContexto, cursoId, buscar, actividades, bcSel, localCalifs, localRecs, selectedPeriodo]);
 
     const finalFilteredEstudiantes = useMemo(() => {
         if (!showRecoveryOnly) return enhancedEstudiantes.sort((a, b) => (a.numeroLista || 0) - (b.numeroLista || 0));

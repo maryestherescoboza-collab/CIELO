@@ -1,8 +1,15 @@
 import React from 'react';
 import type { BoletinTemplateProps } from './types';
 import { ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
+import { obtenerCentroDelCurso } from '../../utils/aislamiento';
+import { getBoletinHeaderImage } from '../../utils/colorimetriaBoletines';
 
 export default function Boletin4to({ curso, estudiantes, docenteNombre, studentGrades, state }: BoletinTemplateProps) {
+    // Datos institucionales reales: BOLETÍN → CURSO → curso.centroId → CENTRO.
+    // Nunca un centro global ni el del usuario que imprime; si el centro no
+    // puede demostrarse, el campo queda en blanco (como el formulario físico).
+    const centro = obtenerCentroDelCurso(state.centros, curso);
+    const headerImg = getBoletinHeaderImage(curso?.grado);
     return (
         <>
             <style dangerouslySetInnerHTML={{ __html: `
@@ -29,6 +36,10 @@ export default function Boletin4to({ curso, estudiantes, docenteNombre, studentG
                   pointer-events:none;
                 }
                 @media print{ 
+                  *, *::before, *::after {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                  }
                   .fold-guide{ display:none; } 
                   body { background: #fff; }
                   .page { box-shadow: none; margin: 0; page-break-after: always; }
@@ -36,15 +47,11 @@ export default function Boletin4to({ curso, estudiantes, docenteNombre, studentG
                 }
                 h1,h2,h3,p { margin:0; padding:0; }
 
-                :root{
-                  --navy:#009A96;
-                  --lightblue:#D7ECE8;
-                  --border:#84B0A9;
-                }
+                /* Variables dinámicas inyectadas desde el wrapper */
 
                 .header-bar{
-                  background: var(--navy);
-                  color:#fff;
+                  background: var(--boletin-medium);
+                  color: var(--boletin-text);
                   font-weight:bold;
                   font-size:10.5px;
                   text-align:center;
@@ -63,11 +70,11 @@ export default function Boletin4to({ curso, estudiantes, docenteNombre, studentG
                 .p1-right{ text-align:center; }
                 .logo-box{ margin:4px auto 2px auto; }
                 .logo-box svg{ display:block; margin:0 auto; }
-                .country-name{ font-size:8px; font-weight:bold; color:var(--navy); letter-spacing:1px; margin-top:1px; }
+                .country-name{ font-size:8px; font-weight:bold; color:var(--boletin-main); letter-spacing:1px; margin-top:1px; }
                 .edu-word{ color:#cc0000; font-weight:bold; font-size:10px; margin-top:5px; }
                 .minerd-logo{ display:block; margin:6px auto; max-width:90px; height:auto; }
                 .subtitle-small{ font-size:8px; line-height:1.2; }
-                .boletin-title{ color:var(--navy); font-weight:bold; font-size:17px; margin-top:9px; }
+                .boletin-title{ color:var(--boletin-main); font-weight:bold; font-size:17px; margin-top:9px; }
                 .grado-logo{ display:block; margin:8px auto 0 auto; max-width:170px; height:auto; }
                 .form-fields{ text-align:left; font-size:10.5px; margin-top:12px; padding:0 8px; }
                 .form-fields .field{ margin-bottom:9px; display:flex; align-items:flex-end; white-space:nowrap; }
@@ -89,14 +96,14 @@ export default function Boletin4to({ curso, estudiantes, docenteNombre, studentG
                   font-size:7px;
                 }
                 table.grades th, table.grades td{
-                  border:0.5px solid var(--border);
+                  border:0.5px solid var(--boletin-border);
                   text-align:center;
                   padding:1px;
                   height:19px;
                 }
                 table.grades th{
-                  background:var(--lightblue);
-                  color:#111;
+                  background:var(--boletin-light);
+                  color:var(--boletin-text);
                   font-weight:bold;
                   font-size:7px;
                   line-height:1.05;
@@ -118,12 +125,12 @@ export default function Boletin4to({ curso, estudiantes, docenteNombre, studentG
                   transform:rotate(180deg);
                   font-weight:bold;
                   font-size:7.5px;
-                  background:var(--lightblue);
+                  background:var(--boletin-light);
                 }
-                table.grades td.shaded{ background:var(--lightblue); }
+                table.grades td.shaded{ background:var(--boletin-light); }
                 table.grades th.compfund{
                   font-size:7px;
-                  background:var(--lightblue);
+                  background:var(--boletin-light);
                 }
 
                 .bottom-section{ display:flex; gap:10px; margin-top:8px; align-items:flex-start; }
@@ -133,18 +140,18 @@ export default function Boletin4to({ curso, estudiantes, docenteNombre, studentG
                   width:100%; border-collapse:collapse; font-size:8.5px; margin-top:3px;
                 }
                 table.attendance-table th, table.attendance-table td{
-                  border:0.5px solid var(--border); text-align:center; padding:2px;
+                  border:0.5px solid var(--boletin-border); text-align:center; padding:2px;
                 }
-                table.attendance-table th{ background:var(--lightblue); }
+                table.attendance-table th{ background:var(--boletin-light); }
 
                 table.legend-table{
                   width:100%; border-collapse:collapse; font-size:7.6px; margin-top:3px;
                 }
                 table.legend-table th{
-                  background:var(--navy); color:#fff; padding:3px; font-size:9px;
+                  background:var(--boletin-medium); color:var(--boletin-text); padding:3px; font-size:9px;
                 }
                 table.legend-table td{
-                  border:0.5px solid var(--border); padding:1.5px 3px;
+                  border:0.5px solid var(--boletin-border); padding:1.5px 3px;
                 }
                 table.legend-table td.code{ font-weight:bold; width:48px; white-space:nowrap; }
 
@@ -215,12 +222,19 @@ export default function Boletin4to({ curso, estudiantes, docenteNombre, studentG
                               </div>
                               <div className="boletin-title">BOLETÍN DE CALIFICACIONES</div>
                               
-                              <img 
-                                src="/boletin_4to_header.png" 
-                                alt="4to Grado" 
-                                className="grado-logo" 
-                                style={{ display: 'block', margin: '8px auto 0 auto', maxWidth: '170px', height: 'auto', imageRendering: '-webkit-optimize-contrast' }} 
-                              />
+                              {headerImg ? (
+                                <img 
+                                  src={headerImg} 
+                                  alt={`${curso?.grado || 'Grado'} Header`} 
+                                  className="grado-logo" 
+                                  style={{ display: 'block', margin: '8px auto 0 auto', maxWidth: '170px', height: 'auto', imageRendering: '-webkit-optimize-contrast' }} 
+                                />
+                              ) : (
+                                <div style={{ margin: '14px 0', border: '1.5px solid var(--boletin-main)', padding: '6px', borderRadius: '4px', background: 'var(--boletin-light)' }}>
+                                  <div style={{ fontSize: '11px', fontWeight: 'black', color: 'var(--boletin-main)', letterSpacing: '1.5px' }}>NIVEL EDUCACIÓN SECUNDARIA</div>
+                                  <div style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--boletin-main)', marginTop: '2px' }}>{curso?.grado || 'Grado no especificado'} - Segundo Ciclo</div>
+                                </div>
+                              )}
 
                               <div className="form-fields">
                                 <div className="field" style={{ justifyContent: 'center', gap: 0 }}>
@@ -237,17 +251,17 @@ export default function Boletin4to({ curso, estudiantes, docenteNombre, studentG
                                 <div className="field"><span className="label">Apellido(s):</span><span className="fill-line">{est.apellido}</span></div>
                                 <div className="field"><span className="label">ID estudiante <span className="small-note">(Número de identificación SIGERD)</span>:</span><span className="fill-line"></span></div>
                                 <div className="field"><span className="label">Docente:</span><span className="fill-line">{docenteNombre}</span></div>
-                                <div className="field"><span className="label">Centro educativo:</span><span className="fill-line">{state.instituto || 'Instituto Central'}</span></div>
-                                <div className="field"><span className="label">Código del centro:</span><span className="fill-line">038491</span></div>
-                                <div className="field"><span className="label">Tanda:</span><span className="fill-line">Extendida</span></div>
-                                <div className="field"><span className="label">Teléfono del centro:</span><span className="fill-line">(809) 555-0192</span></div>
+                                <div className="field"><span className="label">Centro educativo:</span><span className="fill-line">{centro?.nombre || state.instituto || ''}</span></div>
+                                <div className="field"><span className="label">Código del centro:</span><span className="fill-line">{centro?.codigoCentro || ''}</span></div>
+                                <div className="field"><span className="label">Tanda:</span><span className="fill-line">{centro?.tanda || ''}</span></div>
+                                <div className="field"><span className="label">Teléfono del centro:</span><span className="fill-line">{centro?.telefono || ''}</span></div>
                                 <div className="field split">
-                                  <div className="sub"><span className="label">Distrito:</span><span className="fill-line">10-01</span></div>
-                                  <div className="sub"><span className="label">Regional:</span><span className="fill-line">10</span></div>
+                                  <div className="sub"><span className="label">Distrito:</span><span className="fill-line">{centro?.distritoEducativo || ''}</span></div>
+                                  <div className="sub"><span className="label">Regional:</span><span className="fill-line">{centro?.regionalEducacion || ''}</span></div>
                                 </div>
                                 <div className="field split">
-                                  <div className="sub"><span className="label">Provincia:</span><span className="fill-line">Santo Domingo</span></div>
-                                  <div className="sub"><span className="label">Municipio:</span><span className="fill-line">SD Este</span></div>
+                                  <div className="sub"><span className="label">Provincia:</span><span className="fill-line">{centro?.provincia || ''}</span></div>
+                                  <div className="sub"><span className="label">Municipio:</span><span className="fill-line">{centro?.municipio || ''}</span></div>
                                 </div>
                               </div>
                             </div>
@@ -441,7 +455,7 @@ export default function Boletin4to({ curso, estudiantes, docenteNombre, studentG
                                 <span className="opt"><span className={`circle ${allPassed ? 'checked' : ''}`}></span>Promovido/a</span>
                                 <span className="opt"><span className="circle"></span>Repitente</span>
                               </div>
-                              <div className="header-bar" style={{ background: 'var(--lightblue)', color: '#111' }}>CONDICIÓN FINAL DEL/DE LA ESTUDIANTE:</div>
+                              <div className="header-bar" style={{ background: 'var(--boletin-light)', color: 'var(--boletin-text)' }}>CONDICIÓN FINAL DEL/DE LA ESTUDIANTE:</div>
                               <div className="condicion-lines">
                                 <div className="line" style={{ fontSize: '10px', paddingLeft: '8px', paddingTop: '2px', fontWeight: 'bold' }}>
                                     {allPassed ? 'PROMOVIDO AL GRADO INMEDIATO SUPERIOR' : ''}

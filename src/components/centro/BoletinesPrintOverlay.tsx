@@ -2,6 +2,9 @@ import { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { AppState, Curso } from '../../types';
 import { computeStudentGrades } from '../../utils/boletines';
+import { estudiantesDelCurso } from '../../utils/aislamiento';
+import { getBoletinCSSVariables } from '../../utils/colorimetriaBoletines';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 import Boletin1ero from '../../templates/boletines/Boletin1ero';
 import Boletin2do from '../../templates/boletines/Boletin2do';
@@ -12,6 +15,7 @@ import Boletin6to from '../../templates/boletines/Boletin6to';
 
 interface Props {
     curso: Curso;
+    centroId?: string | null;
     state: AppState;
     docenteNombre: string;
     onClose: () => void;
@@ -19,17 +23,15 @@ interface Props {
 
 // Overlay de impresión de boletines. Renderiza todos los boletines del curso
 // en la misma ventana y dispara el diálogo de impresión (guardar como PDF).
-export default function BoletinesPrintOverlay({ curso, state, docenteNombre, onClose }: Props) {
+export default function BoletinesPrintOverlay({ curso, centroId, state, docenteNombre, onClose }: Props) {
     const estudiantes = useMemo(() =>
-        state.estudiantes
-            .filter(e => e.cursoId === curso.id || (curso.sharedCourseId && e.sharedCourseId === curso.sharedCourseId))
-            .sort((a, b) => (a.numeroLista || 0) - (b.numeroLista || 0)),
-        [state.estudiantes, curso]
+        estudiantesDelCurso(state.cursos, state.estudiantes, curso, centroId),
+        [state.cursos, state.estudiantes, curso, centroId]
     );
 
     const studentGrades = useMemo(
-        () => computeStudentGrades(estudiantes, state, curso.id, curso),
-        [estudiantes, state, curso]
+        () => computeStudentGrades(estudiantes, state, curso.id, curso, centroId),
+        [estudiantes, state, curso, centroId]
     );
 
     const TemplateComponent = useMemo(() => {
@@ -57,6 +59,10 @@ export default function BoletinesPrintOverlay({ curso, state, docenteNombre, onC
         <div className="boletines-print-overlay fixed inset-0 z-[9999] overflow-y-auto bg-white">
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
+                    *, *::before, *::after {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
                     body > *:not(.boletines-print-overlay) { display: none !important; }
                     .boletines-print-overlay { position: static !important; inset: auto !important; overflow: visible !important; height: auto !important; }
                     .print-toolbar { display: none !important; }
@@ -79,13 +85,17 @@ export default function BoletinesPrintOverlay({ curso, state, docenteNombre, onC
                     Cerrar
                 </button>
             </div>
-            <TemplateComponent
-                curso={curso}
-                estudiantes={estudiantes}
-                docenteNombre={docenteNombre}
-                studentGrades={studentGrades}
-                state={state}
-            />
+            <div style={getBoletinCSSVariables(curso?.grado)}>
+                <ErrorBoundary>
+                    <TemplateComponent
+                        curso={curso}
+                        estudiantes={estudiantes}
+                        docenteNombre={docenteNombre}
+                        studentGrades={studentGrades}
+                        state={state}
+                    />
+                </ErrorBoundary>
+            </div>
         </div>
     );
 

@@ -1,5 +1,6 @@
 import type { AppState, BCKey, Estudiante, Curso } from '../types';
 import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
+import { perteneceAlContextoDelCurso } from './aislamiento';
 
 export interface StudentSubjectGrades {
     P1: Record<BCKey, number | null>;
@@ -14,16 +15,37 @@ export type StudentGrades = Record<number, Record<string, StudentSubjectGrades>>
 
 // Calcula las calificaciones de cada estudiante por asignatura y período,
 // aplicando la misma lógica del sistema (recuperaciones incluidas).
+// `centroId` (centro activo/contexto institucional) subordina cualquier
+// relación por `sharedCourseId`: ninguna actividad, calificación o
+// recuperación de otro centro puede entrar al boletín.
 export function computeStudentGrades(
     estudiantes: Estudiante[],
     state: AppState,
     cursoId: number,
-    curso?: Curso | null
+    curso?: Curso | null,
+    centroId?: string | null
 ): StudentGrades {
     const results: StudentGrades = {};
 
     estudiantes.forEach(est => {
         const studentResults: Record<string, StudentSubjectGrades> = {};
+
+        // Frontera institucional (Fase 6): actividades y recuperaciones del curso
+        // permitido o de un curso compartido dentro del MISMO centro
+        // (sharedCourseId subordinado a centroId y al centro activo).
+        // Se resuelve UNA vez por estudiante (no por asignatura) para evitar
+        // recalcular la pertenencia institucional 9 veces.
+        const actividadesCurso = state.actividades.filter(a => {
+            const mismaCurso = a.cursoId === cursoId;
+            const compartidaMismoCentro = a.cursoId !== cursoId && !!curso &&
+                perteneceAlContextoDelCurso(state.cursos, curso, a.cursoId, centroId);
+            return mismaCurso || compartidaMismoCentro;
+        });
+
+        const recuperacionesCurso = state.recuperaciones.filter(r =>
+            r.estudianteId === est.id &&
+            (r.cursoId === cursoId || (!!curso && perteneceAlContextoDelCurso(state.cursos, curso, r.cursoId, centroId)))
+        );
 
         ASIGNATURAS_CATALOGO.forEach(asig => {
             const periods: ('P1' | 'P2' | 'P3' | 'P4')[] = ['P1', 'P2', 'P3', 'P4'];
@@ -40,21 +62,23 @@ export function computeStudentGrades(
                 BC1: null, BC2: null, BC3: null, BC4: null
             };
 
-            // Filter activities and qualifications for this subject
-            const activities = state.actividades.filter(a =>
-                (a.cursoId === cursoId || (curso?.sharedCourseId && state.cursos.find(cx => cx.id === a.cursoId)?.sharedCourseId === curso.sharedCourseId)) &&
-                a.asignatura === asig.id
-            );
+            // Actividades permitidas para esta asignatura dentro del contexto ya validado.
+            const activities = actividadesCurso.filter(a => a.asignatura === asig.id);
 
+            // Índice de actividades permitidas (evita búsquedas O(n²) sobre el arreglo).
+            const activityIds = new Set(activities.map(a => a.id));
+
+            // Fase 7 — una calificación solo entra si corresponde a una actividad
+            // permitida para este boletín, además del estudiante y la asignatura.
             const qualifications = state.calificaciones.filter(c =>
                 c.estudianteId === est.id &&
-                c.asignatura === asig.id
+                c.asignatura === asig.id &&
+                activityIds.has(c.actividadId)
             );
 
-            const recoveries = state.recuperaciones.filter(r =>
-                r.estudianteId === est.id &&
-                r.asignatura === asig.id
-            );
+            // Fase 8 — recuperaciones ya validadas institucionalmente, filtradas
+            // por asignatura. Nunca por coincidencia parcial de ids.
+            const recoveries = recuperacionesCurso.filter(r => r.asignatura === asig.id);
 
             periods.forEach(p => {
                 bcs.forEach((bc, bcIdx) => {

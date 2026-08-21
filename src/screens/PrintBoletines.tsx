@@ -2,7 +2,11 @@ import { useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import type { AppState } from '../types';
 import { computeStudentGrades } from '../utils/boletines';
+import { estudiantesDelCurso, obtenerDocenteResponsable } from '../utils/aislamiento';
+import { useAppStore } from '../store/appStore';
 import { CieloPill } from '../components/ui/CieloPill';
+import { getBoletinCSSVariables } from '../utils/colorimetriaBoletines';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Import bulletin templates
 import Boletin1ero from '../templates/boletines/Boletin1ero';
@@ -17,19 +21,29 @@ interface PrintBoletinesProps {
     docenteNombre: string;
 }
 
-export default function PrintBoletines({ state, docenteNombre }: PrintBoletinesProps) {
+export default function PrintBoletines({ state }: PrintBoletinesProps) {
     const { cursoId: rawCursoId } = useParams<{ cursoId: string }>();
     const cursoId = Number(rawCursoId) || 0;
+    const session = useAppStore(s => s.session);
 
     const curso = useMemo(() => {
         return state.cursos.find(c => c.id === cursoId);
     }, [state.cursos, cursoId]);
 
+    // Centro institucional del boletín: el del propio curso es la autoridad;
+    // se cae al centro activo (panel) o al centro del perfil del docente.
+    const centroId = useMemo(() =>
+        curso?.centroId ||
+        state.centroRolActual?.centro_id ||
+        state.perfiles.find(p => p.userId === session?.user?.id)?.centro_id ||
+        null,
+        [curso, state.centroRolActual, state.perfiles, session?.user?.id]
+    );
+
     const estudiantes = useMemo(() => {
-        return state.estudiantes
-            .filter(e => e.cursoId === cursoId || (curso?.sharedCourseId && e.sharedCourseId === curso.sharedCourseId))
-            .sort((a, b) => (a.numeroLista || 0) - (b.numeroLista || 0));
-    }, [state.estudiantes, cursoId, curso?.sharedCourseId]);
+        if (!curso) return [];
+        return estudiantesDelCurso(state.cursos, state.estudiantes, curso, centroId);
+    }, [state.cursos, state.estudiantes, curso, centroId]);
 
     // Automatically trigger browser print dialog once rendered
     useEffect(() => {
@@ -43,12 +57,20 @@ export default function PrintBoletines({ state, docenteNombre }: PrintBoletinesP
     }, [estudiantes]);
 
     // Helper to calculate grades for a student, a specific subject, and all periods + competencies
-    const studentGrades = useMemo(() => computeStudentGrades(estudiantes, state, cursoId, curso), [estudiantes, state, cursoId, curso]);
+    const studentGrades = useMemo(() => computeStudentGrades(estudiantes, state, cursoId, curso, centroId), [estudiantes, state, cursoId, curso, centroId]);
+
+    // Docente responsable REAL del curso (curso.userId → perfil). El usuario
+    // que imprime puede ser un administrador o director; el boletín siempre
+    // muestra al docente responsable del curso.
+    const docenteResponsable = useMemo(
+        () => obtenerDocenteResponsable(state.perfiles, curso),
+        [state.perfiles, curso]
+    );
 
     // Select the correct template based on course grade/degree (curso.grado)
     const TemplateComponent = useMemo(() => {
         if (!curso) return Boletin2do;
-        const grado = curso.grado.toLowerCase();
+        const grado = (curso.grado || '').toLowerCase();
         if (grado.includes('1')) return Boletin1ero;
         if (grado.includes('2')) return Boletin2do;
         if (grado.includes('3')) return Boletin3ero;
@@ -110,6 +132,10 @@ export default function PrintBoletines({ state, docenteNombre }: PrintBoletinesP
                   background: #6C7E5C;
                 }
                 @media print {
+                  *, *::before, *::after {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                  }
                   .no-print { display: none !important; }
                 }
             ` }} />
@@ -120,13 +146,17 @@ export default function PrintBoletines({ state, docenteNombre }: PrintBoletinesP
                 <CieloPill as="button" onClick={() => window.print()} variant="primary" className="h-8">Imprimir ahora</CieloPill>
             </div>
 
-            <TemplateComponent 
-                curso={curso}
-                estudiantes={estudiantes}
-                docenteNombre={docenteNombre}
-                studentGrades={studentGrades}
-                state={state}
-            />
+            <div style={getBoletinCSSVariables(curso?.grado)}>
+                <ErrorBoundary>
+                    <TemplateComponent
+                        curso={curso}
+                        estudiantes={estudiantes}
+                        docenteNombre={docenteResponsable}
+                        studentGrades={studentGrades}
+                        state={state}
+                    />
+                </ErrorBoundary>
+            </div>
         </div>
     );
 }

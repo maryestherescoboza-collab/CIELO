@@ -181,7 +181,7 @@ export default function CentroPanel({ onLogout }: Props) {
                                 <CentroIncidencias
                                     centroId={centroId}
                                     centroNombre={centro.nombre}
-                                    centroCodigo={centro.codigoCentro}
+                                    centroDistritoEducativo={centro.distritoEducativo}
                                 />
                             )}
                         </div>

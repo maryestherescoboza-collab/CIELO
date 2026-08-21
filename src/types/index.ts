@@ -413,6 +413,10 @@ export interface AppState {
     
     suscripcionActual?: Suscripcion;
     centroRolActual?: CentroRol;
+
+    // Catálogo de centros conocidos (para resolver curso.centroId → CENTRO
+    // en boletines sin depender del usuario que imprime).
+    centros?: Centro[];
 }
 
 export interface RegistroAnecdotico {

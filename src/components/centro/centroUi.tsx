@@ -37,10 +37,9 @@ export const ESTADO_CODIGO_COLORS: Record<string, string> = {
 
 export const centroToForm = (c: Centro) => ({
     nombre: c.nombre || '',
-    codigo_centro: c.codigoCentro || '',
+    distrito_educativo: c.distritoEducativo || '',
     tanda: c.tanda || '',
     telefono: c.telefono || '',
-    distrito_educativo: c.distritoEducativo || '',
     regional_educacion: c.regionalEducacion || '',
     provincia: c.provincia || '',
     municipio: c.municipio || '',

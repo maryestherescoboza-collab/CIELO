@@ -239,6 +239,13 @@ export default function Dashboard({ docenteNombre }: Props) {
     return state.calificaciones.filter(c => validStudentIds.has(c.estudianteId) && c.userId === session?.user?.id);
   }, [state.calificaciones, filteredEstudiantes, session?.user?.id]);
 
+  // Contexto institucional del docente: garantiza que el cálculo de boletines
+  // (computeStudentGrades) no arrastre actividades/calificaciones de otro centro.
+  const centroContexto = useMemo(
+    () => state.centroRolActual?.centro_id || state.perfiles.find(p => p.userId === session?.user?.id)?.centro_id || null,
+    [state.centroRolActual, state.perfiles, session?.user?.id]
+  );
+
   // ── Optimized: Pre-grouped grades by student for O(1) lookup ──
   const gradesByStudent = useMemo(() => {
     const group = new Map<number, any[]>();
@@ -306,7 +313,7 @@ export default function Dashboard({ docenteNombre }: Props) {
     for (const [cursoId, students] of studentsByCourse.entries()) {
       const curso = state.cursos.find(c => c.id === cursoId);
       // Reutiliza la función del sistema que calcula con exactitud incluyendo recuperaciones
-      const grades = computeStudentGrades(students, state, cursoId, curso);
+      const grades = computeStudentGrades(students, state, cursoId, curso, centroContexto);
 
       students.forEach(est => {
         const subjectsGrades = grades[est.id];
@@ -355,7 +362,7 @@ export default function Dashboard({ docenteNombre }: Props) {
         bc4: g.bc4
       };
     });
-  }, [enhancedStudents, state]);
+  }, [enhancedStudents, state, centroContexto]);
 
   // ── 4 Podiums by Period ──
   const podiumsByPeriod = useMemo(() => {

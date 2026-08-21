@@ -8,10 +8,10 @@ import type { Incidencia } from '../../types';
 interface Props {
     centroId: string;
     centroNombre?: string;
-    centroCodigo?: string;
+    centroDistritoEducativo?: string;
 }
 
-export default function CentroIncidencias({ centroId, centroNombre, centroCodigo }: Props) {
+export default function CentroIncidencias({ centroId, centroNombre, centroDistritoEducativo }: Props) {
     const state = useAppStore(s => s.state);
 
     const centroSharedIds = useMemo(() => {
@@ -62,7 +62,7 @@ export default function CentroIncidencias({ centroId, centroNombre, centroCodigo
             docente,
             curso,
             centroNombre,
-            centroCodigo,
+            centroDistritoEducativo,
         });
         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);

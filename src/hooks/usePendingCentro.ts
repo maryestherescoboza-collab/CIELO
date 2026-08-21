@@ -5,8 +5,8 @@ import type { Session } from '@supabase/supabase-js';
 const PENDING_CENTRO_KEY = 'pendingCentroCIELO';
 
 interface PendingCentroData {
-    nombre: string;
-    codigo_centro?: string;
+    nombre?: string;
+    distrito_educativo?: string;
     telefono?: string;
 }
 
@@ -46,8 +46,8 @@ export function usePendingCentro(session: Session | null, onComplete: () => void
                     .from('centros')
                     .insert({
                         nombre: (data.nombre || '').trim(),
-                        codigo_centro: (data.codigo_centro || '').trim() || null,
-                        telefono: (data.telefono || '').trim() || null,
+                        distrito_educativo: (data.distrito_educativo || '').trim() || null,
+                        telefono: (data.telefono || '').trim(),
                         estado: 'activo',
                         afiliado: true,
                         created_by: session.user.id
@@ -66,19 +66,7 @@ export function usePendingCentro(session: Session | null, onComplete: () => void
                     .upsert({ user_id: session.user.id, centro_id: centroData.id });
                 if (perfilError) console.error('Error al asociar el perfil con el centro:', perfilError);
 
-                if (data.codigo_centro) {
-                    await supabase
-                        .from('codigos_acceso_centro')
-                        .insert({
-                            centro_id: centroData.id,
-                            codigo: String(data.codigo_centro).trim().toUpperCase(),
-                            estado: 'activo',
-                            created_by: session.user.id
-                        })
-                        .then(({ error: codError }) => {
-                            if (codError) console.error('Error al crear el código de acceso del centro:', codError);
-                        });
-                }
+
 
                 localStorage.removeItem(PENDING_CENTRO_KEY);
                 onComplete();

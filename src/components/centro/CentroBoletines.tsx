@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronDown, Download, FileDown } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { getAsignaturaNombre } from '../../constants/asignaturas';
+import { estudiantesDelCurso, obtenerDocenteResponsable } from '../../utils/aislamiento';
 import type { Curso } from '../../types';
 import BoletinesPrintOverlay from './BoletinesPrintOverlay';
 
@@ -36,21 +37,17 @@ export default function CentroBoletines({ centroId, centroNombre }: Props) {
 
     const estudiantesCurso = useMemo(() =>
         selectedCurso
-            ? state.estudiantes.filter(e =>
-                e.cursoId === selectedCurso.id ||
-                (selectedCurso.sharedCourseId && e.sharedCourseId === selectedCurso.sharedCourseId)
-            )
+            ? estudiantesDelCurso(state.cursos, state.estudiantes, selectedCurso, centroId)
             : [],
-        [state.estudiantes, selectedCurso]
+        [state.cursos, state.estudiantes, selectedCurso, centroId]
     );
 
-    const docenteBoletin = useMemo(() => {
-        if (!selectedCurso) return 'Docente Titular';
-        const ownerProfile = selectedCurso.userId
-            ? state.perfiles.find(p => p.userId === selectedCurso.userId)
-            : null;
-        return ownerProfile?.nombreDocente || 'Docente Titular';
-    }, [selectedCurso, state.perfiles]);
+    // Docente responsable real del curso (curso.userId → perfil), nunca el
+    // administrador que genera el boletín.
+    const docenteBoletin = useMemo(
+        () => obtenerDocenteResponsable(state.perfiles, selectedCurso),
+        [state.perfiles, selectedCurso]
+    );
 
     return (
         <section className="bg-[#F9F8F6] border border-[#E6E1D8] rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_rgba(0,0,0,0.05)] overflow-hidden">
@@ -121,6 +118,7 @@ export default function CentroBoletines({ centroId, centroNombre }: Props) {
             {printCurso && (
                 <BoletinesPrintOverlay
                     curso={printCurso}
+                    centroId={centroId}
                     state={{ ...state, instituto: centroNombre }}
                     docenteNombre={docenteBoletin}
                     onClose={() => setPrintCurso(null)}

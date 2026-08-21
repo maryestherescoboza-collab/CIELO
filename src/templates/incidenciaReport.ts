@@ -24,11 +24,11 @@ export interface IncidenciaReportData {
     docente?: UserProfile;
     curso?: Curso;
     centroNombre?: string;
-    centroCodigo?: string;
+    centroDistritoEducativo?: string;
 }
 
 export function buildIncidenciaReport(data: IncidenciaReportData): string {
-    const { incidencia, estudiante, docente, curso, centroNombre, centroCodigo } = data;
+    const { incidencia, estudiante, docente, curso, centroNombre } = data;
 
     const nombreEstudiante = estudiante
         ? `${estudiante.nombre} ${estudiante.apellido}`
@@ -83,7 +83,7 @@ export function buildIncidenciaReport(data: IncidenciaReportData): string {
     <div class="header">
       <div class="brand">
         ${esc(centroNombre || 'Centro Educativo')}
-        ${centroCodigo ? `<small>${esc(centroCodigo)}</small>` : ''}
+        ${data.centroDistritoEducativo ? `<p><strong>Distrito Educativo:</strong> ${esc(data.centroDistritoEducativo)}</p>` : ''}
       </div>
       <div class="doc-number">Informe de Incidencia<br />Registro Anecdótico</div>
     </div>

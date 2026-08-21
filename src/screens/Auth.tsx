@@ -12,7 +12,7 @@ const PENDING_VINCULO_KEY = 'pendingVinculoCIELO';
 
 interface CentroFormData {
   nombre: string;
-  codigoCentro: string;
+  distritoEducativo: string;
   telefono: string;
 }
 
@@ -27,7 +27,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   // Registro (flujo único)
   const [regStep, setRegStep] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
   const [crearCentro, setCrearCentro] = useState<boolean | null>(null);
-  const [centroForm, setCentroForm] = useState<CentroFormData>({ nombre: '', codigoCentro: '', telefono: '' });
+  const [centroForm, setCentroForm] = useState<CentroFormData>({ nombre: '', distritoEducativo: '', telefono: '' });
 
   // Opciones del flujo "No, continuar como usuario" (buscador de centros)
   const [centrosList, setCentrosList] = useState<{ id: string; nombre: string }[]>([]);
@@ -87,7 +87,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setPassword('');
     setRegStep(1);
     setCrearCentro(null);
-    setCentroForm({ nombre: '', codigoCentro: '', telefono: '' });
+    setCentroForm({ nombre: '', distritoEducativo: '', telefono: '' });
     setCentrosList([]);
     setCentroSel('');
     setCodigoAcceso('');
@@ -170,8 +170,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       .from('centros')
       .insert({
         nombre: data.nombre.trim(),
-        codigo_centro: data.codigoCentro.trim() || null,
-        telefono: data.telefono.trim() || null,
+        distrito_educativo: data.distritoEducativo.trim() || null,
+        telefono: data.telefono.trim(),
         estado: 'activo',
         afiliado: true,
         created_by: userId
@@ -190,17 +190,6 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       .upsert({ user_id: userId, centro_id: centroData.id });
     if (perfilError) console.error('Error al asociar el perfil con el centro:', perfilError);
 
-    if (data.codigoCentro.trim()) {
-      const { error: codError } = await supabase
-        .from('codigos_acceso_centro')
-        .insert({
-          centro_id: centroData.id,
-          codigo: data.codigoCentro.trim().toUpperCase(),
-          estado: 'activo',
-          created_by: userId
-        });
-      if (codError) console.error('Error al crear el código de acceso del centro:', codError);
-    }
 
     return centroData.id;
   };
@@ -212,6 +201,14 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setNeedsEmailConfirmation(false);
 
     try {
+      if (modo === 'director' || modo === 'referencia') {
+        if (!centroForm.telefono.trim()) {
+          setError('El teléfono del centro educativo es obligatorio.');
+          setLoading(false);
+          return;
+        }
+      }
+
       const redirectUrl = window.location.hostname === "localhost"
         ? "http://localhost:5173"
         : "https://evaluacielo.com";
@@ -254,7 +251,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         // al primer inicio de sesión (ver usePendingCentro en App).
         localStorage.setItem(PENDING_CENTRO_KEY, JSON.stringify({
           nombre: centroForm.nombre,
-          codigo_centro: centroForm.codigoCentro,
+          distrito_educativo: centroForm.distritoEducativo,
           telefono: centroForm.telefono
         }));
       } else {
@@ -308,7 +305,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       p_centro_id: modo === 'propia' ? centroSel || null : null,
       p_codigo: modo === 'codigo' ? codigoAcceso.trim() || null : null,
       p_nombre_centro: modo === 'referencia' ? centroForm.nombre.trim() || null : null,
-      p_codigo_centro: modo === 'referencia' ? (centroForm.codigoCentro.trim() || null) : null,
+      p_distrito_educativo: modo === 'referencia' ? (centroForm.distritoEducativo.trim() || null) : null,
       p_telefono: modo === 'referencia' ? (centroForm.telefono.trim() || null) : null
     });
     if (error) throw error;
@@ -445,24 +442,24 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   const centroSelNombre = centrosList.find(c => c.id === centroSel)?.nombre || '';
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-white font-sans text-[#3E3838]">
-      {/* Formulario centrado */}
-      <div className="w-full flex flex-col justify-center items-center px-6 py-8 md:py-12">
-        <main className="w-full max-w-sm flex flex-col gap-6">
-        {/* Brand Identity */}
-        <div className="flex flex-col items-center">
-          <div className="w-56 h-56 md:w-64 md:h-64 flex items-center justify-center mb-2">
-            <img alt="Brand Logo" className="app-logo w-full h-full object-contain" src={logo} />
+    <div className="min-h-screen flex items-center justify-center bg-slate-50/50 font-sans text-[#3E3838] p-4 md:p-8">
+      <main className="w-full max-w-237.5 flex flex-col md:flex-row items-center justify-between gap-10 lg:gap-16">
+        
+        {/* Columna Izquierda: Brand Identity */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1 max-w-sm lg:max-w-md">
+          <div className="w-48 md:w-72 mb-3 md:mb-4 flex items-center justify-center md:justify-start">
+            <img alt="Brand Logo" className="app-logo w-full h-auto object-contain drop-shadow-xl" src={logo} />
           </div>
-          <div className="text-center">
-            <p className="text-xs font-bold tracking-tight text-[#716868] max-w-70 mx-auto">
+          <div>
+            <p className="text-sm md:text-base font-medium tracking-tight text-[#5F665E] max-w-xs mx-auto md:mx-0 leading-relaxed">
               Portafolio docente enfocado en la evaluación por competencias
             </p>
           </div>
         </div>
 
-        {/* Unified Auth Card */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative">
+        {/* Columna Derecha: Unified Auth Card */}
+        <div className="w-full max-w-sm flex flex-col gap-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/60 shadow-2xl shadow-slate-200/50 relative">
           {isForgotPassword ? (
             <form onSubmit={handleForgotPassword} className="space-y-4 animate-fade-in">
               <div className="mb-1">
@@ -665,11 +662,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                   ) : regStep === 2 ? (
                     /* PASO 2: ¿Deseas registrar un centro educativo? */
                     <div className="space-y-4">
-                      <div className="p-4 bg-[#EAE4DA]/40 border border-[#EAE4DA] rounded-2xl">
-                        <h3 className="text-xs font-black text-[#3E3838] mb-1">¿Deseas registrar un centro educativo?</h3>
-                        <p className="text-xs font-bold text-[#3E3838]/60">
-                          Si eres la persona responsable de una institución, podrás crear tu centro y administrarlo.
-                        </p>
+                      <div className="mb-2 text-center">
+                        <h3 className="text-xs font-black text-[#3E3838] uppercase tracking-widest">¿Cómo desea registrarse?</h3>
                       </div>
 
                       <button
@@ -679,7 +673,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         className="w-full py-3 bg-[#3E3838] hover:bg-[#3E3838]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
                         <Building2 size={14} />
-                        Sí, crear un centro educativo
+                        Como centro educativo
                       </button>
 
 <button
@@ -688,7 +682,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         disabled={loading}
                         className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-xs tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase shadow-sm active:scale-[0.98]"
                       >
-                        No, continuar como usuario
+                        Como docente
                       </button>
 
                       <button
@@ -732,27 +726,27 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Código (Opcional)</label>
+                          <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Distrito educativo</label>
                           <input
-                            type="text" value={centroForm.codigoCentro}
-                            onChange={(e) => setCentroForm({ ...centroForm, codigoCentro: e.target.value.toUpperCase() })}
-                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none text-xs font-semibold text-[#3E3838] transition-all uppercase"
-                            placeholder="CÓDIGO-001"
+                            type="text" value={centroForm.distritoEducativo}
+                            onChange={(e) => setCentroForm({ ...centroForm, distritoEducativo: e.target.value })}
+                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none text-xs font-semibold text-[#3E3838] transition-all"
+                            placeholder="Ej. Distrito 15-04"
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Teléfono (Opcional)</label>
+                          <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Teléfono</label>
                           <input
-                            type="text" value={centroForm.telefono}
+                            type="text" required value={centroForm.telefono}
                             onChange={(e) => setCentroForm({ ...centroForm, telefono: e.target.value })}
                             className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none text-xs font-semibold text-[#3E3838] transition-all"
-                            placeholder="Opcional"
+                            placeholder="Ej. 809-555-5555"
                           />
                         </div>
                       </div>
 
                       <button
-                        disabled={loading || centroForm.nombre.trim().length < 3}
+                        disabled={loading || centroForm.nombre.trim().length < 3 || centroForm.telefono.trim().length < 8}
                         className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
                         {loading ? (
@@ -797,9 +791,17 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       </div>
 
                       <div className="max-h-52 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 mb-3 bg-white">
+                        <button
+                          type="button"
+                          onClick={() => setRegStep(7)}
+                          className="w-full text-left px-4 py-3 hover:bg-[#689C63]/5 transition-colors flex items-center gap-2"
+                        >
+                          <Building2 className="w-3.5 h-3.5 text-[#689C63] shrink-0" />
+                          <span className="text-xs font-bold text-[#689C63]">+ Agregar mi centro</span>
+                        </button>
                         {centrosFiltrados.length === 0 ? (
                           <p className="p-3 text-center text-xs font-bold text-[#3E3838]/50">
-                            No hay centros que coincidan. Si tu centro no aparece, regístralo abajo.
+                            No hay centros que coincidan.
                           </p>
                         ) : centrosFiltrados.map((c) => (
                           <button
@@ -819,14 +821,6 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verificando la suscripción del centro...
                         </div>
                       )}
-
-                      <button
-                        type="button"
-                        onClick={() => setRegStep(7)}
-                        className="w-full text-center text-xs font-black text-[#689C63] hover:text-[#689C63]/90 transition-colors uppercase tracking-widest pt-1"
-                      >
-                        Mi centro educativo no aparece en la lista
-                      </button>
                     </div>
                   ) : regStep === 5 ? (
                     /* PASO 5: código — seleccionar centro + código */
@@ -936,14 +930,34 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                           type="text" required value={centroForm.nombre}
                           onChange={(e) => setCentroForm({ ...centroForm, nombre: e.target.value })}
                           className={inputClass}
-                          placeholder="Ej. Escuela Primaria Los Robles"
+                          placeholder="Ej. Escuela Secundaria Los Robles"
+                        />
+                      </div>
+
+                      <div className="space-y-1 mb-3">
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Distrito educativo</label>
+                        <input
+                          type="text" value={centroForm.distritoEducativo}
+                          onChange={(e) => setCentroForm({ ...centroForm, distritoEducativo: e.target.value })}
+                          className={inputClass}
+                          placeholder="Ej. Distrito 15-04"
+                        />
+                      </div>
+
+                      <div className="space-y-1 mb-3">
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Teléfono</label>
+                        <input
+                          type="text" required value={centroForm.telefono}
+                          onChange={(e) => setCentroForm({ ...centroForm, telefono: e.target.value })}
+                          className={inputClass}
+                          placeholder="Ej. 809-555-5555"
                         />
                       </div>
 
                       <button
                         type="button"
                         onClick={() => handleRegistro('referencia')}
-                        disabled={loading || centroForm.nombre.trim().length < 3}
+                        disabled={loading || centroForm.nombre.trim().length < 3 || centroForm.telefono.trim().length < 8}
                         className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
                         {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear mi cuenta y vincularme'}
@@ -1045,12 +1059,12 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
               )}
             </>
           )}
-        </div>
+          </div>
 
           {/* Brand Meta */}
-          <p className="text-center text-xs font-black text-[#3E3838]/30 uppercase tracking-[0.25em]">CIELO • 2026</p>
-        </main>
-      </div>
+          <p className="text-center text-xs font-black text-[#3E3838]/30 uppercase tracking-[0.25em] mt-2">CIELO • 2026</p>
+        </div>
+      </main>
     </div>
   );
 };

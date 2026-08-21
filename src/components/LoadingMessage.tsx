@@ -45,7 +45,7 @@ export default function LoadingMessage() {
     const [fading, setFading] = useState(false);
 
     useEffect(() => {
-        const fadeMs = 350;
+        const fadeMs = 800;
         let fadeTimeout: ReturnType<typeof setTimeout> | undefined;
         const timer = setInterval(() => {
             setFading(true);
@@ -53,7 +53,7 @@ export default function LoadingMessage() {
                 setIndex(i => (i + 1) % LOADING_MESSAGES.length);
                 setFading(false);
             }, fadeMs);
-        }, 2500);
+        }, 3500);
 
         return () => {
             clearInterval(timer);
@@ -62,7 +62,7 @@ export default function LoadingMessage() {
     }, []);
 
     return (
-        <h2 className={`text-2xl font-black text-(--ink) transition-opacity duration-350 ${fading ? 'opacity-0' : 'opacity-100'}`}>
+        <h2 className={`font-['Poppins'] text-[23px] font-black text-(--ink) transition-opacity duration-800 ease-in-out ${fading ? 'opacity-0' : 'opacity-100'}`}>
             {LOADING_MESSAGES[index]}
         </h2>
     );

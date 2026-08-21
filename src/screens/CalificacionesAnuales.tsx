@@ -3,6 +3,7 @@ import { ChevronLeft, Printer, GraduationCap, Users } from 'lucide-react';
 import { getAsignaturaNombre } from '../constants/asignaturas';
 import type { AppState, BCKey, Screen, CursoDocente } from '../types';
 import { calculateStudentPeriodBC } from '../utils/academic';
+import { esEstudianteDelCurso } from '../utils/aislamiento';
 
 interface Props {
     state: AppState;
@@ -15,12 +16,22 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
     const curso = state.cursos.find(c => c.id === cursoId);
     const [editingExtra, setEditingExtra] = useState<Record<number, Record<string, number>>>({});
 
-    const students = useMemo(() =>
-        state.estudiantes
-            .filter(e => e.sharedCourseId === curso?.sharedCourseId)
-            .sort((a, b) => a.apellido.localeCompare(b.apellido)),
-        [state.estudiantes, curso?.sharedCourseId]
-    );
+    // Aislamiento institucional: el centro del curso (o el contexto activo)
+    // subordina cualquier relación por sharedCourseId.
+    const centroContexto = curso?.centroId || state.centroRolActual?.centro_id || null;
+
+    const cursosCentro = useMemo(() => {
+        const m = new Map<number, string>();
+        state.cursos.forEach(c => { if (c.centroId) m.set(c.id, c.centroId); });
+        return m;
+    }, [state.cursos]);
+
+    const students = useMemo(() => {
+        if (!curso) return [];
+        return state.estudiantes
+            .filter(e => esEstudianteDelCurso(state.cursos, curso, e, centroContexto))
+            .sort((a, b) => a.apellido.localeCompare(b.apellido));
+    }, [state.estudiantes, state.cursos, curso, centroContexto]);
 
     const reportData = useMemo(() => {
         return students.map((est, idx) => {
@@ -40,6 +51,10 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                         cursoId,
                         sharedCourseId: curso?.sharedCourseId,
                         targetAsignatura,
+                        centroId: centroContexto,
+                        cursosCentro,
+                        cursos: state.cursos,
+                        curso,
                     });
                     return final;
                 });
@@ -115,7 +130,7 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                 isAproved
             };
         });
-    }, [students, state.calificaciones, editingExtra, cursoId]);
+    }, [students, state.calificaciones, state.actividades, state.recuperaciones, state.cursos, editingExtra, cursoId, curso, centroContexto, cursosCentro]);
 
     const handleManualInput = (estId: number, field: string, value: string) => {
         const val = parseFloat(value) || 0;

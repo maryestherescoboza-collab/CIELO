@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION aplicar_vinculo_usuario(
   p_centro_id uuid DEFAULT NULL,
   p_codigo text DEFAULT NULL,
   p_nombre_centro text DEFAULT NULL,
-  p_codigo_centro text DEFAULT NULL,
+  p_distrito_educativo text DEFAULT NULL,
   p_telefono text DEFAULT NULL
 ) RETURNS json AS $$
 DECLARE
@@ -36,14 +36,14 @@ BEGIN
     IF v_final_centro_id IS NULL THEN
       INSERT INTO centros (
         nombre,
-        codigo_centro,
+        distrito_educativo,
         telefono,
         estado,
         afiliado,
         created_by
       ) VALUES (
         trim(p_nombre_centro),
-        NULLIF(trim(p_codigo_centro), ''),
+        NULLIF(trim(p_distrito_educativo), ''),
         NULLIF(trim(p_telefono), ''),
         'activo',
         false,

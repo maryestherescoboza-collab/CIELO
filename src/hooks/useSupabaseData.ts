@@ -96,6 +96,9 @@ export function useSupabaseData() {
             const suscripciones = phase1[4].data;
             const historialColaboradores = phase1[5].data;
 
+            // Catálogo único de centros (desde el join perfiles → centros).
+            const centrosMap = new Map<string, Centro>();
+
             const mappedPerfiles = (perfiles || []).map((p: Record<string, unknown>): UserProfile => {
                 const cArray = p.centros;
                 const centroObj = (Array.isArray(cArray) ? cArray[0] : cArray) as Record<string, unknown> | undefined;
@@ -115,6 +118,10 @@ export function useSupabaseData() {
                     estado: (centroObj.estado as Centro['estado']) || 'activo',
                     afiliado: centroObj.afiliado as boolean || false
                 } : undefined;
+
+                // Catálogo institucional: permite resolver curso.centroId → CENTRO
+                // (boletines) sin depender del usuario que imprime.
+                if (resolvedCentro) centrosMap.set(resolvedCentro.id, resolvedCentro);
 
                 const hist = (historialColaboradores || []).find((h: Record<string, unknown>) => h.usuario_id === p.user_id);
 
@@ -138,7 +145,6 @@ export function useSupabaseData() {
 
             const currentUserProfile = mappedPerfiles.find(p => p.userId === session.user.id);
             const userCentroId = currentUserProfile?.centro_id;
-
             let resolvedSuscripcionActual = undefined;
             if (suscripciones && suscripciones.length > 0) {
                 const institucionales = suscripciones.filter(s => s.centro_id === userCentroId && s.tipo === 'institucional' && s.estado === 'activa');
@@ -559,7 +565,8 @@ export function useSupabaseData() {
                 })),
 
                 suscripcionActual: resolvedSuscripcionActual,
-                centroRolActual: resolvedCentroRolActual
+                centroRolActual: resolvedCentroRolActual,
+                centros: Array.from(centrosMap.values())
             };});
         } catch (error) {
             console.error('Error fetching data from Supabase:', error);

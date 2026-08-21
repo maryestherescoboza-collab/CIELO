@@ -34,7 +34,6 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
         try {
             const centroDb = await updateCentro(centroId, {
                 nombre: formCentro.nombre.trim(),
-                codigo_centro: formCentro.codigo_centro.trim(),
                 tanda: formCentro.tanda.trim(),
                 telefono: formCentro.telefono.trim(),
                 distrito_educativo: formCentro.distrito_educativo.trim(),
@@ -96,13 +95,7 @@ export default function CentroConfiguracion({ centroId, centro, onCentroActualiz
                                 className={inputCls}
                             />
                         </Campo>
-                        <Campo label="Código del centro">
-                            <input
-                                value={formCentro.codigo_centro}
-                                onChange={(e) => setCampoCentro('codigo_centro', e.target.value)}
-                                className={inputCls}
-                            />
-                        </Campo>
+
                         <Campo label="Tanda / Jornada">
                             <select
                                 value={formCentro.tanda}

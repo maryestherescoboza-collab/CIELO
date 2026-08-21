@@ -18,7 +18,6 @@ export interface CentroEditable {
 const mapCentro = (row: Record<string, unknown>): Centro => ({
     id: row.id as string,
     nombre: row.nombre as string,
-    codigoCentro: row.codigo_centro as string || '',
     tanda: row.tanda as string || '',
     telefono: row.telefono as string || '',
     distritoEducativo: row.distrito_educativo as string || '',
