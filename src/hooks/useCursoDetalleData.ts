@@ -15,7 +15,12 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
     const curso = state.cursos.find(c => c.id === cursoId);
     const [selectedPeriodo, setSelectedPeriodo] = useState(() => curso?.periodo || 'P1');
     const [buscar, setBuscar] = useState('');
-    const [isPointMode, setIsPointMode] = useState(false);
+    const [isPointMode, setIsPointMode] = useState(true);
+
+    // Al entrar al componente o cambiar de curso, el modo pincel debe estar activado por defecto
+    useEffect(() => {
+        setIsPointMode(true);
+    }, [cursoId]);
     const [showRecoveryOnly, setShowRecoveryOnly] = useState(false);
     const [activePaintColor, setActivePaintColor] = useState<number>(100);
     const [rubricTarget, setRubricTarget] = useState<{ estId: number, bc: number, bcName: BCKey } | null>(null);

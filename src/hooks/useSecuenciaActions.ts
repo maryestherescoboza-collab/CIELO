@@ -2,13 +2,12 @@ import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
 import type { Secuencia } from '../types';
-import { useSupabaseData } from './useSupabaseData';
 
 export function useSecuenciaActions() {
     const setState = useAppStore(s => s.setAppState);
     const session = useAppStore(s => s.session);
     const setGenericToast = useAppStore(s => s.setGenericToast);
-    const { syncDelete } = useSupabaseData();
+
 
     const addSecuencia = useCallback(async (seq: Omit<Secuencia, 'id'>) => {
         if (!session?.user?.id) return null;
@@ -74,9 +73,14 @@ export function useSecuenciaActions() {
     }, [session, setState]);
 
     const deleteSecuencia = useCallback(async (id: number) => {
-        await syncDelete('secuencias', id);
-        setState(s => ({ ...s, secuencias: s.secuencias.filter(x => x.id !== id) }));
-    }, [syncDelete, setState]);
+        if (!session?.user?.id) return;
+        try {
+            await supabase.from('secuencias').delete().eq('id', id);
+            setState(s => ({ ...s, secuencias: s.secuencias.filter(x => x.id !== id) }));
+        } catch (error) {
+            console.error('Error deleting secuencia:', error);
+        }
+    }, [session, setState]);
 
     return {
         addSecuencia,

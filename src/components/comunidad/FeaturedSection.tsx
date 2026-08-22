@@ -1,4 +1,5 @@
 import React from 'react';
+import { UserAvatar } from '../ui/UserAvatar';
 import type { Post, ComunidadUIState } from '../../types';
 
 interface Props {
@@ -52,14 +53,8 @@ export default function FeaturedSection({ featuredPosts, setUiState }: Props) {
 
                             {/* Card Header */}
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 rounded-[16px] overflow-hidden shadow-sm border border-slate-200 p-0.5 bg-white">
-                                    {post.avatarUrl ? (
-                                        <img alt={post.autor} className="w-full h-full object-cover rounded-xl" src={post.avatarUrl} />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-400 font-bold">
-                                            {post.autor?.[0]}
-                                        </div>
-                                    )}
+                                <div className="w-12 h-12 rounded-[16px] overflow-hidden shadow-sm border border-slate-200 p-0.5 bg-white shrink-0">
+                                    <UserAvatar src={post.avatarUrl} name={post.autor} className="w-full h-full rounded-[12px]!" />
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-sm font-bold text-slate-900">{post.autor}</span>

@@ -7,6 +7,8 @@ import { useCursosData } from '../hooks/useCursosData';
 import { CourseCard } from '../components/courses/CourseCard';
 import { NewCourseModal } from '../components/courses/NewCourseModal';
 import { LinkTeacherModal } from '../components/courses/LinkTeacherModal';
+import VincularDocentesModal from '../components/curso-detalle/VincularDocentesModal';
+import { getAsignaturaNombre } from '../constants/asignaturas';
 import { CieloPill } from '../components/ui/CieloPill';
 
 interface Props {
@@ -32,6 +34,7 @@ export default function Cursos({
     const session = useAppStore(s => s.session);
     const navigate = useNavigate();
     const [editingAsignaturaId, setEditingAsignaturaId] = useState<number | null>(null);
+    const [cargaCourseId, setCargaCourseId] = useState<number | null>(null);
     
     const {
         showModal,
@@ -102,6 +105,10 @@ export default function Cursos({
         }
     }, [onToggleDocenteCurso]);
 
+    const handleToggleDocenteCursoCarga = useCallback((cursoId: number, userId: string, rol: 'tutor' | 'co-docente', asignatura: string) => {
+        onToggleDocenteCurso?.(cursoId, userId, rol, asignatura);
+    }, [onToggleDocenteCurso]);
+
     return (
         <div className="flex flex-col flex-1 h-full overflow-hidden bg-(--background)">
             <div className="flex-1 overflow-y-auto px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
@@ -163,6 +170,7 @@ export default function Cursos({
                                     onSaveDias={handleSaveDias}
                                     onSaveAsignatura={handleSaveAsignatura}
                                     onOpenLinkModal={setLinkingCourseId}
+                                    onOpenCargaModal={setCargaCourseId}
                                 />
                             ))}
                         </div>
@@ -187,6 +195,16 @@ export default function Cursos({
                 setTeacherSearch={setTeacherSearch}
                 filteredPerfiles={filteredPerfiles}
                 onToggleLink={handleToggleLinkTeacher}
+            />
+
+            <VincularDocentesModal
+                show={cargaCourseId !== null}
+                onClose={() => setCargaCourseId(null)}
+                state={state}
+                cursoId={cargaCourseId ?? 0}
+                currentUserId={session?.user?.id || ''}
+                onToggleDocenteCurso={handleToggleDocenteCursoCarga}
+                getAsignaturaNombre={getAsignaturaNombre}
             />
         </div>
     );

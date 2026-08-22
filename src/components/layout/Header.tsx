@@ -5,6 +5,7 @@ import type { SearchResults } from '../../types';
 import { startGuide } from '../../guides/driverGuides';
 import { PresentationToggle } from '../PresentationToggle';
 import { usePresentation } from '../../contexts/PresentationContext';
+import { UserAvatar } from '../ui/UserAvatar';
 
 interface HeaderProps {
     darkMode: boolean;
@@ -198,13 +199,7 @@ const Header: React.FC<HeaderProps> = ({
                         <p className="text-xs font-black text-(--ink-soft) uppercase tracking-widest m-0 leading-none">Perfil Docente</p>
                         <p className="text-xs font-black text-(--ink) m-0 leading-tight">{docenteNombre}</p>
                     </div>
-                    <div className="w-6 h-6 rounded-full border border-(--border-soft) overflow-hidden bg-white">
-                        <img
-                            src={avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(docenteNombre)}&background=F9F8F6&color=2E3330&bold=true&size=128`}
-                            alt="avatar"
-                            className="w-full h-full object-cover"
-                        />
-                    </div>
+                    <UserAvatar src={avatarUrl} name={docenteNombre} className="w-6 h-6" />
                 </div>
             </div>
         </header>

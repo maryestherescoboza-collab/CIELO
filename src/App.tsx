@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './index.css';
 import Layout from './components/Layout';
 import Auth from './screens/Auth';
@@ -113,15 +113,22 @@ export default function App() {
     return typeof inst === 'string' ? inst : 'Instituto Central';
   }, [selectedCursoId, state.cursoDocentes, state.cursos, state.perfiles, state.instituto]);
 
+  const location = useLocation();
+  const pathname = location.pathname;
+
+  // Redirigir a inicio si el usuario está autenticado y sigue en /login o /auth
+  useEffect(() => {
+    if (session && !loading && (pathname === '/login' || pathname === '/auth')) {
+      navigate('/', { replace: true });
+    }
+  }, [session, loading, pathname, navigate]);
+
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-(--paper)">
       <img src={logo} alt="Logo" className="app-logo w-44 h-44 mb-8 animate-pulse" />
       <LoadingMessage />
     </div>
   );
-
-  const pathname = window.location.pathname;
-
   if (pathname === '/confirmar' || pathname === '/auth/confirm') {
     return <ConfirmarCorreo />;
   }
@@ -136,7 +143,7 @@ export default function App() {
     return <Auth onAuthSuccess={() => actions.refresh()} />;
   }
 
-  const isPrintView = window.location.pathname.startsWith('/print-boletines');
+  const isPrintView = pathname.startsWith('/print-boletines');
 
   // Entorno independiente para usuarios con ROL administrativo ('administrador').
   // Modelo binario: la ÚNICA fuente de verdad es perfiles.rol. el rol se deduce

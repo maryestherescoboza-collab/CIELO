@@ -205,7 +205,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
             </div>
 
             <section className="space-y-6 bg-white p-0 mt-6">
-                <h3 className="text-[13px] font-black uppercase tracking-[0.3em] text-[#5F665E] text-center bg-white">Itinerario Académico</h3>
+                <h3 className="text-[13px] font-black uppercase tracking-[0.3em] text-[#5F665E] text-center bg-white">Evidencias de Aprendizaje</h3>
                 <div className="overflow-x-auto rounded-[16px] border border-[rgba(46,51,48,0.08)] bg-white shadow-sm">
                     <table className="w-full border-collapse text-left text-sm text-[#2E3330] bg-white">
                         <thead className="bg-white text-xs font-black uppercase tracking-wider text-[#2E3330] border-b border-[rgba(46,51,48,0.08)]">

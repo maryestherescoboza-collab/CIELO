@@ -178,9 +178,17 @@ export function useSupabaseData() {
                 .filter((c: any) => c.is_tutor_oficial && String(c.user_id) === session.user.id)
                 .map((c: any) => c.id);
 
-            const userFilter = (query: any) => {
-                if (isCentroAdmin) return query;
-                return query.eq('user_id', session.user.id);
+            const cursosActivos = (cursos || []).filter((c: any) => 
+                isCentroAdmin ? (c.centro_id === userCentroId) : (String(c.user_id) === session.user.id || misCursosTutor.includes(c.id))
+            );
+
+            const userFilter = (query: any, userCol = 'user_id') => {
+                if (isCentroAdmin && misCursosTutor.length === 0) {
+                    return query.in('curso_id', cursosActivos.map(c => c.id));
+                } else if (misCursosTutor.length > 0) {
+                    return query.in('curso_id', cursosActivos.map(c => c.id));
+                }
+                return query.eq(userCol, session.user.id);
             };
 
             const userOrTutorFilter = (query: any) => {
@@ -214,7 +222,7 @@ export function useSupabaseData() {
                 supabase.from('curso_detalle').select('*'),
                 userFilter(baseQuery('notificaciones')).eq('leida', false).order('created_at', { ascending: false }),
                 supabase.from('grupos').select('*'),
-                userFilter(activeQuery('registros_anecdoticos')).order('fecha', { ascending: false }),
+                userFilter(activeQuery('registros_anecdoticos'), 'profile_id').order('fecha', { ascending: false }),
                 supabase.from('registro_imagenes').select('*'),
                 supabase.from('tareas_institucionales').select('*'),
                 supabase.from('tarea_docente').select('*')

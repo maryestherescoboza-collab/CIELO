@@ -4,6 +4,7 @@ import {
   X, Camera, Eye, EyeOff,
   CheckCircle, AlertCircle, Loader2, LogOut
 } from 'lucide-react';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
 import type { Session } from '@supabase/supabase-js';
@@ -197,8 +198,6 @@ const Sidebar = React.memo(function Sidebar({
   onResetSchoolYear: () => void;
   onLogout: () => void;
 }) {
-  const avatarSrc = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(docenteNombre)}&background=f8fafc&color=0f172a&bold=true&size=128`;
-
   const NavItem = ({ id, label, icon }: { id: SectionId; label: string; icon: React.ReactNode }) => {
     const selected = activeSection === id;
     return (
@@ -222,15 +221,7 @@ const Sidebar = React.memo(function Sidebar({
   return (
     <aside className="w-full md:w-70 shrink-0 flex flex-col bg-(--linen)/10 border-b md:border-b-0 md:border-r border-(--border-soft)">
       <div className="p-6 border-b border-(--border-soft) flex items-center gap-4 bg-(--linen)/5">
-         <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-sm" style={{ background: avatarColor || 'white' }}>
-            {!avatarColor ? (
-              <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white font-semibold text-xl">
-                {docenteNombre?.charAt(0).toUpperCase() || 'D'}
-              </div>
-            )}
-         </div>
+         <UserAvatar src={avatarUrl} name={docenteNombre} color={avatarColor} className="w-12 h-12 text-xl" />
          <div className="min-w-0">
             <h2 className="text-sm font-bold text-(--ink) truncate tracking-tight">{docenteNombre}</h2>
             <p className="text-xs text-(--ink-soft) truncate">{userEmail}</p>
@@ -1016,8 +1007,6 @@ function AparienciaTab({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const avatarSrc = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(docenteNombre)}&background=f8fafc&color=0f172a&bold=true&size=128`;
-
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1030,14 +1019,8 @@ function AparienciaTab({
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex flex-col items-center gap-4">
           <label className="relative cursor-pointer group">
-              <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-white shadow-lg bg-slate-50 transition-transform group-hover:scale-[1.02]" style={{ background: avatarColor || 'white' }}>
-                {!avatarColor ? (
-                  <img src={avatarSrc} alt="Preview" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white font-bold text-5xl">
-                    {docenteNombre?.charAt(0).toUpperCase() || 'D'}
-                  </div>
-                )}
+              <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-white shadow-lg bg-slate-50 transition-transform group-hover:scale-[1.02]">
+                <UserAvatar src={avatarUrl} name={docenteNombre} color={avatarColor} className="w-full h-full text-5xl" />
                 <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
                     <Camera className="text-white drop-shadow-md" size={32} />
                 </div>

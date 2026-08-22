@@ -2,13 +2,12 @@ import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
 import type { Incidencia } from '../types';
-import { useSupabaseData } from './useSupabaseData';
 
 export function useIncidenciaActions() {
     const state = useAppStore(s => s.state);
     const setState = useAppStore(s => s.setAppState);
     const session = useAppStore(s => s.session);
-    const { syncDelete } = useSupabaseData();
+
 
     const addIncidencia = useCallback(async (inc: Omit<Incidencia, 'id'>) => {
         if (!session?.user?.id) return;
@@ -56,9 +55,14 @@ export function useIncidenciaActions() {
     }, [session, state.estudiantes, setState]);
 
     const deleteIncidencia = useCallback(async (id: number) => {
-        await syncDelete('incidencias', id);
-        setState(s => ({ ...s, incidencias: s.incidencias.filter(i => i.id !== id) }));
-    }, [syncDelete, setState]);
+        if (!session?.user?.id) return;
+        try {
+            await supabase.from('incidencias').delete().eq('id', id);
+            setState(s => ({ ...s, incidencias: s.incidencias.filter(i => i.id !== id) }));
+        } catch (error) {
+            console.error('Error deleting incidencia:', error);
+        }
+    }, [session, setState]);
 
     return {
         addIncidencia,

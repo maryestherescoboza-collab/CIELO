@@ -16,6 +16,7 @@ interface Props {
     onSaveDias: (c: Curso, d: string) => void;
     onSaveAsignatura: (c: Curso, newAsignatura: string) => void;
     onOpenLinkModal: (id: number) => void;
+    onOpenCargaModal: (id: number) => void;
 }
 
 export function CourseCard({
@@ -31,7 +32,8 @@ export function CourseCard({
     onEditAsignatura,
     onSaveDias,
     onSaveAsignatura,
-    onOpenLinkModal
+    onOpenLinkModal,
+    onOpenCargaModal
 }: Props) {
     const isTutor = currentUserId === curso.userId;
     const myLink = state.cursoDocentes?.find(cd => cd.cursoId === curso.id && cd.userId === currentUserId);
@@ -167,8 +169,8 @@ export function CourseCard({
                                 </div>
                             </div>
                             {isTutor && (
-                                <button onClick={(e) => { e.stopPropagation(); onOpenLinkModal(curso.id); }} className="text-(--ink) hover:bg-(--linen) bg-(--linen)/50 px-3 py-1.5 rounded-full text-xs font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 transition-colors border border-(--border-soft)">
-                                    Modificar
+                                <button onClick={(e) => { e.stopPropagation(); onOpenCargaModal(curso.id); }} className="text-(--ink) hover:bg-(--linen) bg-(--linen)/50 px-3 py-1.5 rounded-full text-xs font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 transition-colors border border-(--border-soft)">
+                                    Carga
                                 </button>
                             )}
                         </div>

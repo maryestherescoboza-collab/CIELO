@@ -33,7 +33,7 @@ export function useProfileActions() {
         const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
         if (error) { console.error('Avatar upload error:', error); return null; }
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
-        const url = urlData?.publicUrl || null;
+        const url = urlData?.publicUrl ? `${urlData.publicUrl}?t=${Date.now()}` : null;
         if (url) {
             setState(s => {
                 const updatedPerfiles = s.perfiles.map(p => {

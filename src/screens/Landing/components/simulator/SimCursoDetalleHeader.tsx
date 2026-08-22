@@ -125,7 +125,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         </button>
                         <button
                             onClick={() => setIsPointMode(!isPointMode)}
-                            className={`flex items-center gap-1 px-1.5 py-0.5 min-h-5 leading-none rounded-full text-xs font-semibold uppercase tracking-[0.08em] transition-all border ${isPointMode ? 'bg-[#2E3330] text-white border-[#2E3330]' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
+                            className={`flex items-center gap-1 px-1.5 py-0.5 min-h-5 leading-none rounded-full text-xs font-bold uppercase tracking-[0.08em] transition-all border ${isPointMode ? 'bg-[#E8F0F8] text-[#1A1D1B] border-[#537BAC]/30' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
                         >
                             MODO PINCEL
                         </button>

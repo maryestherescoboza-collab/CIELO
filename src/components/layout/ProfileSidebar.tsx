@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Camera, Pencil, Settings, AlertTriangle } from 'lucide-react';
+import { UserAvatar } from '../ui/UserAvatar';
 
 interface ProfileSidebarProps {
     showProfile: boolean;
@@ -13,7 +14,7 @@ interface ProfileSidebarProps {
         isOwn?: boolean;
     } | null;
     isOwnProfile: boolean;
-    getAvatarSrc: (isOwn: boolean) => string;
+    getAvatarSrc: (isOwn: boolean) => string | null;
     uploadingAvatar: boolean;
     fileInputRef: React.RefObject<HTMLInputElement | null>;
     handleAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -52,13 +53,13 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 className="w-full max-w-sm h-full bg-(--background) shadow-md flex flex-col animate-in slide-in-from-right duration-300 md:rounded-l-(--radius-lg) overflow-hidden border-l border-(--border-soft)"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="h-40 bg-gradient-to-br from-(--herb-garden) to-(--ink) relative shrink-0">
+                <div className="h-40 bg-linear-to-br from-(--herb-garden) to-(--ink) relative shrink-0">
                     <button onClick={() => setShowProfile(false)} className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors">
                         <X size={20} />
                     </button>
                     <div className="absolute -bottom-12 left-8">
                         <div className="relative w-24 h-24 rounded-(--radius-sm) border border-(--border-soft) shadow-sm overflow-hidden bg-white">
-                            <img src={getAvatarSrc(isOwnProfile)} alt={activeProfile.nombre} className="w-full h-full object-cover" />
+                            <UserAvatar src={getAvatarSrc(isOwnProfile)} name={activeProfile.nombre} className="w-full h-full rounded-none!" />
                             {isOwnProfile && (
                                 <button
                                     onClick={() => fileInputRef.current?.click()}

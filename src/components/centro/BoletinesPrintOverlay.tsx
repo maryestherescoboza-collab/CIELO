@@ -56,7 +56,7 @@ export default function BoletinesPrintOverlay({ curso, centroId, state, docenteN
     }, [onClose]);
 
     const content = (
-        <div className="boletines-print-overlay fixed inset-0 z-[9999] overflow-y-auto bg-white">
+        <div className="boletines-print-overlay fixed inset-0 z-9999 overflow-y-auto bg-white">
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
                     *, *::before, *::after {

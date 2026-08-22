@@ -337,7 +337,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                     {/* BOTTOM AREA: History Table Container */}
                     <div className="w-full flex flex-col bg-white rounded-(--radius-lg) shadow-sm border border-(--border-soft) overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                         {/* Table Header Area */}
-                        <div className="p-6 border-b border-b-(--border-soft) flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-4 border-l-[#DB5B48] bg-gradient-to-r from-[rgba(219,91,72,0.08)] to-[rgba(219,91,72,0.01)]">
+                        <div className="p-6 border-b border-b-(--border-soft) flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-4 border-l-[#DB5B48] bg-(--tag-rose-bg)">
                             <div>
                                 <h2 className="text-lg font-black text-(--ink)">Bitácora de Acontecimientos</h2>
                                 <p className="text-xs font-black text-(--ink-soft) uppercase tracking-widest mt-1">HISTORIAL DEL AÑO ESCOLAR EN CURSO</p>

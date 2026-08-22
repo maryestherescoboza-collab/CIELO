@@ -157,7 +157,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             as="button"
                             variant={isPointMode ? 'primary' : 'ghost'}
                             onClick={() => setIsPointMode(!isPointMode)}
-                            className={`gap-2 px-4.5 min-h-9 transition-all border ${isPointMode ? 'bg-[#2E3330] text-white border-[#2E3330]' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
+                            className={`gap-2 px-4.5 min-h-9 transition-all border ${isPointMode ? 'bg-[#E8F0F8] text-[#1A1D1B] border-[#537BAC]/30 font-bold' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
                         >
                             MODO PINCEL
                         </CieloPill>

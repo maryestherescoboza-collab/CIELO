@@ -42,7 +42,6 @@ export function useStudentActions() {
         }
 
         const nextId = Math.max(0, ...state.estudiantes.map(x => (typeof x.id === 'number' ? x.id : 0))) + 1;
-        const nextNum = Math.max(0, ...currentCursoEsts.map(e => e.numeroLista || 0)) + 1;
 
         const newEstDB = {
             nombre, 
@@ -59,8 +58,7 @@ export function useStudentActions() {
             bc4: { nivel: 1, puntaje: 0 },
             actividades_recientes: 0, 
             en_riesgo: false,
-            shared_course_id: currentCurso.sharedCourseId || `group_${currentCurso.grupoId}`,
-            numero_lista: nextNum
+            shared_course_id: currentCurso.sharedCourseId || `group_${currentCurso.grupoId}`
         };
 
         const { data, error } = await supabase.from('estudiantes').insert([newEstDB]).select();

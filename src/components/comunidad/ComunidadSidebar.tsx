@@ -1,4 +1,5 @@
 import React from 'react';
+import { UserAvatar } from '../ui/UserAvatar';
 import type { UserProfile } from '../../types';
 import type { PresenceUser } from '../../hooks/usePresence';
 import { ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
@@ -81,14 +82,8 @@ export default function ComunidadSidebar({
                                 <div className="w-5 h-5 rounded-full bg-slate-50 border border-slate-200/60 flex items-center justify-center text-xs font-black text-slate-500 shrink-0">
                                     {index + 1}
                                 </div>
-                                <div className="w-9 h-9 rounded-full overflow-hidden shadow-sm border border-[rgba(46,51,48,0.08)] bg-white p-0.5 shrink-0">
-                                    {profile.avatarUrl ? (
-                                        <img src={profile.avatarUrl} alt={profile.nombreDocente} className="w-full h-full object-cover rounded-full" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-400 text-xs font-bold overflow-hidden rounded-full">
-                                            {profile.nombreDocente?.[0]?.toLowerCase()}
-                                        </div>
-                                    )}
+                                <div className="w-9 h-9 rounded-full overflow-hidden shadow-sm border border-[rgba(46,51,48,0.08)] bg-white shrink-0">
+                                    <UserAvatar src={profile.avatarUrl} name={profile.nombreDocente} className="w-full h-full" />
                                 </div>
                                 <div className="flex flex-col min-w-0">
                                     <span className="text-xs font-bold text-[#2E3330] leading-tight mb-0.5 truncate">
@@ -122,12 +117,8 @@ export default function ComunidadSidebar({
                                 onClick={(e) => onViewProfile(e, user.userId)}
                             >
                                 <div className="relative shrink-0">
-                                    <div className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center overflow-hidden border border-[rgba(46,51,48,0.08)] p-0.5 shadow-sm">
-                                        {user.avatarUrl ? (
-                                            <img src={user.avatarUrl} alt={user.nombre} className="w-full h-full object-cover rounded-full" />
-                                        ) : (
-                                            <span className="font-bold text-slate-400 text-xs">{user.nombre?.[0]?.toLowerCase()}</span>
-                                        )}
+                                    <div className="w-9 h-9 rounded-full overflow-hidden border border-[rgba(46,51,48,0.08)] shadow-sm">
+                                        <UserAvatar src={user.avatarUrl} name={user.nombre} className="w-full h-full" />
                                     </div>
                                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary border-2 border-white rounded-full"></span>
                                 </div>

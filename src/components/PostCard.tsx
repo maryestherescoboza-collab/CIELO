@@ -1,5 +1,6 @@
 import React from 'react';
 import { Eye, Plus, Trash2 } from 'lucide-react';
+import { UserAvatar } from './ui/UserAvatar';
 import type { Post } from '../types';
 
 interface PostCardProps {
@@ -32,13 +33,9 @@ const PostCard = ({
             <div className="flex items-center gap-2.5">
                 <div 
                     onClick={(e) => onViewProfile(e, post.userId)}
-                    className="w-9 h-9 rounded-lg overflow-hidden border border-(--border-soft) bg-(--linen)/10 flex items-center justify-center cursor-pointer hover:border-(--primary) transition-all"
+                    className="w-9 h-9 cursor-pointer transition-all hover:ring-2 hover:ring-(--primary) rounded-lg overflow-hidden shrink-0"
                 >
-                    {post.avatarUrl ? (
-                        <img alt={post.autor} className="w-full h-full object-cover" src={post.avatarUrl} />
-                    ) : (
-                        <span className="font-bold text-(--ink-soft) text-xs">{post.autor?.[0]}</span>
-                    )}
+                    <UserAvatar src={post.avatarUrl} name={post.autor} className="w-full h-full rounded-none!" />
                 </div>
                 <div className="flex flex-col cursor-pointer group/name" onClick={(e) => onViewProfile(e, post.userId)}>
                     <span className="text-sm font-bold text-(--ink) leading-none mb-1 group-hover/name:text-(--primary) transition-colors">{post.autor}</span>

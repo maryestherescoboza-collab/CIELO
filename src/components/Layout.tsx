@@ -108,7 +108,7 @@ export default function Layout({
                     setActiveProfile({
                         userId: clickedUserId,
                         nombre: userProfile.nombreDocente || '',
-                        avatar: userProfile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.nombreDocente || '')}&background=f8fafc&color=0f172a&bold=true&size=128`,
+                        avatar: userProfile.avatarUrl || undefined,
                         materias: userProfile.asignatura || 'Docente',
                         descripcion: userProfile.bio || 'Docente innovador comprometido con el desarrollo pedagógico.',
                         isOwn: false
@@ -128,7 +128,7 @@ export default function Layout({
                 setActiveProfile({
                     userId: session?.user?.id,
                     nombre: docenteNombre,
-                    avatar: localAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(docenteNombre)}&background=f8fafc&color=0f172a&bold=true&size=128`,
+                    avatar: localAvatarUrl || undefined,
                     materias: 'Docente Titular',
                     descripcion: localBio || 'Docente innovador comprometido con el desarrollo de competencias transversales.',
                     isOwn: true,
@@ -180,7 +180,7 @@ export default function Layout({
 
     const getAvatarSrc = (isOwn: boolean) => {
         if (isOwn && localAvatarUrl) return localAvatarUrl;
-        return activeProfile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeProfile?.nombre || 'U')}&background=f8fafc&color=0f172a&bold=true&size=128`;
+        return activeProfile?.avatar || null;
     };
 
     const hasUnread = useMemo(() => state.notificaciones.some(n => !n.leida), [state.notificaciones]);
