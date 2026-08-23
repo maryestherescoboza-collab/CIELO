@@ -59,6 +59,9 @@ const sanitizeNivelesPuntaje = (fetchedNiveles: any[] | null | undefined): Nivel
     return result.sort((a, b) => b.nivel - a.nivel);
 };
 
+// Generación monotónica de cargas: descarta respuestas de cargas obsoletas
+let fetchDataGeneration = 0;
+
 export function useSupabaseData() {
     const { state, setAppState: setState, loading, setLoading, session, setSession } = useAppStore();
 
@@ -77,6 +80,7 @@ export function useSupabaseData() {
     const fetchData = useCallback(async (isSilent = false) => {
         if (!session?.user?.id) return;
         if (!isSilent) setLoading(true);
+        const generation = ++fetchDataGeneration;
         console.log('[PLANIFICACION] inicio carga global (useSupabaseData)');
         try {
             console.log('[PLANIFICACION] antes de consultar contexto de usuario y cursos');
@@ -178,15 +182,26 @@ export function useSupabaseData() {
                 .filter((c: any) => c.is_tutor_oficial && String(c.user_id) === session.user.id)
                 .map((c: any) => c.id);
 
+            const misCursosVinculados = Array.from(new Set(
+                (cursoDocentes || [])
+                    .filter((cd) => String(cd.docente_id) === session.user.id)
+                    .map((cd) => cd.curso_id as number)
+            ));
+
             const cursosActivos = (cursos || []).filter((c: any) => 
                 isCentroAdmin ? (c.centro_id === userCentroId) : (String(c.user_id) === session.user.id || misCursosTutor.includes(c.id))
             );
 
+            const cursosParticipaIds = Array.from(new Set<number>([
+                ...cursosActivos.map((c) => c.id),
+                ...misCursosVinculados
+            ]));
+
             const userFilter = (query: any, userCol = 'user_id') => {
                 if (isCentroAdmin && misCursosTutor.length === 0) {
                     return query.in('curso_id', cursosActivos.map(c => c.id));
-                } else if (misCursosTutor.length > 0) {
-                    return query.in('curso_id', cursosActivos.map(c => c.id));
+                } else if (cursosParticipaIds.length > 0) {
+                    return query.in('curso_id', cursosParticipaIds);
                 }
                 return query.eq(userCol, session.user.id);
             };
@@ -228,6 +243,13 @@ export function useSupabaseData() {
                 supabase.from('tarea_docente').select('*')
             ]);
 
+            // Una carga iniciada antes pero resuelta después no debe
+            // sobrescribir el estado ya actualizado por una carga más reciente.
+            if (generation !== fetchDataGeneration) {
+                console.warn('[Supabase fetchData] Respuesta obsoleta descartada: existe una carga más reciente.');
+                return;
+            }
+
             const tableNames = [
                 'estudiantes', 'actividades', 'calificaciones', 'recuperaciones', 'secuencias', 'incidencias',
                 'eventos', 'posts', 'evaluaciones_rubrica', 'evaluaciones_cotejo', 'criterios_cotejo', 'descriptores_rubrica',
@@ -246,12 +268,16 @@ export function useSupabaseData() {
                 console.warn(`[Supabase fetchData] ${queryErrors.length} consulta(s) fallaron. Las tablas afectadas conservarán sus valores previos.`);
             }
 
-            const estudiantes = results[0].data;
-            const actividades = results[1].data;
+            // Si una consulta falla (RLS/permisos, token rotado, red), se preserva
+            // el estado previo de esa tabla en lugar de reemplazarlo por vacío.
+            const estudiantes = results[0].error ? null : results[0].data;
+            const actividades = results[1].error ? null : results[1].data;
             const calificaciones = results[2].error ? null : results[2].data;
             const recuperaciones = results[3].error ? null : results[3].data;
             const secuencias = results[4].data;
-            const incidencias = results[5].data;
+            // La bitácora depende de estudiantes para resolver sharedCourseId:
+            // solo se actualiza si ambas consultas fueron exitosas.
+            const incidencias = (results[0].error || results[5].error) ? null : results[5].data;
             const eventos = results[6].data;
             const posts = results[7].data;
             const evaluacionesRubrica = results[8].data;
@@ -335,7 +361,7 @@ export function useSupabaseData() {
                         createdAt: c.created_at as string
                     };
                 }).filter((x): x is Curso => x !== null),
-                estudiantes: (estudiantes || []).map((e: Record<string, unknown>): Estudiante => ({
+                estudiantes: estudiantes === null ? prev.estudiantes : estudiantes.map((e: Record<string, unknown>): Estudiante => ({
                     id: e.id as number,
                     nombre: e.nombre as string,
                     apellido: e.apellido as string,
@@ -354,7 +380,7 @@ export function useSupabaseData() {
                     enRiesgo: e.en_riesgo as boolean,
                     numeroLista: e.numero_lista as number
                 })),
-                actividades: (actividades || []).map((a: Record<string, unknown>): Actividad => ({
+                actividades: actividades === null ? prev.actividades : actividades.map((a: Record<string, unknown>): Actividad => ({
                     id: a.id as number,
                     nombre: a.nombre as string,
                     cursoId: a.curso_id as number,
@@ -411,7 +437,7 @@ export function useSupabaseData() {
                     archivoFechaCarga: s.archivo_fecha_carga as string | undefined,
                     recursos: Array.isArray(s.recursos) ? s.recursos : (typeof s.recursos === 'string' ? (() => { try { return JSON.parse(s.recursos); } catch(e) { return []; } })() : [])
                 })),
-                                incidencias: (incidencias || []).map((i: Record<string, unknown>): Incidencia => ({
+                                incidencias: incidencias === null ? prev.incidencias : incidencias.map((i: Record<string, unknown>): Incidencia => ({
                     id: i.id as number,
                     estudianteId: i.estudiante_id as number,
                     categoria: i.categoria as 'Conducta' | 'Académico' | 'Salud' | 'Otro',
