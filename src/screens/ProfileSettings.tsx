@@ -1,11 +1,12 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
-  User, Briefcase, Shield, Palette,
+  User, Briefcase, Shield, Palette, Sparkles,
   X, Camera, Eye, EyeOff,
   CheckCircle, AlertCircle, Loader2, LogOut
 } from 'lucide-react';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { supabase } from '../lib/supabase';
+import { getGeminiApiKey, saveGeminiApiKey, removeGeminiApiKey, maskApiKey } from '../lib/aiConfig';
 import { useAppStore } from '../store/appStore';
 import type { Session } from '@supabase/supabase-js';
 // ── Types ──
@@ -33,7 +34,7 @@ interface ProfileSettingsProps {
   centroNombre?: string;
 }
 
-type SectionId = 'perfil' | 'profesional' | 'seguridad' | 'apariencia';
+type SectionId = 'perfil' | 'profesional' | 'seguridad' | 'ia' | 'apariencia';
 
 const AVATAR_COLORS = [
   '#2D3436', '#D03817', '#E6991F', '#0F753D', '#3b82f6', '#8b5cf6',
@@ -161,7 +162,11 @@ export default function ProfileSettings({
                      onChangeCentro={onChangeCentro}
                    />
                  )}
-                
+
+                {activeSection === 'ia' && (
+                   <IntegrarIATab session={session} />
+                 )}
+
                 {activeSection === 'apariencia' && (
                    <AparienciaTab 
                      docenteNombre={docenteNombre}
@@ -178,6 +183,32 @@ export default function ProfileSettings({
     </div>
   );
 }
+
+const NavItem = ({ id, label, icon, activeSection, onSectionChange }: {
+  id: SectionId;
+  label: string;
+  icon: React.ReactNode;
+  activeSection: SectionId;
+  onSectionChange: (id: SectionId) => void;
+}) => {
+  const selected = activeSection === id;
+  return (
+    <button
+      onClick={() => onSectionChange(id)}
+      className={`w-full flex items-center gap-3 px-4 py-2 rounded-full transition-all text-xs font-bold cursor-pointer ${
+        selected 
+          ? 'bg-(--primary) text-white shadow-sm' 
+          : 'text-(--ink-soft) hover:bg-(--linen)/20 hover:text-(--ink)'
+      }`}
+      style={{ height: '36px' }}
+    >
+      <span className={`${selected ? 'text-white' : 'text-slate-400'}`}>
+        {icon}
+      </span>
+      {label}
+    </button>
+  );
+};
 
 const Sidebar = React.memo(function Sidebar({ 
   activeSection, 
@@ -198,25 +229,6 @@ const Sidebar = React.memo(function Sidebar({
   onResetSchoolYear: () => void;
   onLogout: () => void;
 }) {
-  const NavItem = ({ id, label, icon }: { id: SectionId; label: string; icon: React.ReactNode }) => {
-    const selected = activeSection === id;
-    return (
-      <button
-        onClick={() => onSectionChange(id)}
-        className={`w-full flex items-center gap-3 px-4 py-2 rounded-full transition-all text-xs font-bold cursor-pointer ${
-          selected 
-            ? 'bg-(--primary) text-white shadow-sm' 
-            : 'text-(--ink-soft) hover:bg-(--linen)/20 hover:text-(--ink)'
-        }`}
-        style={{ height: '36px' }}
-      >
-        <span className={`${selected ? 'text-white' : 'text-slate-400'}`}>
-          {icon}
-        </span>
-        {label}
-      </button>
-    );
-  };
 
   return (
     <aside className="w-full md:w-70 shrink-0 flex flex-col bg-(--linen)/10 border-b md:border-b-0 md:border-r border-(--border-soft)">
@@ -229,10 +241,11 @@ const Sidebar = React.memo(function Sidebar({
       </div>
 
       <nav className="p-4 flex-1 space-y-1.5 overflow-y-auto">
-        <NavItem id="perfil" label="Información general" icon={<User size={16} />} />
-        <NavItem id="profesional" label="Datos profesionales" icon={<Briefcase size={16} />} />
-        <NavItem id="seguridad" label="Seguridad" icon={<Shield size={16} />} />
-        <NavItem id="apariencia" label="Apariencia" icon={<Palette size={16} />} />
+        <NavItem id="perfil" label="Información general" icon={<User size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
+        <NavItem id="profesional" label="Datos profesionales" icon={<Briefcase size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
+        <NavItem id="seguridad" label="Seguridad" icon={<Shield size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
+        <NavItem id="ia" label="Integrar IA" icon={<Sparkles size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
+        <NavItem id="apariencia" label="Apariencia" icon={<Palette size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
       </nav>
 
       <div className="p-4 border-t border-(--border-soft) bg-(--linen)/5 space-y-3">
@@ -264,6 +277,7 @@ function Header({ activeSection, onClose }: { activeSection: SectionId; onClose:
     'perfil': 'Información General',
     'profesional': 'Datos Profesionales',
     'seguridad': 'Seguridad y Acceso',
+    'ia': 'Integración de IA',
     'apariencia': 'Personalización Visual'
   };
 
@@ -986,6 +1000,109 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
             Todavía no estás vinculado a ningún centro educativo.
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function IntegrarIATab({ session }: { session: Session | null }) {
+  const userId = session?.user?.id;
+  const [inputKey, setInputKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(() => getGeminiApiKey(userId));
+  const configurado = !!apiKey;
+
+  const refreshApiKey = () => setApiKey(getGeminiApiKey(userId));
+
+  const handleGuardar = () => {
+    if (!inputKey.trim() || !userId) return;
+    saveGeminiApiKey(userId, inputKey);
+    setInputKey('');
+    refreshApiKey();
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 2500);
+  };
+
+  const handleEliminar = () => {
+    if (!userId) return;
+    if (!window.confirm('¿Eliminar tu API Key de Gemini guardada? Tendrás que ingresarla nuevamente para usar las funciones de IA.')) return;
+    removeGeminiApiKey(userId);
+    refreshApiKey();
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-sm p-6">
+        <div className="flex items-start gap-4 mb-6">
+          <div className="p-2.5 rounded-xl bg-(--linen)/50 text-(--ink) border border-(--border-soft) shadow-sm shrink-0">
+            <Sparkles size={20} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base font-black text-(--ink) tracking-tight">Google Gemini</h3>
+            <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mt-0.5">
+              Potencia las funciones de IA de CIELO
+            </p>
+          </div>
+          <span className={`ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest border ${
+            configurado
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : 'bg-amber-50 text-amber-700 border-amber-200'
+          }`}>
+            {configurado ? <CheckCircle size={12} /> : <AlertCircle size={12} />}
+            {configurado ? 'Configurado' : 'No configurado'}
+          </span>
+        </div>
+
+        {configurado ? (
+          <div className="mb-5 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-(--linen)/20 border border-(--border-soft) px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-(--ink-soft)">Clave activa</p>
+              <p className="text-sm font-mono font-bold text-(--ink) truncate">{maskApiKey(apiKey)}</p>
+            </div>
+            <button
+              onClick={handleEliminar}
+              className="shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-attention bg-attention/10 hover:bg-attention/20 transition-all border border-attention/20 cursor-pointer"
+            >
+              Eliminar clave
+            </button>
+          </div>
+        ) : (
+          <p className="mb-5 text-sm text-(--ink-soft) leading-relaxed rounded-xl bg-(--linen)/20 border border-(--border-soft) px-4 py-3">
+            Aún no has configurado tu clave de Gemini. Cuando lo hagas, funciones como
+            <span className="font-semibold text-(--ink)"> Nueva actividad</span> la utilizarán automáticamente.
+          </p>
+        )}
+
+        <SimplePasswordField
+          label={configurado ? 'Actualizar API Key' : 'API Key de Gemini'}
+          value={inputKey}
+          onChange={setInputKey}
+          show={showKey}
+          onToggle={() => setShowKey(s => !s)}
+        />
+
+        <div className="flex items-center gap-3 mt-4 flex-wrap">
+          <button
+            onClick={handleGuardar}
+            disabled={!inputKey.trim()}
+            className={`px-6 py-2.5 rounded-xl bg-(--primary) text-white shadow-sm text-xs font-bold uppercase tracking-widest outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 focus-visible:ring-offset-2 hover:opacity-90 active:scale-[0.98] transition-all ${!inputKey.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {configurado ? 'Actualizar clave' : 'Guardar clave'}
+          </button>
+          {savedFlash && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+              <CheckCircle size={14} /> Guardado
+            </span>
+          )}
+        </div>
+
+        <p className="mt-5 text-xs text-(--ink-soft) leading-relaxed">
+          Puedes obtener tu clave gratuita en{' '}
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="font-semibold text-(--primary) hover:underline">
+            Google AI Studio
+          </a>. La clave se guarda únicamente en este dispositivo y nunca se muestra completa ni se registra en logs.
+        </p>
       </div>
     </div>
   );

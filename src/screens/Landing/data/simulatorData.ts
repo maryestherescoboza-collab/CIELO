@@ -69,6 +69,7 @@ export const simulatorData: AppState = {
     recuperaciones: [],
     secuencias: [],
     eventos: [],
+    calendarioMinerd: [],
     posts: [],
     descriptoresRubrica: [],
     nivelesPuntaje: [

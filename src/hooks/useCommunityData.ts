@@ -10,8 +10,11 @@ export function useCommunityData() {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
     const [topColaboradores, setTopColaboradores] = useState<UserProfile[]>([]);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const POSTS_PER_PAGE = 20;
 
-    const fetchCommunityData = useCallback(async () => {
+    const fetchCommunityData = useCallback(async (pageNumber: number = 0) => {
         if (!session?.user?.id) return;
         setLoading(true);
         setError(null);
@@ -21,7 +24,8 @@ export function useCommunityData() {
             const [postsRes, histRes] = await Promise.all([
                 supabase.from('posts')
                     .select('*, profiles:perfiles(nombre_docente, avatar_url, bio)')
-                    .order('id', { ascending: false }),
+                    .order('id', { ascending: false })
+                    .range(pageNumber * POSTS_PER_PAGE, (pageNumber + 1) * POSTS_PER_PAGE - 1),
                 supabase.from('historial_colaboradores')
                     .select('*')
             ]);
@@ -32,15 +36,55 @@ export function useCommunityData() {
             const secuencias = globalState.secuencias || [];
             const plantillas = globalState.plantillas || [];
 
+            // El fetch global de plantillas está acotado al docente propio.
+            // Los recursos compartidos por otros (rúbricas/cotejos en posts)
+            // se resuelven con una consulta puntual por ids faltantes; la RLS
+            // "plantillas_lectura_comunidad" permite leer exactamente esas filas.
+            const missingPlantillaIds = Array.from(new Set(
+                (postsRes.data || [])
+                    .filter((p: any) => (p.tipo === 'rubrica' || p.tipo === 'cotejo') && p.recurso_id && !plantillas.some((pl: any) => pl.id === p.recurso_id))
+                    .map((p: any) => p.recurso_id as number)
+            ));
+            let plantillasComunidad = plantillas as any[];
+            if (missingPlantillaIds.length > 0) {
+                const { data: sharedPlants, error: sharedErr } = await supabase
+                    .from('plantillas')
+                    .select('*')
+                    .in('id', missingPlantillaIds);
+                if (!sharedErr && sharedPlants) {
+                    plantillasComunidad = [...plantillas, ...sharedPlants];
+                } else if (sharedErr) {
+                    console.warn('[Community] No se pudieron cargar plantillas compartidas:', sharedErr.message);
+                }
+            }
+
+            const missingSecuenciaIds = Array.from(new Set(
+                (postsRes.data || [])
+                    .filter((p: any) => p.tipo === 'secuencia' && p.recurso_id && !secuencias.some((s: any) => s.id === p.recurso_id))
+                    .map((p: any) => p.recurso_id as number)
+            ));
+            let secuenciasComunidad = secuencias as any[];
+            if (missingSecuenciaIds.length > 0) {
+                const { data: sharedSecs, error: sharedErr } = await supabase
+                    .from('secuencias')
+                    .select('*')
+                    .in('id', missingSecuenciaIds);
+                if (!sharedErr && sharedSecs) {
+                    secuenciasComunidad = [...secuencias, ...sharedSecs];
+                } else if (sharedErr) {
+                    console.warn('[Community] No se pudieron cargar secuencias compartidas:', sharedErr.message);
+                }
+            }
+
             const mappedPosts: Post[] = (postsRes.data || []).map((p: any): Post => {
                 const prof = (Array.isArray(p.profiles) ? p.profiles[0] : p.profiles) as Record<string, any> | undefined;
                 
                 let resolvedRecursoDatos = p.recurso_datos as Record<string, unknown> | undefined;
                 if (!resolvedRecursoDatos && p.recurso_id && p.tipo) {
                     if (p.tipo === 'secuencia') {
-                        resolvedRecursoDatos = secuencias.find((s: any) => s.id === p.recurso_id) as Record<string, unknown> | undefined;
+                        resolvedRecursoDatos = secuenciasComunidad.find((s: any) => s.id === p.recurso_id) as Record<string, unknown> | undefined;
                     } else if (p.tipo === 'rubrica' || p.tipo === 'cotejo') {
-                        resolvedRecursoDatos = plantillas.find((pl: any) => pl.id === p.recurso_id) as Record<string, unknown> | undefined;
+                        resolvedRecursoDatos = plantillasComunidad.find((pl: any) => pl.id === p.recurso_id) as Record<string, unknown> | undefined;
                     }
                 }
 
@@ -52,7 +96,7 @@ export function useCommunityData() {
                     contenido: p.contenido as string,
                     tiempo: p.tiempo as string || 'Hace un momento',
                     fechaPublicacion: p.fecha_publicacion as string,
-                    tipo: p.tipo as 'rubrica' | 'secuencia' | 'general' | 'cotejo',
+                    tipo: p.tipo as 'rubrica' | 'secuencia' | 'general' | 'cotejo' | 'recurso',
                     asignatura: p.asignatura as string,
                     userId: p.user_id as string,
                     userBio: prof?.bio as string || '',
@@ -84,10 +128,24 @@ export function useCommunityData() {
             );
 
             setTopColaboradores(topColabs);
-            setAppState(prev => ({
-                ...prev,
-                posts: [...optimisticPosts, ...mappedPosts]
-            }));
+            
+            if ((postsRes.data || []).length < POSTS_PER_PAGE) {
+                setHasMore(false);
+            } else {
+                setHasMore(true);
+            }
+
+            setAppState(prev => {
+                const existing = pageNumber === 0 ? [] : (prev.posts || []).filter(p => !p.isOptimistic);
+                const merged = [...existing];
+                mappedPosts.forEach(mp => {
+                    if (!merged.some(ep => ep.id === mp.id)) merged.push(mp);
+                });
+                return {
+                    ...prev,
+                    posts: [...optimisticPosts, ...merged]
+                };
+            });
             console.log("[Community] Posts loaded and written to global store.");
         } catch (err: any) {
             console.error("[Community] Error fetching community data:", err);
@@ -102,29 +160,23 @@ export function useCommunityData() {
 
         fetchCommunityData();
 
-        console.log("[Community] Setting up Realtime channels...");
-        const channel = supabase.channel(`community-changes-${session.user.id}-${Date.now()}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
-                console.log("[Community] Realtime event received for table 'posts'.");
-                fetchCommunityData();
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'historial_colaboradores' }, () => {
-                console.log("[Community] Realtime event received for table 'historial_colaboradores'.");
-                fetchCommunityData();
-            })
-            .subscribe();
-
-        return () => {
-            console.log("[Community] Cleaning up Realtime channel.");
-            supabase.removeChannel(channel);
-        };
     }, [session?.user?.id, fetchCommunityData]);
+
+    const loadMorePosts = useCallback(() => {
+        if (!loading && hasMore) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchCommunityData(nextPage);
+        }
+    }, [loading, hasMore, page, fetchCommunityData]);
 
     return {
         posts: globalState.posts,
         loading,
         error,
         topColaboradores,
-        refresh: fetchCommunityData
+        refresh: () => { setPage(0); fetchCommunityData(0); },
+        loadMorePosts,
+        hasMore
     };
 }

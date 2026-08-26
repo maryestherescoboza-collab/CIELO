@@ -1,6 +1,8 @@
-import { EyeOff, GraduationCap, Users, Clock, Plus, Layers, ChevronRight, Search, FileText } from 'lucide-react';
+import { useState } from 'react';
+import { EyeOff, GraduationCap, Users, Clock, Plus, Layers, ChevronRight, Search, FileText, ShieldAlert } from 'lucide-react';
 import type { Curso, AppState } from '../../types';
 import { getAsignaturaNombre, ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
+import { CieloModal } from '../ui/CieloModal';
 
 interface Props {
     curso: any; // Extended with count and docentesVinculadosRel
@@ -37,6 +39,8 @@ export function CourseCard({
 }: Props) {
     const isTutor = currentUserId === curso.userId;
     const myLink = state.cursoDocentes?.find(cd => cd.cursoId === curso.id && cd.userId === currentUserId);
+    const esTutorDelCurso = isTutor || !!myLink?.esTutor;
+    const [avisoBoletines, setAvisoBoletines] = useState(false);
     const displayAsignatura = myLink ? myLink.asignatura : curso.asignatura;
     const displayDiasSemana = myLink ? myLink.diasSemana : (curso.diasSemana || []);
 
@@ -197,7 +201,14 @@ export function CourseCard({
 
                 <button
                     className="w-full flex items-center justify-between px-6 py-3.5 hover:bg-(--linen)/30 text-xs font-bold text-(--ink) uppercase tracking-widest transition-all duration-200 border-b border-(--border-soft)/50 outline-none focus-visible:bg-(--linen)/20"
-                    onClick={(e) => { e.stopPropagation(); window.open(`/print-boletines/${curso.id}`, '_blank'); }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!esTutorDelCurso) {
+                            setAvisoBoletines(true);
+                            return;
+                        }
+                        window.open(`/print-boletines/${curso.id}`, '_blank');
+                    }}
                 >
                     <span className="flex items-center gap-2"><FileText size={13} className="text-(--ink-soft)" /> Descargar Boletines</span>
                     <ChevronRight size={13} className="text-slate-350" />
@@ -214,6 +225,24 @@ export function CourseCard({
                     <ChevronRight size={15} />
                 </button>
             </div>
+
+            <CieloModal
+                isOpen={avisoBoletines}
+                onClose={() => setAvisoBoletines(false)}
+                maxWidth="sm"
+                icon={<ShieldAlert size={20} />}
+                title="Acceso no disponible"
+            >
+                <p className="text-sm text-(--ink-soft) leading-relaxed mb-5">
+                    No eres tutor de este curso, por lo que no tienes acceso a los boletines de calificaciones.
+                </p>
+                <button
+                    onClick={() => setAvisoBoletines(false)}
+                    className="w-full py-2.5 bg-(--primary) text-white rounded-xl shadow-sm text-xs font-bold uppercase tracking-widest outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 focus-visible:ring-offset-2 hover:opacity-90 active:scale-[0.98] transition-all"
+                >
+                    Entendido
+                </button>
+            </CieloModal>
         </div>
     );
 }

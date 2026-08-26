@@ -47,8 +47,9 @@ const Header: React.FC<HeaderProps> = ({
         <header className="flex items-center justify-between px-4 py-2 bg-white border-b border-(--border-soft) sticky top-0 z-40 transition-all">
             <div className="flex items-center">
                 <img src={logo} alt="CIELO Logo" className="h-10 w-auto object-contain" />
-                <div className="hidden sm:block ml-2">
+                <div className="hidden sm:flex items-center gap-1.5 ml-2">
                     <p className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Portafolio Docente</p>
+                    <span className="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200/50 px-1.5 py-0.5 rounded-full select-none capitalize tracking-normal leading-none">Beta</span>
                 </div>
             </div>
 
@@ -175,7 +176,9 @@ const Header: React.FC<HeaderProps> = ({
                                 { id: 'crear-actividades-alumnos', label: 'Crear actividades y agregar alumnos' },
                                 { id: 'evaluar-actividad', label: 'Evaluar una actividad' },
                                 { id: 'evaluar-rubrica', label: 'Cómo evaluar con rúbrica' },
-                                { id: 'evaluar-cotejo', label: 'Cómo evaluar con cotejo' }
+                                { id: 'evaluar-cotejo', label: 'Cómo evaluar con cotejo' },
+                                { id: 'crear-plantilla-rubrica', label: 'Crear una plantilla de rúbrica' },
+                                { id: 'crear-plantilla-cotejo', label: 'Crear una plantilla de lista de cotejo' }
                             ].map(item => (
                                 <button
                                     key={item.id}

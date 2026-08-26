@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, CheckCircle, X, ClipboardCheck, BookMarked, Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle, X, ClipboardCheck, BookMarked, Loader2, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 import type { AppState, CriterioCotejo, EvaluacionCotejo, CursoDocente } from '../types';
 import { getAsignaturaNombre } from '../constants/asignaturas';
 import { CieloPill } from '../components/ui/CieloPill';
+import GenerarInstrumentoModal from '../components/evaluacion/GenerarInstrumentoModal';
+import { useAppStore } from '../store/appStore';
 
 interface Props {
     state?: AppState;
     currentCourseRole?: CursoDocente;
     onSaveCotejo?: (eval_: Omit<EvaluacionCotejo, 'id'>) => void;
-    onUpdateCriterios?: (criterios: CriterioCotejo[]) => void;
+    onUpdateCriterios?: (criterios: CriterioCotejo[], plantillaId?: number | null) => Promise<CriterioCotejo[] | null>;
     onSavePlantilla?: (tipo: 'rubrica' | 'cotejo', nombre: string, datos: Record<string, unknown>) => Promise<boolean>;
+    onUpdatePlantilla?: (id: number, patch: { nombre?: string; datos?: Record<string, unknown> }) => Promise<boolean>;
     onDeletePlantilla?: (id: number) => void;
     readOnly?: boolean;
     initialDatos?: { criterios?: CriterioCotejo[]; niveles?: any[] };
@@ -25,11 +28,14 @@ const COTEJO_COLORES: Record<number, { headerBg: string; cellBg: string }> = {
     0: { headerBg: 'var(--danger)', cellBg: 'rgba(231, 54, 60, 0.08)' }, // No cumple
 };
 
+import { useSupabaseData } from '../hooks/useSupabaseData';
+
 export default function Cotejo({
     state,
     onSaveCotejo,
     onUpdateCriterios,
     onSavePlantilla,
+    onUpdatePlantilla,
     onDeletePlantilla,
     readOnly = false,
     initialDatos,
@@ -53,6 +59,22 @@ export default function Cotejo({
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [multiEvaluations, setMultiEvaluations] = useState<Record<number, Record<number, number | null>>>({});
     const [activeCell, setActiveCell] = useState<{ critId: number; val: number } | null>(null);
+    const [showGenerarModal, setShowGenerarModal] = useState(false);
+
+    const session = useAppStore(s => s.session);
+    const { loadRubricaCotejoData, loadCursoData } = useSupabaseData(true);
+
+    useEffect(() => {
+        if (!readOnly) {
+            loadRubricaCotejoData();
+        }
+    }, [readOnly, loadRubricaCotejoData]);
+
+    useEffect(() => {
+        if (!readOnly && selectedCursoId) {
+            loadCursoData(selectedCursoId);
+        }
+    }, [selectedCursoId, readOnly, loadCursoData]);
 
     useEffect(() => {
         if (readOnly && initialDatos?.criterios) {
@@ -94,16 +116,34 @@ export default function Cotejo({
 
     const selectedCurso = state?.cursos.find(c => c.id === selectedCursoId);
     const actividades = state?.actividades.filter(a => 
-        a.cursoId === selectedCursoId || 
-        (selectedCurso?.sharedCourseId && a.sharedCourseId === selectedCurso.sharedCourseId)
+        (a.cursoId === selectedCursoId || 
+         (selectedCurso?.sharedCourseId && a.sharedCourseId === selectedCurso.sharedCourseId)) &&
+        (a.userId === session?.user?.id || !a.userId)
     ) || [];
-    const estudiantes = state?.estudiantes.filter(e => e.sharedCourseId === selectedCurso?.sharedCourseId) || [];
-    const sortedEsts = [...estudiantes].sort((a, b) =>
-        (a.apellido + a.nombre).localeCompare(b.apellido + b.nombre)
-    );
-    const cotejoPlantillas = state?.plantillas.filter(p => p.tipo === 'cotejo') || [];
+    const estudiantes = state?.estudiantes.filter(e => 
+        e.cursoId === selectedCursoId || 
+        (selectedCurso?.sharedCourseId && e.sharedCourseId === selectedCurso.sharedCourseId)
+    ) || [];
+    const sortedEsts = [...estudiantes].sort((a, b) => {
+        const numA = a.numeroLista || 0;
+        const numB = b.numeroLista || 0;
+        if (numA !== numB) return numA - numB;
+        return (a.apellido + a.nombre).localeCompare(b.apellido + b.nombre);
+    });
+    const cotejoPlantillas = state?.plantillas.filter(p =>
+        p.tipo === 'cotejo' && p.userId === session?.user?.id
+    ) || [];
+    const LIMITE_PLANTILLAS = 10;
     const selectedEst = estudiantes.find(e => e.id === selectedEstId) ?? null;
     const selectedAct = actividades.find(a => a.id === selectedActId) ?? null;
+
+    function aplicarCotejoIA(criterios: CriterioCotejo[]) {
+        setLocalCriterios(criterios);
+        setLocalNiveles(NIVELES);
+        setSelectedPlantillaId(null);
+        setSavedFlash(true);
+        setTimeout(() => setSavedFlash(false), 2000);
+    }
 
     function calcPuntajeWithRespuestas(res: Record<number, number | null>): number {
         const answered = Object.values(res).filter(v => v !== null && v !== undefined) as number[];
@@ -130,7 +170,10 @@ export default function Cotejo({
                 });
             }
             if (onUpdateCriterios) {
-                await onUpdateCriterios(localCriterios);
+                const saved = await onUpdateCriterios(localCriterios, selectedPlantillaId);
+                if (saved) {
+                    setLocalCriterios(saved);
+                }
             }
 
             setSavedFlash(true);
@@ -168,7 +211,10 @@ export default function Cotejo({
                 }
             }
             if (onUpdateCriterios) {
-                await onUpdateCriterios(localCriterios);
+                const saved = await onUpdateCriterios(localCriterios, selectedPlantillaId);
+                if (saved) {
+                    setLocalCriterios(saved);
+                }
             }
 
             setSavedFlash(true);
@@ -281,12 +327,11 @@ export default function Cotejo({
                     newIndicators.push(textContent);
                 }
             }
-            if (newIndicators.length > 0) {
-                setLocalCriterios(prev => {
-                    let maxId = Math.max(0, ...prev.map(c => c.id));
+            if (newIndicators.length > 0) {                setLocalCriterios(prev => {
+                    let nextId = Math.min(0, ...prev.map(c => c.id)) - 1;
                     const added = newIndicators.map(text => {
-                        maxId++;
-                        return { id: maxId, titulo: text, descripcion: text };
+                        const id = nextId--;
+                        return { id, titulo: text, descripcion: text };
                     });
                     return [...prev, ...added];
                 });
@@ -295,12 +340,12 @@ export default function Cotejo({
         window.addEventListener('paste', handleGlobalPaste);
         return () => window.removeEventListener('paste', handleGlobalPaste);
     }, [readOnly]);
-
+ 
     function handleInsertRowAfter(critId: number) {
         setLocalCriterios(prev => {
             const index = prev.findIndex(c => c.id === critId);
             if (index === -1) return prev;
-            const newId = Math.max(0, ...prev.map(c => c.id)) + 1;
+            const newId = Math.min(0, ...prev.map(c => c.id)) - 1;
             const newCrit = { id: newId, titulo: '', descripcion: '' };
             const next = [...prev];
             next.splice(index + 1, 0, newCrit);
@@ -424,7 +469,7 @@ export default function Cotejo({
                                     <div className="space-y-3">
                                         <div className="px-1 flex items-center justify-between">
                                             <p className="text-xs font-black uppercase tracking-widest text-[#2E3330]">Plantillas</p>
-                                            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-[#2E3330]">{cotejoPlantillas.length}</div>
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{cotejoPlantillas.length} de {LIMITE_PLANTILLAS}</span>
                                         </div>
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-base-creme focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm artisan-pill artisan-btn-white">
@@ -457,7 +502,8 @@ export default function Cotejo({
                                                 {selectedPlantillaId && (
                                                     <button
                                                         onClick={() => {
-                                                            if (window.confirm('¿Deseas eliminar esta plantilla?') && onDeletePlantilla) {
+                                                            const actual = cotejoPlantillas.find(p => p.id === selectedPlantillaId);
+                                                            if (window.confirm(`¿Eliminar la plantilla "${actual?.nombre ?? ''}"? Tus evaluaciones y calificaciones históricas NO se afectan.`) && onDeletePlantilla) {
                                                                 onDeletePlantilla(selectedPlantillaId);
                                                                 setSelectedPlantillaId(null);
                                                                 setLocalCriterios(state?.criteriosCotejo || []);
@@ -472,6 +518,7 @@ export default function Cotejo({
                                                 )}
                                             </div>
                                             <button
+                                                data-guide="btn-guardar-plantilla"
                                                 onClick={async () => {
                                                     const nombre = prompt('Nombre de la plantilla de cotejo:');
                                                     if (nombre?.trim() && onSavePlantilla) {
@@ -485,6 +532,46 @@ export default function Cotejo({
                                                 className="w-full bg-base-creme border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
                                             >
                                                 Guardar como Plantilla
+                                            </button>
+                                            {selectedPlantillaId !== null && (
+                                                <button
+                                                    onClick={async () => {
+                                                        const actual = cotejoPlantillas.find(p => p.id === selectedPlantillaId);
+                                                        if (!actual || !onUpdatePlantilla) return;
+                                                        const nombre = prompt('Nuevo nombre de la plantilla:', actual.nombre);
+                                                        if (nombre === null) return;
+                                                        if (!confirm(`¿Actualizar "${actual.nombre}" con el contenido actual del editor? Las evaluaciones ya realizadas no se modifican.`)) return;
+                                                        let finalCriterios = localCriterios;
+                                                        if (onUpdateCriterios) {
+                                                            const saved = await onUpdateCriterios(localCriterios, selectedPlantillaId);
+                                                            if (saved) {
+                                                                finalCriterios = saved;
+                                                                setLocalCriterios(saved);
+                                                            }
+                                                        }
+                                                        const ok = await onUpdatePlantilla(selectedPlantillaId, {
+                                                            nombre: nombre.trim() || actual.nombre,
+                                                            datos: { criterios: finalCriterios, niveles: localNiveles },
+                                                        });
+                                                        if (ok) {
+                                                            setSavedFlash(true);
+                                                            setTimeout(() => setSavedFlash(false), 2000);
+                                                        } else {
+                                                            alert('No se pudo actualizar la plantilla.');
+                                                        }
+                                                    }}
+                                                    className="w-full bg-base-creme border border-primary/30 text-primary font-black uppercase tracking-wider text-[11px] py-2 rounded-full hover:bg-[#E8F0F8] transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/30 shadow-sm"
+                                                >
+                                                    Actualizar seleccionada
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => setShowGenerarModal(true)}
+                                                className="w-full bg-primary border border-primary/40 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:opacity-90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shadow-sm artisan-pill flex items-center justify-center gap-1.5"
+                                                title="Generar criterios con IA a partir del contexto del curso y la actividad"
+                                            >
+                                                <Sparkles size={13} />
+                                                Generar con IA
                                             </button>
                                         </div>
                                     </div>
@@ -709,7 +796,7 @@ export default function Cotejo({
                                             <button
                                                 onClick={() => {
                                                     if (readOnly) return;
-                                                    const id = Math.max(0, ...localCriterios.map(c => c.id)) + 1;
+                                                    const id = Math.min(0, ...localCriterios.map(c => c.id)) - 1;
                                                     setLocalCriterios([{ id, titulo: '', descripcion: '' }]);
                                                 }}
                                                 className="flex flex-col items-center gap-2 mx-auto focus:outline-none hover:opacity-85 transition-all select-none cursor-pointer group"
@@ -743,6 +830,7 @@ export default function Cotejo({
                                                             +
                                                         </button>
                                                         <textarea
+                                                            data-guide="criterio-cotejo"
                                                             className="flex-1 bg-transparent outline-none text-[16px] font-medium text-(--ink) resize-none h-12 scrollbar-hide text-left"
                                                             placeholder="Descripción del indicador..."
                                                             value={crit.descripcion}
@@ -846,7 +934,7 @@ export default function Cotejo({
                             <button className="flex-1 bg-white border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/20 rounded-xl py-3 text-xs font-black uppercase tracking-widest transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 cursor-pointer" onClick={() => setShowAddCrit(false)}>Cancelar</button>
                             <button className="flex-1 bg-(--primary) text-white hover:opacity-90 rounded-full py-3 text-xs font-black uppercase tracking-widest transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 hover:-translate-y-0.5 active:scale-95 cursor-pointer" onClick={() => {
                                 if (newCrit.descripcion.trim()) {
-                                    const id = Math.max(0, ...localCriterios.map(c => c.id)) + 1;
+                                    const id = Math.min(0, ...localCriterios.map(c => c.id)) - 1;
                                     setLocalCriterios([...localCriterios, { id, titulo: newCrit.descripcion.trim(), descripcion: newCrit.descripcion.trim() }]);
                                     setShowAddCrit(false);
                                     setNewCrit({ descripcion: '' });
@@ -871,6 +959,16 @@ export default function Cotejo({
                     </button>
                 </div>
             )}
+
+            <GenerarInstrumentoModal
+                isOpen={showGenerarModal}
+                onClose={() => setShowGenerarModal(false)}
+                tipo="cotejo"
+                actividades={actividades}
+                cursoNombre={selectedCurso ? `${selectedCurso.grado} ${selectedCurso.seccion} - ${getAsignaturaNombre(selectedCurso.asignatura)}` : ''}
+                asignatura={state?.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session?.user?.id)?.asignatura ?? null}
+                onAplicarCotejo={aplicarCotejoIA}
+            />
         </div>
     );
 }

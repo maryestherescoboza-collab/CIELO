@@ -99,7 +99,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
                         </div>
                     )
                 ) : isPointMode ? (
-                    <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === 100 ? 'w-6 h-6 bg-primary' : score === 85 ? 'w-6 h-6 bg-attention' : score === 70 ? 'w-6 h-6 bg-danger' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : 'w-2 h-2 bg-[rgba(46,51,48,0.08)]'}`} />
+                    <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === null ? 'w-2 h-2 bg-[rgba(46,51,48,0.08)]' : score === 100 ? 'w-6 h-6 bg-primary' : score === 85 ? 'w-6 h-6 bg-attention' : score === 70 ? 'w-6 h-6 bg-danger' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : score >= 100 ? 'w-6 h-6 bg-primary' : score >= 85 ? 'w-6 h-6 bg-attention' : score >= 70 ? 'w-6 h-6 bg-danger' : 'w-5 h-5 bg-[#2E3330]'}`} />
                 ) : (
                     <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)}`}>
                         {score ?? '-'}

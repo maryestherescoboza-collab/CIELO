@@ -20,9 +20,10 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
     }, [state.estudiantes, sharedCourseIds, state.cursos, selectedCourseId]);
 
     const filteredActividades = useMemo(() => {
-        if (selectedCourseId === 'all') return state.actividades;
-        return state.actividades.filter(a => a.cursoId === selectedCourseId);
-    }, [state.actividades, selectedCourseId]);
+        const base = state.actividades.filter(a => a.userId === userId || !a.userId);
+        if (selectedCourseId === 'all') return base;
+        return base.filter(a => a.cursoId === selectedCourseId);
+    }, [state.actividades, selectedCourseId, userId]);
 
     const filteredCalificaciones = useMemo(() => {
         const studentIds = new Set(myStudents.map(s => s.id));
@@ -67,7 +68,7 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
     const enRiesgo = myStudents.filter(e => e.enRiesgo || estudiantesRiesgoUnicos.has(e.id));
 
     const getUpcomingEvents = (selectedDate: string | null) => {
-        return [
+        return ([
             ...state.eventos.map(e => ({ 
                 id: `evt-${e.id}`, 
                 originalId: e.id, 
@@ -94,11 +95,37 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
                 tipo: 'tarea' as const,
                 isActivity: false,
                 cursoId: undefined
+            })),
+            ...(state.calendarioMinerd || []).map(e => ({
+                id: `minerd-${e.id}`,
+                originalId: e.id,
+                titulo: e.titulo,
+                fecha: e.fechaInicio || e.fecha || today,
+                fechaFin: e.fechaFin,
+                tipo: e.tipo,
+                isActivity: false,
+                cursoId: undefined,
+                isMinerd: true,
+                descripcion: e.descripcion
             }))
-        ]
+        ] as {
+            id: string;
+            originalId: number | string;
+            titulo: string;
+            fecha: string;
+            fechaFin?: string;
+            tipo: string;
+            isActivity: boolean;
+            cursoId?: number;
+            isMinerd?: boolean;
+            descripcion?: string;
+        }[])
         .filter(e => {
-            if (selectedDate) return e.fecha >= selectedDate;
-            return e.fecha >= today;
+            const refDate = selectedDate || today;
+            if ('isMinerd' in e && e.isMinerd) {
+                return e.fechaFin ? e.fechaFin >= refDate : e.fecha >= refDate;
+            }
+            return e.fecha >= refDate;
         })
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
         .slice(0, 4);

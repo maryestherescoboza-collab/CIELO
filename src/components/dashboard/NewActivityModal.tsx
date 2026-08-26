@@ -1,9 +1,18 @@
 import { useState } from 'react';
+import { MessageSquareText, Brain, Puzzle, Microscope } from 'lucide-react';
 import type { AppState, Actividad, BCKey } from '../../types';
 import { COMPETENCIAS_LABEL } from '../../types';
 import { TC_Flux, TC_Genesis, TC_Archive, TC_Echo } from '../icons/TerraCognitaIcons';
 import { CieloModal } from '../ui/CieloModal';
 import { useAppStore } from '../../store/appStore';
+import { getGeminiApiKey, saveGeminiApiKey, buildGeminiEndpoint } from '../../lib/aiConfig';
+
+const BC_CIRCLE_CONFIG: Array<{ id: BCKey; label: string; icon: typeof MessageSquareText; bg: string; selectedBg: string; selectedText: string }> = [
+  { id: 'BC1', label: COMPETENCIAS_LABEL.BC1, icon: MessageSquareText, bg: 'bg-blue-50', selectedBg: 'bg-blue-600', selectedText: 'text-white' },
+  { id: 'BC2', label: COMPETENCIAS_LABEL.BC2, icon: Brain, bg: 'bg-violet-50', selectedBg: 'bg-violet-600', selectedText: 'text-white' },
+  { id: 'BC3', label: COMPETENCIAS_LABEL.BC3, icon: Puzzle, bg: 'bg-amber-50', selectedBg: 'bg-amber-600', selectedText: 'text-white' },
+  { id: 'BC4', label: COMPETENCIAS_LABEL.BC4, icon: Microscope, bg: 'bg-emerald-50', selectedBg: 'bg-emerald-600', selectedText: 'text-white' },
+];
 
 interface NewActivityModalProps {
     show: boolean;
@@ -17,6 +26,7 @@ interface ExtractedActivity {
     nombre: string;
     competencias: BCKey[];
     indicador_logro: string;
+    producto: string;
     selected: boolean;
 }
 
@@ -46,7 +56,8 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         fecha: today,
         secuenciaId: '',
         bcs: ['BC1'] as BCKey[],
-        cursoId: cursos[0]?.id ?? 0
+        cursoId: cursos[0]?.id ?? 0,
+        indicador: ''
     });
 
     // PDF flow states
@@ -79,14 +90,15 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
             fecha: today,
             secuenciaId: '',
             bcs: ['BC1'] as BCKey[],
-            cursoId: cursos[0]?.id ?? 0
+            cursoId: cursos[0]?.id ?? 0,
+            indicador: ''
         });
         onClose();
     };
 
     // Manual creation handler
     async function handleCreateManual() {
-        if (!form.nombre.trim() || !form.cursoId || form.bcs.length === 0 || isSaving) return;
+        if (!form.nombre.trim() || !form.cursoId || form.bcs.length === 0 || !form.indicador.trim() || isSaving) return;
         
         const currentUserId = session?.user?.id;
         if (!currentUserId) {
@@ -117,7 +129,8 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
                 secuenciaId: form.secuenciaId ? parseInt(form.secuenciaId) : undefined,
                 sharedCourseId: curso?.sharedCourseId,
                 userId: currentUserId,
-                asignatura: docenteAsignatura
+                asignatura: docenteAsignatura,
+                indicador: form.indicador || undefined
             });
 
             if (result) {
@@ -159,16 +172,10 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     // Save API Key
     const handleSaveApiKey = () => {
         if (!tempApiKey.trim() || !session?.user?.id) return;
-        localStorage.setItem(`gemini_api_key_${session.user.id}`, tempApiKey.trim());
+        saveGeminiApiKey(session.user.id, tempApiKey);
         setShowApiKeyPrompt(false);
         setTempApiKey('');
         handleProcessPdf();
-    };
-
-    // Helper para obtener y organizar la API Key para futura migración a un backend seguro (Fase 2)
-    const getStoredApiKey = (): string | null => {
-        if (!session?.user?.id) return null;
-        return localStorage.getItem(`gemini_api_key_${session.user.id}`);
     };
 
     // Process PDF and query Gemini API
@@ -199,7 +206,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
             return;
         }
 
-        const savedApiKey = getStoredApiKey();
+        const savedApiKey = getGeminiApiKey(currentUserId);
         if (!savedApiKey) {
             setShowApiKeyPrompt(true);
             return;
@@ -210,9 +217,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
 
         try {
             // Usamos el modelo actualizado (Fase 3)
-            const apiVersion = 'v1beta';
-            const modelName = 'gemini-3.5-flash';
-            const endpointUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${savedApiKey}`;
+            const endpointUrl = buildGeminiEndpoint(savedApiKey as string);
 
             // Connection OK! Now convert PDF to Base64 and send it
             const base64Data = await fileToBase64(selectedFile);
@@ -242,18 +247,35 @@ Para cada actividad, debes identificar:
    Debe combinar: VERBO DE ACCIÓN + CONTENIDO ESPECÍFICO + CONDICIÓN DE ÉXITO.
    Usa un verbo observable (ej. Resuelve, Analiza, Compara, Identifica).
    No intentes buscar literalmente el texto "Indicador de logro", constrúyelo deduciendo el desempeño principal que evalúa la tarea.
+4. "producto": Identifica el producto o evidencia de aprendizaje de la actividad.
+   Definición: el producto o evidencia de una actividad en clases es la prueba física o digital que muestra el trabajo, el aprendizaje y el logro del estudiante durante una tarea escolar. Representa la evidencia concreta que queda como resultado del trabajo del estudiante. NO debe confundirse con la actividad.
+   Pregunta guía: ¿Qué evidencia concreta produce, presenta, entrega, construye, resuelve o registra el estudiante como resultado de esta actividad?
+   Especificación de formato:
+   - El Producto debe ser breve: máximo 5 palabras.
+   - Además de identificar la evidencia, indica CUANDO CORRESPONDA el medio o lugar donde el estudiante realizará o presentará la actividad (ej.: en el cuaderno, en una hoja de trabajo, en Canva, en PowerPoint, en una plataforma digital).
+   - Solo menciona el medio o lugar si el documento lo indica explícitamente; NUNCA lo inventes. Si la actividad no indica dónde se realiza, describe únicamente la evidencia.
+   - El Producto debe describir de forma breve la evidencia final y su medio de realización, sin explicaciones adicionales y respetando siempre el máximo de 5 palabras.
+   Ejemplos de formato correcto:
+   - "Ejercicios resueltos en el cuaderno".
+   - "Mapa mental en Canva".
+   - "Glosario elaborado en el cuaderno".
+   - "Célula dibujada en el cuaderno".
+   - "Presentación creada en PowerPoint".
+   Límite anti-invención: deriva el producto ÚNICAMENTE de lo que la actividad solicita producir, entregar, construir, resolver o registrar. NO inventes una evidencia que la actividad no pida (ej.: para "Resolver los ejercicios de ecuaciones lineales" el producto es "Ejercicios de ecuaciones lineales resueltos", NO "Presentación digital sobre ecuaciones"). Esto aplica también al medio o lugar: si el PDF no lo declara, omítelo. Si la actividad genuinamente no produce ninguna evidencia identificable, devuelve una cadena vacía "".
 
 REGLAS CRÍTICAS DE EXTRACCIÓN:
 - La IA debe extraer ÚNICAMENTE información que pueda identificar explícitamente en el documento.
 - NO inferir competencias que no estén explícitamente nombradas en el documento con sus denominaciones oficiales o variantes claras. NO asumas la competencia sólo por el verbo de la actividad (ej. "Resolver problemas" no es BC4 si no lo declara como competencia que se está evaluando).
 - NO agregar conceptos al indicador que no estén relacionados con la actividad original.
+- NO inventar productos o evidencias que la actividad no solicite explícitamente; derívalo solo del contenido real de la tarea.
 - Devuelve la respuesta en formato JSON estructurado, cumpliendo exactamente con el siguiente esquema JSON:
 {
   "actividades": [
     {
       "nombre": "string",
       "competencias": [{"codigo": "string", "nombre": "string"}],
-      "indicador_logro": "string"
+      "indicador_logro": "string",
+      "producto": "string"
     }
   ]
 }`;
@@ -299,9 +321,10 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                                     required: ['codigo', 'nombre']
                                                 } 
                                             },
-                                            indicador_logro: { type: 'STRING' }
+                                            indicador_logro: { type: 'STRING' },
+                                            producto: { type: 'STRING' }
                                         },
-                                        required: ['nombre', 'competencias', 'indicador_logro']
+                                        required: ['nombre', 'competencias', 'indicador_logro', 'producto']
                                     }
                                 }
                             },
@@ -349,6 +372,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                     nombre: act.nombre || 'Nueva Actividad',
                     competencias: mappedBcs,
                     indicador_logro: act.indicador_logro || '',
+                    producto: act.producto || '',
                     selected: true
                 };
             });
@@ -433,6 +457,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                     bcAsignados: act.competencias,
                     sharedCourseId: curso?.sharedCourseId,
                     indicador: act.indicador_logro,
+                    producto: act.producto || undefined,
                     userId: currentUserId,
                     asignatura: docenteAsignatura
                 });
@@ -692,35 +717,60 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 <label className="notion-label">Competencias a evaluar</label>
-                                <div className="grid grid-cols-1 gap-3">
-                                    {(Object.keys(COMPETENCIAS_LABEL) as BCKey[]).map(bcId => {
-                                        const isSelected = form.bcs.includes(bcId);
+                                <div className="flex items-center gap-3">
+                                    {BC_CIRCLE_CONFIG.map(({ id, label, icon: Icon, bg, selectedBg, selectedText }) => {
+                                        const isSelected = form.bcs.includes(id);
                                         return (
-                                            <button key={bcId}
-                                                onClick={() => {
-                                                    setForm(p => ({
-                                                        ...p,
-                                                        bcs: isSelected
-                                                            ? p.bcs.filter(x => x !== bcId)
-                                                            : [...p.bcs, bcId]
-                                                    }));
-                                                }}
-                                                className={`
-                                                     p-4 rounded-2xl border text-left flex items-start gap-4 transition-all
-                                                     ${isSelected ? `bg-white border-slate-900 shadow-xl ring-1 ring-slate-900` : 'bg-slate-50/50 border-transparent hover:border-slate-200'}
-                                                 `}>
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-500'} transition-colors`}>
-                                                    <span className="text-xs font-bold">{bcId}</span>
+                                            <div key={id} className="relative group">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setForm(p => ({
+                                                            ...p,
+                                                            bcs: isSelected
+                                                                ? p.bcs.filter(x => x !== id)
+                                                                : [...p.bcs, id]
+                                                        }));
+                                                    }}
+                                                    className={`
+                                                        w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer
+                                                        ${isSelected
+                                                            ? `${selectedBg} ${selectedText} shadow-md ring-2 ring-offset-1 ring-current/30`
+                                                            : `${bg} text-slate-500 hover:shadow-md hover:scale-105`
+                                                        }
+                                                    `}
+                                                >
+                                                    <Icon size={20} strokeWidth={2.2} />
+                                                </button>
+                                                <div className="
+                                                    absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5
+                                                    w-64 p-3 rounded-xl text-left
+                                                    bg-slate-900 text-white shadow-2xl
+                                                    opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                                                    transition-all duration-200 pointer-events-none z-[9999]
+                                                ">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{id}</span>
+                                                    <p className="text-xs font-bold mt-0.5 leading-snug">{label}</p>
+                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-slate-900"></div>
                                                 </div>
-                                                <div className="flex-1">
-                                                    <p className={`text-[13px] font-bold ${isSelected ? 'text-slate-900' : 'text-slate-500'}`}>{COMPETENCIAS_LABEL[bcId]}</p>
-                                                </div>
-                                            </button>
+                                            </div>
                                         );
                                     })}
                                 </div>
+                                {form.bcs.length > 0 && (
+                                    <div className="mt-2">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Indicador de logro *</label>
+                                        <textarea
+                                            className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium transition-all resize-none"
+                                            rows={2}
+                                            placeholder="Ej: El estudiante será capaz de aplicar técnicas de comprensión lectora para analizar textos argumentativos..."
+                                            value={form.indicador}
+                                            onChange={e => setForm(p => ({ ...p, indicador: e.target.value }))}
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -859,6 +909,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                             <th className="p-4 min-w-56">Actividad</th>
                                             <th className="p-4 min-w-64">Competencias</th>
                                             <th className="p-4 min-w-72">Indicador de logro</th>
+                                            <th className="p-4 min-w-72">Producto</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 text-xs">
@@ -911,6 +962,15 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                                         value={act.indicador_logro}
                                                         placeholder="No especificado"
                                                         onChange={e => updateActivityField(idx, 'indicador_logro', e.target.value)}
+                                                    />
+                                                </td>
+                                                <td className="p-4">
+                                                    <textarea 
+                                                        rows={3}
+                                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-primary py-1 font-medium text-slate-500 outline-none transition-colors resize-none leading-relaxed scrollbar-hide"
+                                                        value={act.producto}
+                                                        placeholder="No especificado"
+                                                        onChange={e => updateActivityField(idx, 'producto', e.target.value)}
                                                     />
                                                 </td>
                                             </tr>

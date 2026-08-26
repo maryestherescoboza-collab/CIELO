@@ -2,11 +2,22 @@ import React from 'react';
 import { useAppStore } from '../store/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useEvaluationActions } from '../hooks/useEvaluationActions';
-import { RubricaRow, NIVEL_FIELDS } from './RubricaRow';
+import { RubricaRow, NIVEL_FIELDS, COMPETENCIAS } from './RubricaRow';
 import { X, CheckCircle } from 'lucide-react';
 import type { DescriptorRubrica, Nivel, NivelPuntaje } from '../types';
 
 type Selection = Record<string, Nivel>;
+
+const DEFAULT_DESCRIPTORS = COMPETENCIAS.map(comp => ({
+    id: `competencia-${comp.bc}`,
+    bc: comp.bc,
+    indicador: comp.nombre,
+    estrategico: '',
+    autonomo: '',
+    resolutivo: '',
+    receptivo: '',
+    plantillaId: null
+})) as DescriptorRubrica[];
 
 export const FloatingRubricManager: React.FC = () => {
     const floatingRubrics = useAppStore((s) => s.floatingRubrics);
@@ -30,11 +41,12 @@ export const FloatingRubricManager: React.FC = () => {
     }));
 
     const localDescriptors = useAppStore(
-        useShallow((s) =>
-            s.activeRubricDescriptors && s.activeRubricDescriptors.length > 0
-                ? s.activeRubricDescriptors
-                : s.state.descriptoresRubrica.slice(0, 4)
-        )
+        useShallow((s) => {
+            if (s.activeRubricDescriptors && s.activeRubricDescriptors.length > 0) {
+                return s.activeRubricDescriptors;
+            }
+            return DEFAULT_DESCRIPTORS;
+        })
     ) as DescriptorRubrica[];
 
     const localNiveles = useAppStore(
@@ -122,8 +134,7 @@ export const FloatingRubricManager: React.FC = () => {
                             cursoId: win.cursoId,
                             fecha: new Date().toISOString().split('T')[0],
                             selecciones: updatedSelection,
-                            observaciones: undefined,
-                            puntajeTotal: 0,
+                            observaciones: undefined
                         });
                     } catch (err) {
                         console.error('Error saving floating rubric evaluation:', err);

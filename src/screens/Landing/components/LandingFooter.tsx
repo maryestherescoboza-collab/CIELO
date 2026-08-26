@@ -10,7 +10,10 @@ export function LandingFooter() {
             <div className="bg-white rounded-xl p-1">
               <img src={logo} alt="CIELO Logo" className="w-16 h-16 object-contain" />
             </div>
-            <span className="text-white font-black text-xl tracking-tighter">CIELO</span>
+            <div className="flex items-center gap-2">
+              <span className="text-white font-black text-xl tracking-tighter">CIELO</span>
+              <span className="text-[9px] font-bold text-slate-300 bg-white/10 border border-white/20 px-1.5 py-0.5 rounded-full select-none capitalize tracking-normal leading-none">Beta</span>
+            </div>
           </Link>
           <p className="text-slate-400 text-sm max-w-sm leading-relaxed">
             Plataforma integral para la gestión y evaluación por competencias en República Dominicana.
@@ -38,6 +41,9 @@ export function LandingFooter() {
       <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
         <p className="text-slate-500 text-xs font-medium">
           &copy; {new Date().getFullYear()} CIELO. Todos los derechos reservados.
+        </p>
+        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+          CIELO está en Beta · Tu experiencia nos ayuda a mejorar
         </p>
       </div>
     </footer>

@@ -1,9 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Plus, BookOpen } from 'lucide-react';
 import type { Curso } from '../types';
 import { useAppStore } from '../store/appStore';
 import { useNavigate } from 'react-router-dom';
 import { useCursosData } from '../hooks/useCursosData';
+import { useSupabaseData } from '../hooks/useSupabaseData';
 import { CourseCard } from '../components/courses/CourseCard';
 import { NewCourseModal } from '../components/courses/NewCourseModal';
 import { LinkTeacherModal } from '../components/courses/LinkTeacherModal';
@@ -35,7 +36,6 @@ export default function Cursos({
     const navigate = useNavigate();
     const [editingAsignaturaId, setEditingAsignaturaId] = useState<number | null>(null);
     const [cargaCourseId, setCargaCourseId] = useState<number | null>(null);
-    
     const {
         showModal,
         setShowModal,
@@ -53,6 +53,12 @@ export default function Cursos({
         cursosWithCounts,
         filteredPerfiles
     } = useCursosData(state);
+
+    const { loadDashboardData } = useSupabaseData(true);
+
+    useEffect(() => {
+        loadDashboardData();
+    }, [loadDashboardData]);
 
     const handleCreate = useCallback(async () => {
         if (!form.seccion.trim() || isSaving) return;

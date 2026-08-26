@@ -275,6 +275,9 @@ export default function Layout({
 
             <main className="app-main">
                 {children}
+                <footer className="w-full text-center py-3 border-t border-(--border-soft) bg-white text-[9px] font-black text-(--ink-soft) uppercase tracking-widest select-none shrink-0">
+                    CIELO está en Beta · Tu experiencia nos ayuda a mejorar
+                </footer>
             </main>
 
             <BottomNav 

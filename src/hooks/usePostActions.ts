@@ -30,7 +30,7 @@ export function usePostActions() {
         }
     }, [session, setGenericToast]);
 
-    const addPost = useCallback(async (newPost: { contenido: string; tipo: Post['tipo']; asignatura: string; recursoId?: number }): Promise<number | undefined> => {
+    const addPost = useCallback(async (newPost: { contenido: string; tipo: Post['tipo']; asignatura: string; recursoId?: number; recursoDatos?: ResourceData }): Promise<number | undefined> => {
         const currentSession = session;
         if (!currentSession?.user?.id) return;
         
@@ -44,6 +44,7 @@ export function usePostActions() {
             tipo: newPost.tipo,
             asignatura: newPost.asignatura,
             recursoId: newPost.recursoId,
+            recursoDatos: newPost.recursoDatos,
             userId: currentSession.user.id,
             fechaPublicacion: new Date().toISOString(),
             tiempo: 'Publicando...',
@@ -55,8 +56,8 @@ export function usePostActions() {
         try {
             let recursoDatosToSave: any = null;
 
-            if (newPost.recursoId) {
-                if (newPost.tipo === 'rubrica') {
+            if (newPost.recursoId || newPost.tipo === 'recurso') {
+                if (newPost.tipo === 'rubrica' && newPost.recursoId) {
                     const plantilla = state.plantillas.find(p => p.id === newPost.recursoId);
                     if (plantilla) {
                         const COMPETENCIAS = [
@@ -86,7 +87,7 @@ export function usePostActions() {
                             descriptores: descriptorsToSnapshot
                         };
                     }
-                } else if (newPost.tipo === 'cotejo') {
+                } else if (newPost.tipo === 'cotejo' && newPost.recursoId) {
                     const plantilla = state.plantillas.find(p => p.id === newPost.recursoId);
                     if (plantilla) {
                         const rawDatos = typeof plantilla.datos === 'string' ? JSON.parse(plantilla.datos) : plantilla.datos;
@@ -107,7 +108,7 @@ export function usePostActions() {
                             criterios: fullCriterios
                         };
                     }
-                } else if (newPost.tipo === 'secuencia') {
+                } else if (newPost.tipo === 'secuencia' && newPost.recursoId) {
                     const secuencia = state.secuencias.find(s => s.id === newPost.recursoId);
                     if (secuencia) {
                         recursoDatosToSave = {
@@ -121,6 +122,8 @@ export function usePostActions() {
                             archivoFechaCarga: secuencia.archivoFechaCarga
                         };
                     }
+                } else if (newPost.tipo === 'recurso') {
+                    recursoDatosToSave = newPost.recursoDatos || null;
                 }
             }
 

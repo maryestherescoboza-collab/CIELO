@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { Post, ComunidadUIState } from '../../types';
 import PostCard from '../PostCard';
 import { Globe } from 'lucide-react';
@@ -9,6 +9,9 @@ interface Props {
     setUiState: React.Dispatch<React.SetStateAction<ComunidadUIState>>;
     onDeletePost?: (postId: number) => void;
     currentUserId?: string;
+    loadMorePosts?: () => void;
+    hasMore?: boolean;
+    isLoading?: boolean;
 }
 
 const getTipoLabel = (tipo: Post['tipo']) => {
@@ -16,6 +19,7 @@ const getTipoLabel = (tipo: Post['tipo']) => {
         case 'rubrica': return 'Rúbrica';
         case 'cotejo': return 'Cotejo';
         case 'secuencia': return 'Planificación';
+        case 'recurso': return 'Recurso';
         default: return 'General';
     }
 };
@@ -25,6 +29,7 @@ const getTagStyles = (tipo: Post['tipo']) => {
         case 'rubrica': return 'bg-red-100/80 text-red-800 border-red-400 font-black shadow-sm';
         case 'cotejo': return 'bg-amber-100/80 text-amber-800 border-amber-400 font-black shadow-sm';
         case 'secuencia': return 'bg-primary/30 text-[#475438] border-primary font-black shadow-sm';
+        case 'recurso': return 'bg-blue-100/80 text-blue-800 border-blue-400 font-black shadow-sm';
         default: return 'bg-[#EAE4DA] text-[#2E3330] border-[#2E3330]/20 font-black shadow-sm';
     }
 };
@@ -40,8 +45,28 @@ const getRemainingDays = (expiresAt?: string) => {
 export default function ComunidadFeed({ 
     posts, 
     onViewProfile, setUiState,
-    onDeletePost, currentUserId
+    onDeletePost, currentUserId,
+    loadMorePosts, hasMore, isLoading
 }: Props) {
+    const observerTarget = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            entries => {
+                if (entries[0].isIntersecting && hasMore && !isLoading && loadMorePosts) {
+                    loadMorePosts();
+                }
+            },
+            { threshold: 0.1, rootMargin: '100px' }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasMore, isLoading, loadMorePosts]);
+
     return (
         <div className="space-y-6">
 
@@ -69,6 +94,19 @@ export default function ComunidadFeed({
                     </div>
                 )}
             </section>
+            
+            {hasMore && posts.length > 0 && (
+                <div ref={observerTarget} className="py-8 text-center text-slate-400 font-bold uppercase tracking-widest text-xs flex justify-center items-center gap-2">
+                    {isLoading ? (
+                        <>
+                           <div className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-slate-600 animate-spin"></div>
+                           Cargando más publicaciones...
+                        </>
+                    ) : (
+                        <span className="opacity-0">Desplaza para cargar</span>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

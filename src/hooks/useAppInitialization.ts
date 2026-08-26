@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 import { usePresence } from './usePresence';
@@ -13,24 +12,19 @@ interface Params {
 }
 
 export function useAppInitialization({ state, session }: Params) {
-    const { pathname } = useLocation();
-    const currentModule = pathname.substring(1) || 'inicio';
-
-
     useEffect(() => {
         if (session?.user?.id) {
-            const updatePresence = async () => {
+            const updateLastSeen = async () => {
                 await supabase.from('perfiles').upsert({
                     user_id: session.user.id,
                     last_seen: new Date().toISOString(),
-                    current_module: currentModule
                 });
             };
-            updatePresence();
-            const interval = setInterval(updatePresence, 60000);
+            updateLastSeen();
+            const interval = setInterval(updateLastSeen, 60000);
             return () => clearInterval(interval);
         }
-    }, [session, currentModule]);
+    }, [session]);
 
     const DOCENTE = useMemo(() => 
         state.nombreDocente || session?.user?.email?.split('@')[0] || DOCENTE_DEFAULT, 
@@ -51,12 +45,11 @@ export function useAppInitialization({ state, session }: Params) {
         onlineSince,
     }), [currentUserProfile?.nombreDocente, DOCENTE, state.perfilAvatarUrl, currentUserProfile?.avatarUrl, state.asignaturas, onlineSince]);
 
-    const { onlineUsers } = usePresence(session?.user?.id, currentModule, presencePayload);
+    const { onlineUsers } = usePresence(session?.user?.id, presencePayload);
 
 
 
     return {
-        currentModule,
         DOCENTE,
         currentUserProfile,
         onlineUsers

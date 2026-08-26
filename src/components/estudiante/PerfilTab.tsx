@@ -14,6 +14,8 @@ interface PerfilTabProps {
     incidenciasEstudiante: any[];
     state: AppState;
     currentAsignatura?: string;
+    isTutor?: boolean;
+    currentUserId?: string;
 }
 
 const PerfilTab: React.FC<PerfilTabProps> = ({
@@ -26,7 +28,9 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
     actividadesPeriodo,
     incidenciasEstudiante,
     state,
-    currentAsignatura
+    currentAsignatura,
+    isTutor = false,
+    currentUserId
 }) => {
     // Helper to get descriptors dynamically based on evaluation type
     const getDescriptorTexts = (studentId: number, actividadId: number): string[] => {
@@ -151,72 +155,288 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
         return [];
     };
 
-    return (
-        <div className="w-full space-y-10 animate-in fade-in duration-300 pb-6 bg-white">
-            <div className="flex items-center justify-between border-b pb-4 border-[rgba(46,51,48,0.08)] bg-white">
-                <div className="flex items-center gap-6">
-                    <div
-                        className="w-14 h-14 rounded-full flex items-center justify-center text-white text-[24px] font-black shadow-inner border-2 border-white"
-                        style={{ backgroundColor: est.avatarColor }}
-                    >
-                        {est.nombre ? est.nombre[0] : '?'}
+    const computedBCs = React.useMemo(() => {
+        if (!est || !curso) {
+            return { BC1: null, BC2: null, BC3: null, BC4: null };
+        }
+
+        const courseActs = state.actividades.filter(a => {
+            const actCurso = state.cursos.find(c => c.id === a.cursoId);
+            const isMatch = (actCurso?.sharedCourseId === est.sharedCourseId || a.cursoId === curso.id) && a.periodo === periodo;
+            const actAsignatura = a.asignatura || actCurso?.asignatura || '';
+            const matchesRole = isTutor || !currentAsignatura || actAsignatura === currentAsignatura;
+            const matchesUser = isTutor || !currentUserId || a.userId === currentUserId || !a.userId;
+            return isMatch && matchesRole && matchesUser;
+        });
+
+        const bcs: ('BC1' | 'BC2' | 'BC3' | 'BC4')[] = ['BC1', 'BC2', 'BC3', 'BC4'];
+        const results: Record<'BC1' | 'BC2' | 'BC3' | 'BC4', number | null> = {
+            BC1: null, BC2: null, BC3: null, BC4: null
+        };
+
+        bcs.forEach(bc => {
+            const actsForBc = courseActs.filter(a => a.bcAsignados?.includes(bc));
+            const scores: number[] = [];
+            
+            actsForBc.forEach(a => {
+                const calif = state.calificaciones.find(
+                    c => c.estudianteId === est.id && c.actividadId === a.id
+                );
+                if (calif && calif.puntaje !== null && calif.puntaje !== undefined) {
+                    scores.push(calif.puntaje);
+                }
+            });
+
+            if (scores.length > 0) {
+                results[bc] = Math.round(scores.reduce((sum, val) => sum + val, 0) / scores.length);
+            }
+        });
+
+        return results;
+    }, [est, curso, periodo, state.actividades, state.calificaciones, isTutor, currentAsignatura, currentUserId]);
+
+    const renderCircularProgress = (score: number | null, bcId: string) => {
+        const size = 76;
+        const strokeWidth = 6;
+        const radius = (size - strokeWidth) / 2;
+        const circumference = radius * 2 * Math.PI;
+        
+        const colorsMap: Record<string, { fill: string, track: string, text: string }> = {
+            'BC1': { fill: '#2D5A85', track: '#EAF2FA', text: '#2D5A85' },
+            'BC2': { fill: '#2C6E49', track: '#EAF5ED', text: '#2C6E49' },
+            'BC3': { fill: '#93541A', track: '#FDF3E7', text: '#93541A' },
+            'BC4': { fill: '#5D4291', track: '#F4EFFF', text: '#5D4291' }
+        };
+        const colors = colorsMap[bcId] || { fill: '#475569', track: '#f1f5f9', text: '#475569' };
+
+        if (score === null) {
+            return (
+                <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+                    <svg width={size} height={size} className="transform -rotate-90">
+                        <circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={radius}
+                            fill="transparent"
+                            stroke="#cbd5e1"
+                            strokeWidth={strokeWidth}
+                            strokeDasharray="4 4"
+                        />
+                    </svg>
+                    <div className="absolute text-sm font-extrabold text-slate-400">
+                        —
                     </div>
-                    <div className="relative">
-                        {parseFloat(promedioPeriodo) < 70 && (
-                            <div className="absolute -top-6 -right-20">
-                                <div className="border-[3px] border-double border-danger px-2 py-1 rounded text-danger font-black text-xs uppercase rotate-[-10deg] opacity-60">Riesgo Académico</div>
+                </div>
+            );
+        }
+
+        const strokeDashoffset = circumference - (score / 100) * circumference;
+
+        return (
+            <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+                <svg width={size} height={size} className="transform -rotate-90">
+                    <circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        fill="transparent"
+                        stroke={colors.track}
+                        strokeWidth={strokeWidth}
+                    />
+                    <circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        fill="transparent"
+                        stroke={colors.fill}
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={circumference}
+                        strokeDashoffset={strokeDashoffset}
+                        strokeLinecap="round"
+                        className="transition-all duration-500 ease-out"
+                    />
+                </svg>
+                <div 
+                    className="absolute text-[13px] font-black text-center"
+                    style={{ color: colors.fill }}
+                >
+                    {score}%
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="w-full relative custom-perfil-page animate-in fade-in duration-300 pb-12">
+            <style dangerouslySetInnerHTML={{ __html: `
+              .custom-perfil-page {
+                --navy: #1c4e8a;
+                --navy-dark: #123761;
+                --grey-bar: #cbd5e1;
+                --grey-bar-fill: #1c4e8a;
+                --text: #2b2f36;
+                --muted: #5b6270;
+              }
+              .custom-perfil-page .deco {
+                stroke: var(--navy);
+                fill: none;
+                opacity: 0.15;
+              }
+              .custom-perfil-page .avatar-circle {
+                background: linear-gradient(135deg, #dce6f2, #b9cbe4);
+              }
+            ` }} />
+            
+            {/* SVG Deco Top Right */}
+            <svg className="absolute -top-7.5 -right-7.5 deco pointer-events-none" width="180" height="130" viewBox="0 0 180 130">
+                <path d="M10,120 C40,60 70,110 90,70 C110,30 140,80 170,20" strokeWidth="2.5" />
+            </svg>
+            {/* SVG Deco Bottom Left */}
+            <svg className="absolute -bottom-10 -left-10 deco pointer-events-none" width="200" height="150" viewBox="0 0 200 150">
+                <path d="M10,20 C50,10 20,60 60,60 C100,60 60,110 100,100 C130,92 150,120 190,130" strokeWidth="2.5" />
+            </svg>
+            <div className="absolute top-2.5 right-55 text-[20px] text-(--navy) opacity-25 pointer-events-none">✦</div>
+            <div className="absolute bottom-15 left-42.5 text-[20px] text-(--navy) opacity-25 pointer-events-none">✦</div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 w-full relative z-10">
+                {/* COLUMN 1: PROFILE */}
+                <div className="lg:col-span-3 space-y-6">
+                    <div>
+                        <h2 className="text-[17px] font-extrabold tracking-widest text-(--navy) uppercase border-b-2 border-(--navy) pb-1.5 mb-4 inline-block">
+                            Perfil
+                        </h2>
+                        
+                        <div className="relative inline-block">
+                            <div className="avatar-circle w-40 h-40 rounded-full border-3 border-(--navy) flex items-center justify-center text-[60px] font-black text-(--navy) shadow-sm">
+                                {est.nombre ? est.nombre[0].toUpperCase() : '?'}
                             </div>
-                        )}
-                        <h1 className="text-[26px] font-black text-[#2E3330] tracking-tight">{est.nombre} {est.apellido}</h1>
-                        <div className="flex gap-4 text-[14px] font-bold text-[#5F665E] uppercase tracking-widest">
-                            <span>{getAsignaturaNombre(currentAsignatura || curso?.asignatura)}</span>
-                            <span>•</span>
-                            <span>Periodo {periodo}</span>
-                            <span>•</span>
-                            <span>ID: {est.id}</span>
+                            {parseFloat(promedioPeriodo) < 70 && (
+                                <div className="absolute top-1 -right-4 border-[3px] border-double border-(--navy) px-2 py-0.5 rounded text-(--navy) font-black text-[10px] uppercase rotate-15">
+                                    Riesgo
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-4">
+                            <h3 className="text-xl font-extrabold tracking-wide text-(--navy-dark) uppercase leading-tight">
+                                {est.nombre} {est.apellido}
+                            </h3>
+                            <p className="text-[13px] font-bold text-(--muted) mt-1">
+                                Estudiante • {getAsignaturaNombre(currentAsignatura || curso?.asignatura)}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t border-slate-200">
+                        <div className="flex items-center gap-3 text-[13.5px]">
+                            <span className="text-base">📘</span>
+                            <span className="font-medium">{curso?.nombre || getAsignaturaNombre(currentAsignatura || curso?.asignatura)}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-[13.5px]">
+                            <span className="text-base">🗓️</span>
+                            <span className="font-medium">Período {periodo}</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 p-4 shadow-sm inline-flex flex-col items-center min-w-44 text-center">
+                        <div className="font-extrabold text-[12px] text-(--navy-dark) tracking-wider">PROMEDIO</div>
+                        <div className="text-3xl font-black text-(--navy) mt-1">{promedioPeriodo}%</div>
+                        <div className="text-[10px] font-bold text-(--muted) tracking-widest mt-1.5 uppercase">RANKING {rankingPeriodo}</div>
+                    </div>
+                    
+                    <div className="pt-4 no-print">
+                        <button 
+                            onClick={() => window.print()} 
+                            className="text-[13px] font-bold text-(--navy) hover:underline uppercase tracking-wider flex items-center gap-1.5"
+                        >
+                            🖨️ Imprimir Registro
+                        </button>
+                    </div>
+                </div>
+
+                {/* COLUMN 2: SUMMARY & COMPETENCIES & ATTRIBUTES */}
+                <div className="lg:col-span-4 space-y-8">
+                    {/* Block: Resumen académico */}
+                    <div className="space-y-4">
+                        <h2 className="text-[17px] font-extrabold tracking-widest text-(--navy) uppercase border-b-2 border-(--navy) pb-1.5 inline-block">
+                            Resumen académico
+                        </h2>
+                        
+                        <div className="space-y-4 pt-2">
+                            <div className="flex items-baseline gap-4">
+                                <span className="w-16 font-extrabold text-(--navy) text-[15px]">{promedioPeriodo}%</span>
+                                <div>
+                                    <div className="font-bold text-[14px]">Promedio general</div>
+                                    <div className="text-xs text-(--muted)">Periodo {periodo}</div>
+                                </div>
+                            </div>
+                            <div className="flex items-baseline gap-4">
+                                <span className="w-16 font-extrabold text-(--navy) text-[15px]">{rankingPeriodo}</span>
+                                <div>
+                                    <div className="font-bold text-[14px]">Ranking del curso</div>
+                                    <div className="text-xs text-(--muted)">Sobre el total de estudiantes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Block: Competencias */}
+                    <div className="space-y-4">
+                        <h2 className="text-[17px] font-extrabold tracking-widest text-(--navy) uppercase border-b-2 border-(--navy) pb-1.5 inline-block">
+                            Competencias evaluadas
+                        </h2>
+
+                        <div className="grid grid-cols-2 gap-y-6 gap-x-4 pt-4 justify-items-center">
+                            {[
+                                { id: 'BC1', label: 'BC1 — Comunicativa', score: computedBCs.BC1 },
+                                { id: 'BC2', label: 'BC2 — Científica y Tecnológica', score: computedBCs.BC2 },
+                                { id: 'BC3', label: 'BC3 — Desarrollo Personal y Social', score: computedBCs.BC3 },
+                                { id: 'BC4', label: 'BC4 — Pensamiento Lógico, Creativo y Crítico', score: computedBCs.BC4 }
+                            ].map((comp) => (
+                                <div key={comp.id} className="flex flex-col items-center text-center space-y-3.5 max-w-32.5">
+                                    {renderCircularProgress(comp.score, comp.id)}
+                                    <span className="text-[10px] font-extrabold text-(--text) leading-tight uppercase tracking-wider">
+                                        {comp.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Block: Atributos */}
+                    <div className="space-y-4">
+                        <h2 className="text-[17px] font-extrabold tracking-widest text-(--navy) uppercase border-b-2 border-(--navy) pb-1.5 inline-block">
+                            Atributos
+                        </h2>
+
+                        <div className="flex flex-wrap gap-2 pt-2">
+                            {studentHabilidades.length > 0 ? (
+                                studentHabilidades.slice(0, 10).map((hab, i) => (
+                                    <span 
+                                        key={i} 
+                                        className="text-[12px] font-semibold text-(--navy) border border-(--navy) rounded-full px-3 py-1 bg-white shadow-sm"
+                                    >
+                                        {hab.text}
+                                    </span>
+                                ))
+                            ) : (
+                                <span className="text-[12px] font-semibold text-(--navy) border border-(--navy) rounded-full px-3 py-1 bg-white shadow-sm">
+                                    Sin atributos registrados
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
-                <div className="text-right no-print">
-                    <p className="text-[13px] font-black text-[#5F665E]/40 uppercase tracking-[0.2em]">Expediente Digital</p>
-                    <button onClick={() => window.print()} className="text-[14px] font-bold text-primary hover:underline mt-1 uppercase">Imprimir Registro</button>
-                </div>
-            </div>
 
-            <div className="grid grid-cols-12 gap-4 items-center bg-white p-4 rounded-[16px] border border-[rgba(46,51,48,0.04)] min-h-22.5">
-                <div className="col-span-3 border-r border-[rgba(46,51,48,0.08)] pr-4 flex items-center gap-6 bg-white">
-                    <div>
-                        <p className="text-[12px] font-black text-[#5F665E] uppercase mb-1">Promedio</p>
-                        <p className="text-2xl font-black text-primary">{promedioPeriodo}%</p>
-                    </div>
-                    <div>
-                        <p className="text-[12px] font-black text-[#5F665E] uppercase mb-1">Ranking</p>
-                        <p className="text-[24px] font-black text-[#2E3330]">{rankingPeriodo}</p>
-                    </div>
-                </div>
-                <div className="col-span-9 flex flex-wrap items-center gap-2">
-                    <p className="text-[12px] font-black text-[#5F665E] uppercase mr-4">Atributos:</p>
-                    {studentHabilidades.length > 0 ? studentHabilidades.slice(0, 8).map((hab, i) => (
-                        <span key={i} className="text-[13px] font-bold text-[#2E3330] px-2 py-1 bg-white border border-[rgba(46,51,48,0.08)] rounded-md shadow-sm">
-                            {hab.text}
-                        </span>
-                    )) : <span className="text-[13px] italic text-[#5F665E]/60">Sin atributos registrados</span>}
-                </div>
-            </div>
+                {/* COLUMN 3: EVIDENCIAS & BITACORA */}
+                <div className="lg:col-span-5 space-y-8">
+                    {/* Block: Evidencias */}
+                    <div className="space-y-4">
+                        <h2 className="text-[17px] font-extrabold tracking-widest text-(--navy) uppercase border-b-2 border-(--navy) pb-1.5 inline-block">
+                            Evidencias de aprendizaje
+                        </h2>
 
-            <section className="space-y-6 bg-white p-0 mt-6">
-                <h3 className="text-[13px] font-black uppercase tracking-[0.3em] text-[#5F665E] text-center bg-white">Evidencias de Aprendizaje</h3>
-                <div className="overflow-x-auto rounded-[16px] border border-[rgba(46,51,48,0.08)] bg-white shadow-sm">
-                    <table className="w-full border-collapse text-left text-sm text-[#2E3330] bg-white">
-                        <thead className="bg-white text-xs font-black uppercase tracking-wider text-[#2E3330] border-b border-[rgba(46,51,48,0.08)]">
-                            <tr>
-                                <th scope="col" className="px-6 py-4">Actividad</th>
-                                <th scope="col" className="px-6 py-4">Competencia Evaluada</th>
-                                <th scope="col" className="px-6 py-4 text-center">Calificación</th>
-                                <th scope="col" className="px-6 py-4 w-1/2">Indicador de Logro</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[rgba(46,51,48,0.04)]">
+                        <div className="space-y-6 pt-2 max-h-140 overflow-y-auto pr-1 no-scrollbar">
                             {actividadesPeriodo.length > 0 ? (
                                 actividadesPeriodo.map((act) => {
                                     const calif = state.calificaciones.find(
@@ -225,123 +445,80 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                     const isEvaluated = calif && calif.puntaje !== null && calif.puntaje !== undefined;
                                     const score = isEvaluated ? calif.puntaje : null;
                                     const descriptors = getDescriptorTexts(est.id, act.id);
+                                    
+                                    // Parse date format
+                                    const rawDate = act.fecha || '';
+                                    const formattedDate = rawDate.replace(/-/g, '/');
 
                                     return (
-                                        <tr key={act.id} className="bg-white border-b border-[rgba(46,51,48,0.04)]">
-                                            <td className="px-6 py-4">
-                                                <div className="font-bold text-[#2E3330] text-[14px]">{act.nombre}</div>
-                                                <div className="text-xs font-black text-[#5F665E] uppercase mt-0.5">{act.fecha}</div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {(act.bcAsignados || ['BC1']).map((bc: string) => {
-                                                        const colors: Record<string, string> = {
-                                                            'BC1': 'bg-[#EAF2FA] text-[#2D5A85] border-[#C9DFF2]',
-                                                            'BC2': 'bg-[#EAF5ED] text-[#2C6E49] border-[#C3E8CC]',
-                                                            'BC3': 'bg-[#FDF3E7] text-[#93541A] border-[#F7DEBE]',
-                                                            'BC4': 'bg-[#F4EFFF] text-[#5D4291] border-[#DFD3F8]',
-                                                        };
-                                                        const styleClasses = colors[bc] || 'bg-slate-50 text-slate-700 border-slate-200';
-                                                        return (
-                                                            <span 
-                                                                key={bc} 
-                                                                className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[11px] font-bold tracking-wide border ${styleClasses} leading-snug shadow-sm`}
-                                                                title={bc}
-                                                            >
-                                                                {getCompetenciaDisplay(bc)}
-                                                            </span>
-                                                        );
-                                                    })}
+                                        <div key={act.id} className="flex gap-4 items-start border-b border-slate-100 pb-4 last:border-0 last:pb-0">
+                                            <div className="w-16 font-extrabold text-(--navy) text-[12px] leading-tight shrink-0 pt-0.5">
+                                                {formattedDate}
+                                            </div>
+                                            <div className="flex-1 space-y-1.5">
+                                                <div className="font-bold text-[14.5px] text-(--text) leading-snug">
+                                                    {act.nombre}{' '}
+                                                    <span className="text-(--navy) font-extrabold">
+                                                        — {isEvaluated ? `${score}%` : 'Pendiente'}
+                                                    </span>
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                {isEvaluated ? (
-                                                    <span className={`inline-flex items-center justify-center font-black text-[14px] px-2.5 py-1 rounded-lg ${
-                                                        score! >= 90 
-                                                            ? 'bg-white text-primary border border-primary/20' 
-                                                            : score! >= 70 
-                                                            ? 'bg-white text-attention border border-attention/20' 
-                                                            : 'bg-white text-danger border border-danger/20'
-                                                    }`}>
-                                                        {score}%
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[#5F665E]/40 font-bold text-[13px]">-</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-[#5F665E] whitespace-normal wrap-break-word leading-relaxed text-[13px] font-medium">
-                                                {isEvaluated && descriptors.length > 0 ? (
-                                                    <div className="space-y-1">
-                                                         {descriptors.map((desc, idx) => {
-                                                             const isHeader = desc === 'Cumple:' || desc === 'No cumple:';
-                                                             if (isHeader) {
-                                                                 return <div key={idx} className="font-bold text-[#2E3330] pt-1.5 first:pt-0">{desc}</div>;
-                                                             }
-
-                                                             const evalDetalle = state.cursoDetalle.find(
-                                                                 cd => cd.estudianteId === est.id && cd.actividadId === act.id
-                                                             );
-                                                             const hasRubrica = !!(evalDetalle?.rubricaData && Object.keys(evalDetalle.rubricaData).length > 0);
-                                                             const hasCotejo = !!(evalDetalle?.cotejoData && Object.keys(evalDetalle.cotejoData).length > 0);
-                                                             const isManual = !hasRubrica && !hasCotejo && score !== null && [100, 85, 70, 55].includes(score);
-
-                                                             if (isManual && idx === 0) {
-                                                                 return <div key={idx} className="pl-3 font-bold text-[#2E3330]">{desc}</div>;
-                                                             }
-
-                                                             return (
-                                                                 <div key={idx} className="pl-3">{desc}</div>
-                                                             );
-                                                         })}
-                                                    </div>
-                                                ) : isEvaluated ? (
-                                                    <span className="text-[#5F665E]/60 italic">Sin descriptores registrados</span>
-                                                ) : (
-                                                    <span className="text-attention font-semibold italic bg-white px-2 py-0.5 rounded border border-attention/20 text-[12px]">
-                                                        Pendiente de evaluación
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
+                                                <div className="text-[12px] text-(--muted) font-medium leading-relaxed italic">
+                                                    {(act.bcAsignados || ['BC1']).map((bc: string) => getCompetenciaDisplay(bc)).join(' | ')}
+                                                </div>
+                                                <div className="text-[12px] text-(--text) leading-relaxed space-y-1">
+                                                    {isEvaluated && descriptors.length > 0 ? (
+                                                        descriptors.map((desc, idx) => (
+                                                            <div key={idx}>{desc}</div>
+                                                        ))
+                                                    ) : isEvaluated ? (
+                                                        <span className="text-(--muted) italic">Sin descriptores registrados</span>
+                                                    ) : (
+                                                        <span className="text-amber-600 font-semibold italic">Pendiente de evaluación</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
                                     );
                                 })
                             ) : (
-                                <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-[#5F665E] text-[13px] font-bold uppercase tracking-wider bg-white">
-                                        Sin actividades registradas en este periodo
-                                    </td>
-                                </tr>
+                                <p className="text-[12.5px] text-(--muted) italic">
+                                    Sin actividades registradas en este periodo
+                                </p>
                             )}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+                        </div>
+                    </div>
 
-            <div className="grid grid-cols-12 gap-8 pt-6 border-t border-[rgba(46,51,48,0.08)]">
-                <div className="col-span-6 space-y-4 min-h-65">
-                    <h3 className="text-[13px] font-black uppercase tracking-widest text-[#5F665E]">Bitácora de Convivencia</h3>
-                    <div className="space-y-2.5 pr-1 max-h-55 overflow-y-auto no-scrollbar">
-                        {incidenciasEstudiante.length > 0 ? incidenciasEstudiante.map((inc, i) => (
-                            <div key={i} className="bg-white p-3.5 rounded-[12px] border border-[rgba(46,51,48,0.04)] flex gap-4 items-start">
-                                <div className="text-center min-w-15">
-                                    <p className="text-xs font-black text-[#5F665E] uppercase">{inc.fecha}</p>
-                                    <span className="text-[12px] font-black text-attention uppercase">{inc.categoria}</span>
-                                </div>
-                                <div className="flex-1 border-l border-[rgba(46,51,48,0.08)] pl-4">
-                                    <p className="text-[13px] text-[#2E3330] leading-tight font-medium italic">"{inc.descripcion}"</p>
-                                </div>
-                            </div>
-                        )) : (
-                            <p className="text-[14px] text-[#5F665E]/60 italic py-4">No existen registros de convivencia para este periodo.</p>
-                        )}
+                    {/* Block: Bitácora de Convivencia */}
+                    <div className="space-y-4">
+                        <h2 className="text-[17px] font-extrabold tracking-widest text-(--navy) uppercase border-b-2 border-(--navy) pb-1.5 inline-block">
+                            Bitácora de Convivencia
+                        </h2>
+
+                        <div className="space-y-3 pt-2 max-h-60 overflow-y-auto pr-1 no-scrollbar">
+                            {incidenciasEstudiante.length > 0 ? (
+                                incidenciasEstudiante.map((inc, i) => (
+                                    <div key={i} className="flex gap-4 items-start pb-3 border-b border-slate-50 last:border-0 last:pb-0">
+                                        <div className="w-16 font-extrabold text-(--navy) text-[12px] leading-tight shrink-0">
+                                            {inc.fecha}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="text-xs font-black text-amber-600 uppercase tracking-widest mb-0.5">
+                                                {inc.categoria}
+                                            </div>
+                                            <p className="text-[13px] text-(--text) italic leading-snug">
+                                                "{inc.descripcion}"
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-[13px] text-(--muted) italic">
+                                    No existen registros de convivencia para este periodo.
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div className="pt-4 border-t border-[rgba(46,51,48,0.04)] flex justify-between items-center opacity-40 select-none bg-white">
-                <p className="text-[12px] font-black uppercase text-[#5F665E] tracking-[0.3em] bg-white">Registro Oficial Noether Academia v3.2</p>
-                <div className="w-20 h-0.5 bg-[rgba(46,51,48,0.08)]"></div>
-                <p className="text-[12px] font-black uppercase text-[#5F665E] tracking-[0.3em]">Validación: {new Date().toLocaleDateString()}</p>
             </div>
         </div>
     );

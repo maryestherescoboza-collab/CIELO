@@ -11,6 +11,8 @@ import { BC_ICONS, BC_COLOR_THEMES } from '../constants/competencias';
 import { getGradeClass } from '../utils/academic';
 import { getAsignaturaNombre } from '../constants/asignaturas';
 
+import { useSupabaseData } from '../hooks/useSupabaseData';
+
 interface Props {
     currentCourseRole?: CursoDocente;
     cursoId?: number;
@@ -33,6 +35,13 @@ export default function CursoDetalle(props: Props) {
     
     const store = useAppStore();
     const state = store.state;
+    const { loadCursoData } = useSupabaseData(true);
+
+    useEffect(() => {
+        if (cursoId) {
+            loadCursoData(cursoId);
+        }
+    }, [cursoId, loadCursoData]);
 
     const currentUserId = props.currentUserId || store.session?.user?.id || '';
     const currentCourseRole = props.currentCourseRole || state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoId && cd.userId === currentUserId);

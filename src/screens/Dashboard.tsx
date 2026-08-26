@@ -10,6 +10,43 @@ import { TC_Flux } from '../components/icons/TerraCognitaIcons';
 import { CieloPill } from '../components/ui/CieloPill';
 import { CieloPopover } from '../components/ui/CieloPopover';
 import { computeStudentGrades } from '../utils/boletines';
+import { useGoogleDrive } from '../hooks/useGoogleDrive';
+import { buildOriginalUrl } from '../lib/googleDrive';
+
+function ThumbnailImage({
+  driveFileId,
+  imagenUrl,
+  fetchDriveThumbnail,
+  onClick,
+}: {
+  driveFileId?: string;
+  imagenUrl: string;
+  fetchDriveThumbnail: (fileId: string) => Promise<string | null>;
+  onClick: () => void;
+}) {
+  const [src, setSrc] = useState(imagenUrl);
+  const fetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (!driveFileId || fetchedRef.current) return;
+    fetchedRef.current = true;
+    let revoked = false;
+    fetchDriveThumbnail(driveFileId).then(blobUrl => {
+      if (blobUrl && !revoked) setSrc(blobUrl);
+    });
+    return () => { revoked = true; };
+  }, [driveFileId, fetchDriveThumbnail, imagenUrl]);
+
+  return (
+    <img
+      src={src}
+      alt="Thumbnail"
+      loading="lazy"
+      className="w-14 h-14 object-cover rounded-lg border border-(--border-soft) hover:scale-105 transition-transform cursor-pointer"
+      onClick={onClick}
+    />
+  );
+}
 
 interface EnhancedStudent extends Estudiante {
   computedAvg: number | null;
@@ -25,6 +62,7 @@ interface Props {
 export default function Dashboard({ docenteNombre }: Props) {
   const { state, session, setState } = useAppStore(useShallow(s => ({ state: s.state, session: s.session, setState: s.setAppState })));
   const navigate = useNavigate();
+  const drive = useGoogleDrive();
   const [selectedCursoId, setSelectedCursoId] = useState<string>(
     state.cursos.length > 0 ? String(state.cursos[0].id) : 'all'
   );
@@ -39,6 +77,7 @@ export default function Dashboard({ docenteNombre }: Props) {
   const [optimizationProgress, setOptimizationProgress] = useState('');
   const [imageWarning, setImageWarning] = useState('');
   const [visibleCount, setVisibleCount] = useState(5);
+  const [driveUploadError, setDriveUploadError] = useState('');
   const courseSelectRef = useRef<HTMLDivElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,10 +157,16 @@ export default function Dashboard({ docenteNombre }: Props) {
 
   const handleSaveRecord = async () => {
     if (!session?.user?.id || !selectedCursoId || selectedCursoId === 'all') return;
-    
+
+    if (selectedFiles.length > 0 && !drive.isConnected) {
+      setDriveUploadError('Debes conectar Google Drive para subir fotografías. Haz clic en "Conectar Google Drive" arriba.');
+      return;
+    }
+
     setIsSaving(true);
+    setDriveUploadError('');
     setOptimizationProgress('Optimizando imágenes...');
- 
+
     try {
       const { data: recData, error: recError } = await supabase
         .from('registros_anecdoticos')
@@ -142,34 +187,24 @@ export default function Dashboard({ docenteNombre }: Props) {
       }
 
       const newRecordId = recData[0].id;
-      setOptimizationProgress('Subiendo imágenes...');
 
-      const uploadPromises = selectedFiles.map(async (file) => {
-        const { blob, ext } = await compressImage(file);
-        const fileName = `${session.user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
-        const contentType = ext === 'webp' ? 'image/webp' : 'image/jpeg';
-        
-        const { error: uploadError } = await supabase.storage
-          .from('registros')
-          .upload(fileName, blob, { contentType });
+      if (selectedFiles.length > 0) {
+        setOptimizationProgress('Subiendo a Google Drive...');
+        const folderId = await drive.ensureCIELOFolder();
 
-        if (uploadError) {
-          console.error('Error uploading file:', uploadError);
-          return null;
-        }
-
-        const { data: urlData } = supabase.storage.from('registros').getPublicUrl(fileName);
-        const publicUrl = urlData?.publicUrl;
-
-        if (publicUrl) {
+        for (const file of selectedFiles) {
+          const { blob, ext } = await compressImage(file);
+          const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
+          const { fileId, thumbnailLink } = await drive.uploadImage(blob, fileName, folderId);
           await supabase.from('registro_imagenes').insert({
             registro_id: newRecordId,
-            imagen_url: publicUrl
+            imagen_url: buildOriginalUrl('', fileId),
+            drive_file_id: fileId,
+            drive_thumbnail_url: thumbnailLink || '',
+            storage_provider: 'google_drive'
           });
         }
-      });
-
-      await Promise.all(uploadPromises);
+      }
 
       setIsNewRecordOpen(false);
       setRecordTitle('');
@@ -177,8 +212,9 @@ export default function Dashboard({ docenteNombre }: Props) {
       setSelectedFiles([]);
       setImagePreviews([]);
       setImageWarning('');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving record flow:', err);
+      setDriveUploadError(`Error al subir: ${err.message || 'Error desconocido'}. Puede reintentar.`);
     } finally {
       setIsSaving(false);
       setOptimizationProgress('');
@@ -656,34 +692,72 @@ export default function Dashboard({ docenteNombre }: Props) {
 
       {/* ═══ REGISTRO DEL CURSO SIDEBAR ═══ */}
       <div className="w-90 border-l border-(--border-soft) bg-white h-full hidden lg:flex flex-col shrink-0 shadow-sm">
-        <div className="p-5 border-b border-(--border-soft) flex items-center justify-between">
-          <h3 className="text-xs font-black text-(--ink) uppercase tracking-widest">
-            Registro Anecdótico
-          </h3>
-          {selectedCursoId !== 'all' && (
-            <div className="flex flex-col items-end gap-1">
-              <CieloPill
-                as="button"
-                variant={courseRecords.length >= 5 ? 'disabled' : 'primary'}
-                onClick={() => {
-                  setRecordDate(new Date().toISOString().split('T')[0]);
-                  setRecordTitle('');
-                  setRecordDesc('');
-                  setSelectedFiles([]);
-                  setImagePreviews([]);
-                  setImageWarning('');
-                  setIsNewRecordOpen(true);
-                }}
-                disabled={courseRecords.length >= 5}
-                className="px-3 py-1.5 font-bold tracking-wider"
+        <div className="p-5 border-b border-(--border-soft)">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-black text-(--ink) uppercase tracking-widest">
+              Registro Anecdótico
+            </h3>
+            {selectedCursoId !== 'all' && (
+              <div className="flex flex-col items-end gap-1">
+                <CieloPill
+                  as="button"
+                  variant={courseRecords.length >= 5 ? 'disabled' : 'primary'}
+                  onClick={() => {
+                    setRecordDate(new Date().toISOString().split('T')[0]);
+                    setRecordTitle('');
+                    setRecordDesc('');
+                    setSelectedFiles([]);
+                    setImagePreviews([]);
+                    setImageWarning('');
+                    setDriveUploadError('');
+                    setIsNewRecordOpen(true);
+                  }}
+                  disabled={courseRecords.length >= 5}
+                  className="px-3 py-1.5 font-bold tracking-wider"
+                >
+                  + Nuevo Registro
+                </CieloPill>
+                {courseRecords.length >= 5 && (
+                  <span className="text-xs text-red-500 font-bold uppercase tracking-wider text-right">Límite alcanzado (Máx 5)</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Google Drive Connection */}
+          <div className="mt-3 flex items-center gap-2">
+            {drive.isConnected ? (
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Drive conectado
+                <span className="text-emerald-600 font-medium normal-case tracking-normal ml-0.5">{drive.email}</span>
+                <button
+                  onClick={drive.disconnect}
+                  className="ml-1 text-emerald-500 hover:text-red-500 transition-colors cursor-pointer font-bold"
+                  title="Desconectar Google Drive"
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={drive.connect}
+                disabled={drive.isConnecting}
+                className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200 hover:bg-slate-200 transition-all cursor-pointer disabled:opacity-50"
               >
-                + Nuevo Registro
-              </CieloPill>
-              {courseRecords.length >= 5 && (
-                <span className="text-xs text-red-500 font-bold uppercase tracking-wider text-right">Límite alcanzado (Máx 5)</span>
-              )}
-            </div>
-          )}
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                {drive.isConnecting ? 'Conectando...' : 'Conectar Google Drive'}
+              </button>
+            )}
+            {drive.error && (
+              <span className="text-[9px] text-red-500 font-bold">{drive.error}</span>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 scrollbar-hide flex flex-col gap-4">
@@ -723,14 +797,13 @@ export default function Dashboard({ docenteNombre }: Props) {
                       {images.length > 0 && (
                         <div className="flex gap-1.5 overflow-x-auto py-1 scrollbar-hide">
                           {images.map(img => (
-                            <img
+                            <ThumbnailImage
                               key={img.id}
-                              src={img.imagenUrl}
-                              alt="Thumbnail"
-                              loading="lazy"
-                              className="w-14 h-14 object-cover rounded-lg border border-(--border-soft) hover:scale-105 transition-transform cursor-pointer"
+                              driveFileId={img.driveFileId}
+                              imagenUrl={img.imagenUrl}
+                              fetchDriveThumbnail={drive.fetchDriveThumbnail}
                               onClick={() => {
-                                window.open(img.imagenUrl, '_blank');
+                                window.open(buildOriginalUrl(img.imagenUrl, img.driveFileId), '_blank');
                               }}
                             />
                           ))}
@@ -773,6 +846,13 @@ export default function Dashboard({ docenteNombre }: Props) {
               </div>
             )}
 
+            {driveUploadError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">Error de subida</p>
+                <p className="text-xs text-red-600">{driveUploadError}</p>
+              </div>
+            )}
+
             <div className="flex flex-col gap-3.5">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-(--ink-soft) mb-1">Fecha</label>
@@ -811,6 +891,15 @@ export default function Dashboard({ docenteNombre }: Props) {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-(--ink-soft) mb-1">Imágenes (Máx 2)</label>
+                {drive.isConnected ? (
+                  <p className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg mb-1.5 border border-emerald-200">
+                    Las imágenes se guardarán en tu Google Drive (carpeta CIELO/Registro anecdótico)
+                  </p>
+                ) : (
+                  <p className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg mb-1.5 border border-amber-200">
+                    Conecta Google Drive arriba para poder adjuntar fotografías
+                  </p>
+                )}
                 <div className="flex items-center gap-2">
                   <label className={`h-10 px-4 flex items-center justify-center border rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                     selectedFiles.length >= 2 || isSaving

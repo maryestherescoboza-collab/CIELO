@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Building2, AlertTriangle, LogOut } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { useCentroActions } from '../hooks/useCentroActions';
+import { useSupabaseData } from '../hooks/useSupabaseData';
 import logo from '../assets/logo.png';
 import type { Centro } from '../types';
 
@@ -53,6 +54,13 @@ export default function CentroPanel({ onLogout }: Props) {
         });
         return () => { activo = false; };
     }, [centroId, loadCentro, intentoCentro]);
+
+    const { loadDashboardData } = useSupabaseData(true);
+    useEffect(() => {
+        if (centroId) {
+            loadDashboardData();
+        }
+    }, [centroId, loadDashboardData]);
 
     const onCentroActualizado = useCallback((nuevoCentro: Centro) => {
         setCentroActual(nuevoCentro);
@@ -126,8 +134,9 @@ export default function CentroPanel({ onLogout }: Props) {
                     </div>
                     <div className="h-8 w-px bg-(--border-soft) hidden sm:block" />
                     <div>
-                        <h1 className="text-[13px] font-black tracking-[0.15em] text-(--ink) uppercase leading-tight">
-                            CIELO · {centro.nombre}
+                        <h1 className="text-[13px] font-black tracking-[0.15em] text-(--ink) uppercase leading-tight flex flex-wrap items-center gap-1.5">
+                            <span>CIELO · {centro.nombre}</span>
+                            <span className="text-[9px] font-bold text-slate-500 bg-white border border-slate-200/50 px-1.5 py-0.5 rounded-full select-none capitalize tracking-normal leading-none shrink-0">Beta</span>
                         </h1>
                         <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] font-bold text-(--ink-soft) uppercase tracking-[0.15em] mt-1">
                             <span>ID: {centro.id}</span>

@@ -45,7 +45,7 @@ export function LandingHero() {
             <div className="inline-flex items-center gap-2 bg-[#EAE4DA]/50 px-5 py-2.5 rounded-full border border-black/5 shadow-sm backdrop-blur-md">
               <span className="w-2 h-2 rounded-full bg-[#EB8847] animate-pulse" />
               <span className="text-xs font-bold text-[#5F665E] uppercase tracking-widest">
-                Si algo merece hacerse, merece hacerse bien
+                Acceso prioritario para evaluar en fase beta
               </span>
             </div>
           </motion.div>

@@ -52,10 +52,25 @@ const PostCard = ({
             </div>
         </div>
 
-        <div className="flex-1 mb-4 border-l-2 border-(--border-soft) pl-3">
+        <div className="flex-1 mb-4 border-l-2 border-(--border-soft) pl-3 flex flex-col justify-between">
             <h3 className="text-[14px] font-bold text-(--ink) leading-snug line-clamp-4">
                 {post.contenido}
             </h3>
+            {post.tipo === 'recurso' && post.recursoDatos?.recursoCompartido && (
+                <div className="mt-3 p-3 rounded-lg border border-(--border-soft) bg-(--background) flex flex-col gap-1 text-left">
+                    <span className="text-[10px] font-black uppercase text-(--ink-soft) tracking-widest leading-none">
+                        Recurso: {post.recursoDatos.recursoCompartido.categoria || 'Otro'}
+                    </span>
+                    <span className="text-xs font-bold text-(--ink) truncate">
+                        {post.recursoDatos.recursoCompartido.titulo || 'Sin título'}
+                    </span>
+                    {post.recursoDatos.recursoCompartido.descripcion && (
+                        <span className="text-[11px] text-(--ink-soft) line-clamp-2 mt-0.5 font-medium leading-tight">
+                            {post.recursoDatos.recursoCompartido.descripcion}
+                        </span>
+                    )}
+                </div>
+            )}
         </div>
 
         <div className="flex items-center justify-between pt-3 border-t border-(--border-soft) mt-auto">
@@ -72,21 +87,39 @@ const PostCard = ({
             </div>
             
             <div className="flex items-center gap-1.5">
-                <button
-                    onClick={() => onPreview(post)}
-                    className="h-8 px-3 rounded-lg bg-(--primary) border border-transparent flex items-center gap-1.5 text-white hover:opacity-90 active:scale-95 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--primary) cursor-pointer"
-                    title="Ver detalle"
-                >
-                    <Eye size={13} />
-                    <span className="text-xs font-black uppercase tracking-wider hidden sm:block">Ver</span>
-                </button>
-                <button
-                    onClick={() => onImport?.(post)}
-                    className="h-8 w-8 rounded-lg bg-(--linen)/20 border border-(--border-soft) flex items-center justify-center text-(--ink) hover:bg-(--primary) hover:text-white transition-all shadow-sm outline-none cursor-pointer"
-                    title="Añadir"
-                >
-                    <Plus size={14} />
-                </button>
+                {post.tipo !== 'recurso' ? (
+                    <>
+                        <button
+                            onClick={() => onPreview(post)}
+                            className="h-8 px-3 rounded-lg bg-(--primary) border border-transparent flex items-center gap-1.5 text-white hover:opacity-90 active:scale-95 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--primary) cursor-pointer"
+                            title="Ver detalle"
+                        >
+                            <Eye size={13} />
+                            <span className="text-xs font-black uppercase tracking-wider hidden sm:block">Ver</span>
+                        </button>
+                        <button
+                            onClick={() => onImport?.(post)}
+                            className="h-8 w-8 rounded-lg bg-(--linen)/20 border border-(--border-soft) flex items-center justify-center text-(--ink) hover:bg-(--primary) hover:text-white transition-all shadow-sm outline-none cursor-pointer"
+                            title="Añadir"
+                        >
+                            <Plus size={14} />
+                        </button>
+                    </>
+                ) : (
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (post.recursoDatos?.recursoCompartido?.url) {
+                                window.open(post.recursoDatos.recursoCompartido.url, '_blank', 'noopener,noreferrer');
+                            }
+                        }}
+                        className="h-8 px-3 rounded-lg bg-(--primary) border border-transparent flex items-center gap-1.5 text-white hover:opacity-90 active:scale-95 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--primary) cursor-pointer"
+                        title="Abrir enlace"
+                    >
+                        <span className="text-xs font-black uppercase tracking-wider">Abrir Enlace</span>
+                    </button>
+                )}
             </div>
         </div>
     </div>

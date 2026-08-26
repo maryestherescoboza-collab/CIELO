@@ -27,7 +27,7 @@ export default function Comunidad({
     onDeletePost
 }: Props) {
     const { state: globalState, session } = useAppStore();
-    const { posts: newPosts, error: newError, topColaboradores: newColabs } = useCommunityData();
+    const { posts: newPosts, error: newError, topColaboradores: newColabs, loadMorePosts, hasMore, loading } = useCommunityData();
 
     // Fallback: use globalState only if new hook encounters an error
     const activePosts = newError ? globalState.posts : newPosts;
@@ -104,6 +104,9 @@ export default function Comunidad({
                                 setUiState={setUiState}
                                 onDeletePost={handleDeleteConfirm}
                                 currentUserId={session?.user?.id}
+                                loadMorePosts={loadMorePosts}
+                                hasMore={hasMore}
+                                isLoading={loading}
                             />
                         </div>
                     </div>

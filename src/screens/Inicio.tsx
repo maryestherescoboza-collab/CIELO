@@ -14,6 +14,8 @@ import { UpcomingActivities } from '../components/dashboard/UpcomingActivities';
 import { NewActivityModal } from '../components/dashboard/NewActivityModal';
 import { useDashboardData } from '../hooks/useDashboardData';
 
+import { useSupabaseData } from '../hooks/useSupabaseData';
+
 interface Props {
     onAddActividad: (a: Omit<Actividad, 'id'>) => Promise<any>;
     docenteNombre: string;
@@ -24,6 +26,7 @@ interface Props {
 export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstituto, currentCourseRole }: Props) {
     const state = useAppStore(s => s.state);
     const session = useAppStore(s => s.session);
+    const { loadDashboardData } = useSupabaseData(true);
     const [selectedCourseId, setSelectedCourseId] = useState<number | 'all'>('all');
     const [showModal, setShowModal] = useState(false);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -33,6 +36,10 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
     const [isLoading, setIsLoading] = useState(true);
     const [isSelectOpen, setIsSelectOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        loadDashboardData();
+    }, [loadDashboardData]);
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 700);

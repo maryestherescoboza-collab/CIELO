@@ -39,6 +39,7 @@ export const MOCK_STATE: AppState = {
     secuencias: [],
     incidencias: [],
     eventos: [],
+    calendarioMinerd: [],
     posts: [],
     descriptoresRubrica: [],
     nivelesPuntaje: [
@@ -249,4 +250,5 @@ export const initialState: AppState = {
     registrosAnecdoticos: [],
     registroImagenes: [],
     tareas: [],
+    calendarioMinerd: [],
 };

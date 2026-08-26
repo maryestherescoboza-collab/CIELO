@@ -8,6 +8,7 @@ import {
     BookMarked,
     ChevronLeft,
     ChevronRight,
+    Sparkles,
 } from 'lucide-react';
 import type {
     DescriptorRubrica,
@@ -24,9 +25,11 @@ import { CieloPill } from '../components/ui/CieloPill';
 interface Props {
     currentCourseRole?: CursoDocente;
     onSaveRubrica?: (eval_: Omit<EvaluacionRubrica, 'id'>) => void;
-    onUpdateDescriptor?: (descriptors: DescriptorRubrica[], plantillaId?: number | null) => void;
+    onUpdateDescriptor?: (descriptors: DescriptorRubrica[], plantillaId?: number | null) => Promise<DescriptorRubrica[] | null>;
     onUpdateNivelesPuntaje?: (nps: NivelPuntaje[]) => void;
     onSavePlantilla?: (tipo: 'rubrica' | 'cotejo', nombre: string, datos: Record<string, unknown>) => Promise<boolean>;
+    onUpdatePlantilla?: (id: number, patch: { nombre?: string; datos?: Record<string, unknown> }) => Promise<boolean>;
+    onDeletePlantilla?: (id: number) => void;
     readOnly?: boolean;
     initialDatos?: { descriptores?: DescriptorRubrica[]; niveles?: NivelPuntaje[] };
 }
@@ -37,9 +40,13 @@ type RichFieldKey = (typeof NIVEL_FIELDS)[number]['key'];
 
 function normalizeDescriptors(descriptors: DescriptorRubrica[], plantillaId: number | null = null): DescriptorRubrica[] {
     return COMPETENCIAS.map((competencia) => {
-        const current = descriptors.find(
-            d => (plantillaId ? d.plantillaId === plantillaId : !d.plantillaId) && d.bc === competencia.bc
-        );
+        // Coincidencia estricta por plantilla; si no existe (plantillas
+        // heredadas o de comunidad con plantillaId ajeno/null en datos),
+        // se recurre a la coincidencia por BC para no mostrar celdas vacías.
+        const current =
+            descriptors.find(
+                d => (plantillaId ? d.plantillaId === plantillaId : !d.plantillaId) && d.bc === competencia.bc
+            ) ?? descriptors.find(d => d.bc === competencia.bc);
         return {
             id: current?.id || `competencia-${competencia.bc}`,
             bc: competencia.bc,
@@ -55,6 +62,10 @@ function normalizeDescriptors(descriptors: DescriptorRubrica[], plantillaId: num
 
 import { useAppStore } from '../store/appStore';
 import { useMemo } from 'react';
+import GenerarInstrumentoModal from '../components/evaluacion/GenerarInstrumentoModal';
+import { NIVELES_RUBRICAS_DEFAULT, type DescriptorGenerado } from '../lib/aiInstrumentos';
+
+import { useSupabaseData } from '../hooks/useSupabaseData';
 
 export default function Rubrica({
     currentCourseRole,
@@ -62,11 +73,20 @@ export default function Rubrica({
     onUpdateDescriptor,
     onUpdateNivelesPuntaje,
     onSavePlantilla,
+    onUpdatePlantilla,
+    onDeletePlantilla,
     readOnly = false,
     initialDatos,
 }: Props) {
     const storeState = useAppStore((s) => s.state);
     const addFloatingRubric = useAppStore((s) => s.addFloatingRubric);
+    const { loadRubricaCotejoData, loadCursoData } = useSupabaseData(true);
+
+    useEffect(() => {
+        if (!readOnly) {
+            loadRubricaCotejoData();
+        }
+    }, [readOnly, loadRubricaCotejoData]);
     
     const state = useMemo(() => {
         let act = storeState.actividades;
@@ -85,6 +105,13 @@ export default function Rubrica({
     }, [storeState, currentCourseRole]);
 
     const [selectedCursoId, setSelectedCursoId] = useState(state.cursos[0]?.id ?? 0);
+
+    useEffect(() => {
+        if (!readOnly && selectedCursoId) {
+            loadCursoData(selectedCursoId);
+        }
+    }, [selectedCursoId, readOnly, loadCursoData]);
+
     const [selectedEstId, setSelectedEstId] = useState<number | null>(null);
     const selectedActId = useAppStore(s => s.selectedActividadId);
     const setSelectedActId = useAppStore(s => s.setSelectedActividadId);
@@ -120,6 +147,10 @@ export default function Rubrica({
     const [selectedPlantillaId, setSelectedPlantillaId] = useState<number | null>(null);
     const [comentarios, setComentarios] = useState('');
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [showGenerarModal, setShowGenerarModal] = useState(false);
+    const aiSkipNormalizeRef = useRef(false);
+
+    const session = useAppStore(s => s.session);
 
     async function handlePaste() {
         if (!contextMenu) return;
@@ -211,15 +242,25 @@ export default function Rubrica({
     const richCellRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     const selectedCurso = state.cursos.find(c => c.id === selectedCursoId);
-    const estudiantes = state.estudiantes.filter((estudiante) => estudiante.sharedCourseId === selectedCurso?.sharedCourseId);
-    const sortedEsts = [...estudiantes].sort((a, b) =>
-        (a.apellido + a.nombre).localeCompare(b.apellido + b.nombre)
+    const estudiantes = state.estudiantes.filter((estudiante) => 
+        estudiante.cursoId === selectedCursoId || 
+        (selectedCurso?.sharedCourseId && estudiante.sharedCourseId === selectedCurso.sharedCourseId)
     );
+    const sortedEsts = [...estudiantes].sort((a, b) => {
+        const numA = a.numeroLista || 0;
+        const numB = b.numeroLista || 0;
+        if (numA !== numB) return numA - numB;
+        return (a.apellido + a.nombre).localeCompare(b.apellido + b.nombre);
+    });
     const actividades = state.actividades.filter((actividad) => 
-        actividad.cursoId === selectedCursoId || 
-        (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)
+        (actividad.cursoId === selectedCursoId || 
+         (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
+        (actividad.userId === session?.user?.id || !actividad.userId)
     );
-    const rubricaPlantillas = state.plantillas.filter((plantilla) => plantilla.tipo === 'rubrica');
+    const rubricaPlantillas = state.plantillas.filter((plantilla) =>
+        plantilla.tipo === 'rubrica' && plantilla.userId === session?.user?.id
+    );
+    const LIMITE_PLANTILLAS = 10;
     const selectedEst = estudiantes.find((estudiante) => estudiante.id === selectedEstId) ?? null;
     const selectedAct = actividades.find((actividad) => actividad.id === selectedActId) ?? null;
     const hasTemplates = rubricaPlantillas.length > 0;
@@ -267,6 +308,13 @@ export default function Rubrica({
 
     useEffect(() => {
         if (selectedEstId && selectedActId) {
+            // First check if there is an unsaved local selection in multiEvaluations
+            const localExisting = multiEvaluations[selectedEstId];
+            if (localExisting && Object.keys(localExisting).length > 0) {
+                setSelection(localExisting);
+                return;
+            }
+
             const existing = state.cursoDetalle.find(
                 (cursoDetalle) =>
                     cursoDetalle.estudianteId === selectedEstId &&
@@ -286,9 +334,22 @@ export default function Rubrica({
 
     useEffect(() => {
         if (readOnly) return;
-        const initialDesc = normalizeDescriptors(storeState.descriptoresRubrica, selectedPlantillaId);
+        if (aiSkipNormalizeRef.current) {
+            aiSkipNormalizeRef.current = false;
+            return;
+        }
+        
+        let sourceDescriptors = storeState.descriptoresRubrica;
+        if (selectedPlantillaId !== null) {
+            const template = state.plantillas.find(p => p.id === selectedPlantillaId);
+            if (template?.datos?.descriptores) {
+                sourceDescriptors = template.datos.descriptores as DescriptorRubrica[];
+            }
+        }
+        
+        const initialDesc = normalizeDescriptors(sourceDescriptors, selectedPlantillaId);
         setLocalDescriptors(initialDesc);
-    }, [selectedPlantillaId, storeState.descriptoresRubrica, readOnly]);
+    }, [selectedPlantillaId, storeState.descriptoresRubrica, state.plantillas, readOnly]);
 
     function calcPuntajeTotalWithSelection(sel: Selection): number {
         const ids = Object.keys(sel);
@@ -318,6 +379,34 @@ export default function Rubrica({
             setActiveCell(null);
         } else {
             setActiveCell({ id, nivel });
+        }
+
+        // If there is a selected student, we also update their individual selection
+        // and add it to multiEvaluations so it persists locally when switching students.
+        if (selectedEstId) {
+            setSelection((prev) => {
+                const isAlreadyInThisLevel = prev[id] === nivel;
+                const next = { ...prev, [id]: isAlreadyInThisLevel ? undefined : nivel };
+                const cleaned: Selection = {};
+                Object.entries(next).forEach(([k, v]) => {
+                    if (v !== undefined) cleaned[k] = v;
+                });
+                return cleaned;
+            });
+
+            setMultiEvaluations((prev) => {
+                const currentSelection = prev[selectedEstId] || {};
+                const isAlreadyInThisLevel = currentSelection[id] === nivel;
+                const nextSelection = {
+                    ...currentSelection,
+                    [id]: isAlreadyInThisLevel ? undefined : nivel
+                };
+                const cleaned: Selection = {};
+                Object.entries(nextSelection).forEach(([k, v]) => {
+                    if (v !== undefined) cleaned[k] = v;
+                });
+                return { ...prev, [selectedEstId]: cleaned };
+            });
         }
     }
 
@@ -384,7 +473,10 @@ export default function Rubrica({
             }
 
             if (onUpdateDescriptor) {
-                await onUpdateDescriptor(localDescriptors, selectedPlantillaId);
+                const saved = await onUpdateDescriptor(localDescriptors, selectedPlantillaId);
+                if (saved) {
+                    setLocalDescriptors(saved);
+                }
             }
             if (onUpdateNivelesPuntaje) {
                 await onUpdateNivelesPuntaje(localNiveles);
@@ -426,7 +518,10 @@ export default function Rubrica({
             }
 
             if (onUpdateDescriptor) {
-                await onUpdateDescriptor(localDescriptors, selectedPlantillaId);
+                const saved = await onUpdateDescriptor(localDescriptors, selectedPlantillaId);
+                if (saved) {
+                    setLocalDescriptors(saved);
+                }
             }
             if (onUpdateNivelesPuntaje) {
                 await onUpdateNivelesPuntaje(localNiveles);
@@ -471,6 +566,71 @@ export default function Rubrica({
                 setTimeout(() => setSavedFlash(false), 2000);
             }
         }
+    }
+
+    async function handleUpdateTemplate() {
+        if (!selectedPlantillaId || !onUpdatePlantilla) return;
+        const actual = rubricaPlantillas.find(p => p.id === selectedPlantillaId);
+        if (!actual) return;
+
+        const nombre = window.prompt('Nuevo nombre de la plantilla:', actual.nombre);
+        if (nombre === null) return;
+        const nombreFinal = nombre.trim() || actual.nombre;
+
+        if (!confirm(`¿Actualizar "${actual.nombre}" con el contenido actual del editor? Las evaluaciones ya realizadas no se modifican.`)) return;
+
+        let finalDescriptors = localDescriptors;
+        if (onUpdateDescriptor) {
+            const saved = await onUpdateDescriptor(localDescriptors, selectedPlantillaId);
+            if (saved) {
+                finalDescriptors = saved;
+                setLocalDescriptors(saved);
+            }
+        }
+
+        const ok = await onUpdatePlantilla(selectedPlantillaId, {
+            nombre: nombreFinal,
+            datos: { descriptores: finalDescriptors, niveles: localNiveles },
+        });
+        if (ok) {
+            setSavedFlash(true);
+            setTimeout(() => setSavedFlash(false), 2000);
+        } else {
+            alert('No se pudo actualizar la plantilla.');
+        }
+    }
+
+    function handleDeleteTemplate() {
+        if (!selectedPlantillaId || !onDeletePlantilla) return;
+        const actual = rubricaPlantillas.find(p => p.id === selectedPlantillaId);
+        if (!actual) return;
+
+        if (!confirm(`¿Eliminar la plantilla "${actual.nombre}"? Tus evaluaciones y calificaciones históricas NO se afectan.`)) return;
+        onDeletePlantilla(selectedPlantillaId);
+        setSelectedPlantillaId(null);
+    }
+
+    function aplicarRubricaIA(generados: DescriptorGenerado[]) {
+        const porBc = new Map(generados.map(d => [d.bc, d]));
+        const next = COMPETENCIAS.map((competencia) => {
+            const gen = porBc.get(competencia.bc);
+            return {
+                id: `competencia-${competencia.bc}`,
+                bc: competencia.bc,
+                indicador: competencia.nombre,
+                estrategico: gen?.estrategico ? toRichHtml(gen.estrategico) : '',
+                autonomo: gen?.autonomo ? toRichHtml(gen.autonomo) : '',
+                resolutivo: gen?.resolutivo ? toRichHtml(gen.resolutivo) : '',
+                receptivo: gen?.receptivo ? toRichHtml(gen.receptivo) : '',
+            };
+        });
+
+        aiSkipNormalizeRef.current = true;
+        setLocalDescriptors(next);
+        setLocalNiveles(NIVELES_RUBRICAS_DEFAULT);
+        setSelectedPlantillaId(null);
+        setSavedFlash(true);
+        setTimeout(() => setSavedFlash(false), 2200);
     }
 
     function handleRubricaPaste(event: ClipboardEvent<HTMLDivElement>) {
@@ -581,7 +741,7 @@ export default function Rubrica({
                                     <div className="space-y-3">
                                         <div className="px-1 flex items-center justify-between">
                                             <p className="text-xs font-black uppercase tracking-widest text-[#2E3330]">Plantillas</p>
-                                            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-[#2E3330]">{rubricaPlantillas.length}</div>
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{rubricaPlantillas.length} de {LIMITE_PLANTILLAS}</span>
                                         </div>
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-base-creme focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm artisan-pill artisan-btn-white">
@@ -608,10 +768,35 @@ export default function Rubrica({
                                                 </select>
                                             </div>
                                             <button
+                                                data-guide="btn-guardar-plantilla"
                                                 onClick={handleSaveTemplate}
                                                 className="w-full bg-base-creme border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
                                             >
                                                 Guardar como Plantilla
+                                            </button>
+                                            {selectedPlantillaId !== null && (
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button
+                                                        onClick={handleUpdateTemplate}
+                                                        className="bg-base-creme border border-primary/30 text-primary font-black uppercase tracking-wider text-[11px] py-2 rounded-full hover:bg-[#E8F0F8] transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/30 shadow-sm"
+                                                    >
+                                                        Actualizar
+                                                    </button>
+                                                    <button
+                                                        onClick={handleDeleteTemplate}
+                                                        className="bg-white border border-(--border-soft) text-danger font-black uppercase tracking-wider text-[11px] py-2 rounded-full hover:bg-(--danger)/10 transition-all outline-none focus-visible:ring-2 focus-visible:ring-(--danger)/30 shadow-sm"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <button
+                                                onClick={() => setShowGenerarModal(true)}
+                                                className="w-full bg-primary border border-primary/40 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:opacity-90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shadow-sm artisan-pill flex items-center justify-center gap-1.5"
+                                                title="Generar descriptores de rúbrica con IA a partir del contexto del curso y la actividad"
+                                            >
+                                                <Sparkles size={13} />
+                                                Generar con IA
                                             </button>
                                         </div>
                                     </div>
@@ -894,6 +1079,8 @@ export default function Rubrica({
                                                     descId: desc.id
                                                 });
                                             }}
+                                            isAssociated={selectedAct !== null && selectedAct.bcAsignados.includes(desc.bc)}
+                                            hasSelectedActivity={selectedAct !== null}
                                         />
                                     ))}
                                 </tbody>
@@ -938,6 +1125,16 @@ export default function Rubrica({
                     </button>
                 </div>
             )}
+
+            <GenerarInstrumentoModal
+                isOpen={showGenerarModal}
+                onClose={() => setShowGenerarModal(false)}
+                tipo="rubrica"
+                actividades={actividades}
+                cursoNombre={selectedCurso ? `${selectedCurso.grado} ${selectedCurso.seccion} - ${getAsignaturaNombre(selectedCurso.asignatura)}` : ''}
+                asignatura={storeState.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session?.user?.id)?.asignatura ?? null}
+                onAplicarRubrica={aplicarRubricaIA}
+            />
         </div>
     );
 }

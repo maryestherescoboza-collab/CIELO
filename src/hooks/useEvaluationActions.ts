@@ -30,7 +30,8 @@ export function useEvaluationActions() {
             user_id: session.user.id,
             asignatura: a.asignatura || '',
             shared_course_id: shared_course_id,
-            indicador: a.indicador
+            indicador: a.indicador,
+            producto: a.producto
         }]).select();
 
         if (actError) { 
@@ -52,7 +53,8 @@ export function useEvaluationActions() {
                 userId: actData[0].user_id,
                 asignatura: actData[0].asignatura,
                 sharedCourseId: actData[0].shared_course_id,
-                indicador: actData[0].indicador
+                indicador: actData[0].indicador,
+                producto: actData[0].producto
             };
             setState(s => ({ ...s, actividades: [...s.actividades, newAct] }));
             return newAct;
@@ -67,7 +69,16 @@ export function useEvaluationActions() {
     ) => {
         console.log('[DEBUG] 4. saveCalificaciones() se ejecuta transformando los datos. Recs a guardar:', recs.length);
         const cursoId = cursoIdOverride ?? selectedCursoId;
-        if (cursoId === null || !session?.user?.id) return;
+        if (cursoId === null || !session?.user?.id) {
+            console.error('[CALIFICACIONES] Operación abortada ANTES de contactar Supabase:', {
+                motivo: cursoId === null ? 'cursoId es null' : 'sin sesión activa',
+                cursoIdOverride,
+                selectedCursoIdStore: selectedCursoId,
+                haySesion: !!session?.user?.id,
+                filasRecibidas: califs.length
+            });
+            return;
+        }
 
         const dbCalifs = califs.map(c => {
             const act = state.actividades.find(a => a.id === c.actividadId);
@@ -103,7 +114,12 @@ export function useEvaluationActions() {
         });
 
         const promises = [];
-        if (dbCalifs.length > 0) promises.push(supabase.from('calificaciones').upsert(dbCalifs, { onConflict: 'estudiante_id,actividad_id' }));
+        if (dbCalifs.length > 0) {
+            dbCalifs.forEach(c => {
+                console.log(`[CALIFICACIONES] fila → op=UPSERT tabla=calificaciones onConflict=(estudiante_id,actividad_id) estudiante_id=${c.estudiante_id} curso_id=${c.curso_id} actividad_id=${c.actividad_id} periodo=${c.periodo} puntaje=${c.puntaje}`);
+            });
+            promises.push(supabase.from('calificaciones').upsert(dbCalifs, { onConflict: 'estudiante_id,actividad_id' }));
+        }
         if (dbRecs.length > 0) {
             // FIX: Include asignatura in onConflict to match new primary key
             promises.push(supabase.from('recuperaciones').upsert(dbRecs, { onConflict: 'estudiante_id,curso_id,bc,periodo,asignatura' }));
@@ -111,7 +127,20 @@ export function useEvaluationActions() {
         
         if (promises.length > 0) {
             console.log('[DEBUG] Esperando respuesta de Supabase...');
-            await Promise.all(promises);
+            const upsertResults = await Promise.all(promises);
+            const califsResult = upsertResults[0];
+            if (dbCalifs.length > 0 && !califsResult?.error) {
+                console.log(`[CALIFICACIONES] OK: Supabase aceptó el UPSERT en calificaciones (filas=${dbCalifs.length}).`);
+            }
+            const upsertErrors = upsertResults.filter(r => r?.error);
+            if (upsertErrors.length > 0) {
+                upsertErrors.forEach(r => console.error('[CALIFICACIONES] Error Supabase:', {
+                    message: r.error?.message,
+                    details: r.error?.details,
+                    hint: r.error?.hint,
+                    code: r.error?.code
+                }));
+            }
             console.log('[DEBUG] 6. Supabase responde exitosamente (upsert resuelto).');
             setState(s => {
                 console.log('[DEBUG] 7. Actualizando estado global de Zustand con las recuperaciones...');
@@ -285,7 +314,9 @@ export function useEvaluationActions() {
             }
             
             if (califsToSave.length > 0) {
-                await saveCalificaciones(califsToSave, []);
+                const tipoEvaluacion = evalData.rubricaData ? 'RUBRICA' : evalData.cotejoData ? 'COTEJO' : 'manual';
+                console.log(`[CALIFICACIONES] Origen=${tipoEvaluacion} → updateCursoDetalle → saveCalificaciones (curso_id=${cursoId}, actividad_id=${evalData.actividadId}, puntajeTotal=${evalData.puntajeTotal})`);
+                await saveCalificaciones(califsToSave, [], cursoId);
             }
         }
     }, [session, state.cursoDetalle, state.estudiantes, selectedCursoId, state.actividades, saveCalificaciones, setState]);
@@ -308,8 +339,7 @@ export function useEvaluationActions() {
             totalPuntaje += puntajeCelda;
             totalCeldas++;
 
-            const activeDesc = state.descriptoresRubrica.find(d => String(d.id) === String(descriptorId))
-                || activeDescriptors.find(d => String(d.id) === String(descriptorId));
+            const activeDesc = activeDescriptors.find(d => String(d.id) === String(descriptorId));
             
             // Extract comp properly
             let comp: Competencia = 'BC1';
@@ -382,39 +412,171 @@ export function useEvaluationActions() {
     }, [session, updateCursoDetalle]);
 
     const updateDescriptor = useCallback(async (descriptors: DescriptorRubrica[], plantillaId: number | null = null) => {
-        if (!session?.user?.id) return;
-        setState(s => ({ ...s, descriptoresRubrica: descriptors }));
-        await Promise.all(descriptors.map(d => supabase.from('descriptores_rubrica').upsert({
-            id: d.id, bc: d.bc, indicador: d.indicador, estrategico: d.estrategico,
-            autonomo: d.autonomo, resolutivo: d.resolutivo, receptivo: d.receptivo, user_id: session.user.id,
-            plantilla_id: d.plantillaId || plantillaId
-        })));
-    }, [session, setState]);
+        if (!session?.user?.id || descriptors.length === 0) return null;
 
-    const updateCriterios = useCallback(async (criterios: CriterioCotejo[]) => {
-        if (!session?.user?.id) return;
-        setState(s => ({ ...s, criteriosCotejo: criterios }));
-        await Promise.all(criterios.map(c => supabase.from('criterios_cotejo').upsert({
-            id: c.id, titulo: c.titulo, descripcion: c.descripcion, user_id: session.user.id
-        })));
-    }, [session, setState]);
+        // Tabla propia descriptores_rubrica: upsert solo cuando existe un id
+        // real (bigint); los ids locales de respaldo ('competencia-BCx') se
+        // insertan dejando que la identidad genere el PK.
+        const results = await Promise.all(descriptors.map(d => {
+            const payload = {
+                bc: d.bc, indicador: d.indicador, estrategico: d.estrategico,
+                autonomo: d.autonomo, resolutivo: d.resolutivo, receptivo: d.receptivo,
+                user_id: session.user.id,
+                plantilla_id: d.plantillaId || plantillaId
+            };
+            return /^\d+$/.test(d.id)
+                ? supabase.from('descriptores_rubrica').upsert({ ...payload, id: Number(d.id) }).select()
+                : supabase.from('descriptores_rubrica').insert(payload).select();
+        }));
+        const dbError = results.map(r => r.error).find(Boolean);
+        if (dbError) {
+            console.error('[PLANTILLAS][RUBRICA] Error persistiendo en descriptores_rubrica:', { message: dbError.message, details: dbError.details, hint: dbError.hint, code: dbError.code });
+            return null;
+        }
+
+        const returnedDescs: DescriptorRubrica[] = results.map((r, idx) => {
+            const dbRow = r.data?.[0];
+            if (dbRow) {
+                return {
+                    id: String(dbRow.id),
+                    bc: dbRow.bc as BCKey,
+                    indicador: dbRow.indicador as string,
+                    estrategico: dbRow.estrategico as string,
+                    autonomo: dbRow.autonomo as string,
+                    resolutivo: dbRow.resolutivo as string,
+                    receptivo: dbRow.receptivo as string,
+                    plantillaId: dbRow.plantilla_id as number
+                };
+            }
+            return descriptors[idx];
+        });
+
+        // Fusión localizada del pool en memoria: conserva los descriptores del
+        // resto de plantillas en lugar de reemplazar el estado completo.
+        setState(s => ({
+            ...s,
+            descriptoresRubrica: [
+                ...s.descriptoresRubrica.filter(x => !returnedDescs.some(nd =>
+                    nd.bc === x.bc && (nd.plantillaId ?? null) === (x.plantillaId ?? null)
+                )),
+                ...returnedDescs,
+            ],
+        }));
+
+        // Espejo obligatorio hacia plantillas.datos: la reapertura de una
+        // plantilla lee este jsonb; sin esta sincronización el docente vería
+        // el texto anterior tras editar y usar "Guardar".
+        if (plantillaId) {
+            const actual = state.plantillas.find(p => p.id === plantillaId);
+            if (!actual?.datos) return returnedDescs;
+            const nuevosDatos = { ...actual.datos, descriptores: returnedDescs };
+            const { data, error } = await supabase.from('plantillas')
+                .update({ datos: nuevosDatos })
+                .eq('id', plantillaId)
+                .eq('user_id', session.user.id)
+                .select('id');
+            if (error) {
+                console.error('[PLANTILLAS][RUBRICA] Error espejando a plantillas.datos:', { message: error.message, details: error.details, hint: error.hint, code: error.code });
+                return returnedDescs;
+            }
+            if (!data || data.length === 0) {
+                console.error('[PLANTILLAS][RUBRICA] UPDATE sin efecto (0 filas):', { plantillaId });
+                return returnedDescs;
+            }
+            // Estado/cache localizado con la versión confirmada por Supabase.
+            setState(s => ({ ...s, plantillas: s.plantillas.map(p => p.id === plantillaId ? { ...p, datos: nuevosDatos } : p) }));
+        }
+
+        return returnedDescs;
+    }, [session, state.plantillas, setState]);
+
+    const updateCriterios = useCallback(async (criterios: CriterioCotejo[], plantillaId?: number | null) => {
+        if (!session?.user?.id) return null;
+
+        const results = await Promise.all(criterios.map(c => {
+            const payload = {
+                titulo: c.titulo, descripcion: c.descripcion, user_id: session.user.id
+            };
+            const isNew = typeof c.id !== 'number' || c.id < 0;
+            return isNew
+                ? supabase.from('criterios_cotejo').insert([payload]).select()
+                : supabase.from('criterios_cotejo').upsert([{ ...payload, id: c.id }]).select();
+        }));
+        const dbError = results.map(r => r.error).find(Boolean);
+        if (dbError) {
+            console.error('[PLANTILLAS][COTEJO] Error persistiendo en criterios_cotejo:', { message: dbError.message, details: dbError.details, hint: dbError.hint, code: dbError.code });
+            return null;
+        }
+
+        const returnedCriterios: CriterioCotejo[] = results.map((r, idx) => {
+            const dbRow = r.data?.[0];
+            if (dbRow) {
+                return {
+                    id: dbRow.id,
+                    titulo: dbRow.titulo,
+                    descripcion: dbRow.descripcion
+                };
+            }
+            return criterios[idx];
+        });
+
+        setState(s => ({
+            ...s,
+            criteriosCotejo: [
+                ...s.criteriosCotejo.filter(x => !returnedCriterios.some(rc => rc.id === x.id)),
+                ...returnedCriterios
+            ]
+        }));
+
+        // Espejo hacia plantillas.datos.criterios: la reapertura de una
+        // plantilla de cotejo lee este jsonb, no la tabla criterios_cotejo.
+        if (plantillaId) {
+            const actual = state.plantillas.find(p => p.id === plantillaId);
+            if (!actual?.datos) return returnedCriterios;
+            const nuevosDatos = { ...actual.datos, criterios: returnedCriterios };
+            const { data, error } = await supabase.from('plantillas')
+                .update({ datos: nuevosDatos })
+                .eq('id', plantillaId)
+                .eq('user_id', session.user.id)
+                .select('id');
+            if (error) {
+                console.error('[PLANTILLAS][COTEJO] Error espejando a plantillas.datos:', { message: error.message, details: error.details, hint: error.hint, code: error.code });
+                return returnedCriterios;
+            }
+            if (!data || data.length === 0) {
+                console.error('[PLANTILLAS][COTEJO] UPDATE sin efecto (0 filas):', { plantillaId });
+                return returnedCriterios;
+            }
+            setState(s => ({ ...s, plantillas: s.plantillas.map(p => p.id === plantillaId ? { ...p, datos: nuevosDatos } : p) }));
+        }
+
+        return returnedCriterios;
+    }, [session, state.plantillas, setState]);
 
     const savePlantilla = useCallback(async (tipo: 'rubrica' | 'cotejo', nombre: string, datos: Record<string, unknown>): Promise<boolean> => {
         if (!session?.user?.id) return false;
-        const existing = state.plantillas.filter(p => p.tipo === tipo);
-        if (existing.length >= 5) {
-            alert(`No puedes guardar más de 5 plantillas de ${tipo}. Elimina una antes de continuar.`);
+
+        // El límite de 10 por docente y tipo se garantiza en la base de datos
+        // mediante la función crear_plantilla (advisory lock anti-carrera).
+        const { data, error } = await supabase.rpc('crear_plantilla', {
+            p_tipo: tipo,
+            p_nombre: nombre,
+            p_datos: datos
+        });
+
+        if (error) {
+            if (typeof error.message === 'string' && error.message.includes('LIMITE_PLANTILLAS')) {
+                alert(`Límite alcanzado: máximo 10 plantillas de ${tipo}. Elimina una antes de crear otra.`);
+            } else {
+                console.error('[PLANTILLAS] Error creando plantilla:', { message: error.message, details: error.details, hint: error.hint, code: error.code });
+                alert('No se pudo guardar la plantilla. Intente de nuevo.');
+            }
             return false;
-        }
-        const { data, error } = await supabase.from('plantillas').insert([{ user_id: session.user.id, tipo, nombre, datos }]).select();
-        if (error) { 
-            console.error('Error saving plantilla:', error); 
-            return false; 
         }
         if (data && data[0]) {
             const plantillaId = data[0].id;
             let updatedDatos = { ...datos };
-            let newPlantilla: Plantilla = { id: plantillaId, tipo: data[0].tipo, nombre: data[0].nombre, datos: updatedDatos, createdAt: data[0].created_at };
+            let newPlantilla: Plantilla = { id: plantillaId, userId: session.user.id, tipo: data[0].tipo, nombre: data[0].nombre, datos: updatedDatos, createdAt: data[0].created_at };
             
             if (tipo === 'rubrica' && datos.descriptores) {
                 const descs = datos.descriptores as DescriptorRubrica[];
@@ -463,13 +625,61 @@ export function useEvaluationActions() {
             setState(s => ({ ...s, plantillas: [newPlantilla, ...s.plantillas] }));
         }
         return true;
-    }, [session, state.plantillas, setState]);
+    }, [session, setState]);
+
+    const updatePlantilla = useCallback(async (id: number, patch: Partial<Pick<Plantilla, 'nombre' | 'datos'>>): Promise<boolean> => {
+        if (!session?.user?.id || !id) return false;
+
+        // Trazabilidad del payload real enviado a Supabase.
+        const datosKeys = patch.datos ? Object.keys(patch.datos) : [];
+        console.log('[PLANTILLAS] Enviando UPDATE:', {
+            plantillaId: id,
+            keys: Object.keys(patch),
+            datosKeys,
+            resumenDatos: datosKeys.map(k => {
+                const v = (patch.datos as Record<string, unknown>)[k];
+                return `${k}: Array(${Array.isArray(v) ? v.length : '?'}) primerItem=${JSON.stringify(Array.isArray(v) ? v[0] : v)?.slice(0, 160)}`;
+            }),
+        });
+
+        // Actualización dirigida por identificador y propiedad (defensa en
+        // profundidad: RLS ya restringe a filas propias). El .select permite
+        // detectar un UPDATE que afectó 0 filas en lugar de fingir éxito.
+        const { data, error } = await supabase.from('plantillas')
+            .update(patch)
+            .eq('id', id)
+            .eq('user_id', session.user.id)
+            .select('id');
+
+        if (error) {
+            console.error('[PLANTILLAS] Error actualizando plantilla:', { message: error.message, details: error.details, hint: error.hint, code: error.code });
+            return false;
+        }
+        if (!data || data.length === 0) {
+            // RLS o id inexistente: PostgREST no reporta error pero nada cambió.
+            console.error('[PLANTILLAS] UPDATE sin efecto (0 filas):', { plantillaId: id, userId: session.user.id });
+            return false;
+        }
+
+        console.log('[PLANTILLAS] OK: Supabase confirmó el UPDATE de la plantilla', id);
+
+        // Actualización localizada del estado (sin refetch global).
+        setState(s => ({ ...s, plantillas: s.plantillas.map(p => p.id === id ? { ...p, ...patch } : p) }));
+        return true;
+    }, [session, setState]);
 
     const deletePlantilla = useCallback(async (id: number) => {
-        // Logical archive instead of physical delete
-        await supabase.from('plantillas').update({ archivado: true }).eq('id', id);
+        // Archivo lógico en lugar de borrado físico: las evaluaciones históricas
+        // (curso_detalle, evaluaciones_rubrica/cotejo) conservan su referencia e
+        // integridad. Solo el docente propietario puede archivar.
+        if (!session?.user?.id) return;
+        const { error } = await supabase.from('plantillas').update({ archivado: true }).eq('id', id).eq('user_id', session.user.id);
+        if (error) {
+            console.error('[PLANTILLAS] Error al eliminar plantilla:', { message: error.message, details: error.details, hint: error.hint, code: error.code });
+            return;
+        }
         setState(s => ({ ...s, plantillas: s.plantillas.filter(p => p.id !== id) }));
-    }, [setState]);
+    }, [session, setState]);
 
     const updateActividad = useCallback(async (
         actOrId: Actividad | number,
@@ -503,7 +713,8 @@ export function useEvaluationActions() {
             user_id: session.user.id,
             asignatura: merged.asignatura,
             shared_course_id: merged.sharedCourseId,
-            indicador: merged.indicador
+            indicador: merged.indicador,
+            producto: merged.producto
         });
 
         if (!error) {
@@ -550,6 +761,7 @@ export function useEvaluationActions() {
         updateDescriptor,
         updateCriterios,
         savePlantilla,
+        updatePlantilla,
         deletePlantilla,
         resetSchoolYear
     };

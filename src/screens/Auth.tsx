@@ -451,6 +451,10 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
             <img alt="Brand Logo" className="app-logo w-full h-auto object-contain drop-shadow-xl" src={logo} />
           </div>
           <div>
+            <p className="text-xs font-black uppercase tracking-widest text-[#5F665E]/75 mb-1.5 flex items-center justify-center md:justify-start gap-1.5">
+              <span>Portafolio Docente</span>
+              <span className="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200/50 px-2 py-0.5 rounded-full select-none capitalize tracking-normal">Beta</span>
+            </p>
             <p className="text-sm md:text-base font-medium tracking-tight text-[#5F665E] max-w-xs mx-auto md:mx-0 leading-relaxed">
               Portafolio docente enfocado en la evaluación por competencias
             </p>
@@ -1062,7 +1066,10 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           </div>
 
           {/* Brand Meta */}
-          <p className="text-center text-xs font-black text-[#3E3838]/30 uppercase tracking-[0.25em] mt-2">CIELO • 2026</p>
+          <div className="text-center mt-2 flex flex-col gap-1 select-none">
+            <p className="text-[10px] font-black text-[#3E3838]/30 uppercase tracking-[0.25em]">CIELO • 2026</p>
+            <p className="text-[10px] font-bold text-[#3E3838]/40 uppercase tracking-wide">CIELO está en Beta · Tu experiencia nos ayuda a mejorar</p>
+          </div>
         </div>
       </main>
     </div>

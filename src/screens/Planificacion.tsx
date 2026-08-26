@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark, Link as LinkIcon, Edit2, MessageSquare, Info, Zap, Gamepad2, Presentation, PenTool } from 'lucide-react';
+import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark, Link as LinkIcon, Edit2, MessageSquare, Info, Zap, Gamepad2, Presentation, PenTool, RotateCcw } from 'lucide-react';
 import blueBookIcon from '../assets/book-blue.png';
 import purpleBookIcon from '../assets/book-purple.png';
 import type { Curso, Secuencia, TipoRecurso } from '../types';
 import { getPlanificacionDiariaTemplate } from '../templates/planificacion-diaria';
+import { getPlanRecuperacionTemplate, PERIODOS_RECUPERACION, isPeriodoDisponible } from '../templates/plan-recuperacion';
 import { CieloPill } from '../components/ui/CieloPill';
 import { CieloModal } from '../components/ui/CieloModal';
+import { supabase } from '../lib/supabase';
 
 import { useAppStore } from '../store/appStore';
 
@@ -69,10 +71,19 @@ function getDotCount(estado: Secuencia['estado']) {
     return 1;
 }
 
+import { useSupabaseData } from '../hooks/useSupabaseData';
+
 export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecuencia, onDeleteSecuencia, readOnly, initialDatos }: Props) {
     const state = useAppStore((s) => s.state);
     const session = useAppStore((s) => s.session);
     const loading = useAppStore((s) => s.loading);
+    const { loadPlanificacionData } = useSupabaseData(true);
+
+    useEffect(() => {
+        if (!readOnly) {
+            loadPlanificacionData();
+        }
+    }, [readOnly, loadPlanificacionData]);
 
     if (readOnly && initialDatos) {
         return (
@@ -223,6 +234,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
         archivoFechaCarga: undefined
     });
     const [viewerSeq, setViewerSeq] = useState<Secuencia | null>(null);
+    const [periodoRecuperacion, setPeriodoRecuperacion] = useState<'P1' | 'P2' | 'P3'>('P1');
 
     const [isAddingRecurso, setIsAddingRecurso] = useState(false);
     const [editingRecursoId, setEditingRecursoId] = useState<string | null>(null);
@@ -377,19 +389,19 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                         </h1>
                         <div className="flex items-center gap-3">
                             <div className="flex items-center gap-2 bg-(--linen) px-3 py-1 rounded-full border border-(--border-soft)">
-                                <span className="text-xs font-bold text-(--ink) uppercase tracking-[0.08em]">
+                                <span className="text-xs font-bold text-(--ink) uppercase tracking-wider">
                                     Pedagogía y Secuencias
                                 </span>
                             </div>
                             <div className="h-1.5 w-1.5 rounded-full bg-(--border-soft)"></div>
-                            <span className="text-xs font-bold text-(--ink-soft) uppercase tracking-[0.08em]">Material Docente</span>
+                            <span className="text-xs font-bold text-(--ink-soft) uppercase tracking-wider">Material Docente</span>
                         </div>
                     </div>
 
                     <div className="flex flex-col items-stretch sm:items-center gap-3 sm:flex-row">
                         <div className="relative group">
                             <select
-                                className="pl-5 pr-10 appearance-none rounded-full bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-[0.08em] shadow-sm outline-none focus-visible:border-(--primary) focus-visible:ring-2 focus-visible:ring-(--primary)/20 cursor-pointer transition-all hover:bg-(--linen)/45 min-w-60 artisan-pill"
+                                className="pl-5 pr-10 appearance-none rounded-full bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-wider shadow-sm outline-none focus-visible:border-(--primary) focus-visible:ring-2 focus-visible:ring-(--primary)/20 cursor-pointer transition-all hover:bg-(--linen)/45 min-w-60 artisan-pill"
                                 value={cursoSel}
                                 onChange={(event) => setCursoSel(Number(event.target.value))}
                             >
@@ -420,7 +432,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                 <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
                     {/* SECCIÓN RECURSOS */}
                     <div className="mb-10">
-                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-[0.1em] mb-4 border-b border-(--border-soft) pb-2 flex justify-between items-end">
+                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-widest mb-4 border-b border-(--border-soft) pb-2 flex justify-between items-end">
                             <span>Recursos del Curso</span>
                         </h2>
                         
@@ -430,11 +442,11 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                     const cat = recurso.categoria || recurso.titulo || 'Otro';
                                     const { icon: Icon, bg, text, border } = getCategoriaConfig(cat);
                                     return (
-                                        <div key={`${recurso.id}-${index}`} className="relative group flex flex-col items-center gap-2 w-[80px] shrink-0">
+                                        <div key={`${recurso.id}-${index}`} className="relative group flex flex-col items-center gap-2 w-20 shrink-0">
                                             <button
                                                 onClick={() => window.open(recurso.url, "_blank", "noopener,noreferrer")}
                                                 title="Abrir recurso"
-                                                className={`relative w-[70px] h-[98px] rounded-r-md rounded-l-sm border ${bg} ${border} shadow-sm transition-all duration-300 ease-out flex flex-col items-center justify-center cursor-pointer outline-none group-hover:-translate-y-1.5 group-hover:shadow-md`}
+                                                className={`relative w-17.5 h-24.5 rounded-r-md rounded-l-sm border ${bg} ${border} shadow-sm transition-all duration-300 ease-out flex flex-col items-center justify-center cursor-pointer outline-none group-hover:-translate-y-1.5 group-hover:shadow-md`}
                                             >
                                                 <div className="absolute left-0 top-0 bottom-0 w-1.5 opacity-15 mix-blend-multiply bg-black rounded-l-sm"></div>
                                                 <Icon size={24} className={`${text} opacity-80`} />
@@ -481,7 +493,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
                     {/* SECCIÓN PLANTILLAS */}
                     <div>
-                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-[0.1em] mb-4 border-b border-(--border-soft) pb-2 flex justify-between items-end">
+                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-widest mb-4 border-b border-(--border-soft) pb-2 flex justify-between items-end">
                             <span>Plantillas y Secuencias</span>
                         </h2>
                         
@@ -490,9 +502,9 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                             <button
                                 type="button"
                                 onClick={() => window.open(`/especificaciones.html?cursoId=${cursoSel}`, '_blank')}
-                                className="relative w-[140px] shrink-0 group flex flex-col items-center text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-2"
+                                className="relative w-35 shrink-0 group flex flex-col items-center text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-2"
                             >
-                                <div className="w-full h-[190px] flex flex-col items-center justify-center mb-3">
+                                <div className="w-full h-47.5 flex flex-col items-center justify-center mb-3">
                                     <img
                                         src="/especificaciones-icon.png"
                                         alt=""
@@ -523,9 +535,9 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                             e.preventDefault();
                                             setViewerSeq(seq);
                                         }}
-                                        className="relative w-[140px] shrink-0 group flex flex-col items-center text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-2"
+                                        className="relative w-35 shrink-0 group flex flex-col items-center text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-2"
                                     >
-                                        <div className="w-full h-[190px] flex flex-col items-center justify-center mb-3">
+                                        <div className="w-full h-47.5 flex flex-col items-center justify-center mb-3">
                                             <img
                                                 src={bookIcon}
                                                 alt=""
@@ -588,7 +600,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
                             <div className="flex flex-wrap items-center gap-2.5">
                                 <select
-                                    className="px-3 rounded-full border border-(--border-soft) bg-white text-xs font-bold text-(--ink) uppercase tracking-[0.08em] outline-none transition-all focus-visible:border-(--primary) focus-visible:ring-2 focus-visible:ring-(--primary)/20 appearance-none relative shadow-sm artisan-pill artisan-btn-white"
+                                    className="px-3 rounded-full border border-(--border-soft) bg-white text-xs font-bold text-(--ink) uppercase tracking-wider outline-none transition-all focus-visible:border-(--primary) focus-visible:ring-2 focus-visible:ring-(--primary)/20 appearance-none relative shadow-sm artisan-pill artisan-btn-white"
                                     value={viewerSeq.estado}
                                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232e3330'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '0.8rem', paddingRight: '2rem' }}
                                     onChange={(event) => {
@@ -616,7 +628,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                                 window.open(`/planificacion-diaria/${viewerSeq.id}`, '_blank');
                                                 void handleCloseViewer();
                                             }}
-                                            className="px-4.5 rounded-full bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-[0.08em] shadow-sm hover:bg-(--linen)/30 transition-all outline-none flex items-center gap-1.5 artisan-pill"
+                                            className="px-4.5 rounded-full bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-wider shadow-sm hover:bg-(--linen)/30 transition-all outline-none flex items-center gap-1.5 artisan-pill"
                                             style={{ height: '36px' }}
                                         >
                                             Abrir en otra pestaña
@@ -630,7 +642,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                                     void handleCloseViewer();
                                                 }
                                             }}
-                                            className="px-4.5 rounded-full bg-(--primary) text-white text-xs font-bold uppercase tracking-[0.08em] shadow-sm hover:opacity-90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 flex items-center gap-1.5 artisan-pill"
+                                            className="px-4.5 rounded-full bg-(--primary) text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:opacity-90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 flex items-center gap-1.5 artisan-pill"
                                             style={{ height: '36px' }}
                                         >
                                             Guardar
@@ -1012,6 +1024,107 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                              </h3>
                                              <p className="mt-1 text-xs font-medium text-(--ink-soft) leading-relaxed">
                                                  Formato estándar MINERD para planificar el día a día, con secciones de inicio, desarrollo, cierre e indicadores de logro.
+                                             </p>
+                                          </div>
+                                      </button>
+
+                                      {/* Selector de período de recuperación */}
+                                      <div className="flex items-center gap-3 px-1">
+                                          <label className="text-xs font-bold text-(--ink-soft) uppercase tracking-wider whitespace-nowrap">Período:</label>
+                                          <div className="flex gap-1.5">
+                                              {(['P1', 'P2', 'P3'] as const).map(p => (
+                                                  <button
+                                                      key={p}
+                                                      onClick={() => setPeriodoRecuperacion(p)}
+                                                      disabled={!isPeriodoDisponible(PERIODOS_RECUPERACION[p].fechaInicio)}
+                                                      className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer outline-none ${
+                                                          periodoRecuperacion === p
+                                                              ? 'bg-(--primary) text-white shadow-sm'
+                                                              : isPeriodoDisponible(PERIODOS_RECUPERACION[p].fechaInicio)
+                                                                  ? 'bg-white border border-(--border-soft) text-(--ink) hover:bg-(--linen)/40'
+                                                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                      }`}
+                                                  >
+                                                      {p}
+                                                  </button>
+                                              ))}
+                                          </div>
+                                          <span className="text-[10px] font-medium text-(--ink-soft) italic">
+                                              {PERIODOS_RECUPERACION[periodoRecuperacion].nombre}
+                                          </span>
+                                      </div>
+
+                                      {/* Botón Plan de Recuperación Pedagógica */}
+                                      <button
+                                          onClick={async () => {
+                                               const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                               if (!curso) return;
+
+                                               const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
+                                               const centroNombre = state.centros?.find(c => c.id === miPerfil?.centro_id)?.nombre || session?.user?.user_metadata?.centro_nombre || 'Mi Centro';
+                                               const codigoCentro = state.centros?.find(c => c.id === miPerfil?.centro_id)?.codigoCentro || session?.user?.user_metadata?.codigo_centro || '';
+                                               const docenteNombre = miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
+
+                                               const periodo = PERIODOS_RECUPERACION[periodoRecuperacion];
+
+                                               const { data: estudiantesRaw } = await supabase
+                                                   .from('estudiantes')
+                                                   .select('*')
+                                                   .eq('curso_id', curso.id)
+                                                   .eq('activo', true);
+
+                                               const { data: calificacionesRaw } = await supabase
+                                                   .from('calificaciones')
+                                                   .select('*')
+                                                   .eq('curso_id', curso.id);
+
+                                               const estudiantes = (estudiantesRaw || []).map((e: any) => {
+                                                   const calEst = (calificacionesRaw || []).filter((c: any) => c.estudiante_id === e.id);
+                                                   const actividades = calEst
+                                                       .filter((c: any) => c.puntaje < 70)
+                                                       .map((c: any) => ({
+                                                           nombre: c.asignatura || 'Actividad',
+                                                           competencias: c.competencias || [],
+                                                           indicador: '',
+                                                           producto: '',
+                                                           puntajeObtenido: c.puntaje || 0
+                                                       }));
+                                                   return {
+                                                       nombreCompleto: `${e.nombre} ${e.apellido}`,
+                                                       curso: `${curso.grado} "${curso.seccion}"`,
+                                                       actividades
+                                                   };
+                                               }).filter((e: any) => e.actividades.length > 0);
+
+                                               const htmlContent = getPlanRecuperacionTemplate({
+                                                   centro: centroNombre,
+                                                   codigoCentro,
+                                                   docente: docenteNombre,
+                                                   asignatura: curso.asignatura || '',
+                                                   grado: curso.grado || '',
+                                                   seccion: curso.seccion || '',
+                                                   fecha: new Date().toISOString().split('T')[0],
+                                                   periodoRecuperacion,
+                                                   nombrePeriodo: periodo.nombre,
+                                                   estudiantes
+                                               });
+
+                                               const blob = new Blob([htmlContent], { type: 'text/html' });
+                                               const url = URL.createObjectURL(blob);
+                                               window.open(url, '_blank');
+                                               setShowModal(false);
+                                           }}
+                                          className="w-full text-left p-6 rounded-2xl border border-(--border-soft) bg-white hover:border-herb-garden hover:bg-herb-garden/5 transition-all cursor-pointer group flex items-start gap-4"
+                                      >
+                                          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-200">
+                                             <RotateCcw size={24} className="text-herb-garden" />
+                                          </div>
+                                          <div>
+                                             <h3 className="text-sm font-black uppercase tracking-wider text-(--ink) group-hover:text-herb-garden transition-colors">
+                                                 Plan de Recuperación Pedagógica
+                                             </h3>
+                                             <p className="mt-1 text-xs font-medium text-(--ink-soft) leading-relaxed">
+                                                 Documento individualizado para la recuperación académica de estudiantes con puntajes menores a 70. Periodo: {PERIODOS_RECUPERACION[periodoRecuperacion].nombre}.
                                              </p>
                                           </div>
                                       </button>

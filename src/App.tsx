@@ -14,6 +14,7 @@ import { FloatingRubricManager } from './components/FloatingRubricManager';
 import { PresentationProvider } from './contexts/PresentationContext';
 import LoadingMessage from './components/LoadingMessage';
 import { useSupabaseData } from './hooks/useSupabaseData';
+import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { supabase } from './lib/supabase';
 import logo from './assets/logo.png';
 import { useCourseActions } from './hooks/useCourseActions';
@@ -35,8 +36,10 @@ import { useShallow } from 'zustand/react/shallow';
 import { analizarRolAcceso } from './utils/autorizacion';
 
 export default function App() {
+  useSupabaseAuth();
+
   const { 
-    state, loading, session, 
+    state, loading, session, authInitialized,
     selectedCursoId, setSelectedCursoId,
     selectedEstudianteId, setSelectedEstudianteId,
     setSearchQuery,
@@ -45,6 +48,7 @@ export default function App() {
     state: s.state,
     loading: s.loading,
     session: s.session,
+    authInitialized: s.authInitialized,
     selectedCursoId: s.selectedCursoId,
     setSelectedCursoId: s.setSelectedCursoId,
     selectedEstudianteId: s.selectedEstudianteId,
@@ -86,11 +90,12 @@ export default function App() {
   }, [selectedCursoId, session?.user?.id, state.cursoDocentes, state.cursos]);
 
   const visibleActividades = useMemo(() => {
-    if (!selectedCursoId) return state.actividades;
-    const baseFilter = (a: any) => a.cursoId === selectedCursoId;
+    const isMine = (a: any) => a.userId === session?.user?.id || !a.userId;
+    if (!selectedCursoId) return state.actividades.filter(isMine);
+    const baseFilter = (a: any) => a.cursoId === selectedCursoId && isMine(a);
     if (!currentCourseRole || currentCourseRole.rol === 'tutor') return state.actividades.filter(baseFilter);
     return state.actividades.filter((a: any) => baseFilter(a) && a.asignatura === currentCourseRole.asignatura);
-  }, [state.actividades, selectedCursoId, currentCourseRole]);
+  }, [state.actividades, selectedCursoId, currentCourseRole, session?.user?.id]);
 
   const visibleCalificaciones = useMemo(() => {
     const baseFilter = (c: any) => c.cursoId === selectedCursoId;
@@ -118,12 +123,19 @@ export default function App() {
 
   // Redirigir a inicio si el usuario está autenticado y sigue en /login o /auth
   useEffect(() => {
-    if (session && !loading && (pathname === '/login' || pathname === '/auth')) {
+    if (session && authInitialized && (pathname === '/login' || pathname === '/auth')) {
       navigate('/', { replace: true });
     }
-  }, [session, loading, pathname, navigate]);
+  }, [session, authInitialized, pathname, navigate]);
 
-  if (loading) return (
+  if (!authInitialized) return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-(--paper)">
+      <img src={logo} alt="Logo" className="app-logo w-44 h-44 mb-8 animate-pulse" />
+      <LoadingMessage />
+    </div>
+  );
+
+  if (session && loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-(--paper)">
       <img src={logo} alt="Logo" className="app-logo w-44 h-44 mb-8 animate-pulse" />
       <LoadingMessage />

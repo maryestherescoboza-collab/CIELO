@@ -70,8 +70,17 @@ const ACCIONES_TAG_CLASSES: Record<string, string> = {
 
 import { useAppStore } from '../store/appStore';
 
+import { useEffect } from 'react';
+import { useSupabaseData } from '../hooks/useSupabaseData';
+
 export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia }: Props) {
     const session = useAppStore((s) => s.session);
+    const { loadDashboardData } = useSupabaseData(true);
+
+    useEffect(() => {
+        loadDashboardData();
+    }, [loadDashboardData]);
+
     const currentUserId = session?.user?.id;
     const [buscarEst, setBuscarEst] = useState('');
     const [estIds, setEstIds] = useState<number[]>([]);
@@ -321,7 +330,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                 <button
                                     onClick={handleSubmit}
                                     disabled={!estIds.length || !descripcion.trim()}
-                                    className={`w-full xl:w-auto px-8 py-3 xl:h-22.5 xl:rounded-3xl rounded-full bg-(--ink) text-white text-xs font-black uppercase tracking-widest transition-all flex justify-center items-center gap-2 whitespace-nowrap cursor-pointer ${(!estIds.length || !descripcion.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-(--primary) hover:text-white shadow-sm hover:-translate-y-0.5 active:scale-95'}`}
+                                    className={`w-full xl:w-auto px-8 py-3 xl:h-22.5 xl:rounded-3xl rounded-full text-xs font-black uppercase tracking-widest transition-all flex justify-center items-center gap-2 whitespace-nowrap cursor-pointer ${(!estIds.length || !descripcion.trim()) ? 'bg-linen text-ink-soft cursor-not-allowed' : 'bg-olive-branch text-ink hover:bg-herb-garden hover:text-white shadow-sm hover:-translate-y-0.5 active:scale-95'}`}
                                 >
                                     Guardar <br className="hidden xl:block" /> Registro
                                 </button>

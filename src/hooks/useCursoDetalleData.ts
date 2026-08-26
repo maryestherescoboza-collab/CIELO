@@ -3,6 +3,8 @@ import type { AppState, CalificacionActividad, RecuperacionBC, BCKey, CursoDocen
 import { calculateStudentPeriodBC } from '../utils/academic';
 import { perteneceAlContextoDelCurso, esEstudianteDelCurso } from '../utils/aislamiento';
 
+import { useAppStore } from '../store/appStore';
+
 interface Params {
     state: AppState;
     cursoId: number;
@@ -13,14 +15,17 @@ interface Params {
 
 export function useCursoDetalleData({ state, cursoId, currentUserId, currentCourseRole, onSaveCalificaciones }: Params) {
     const curso = state.cursos.find(c => c.id === cursoId);
-    const [selectedPeriodo, setSelectedPeriodo] = useState(() => curso?.periodo || 'P1');
+    const { selectedPeriodo, setSelectedPeriodo } = useAppStore();
     const [buscar, setBuscar] = useState('');
     const [isPointMode, setIsPointMode] = useState(true);
 
-    // Al entrar al componente o cambiar de curso, el modo pincel debe estar activado por defecto
+    // Al entrar al componente o cambiar de curso, el modo pincel debe estar activado por defecto e inicializar período
     useEffect(() => {
         setIsPointMode(true);
-    }, [cursoId]);
+        if (curso?.periodo) {
+            setSelectedPeriodo(curso.periodo);
+        }
+    }, [cursoId, curso?.periodo, setSelectedPeriodo]);
     const [showRecoveryOnly, setShowRecoveryOnly] = useState(false);
     const [activePaintColor, setActivePaintColor] = useState<number>(100);
     const [rubricTarget, setRubricTarget] = useState<{ estId: number, bc: number, bcName: BCKey } | null>(null);
@@ -44,7 +49,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
     const [bcSel, setBcSel] = useState<Record<number, Set<BCKey>>>({});
 
     useEffect(() => {
-        const currentActs = state.actividades.filter(a => a.id && a.cursoId === cursoId && (!a.asignatura || a.asignatura === myAsignatura));
+        const currentActs = state.actividades.filter(a => a.id && a.cursoId === cursoId && (!a.asignatura || a.asignatura === myAsignatura) && (a.userId === currentUserId || !a.userId));
         setLocalCalifs(state.calificaciones.filter(c => c.cursoId === cursoId && (!c.asignatura || c.asignatura === myAsignatura)));
         setLocalRecs(state.recuperaciones.filter(r => r.cursoId === cursoId && (!r.asignatura || r.asignatura === myAsignatura)));
         

@@ -5,22 +5,23 @@ import type {
   CalificacionActividad
 } from './types';
 
-import Inicio from './screens/Inicio';
-import Dashboard from './screens/Dashboard';
-import Cursos from './screens/Cursos';
-import CursoDetalle from './screens/CursoDetalle';
-import Incidencias from './screens/Incidencias';
-import Planificacion from './screens/Planificacion';
-import PlanificacionDiariaEditor from './screens/PlanificacionDiariaEditor';
-import Comunidad from './screens/Comunidad';
-import Rubrica from './screens/Rubrica';
-import Cotejo from './screens/Cotejo';
-import Estudiante from './screens/Estudiante';
-import CalificacionesAnuales from './screens/CalificacionesAnuales';
-import ProfileSettings from './screens/ProfileSettings';
-import ResetPassword from './screens/ResetPassword';
-import PrintBoletines from './screens/PrintBoletines';
-import Suscripcion from './screens/Suscripcion';
+const Inicio = React.lazy(() => import('./screens/Inicio'));
+const Dashboard = React.lazy(() => import('./screens/Dashboard'));
+const Cursos = React.lazy(() => import('./screens/Cursos'));
+const CursoDetalle = React.lazy(() => import('./screens/CursoDetalle'));
+const Incidencias = React.lazy(() => import('./screens/Incidencias'));
+const Planificacion = React.lazy(() => import('./screens/Planificacion'));
+const PlanificacionDiariaEditor = React.lazy(() => import('./screens/PlanificacionDiariaEditor'));
+const Comunidad = React.lazy(() => import('./screens/Comunidad'));
+const Rubrica = React.lazy(() => import('./screens/Rubrica'));
+const Cotejo = React.lazy(() => import('./screens/Cotejo'));
+const Estudiante = React.lazy(() => import('./screens/Estudiante'));
+const CalificacionesAnuales = React.lazy(() => import('./screens/CalificacionesAnuales'));
+const ProfileSettings = React.lazy(() => import('./screens/ProfileSettings'));
+const ResetPassword = React.lazy(() => import('./screens/ResetPassword'));
+const PrintBoletines = React.lazy(() => import('./screens/PrintBoletines'));
+const Suscripcion = React.lazy(() => import('./screens/Suscripcion'));
+import LoadingMessage from './components/LoadingMessage';
 import { BookOpen } from 'lucide-react';
 import { esRolAdministrador } from './utils/autorizacion';
 
@@ -120,8 +121,9 @@ interface AppRoutesProps {
   updateNivelesPuntaje: any;
   saveCotejo: any;
   updateCriterios: any;
-  savePlantilla: any;
-  deletePlantilla: any;
+    savePlantilla: any;
+    updatePlantilla: any;
+    deletePlantilla: any;
   onLogout: () => void;
 }
 
@@ -141,7 +143,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   uploadAvatar, updateFullProfile, updateAvatarColor, updatePerfilProfesional,
   updateCentro, createCentro, cambiarCentro, updateInstitutoName, resetSchoolYear,
   saveRubrica, updateDescriptor, updateNivelesPuntaje,
-  saveCotejo, updateCriterios, savePlantilla, deletePlantilla,
+    saveCotejo, updateCriterios, savePlantilla, updatePlantilla, deletePlantilla,
   onLogout
 }) => {
   const navigate = useNavigate();
@@ -219,7 +221,12 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   };
 
   return (
-    <Routes>
+    <React.Suspense fallback={
+      <div className="flex flex-col items-center justify-center p-20 text-center">
+        <LoadingMessage />
+      </div>
+    }>
+      <Routes>
       <Route path="/" element={<Inicio onAddActividad={addActividad} docenteNombre={docenteNombre} onUpdateInstituto={updateInstitutoName} currentCourseRole={currentCourseRole} />} />
       <Route path="/dashboard" element={<Dashboard docenteNombre={docenteNombre} />} />
       <Route path="/cursos" element={
@@ -257,6 +264,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           onUpdateDescriptor={updateDescriptor}
           onUpdateNivelesPuntaje={updateNivelesPuntaje}
           onSavePlantilla={savePlantilla}
+          onUpdatePlantilla={updatePlantilla}
+          onDeletePlantilla={deletePlantilla}
         />
       } />
       <Route path="/cotejo" element={
@@ -266,6 +275,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           onSaveCotejo={saveCotejo}
           onUpdateCriterios={updateCriterios}
           onSavePlantilla={savePlantilla}
+          onUpdatePlantilla={updatePlantilla}
           onDeletePlantilla={deletePlantilla}
         />
       } />
@@ -346,7 +356,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           <button onClick={() => navigate('/')} className="mt-4 text-amber-600 font-bold underline">Volver al inicio</button>
         </div>
       } />
-    </Routes>
+      </Routes>
+    </React.Suspense>
   );
 };
 

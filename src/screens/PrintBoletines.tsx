@@ -4,6 +4,7 @@ import type { AppState } from '../types';
 import { computeStudentGrades } from '../utils/boletines';
 import { estudiantesDelCurso, obtenerDocenteResponsable } from '../utils/aislamiento';
 import { useAppStore } from '../store/appStore';
+import { useSupabaseData } from '../hooks/useSupabaseData';
 import { CieloPill } from '../components/ui/CieloPill';
 import { getBoletinCSSVariables } from '../utils/colorimetriaBoletines';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -25,6 +26,11 @@ export default function PrintBoletines({ state }: PrintBoletinesProps) {
     const { cursoId: rawCursoId } = useParams<{ cursoId: string }>();
     const cursoId = Number(rawCursoId) || 0;
     const session = useAppStore(s => s.session);
+    
+    const { loadDashboardData } = useSupabaseData(true);
+    useEffect(() => {
+        loadDashboardData();
+    }, [loadDashboardData]);
 
     const curso = useMemo(() => {
         return state.cursos.find(c => c.id === cursoId);

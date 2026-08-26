@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, EvaluacionRubrica, EvaluacionCotejo, CriterioCotejo, DescriptorRubrica, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, Nivel, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, TareaInstitucional, TareaDocente, Centro } from '../types';
+import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, TareaInstitucional, TareaDocente, Centro } from '../types';
 import { useAppStore } from '../store/appStore';
 import { esRolAdministrador } from '../utils/autorizacion';
 
@@ -59,39 +59,253 @@ const sanitizeNivelesPuntaje = (fetchedNiveles: any[] | null | undefined): Nivel
     return result.sort((a, b) => b.nivel - a.nivel);
 };
 
+const mapActividad = (a: any, cursos?: any[]): Actividad => ({
+    id: a.id as number,
+    nombre: a.nombre as string,
+    cursoId: a.curso_id as number,
+    fecha: a.fecha as string,
+    periodo: a.periodo as string,
+    bcAsignados: (a.bc_asignados && (a.bc_asignados as BCKey[]).length > 0)
+        ? a.bc_asignados as BCKey[]
+        : ['BC1'] as BCKey[],
+    secuenciaId: a.secuencia_id as number,
+    isRec: a.is_rec as boolean,
+    userId: a.user_id as string,
+    asignatura: a.asignatura as string,
+    sharedCourseId: a.shared_course_id as string || (cursos?.find(cur => cur.id === a.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === a.curso_id)?.grupo_id}` : String(a.curso_id)),
+    indicador: a.indicador as string,
+    producto: a.producto as string
+});
+
+const mapCalificacion = (c: any, cursos?: any[]): CalificacionActividad => ({
+    id: c.id as number,
+    cursoId: c.curso_id as number,
+    estudianteId: c.estudiante_id as number,
+    actividadId: c.actividad_id as number,
+    userId: c.user_id as string || '',
+    asignatura: c.asignatura as string || '',
+    periodo: c.periodo as string,
+    competencias: c.competencias as BCKey[] || [],
+    descriptores: c.descriptores as string[] || [],
+    puntaje: c.puntaje as number,
+    recuperacion: c.recuperacion as number,
+    sharedCourseId: (c.shared_course_id as string) || (cursos?.find(cur => cur.id === c.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === c.curso_id)?.grupo_id}` : String(c.curso_id))
+});
+
+const mapCursoDetalle = (cd: any): CursoDetalleEvaluacion => ({
+    id: cd.id as number,
+    cursoId: cd.curso_id as number,
+    actividadId: cd.actividad_id as number,
+    estudianteId: cd.estudiante_id as number,
+    rubricaData: cd.rubrica_data as Record<string, unknown> || {},
+    cotejoData: cd.cotejo_data as Record<string, unknown> || {},
+    puntajeTotal: cd.puntaje_total as number,
+    observaciones: parseObservaciones(cd.observaciones),
+    plantillaId: cd.plantilla_id as number,
+    descriptores: [],
+    createdAt: cd.created_at as string,
+    sharedCourseId: cd.shared_course_id as string || String(cd.curso_id)
+});
+
+const mapEstudiante = (e: any): Estudiante => ({
+    id: e.id as number,
+    nombre: e.nombre as string,
+    apellido: e.apellido as string,
+    avatarColor: e.avatar_color as string,
+    cursoId: e.curso_id as number,
+    grupoId: e.grupo_id as number,
+    userId: e.docente_id as string,
+    sharedCourseId: (e.shared_course_id as string) || (e.grupo_id ? `group_${e.grupo_id}` : String(e.curso_id)),
+    nivel: e.nivel as 1 | 2 | 3 | 4,
+    puntaje: e.puntaje as number,
+    bc1: e.bc1 as BCScore || { nivel: 1, puntaje: 0 },
+    bc2: e.bc2 as BCScore || { nivel: 1, puntaje: 0 },
+    bc3: e.bc3 as BCScore || { nivel: 1, puntaje: 0 },
+    bc4: e.bc4 as BCScore || { nivel: 1, puntaje: 0 },
+    actividadesRecientes: e.actividades_recientes as number,
+    enRiesgo: e.en_riesgo as boolean,
+    numeroLista: e.numero_lista as number
+});
+
+const mapRecuperacion = (r: any, cursos?: any[]): RecuperacionBC => ({
+    estudianteId: r.estudiante_id as number,
+    cursoId: r.curso_id as number,
+    bc: Number(r.bc) as 1 | 2 | 3 | 4,
+    puntaje: r.puntaje as number,
+    periodo: r.periodo as string,
+    sharedCourseId: (r.shared_course_id as string) || (cursos?.find(cur => cur.id === r.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === r.curso_id)?.grupo_id}` : String(r.curso_id)),
+    userId: r.user_id as string,
+    asignatura: r.asignatura as string,
+    fecha: r.created_at as string
+});
+
+const mapRegistroAnecdotico = (ra: any): RegistroAnecdotico => ({
+    id: ra.id as number,
+    cursoId: ra.curso_id as number,
+    profileId: ra.profile_id as string,
+    fecha: ra.fecha as string,
+    titulo: ra.titulo as string,
+    descripcion: ra.descripcion as string,
+    activo: ra.activo !== false,
+    createdAt: ra.created_at as string,
+    updatedAt: ra.updated_at as string
+});
+
+const mapRegistroImagen = (ri: any): RegistroImagen => ({
+    id: ri.id as number,
+    registroId: ri.registro_id as number,
+    imagenUrl: ri.imagen_url as string || '',
+    driveFileId: ri.drive_file_id as string || undefined,
+    driveThumbnailUrl: ri.drive_thumbnail_url as string || undefined,
+    storageProvider: (ri.storage_provider as 'supabase_storage' | 'google_drive') || 'supabase_storage',
+    createdAt: ri.created_at as string
+});
+
+export const mapRealtimePost = (p: any, perfiles?: UserProfile[], secuencias?: any[], plantillas?: any[]): Post => {
+    const prof = perfiles?.find(u => u.userId === p.user_id);
+    
+    let resolvedRecursoDatos = p.recurso_datos as Record<string, unknown> | undefined;
+    if (!resolvedRecursoDatos && p.recurso_id && p.tipo) {
+        if (p.tipo === 'secuencia') {
+            resolvedRecursoDatos = secuencias?.find(s => s.id === p.recurso_id);
+        } else if (p.tipo === 'rubrica' || p.tipo === 'cotejo') {
+            resolvedRecursoDatos = plantillas?.find(pl => pl.id === p.recurso_id);
+        }
+    }
+
+    return {
+        id: p.id as number,
+        autor: prof?.nombreDocente || p.autor as string || 'Docente',
+        cargo: p.cargo as string || 'Docente',
+        avatarUrl: prof?.avatarUrl || '',
+        contenido: p.contenido as string,
+        tiempo: p.tiempo as string || 'Hace un momento',
+        fechaPublicacion: p.fecha_publicacion as string,
+        tipo: p.tipo as 'rubrica' | 'secuencia' | 'general' | 'cotejo',
+        asignatura: p.asignatura as string,
+        userId: p.user_id as string,
+        userBio: prof?.bio || '',
+        expiresAt: p.expires_at as string,
+        recursoDatos: resolvedRecursoDatos || {},
+        recursoId: p.recurso_id as number,
+    };
+};
+
 // Generación monotónica de cargas: descarta respuestas de cargas obsoletas
 let fetchDataGeneration = 0;
 
-export function useSupabaseData() {
-    const { state, setAppState: setState, loading, setLoading, session, setSession } = useAppStore();
+export function useSupabaseData(skipInit = false) {
+    const { 
+        state, 
+        setAppState: setState, 
+        loading, 
+        setLoading, 
+        session, 
+        selectedCursoId,
+        loadedModules,
+        loadedCursos,
+        addLoadedModule,
+        addLoadedCurso
+    } = useAppStore();
 
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-            setSession(currentSession);
-        });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-            setSession(currentSession);
-        });
+    const isFetching = useRef(false);
 
-        return () => subscription.unsubscribe();
-    }, []);
+    const timeQuery = async (name: string, queryPromise: any): Promise<any> => {
+        console.log(`[DEBUG LOAD] ${name} INICIO`);
+        const start = performance.now();
+        try {
+            const result = await queryPromise;
+            console.log(`[DEBUG LOAD] ${name} FIN: ${Math.round(performance.now() - start)}ms`);
+            return result;
+        } catch (error) {
+            console.log(`[DEBUG LOAD] ${name} ERROR: ${Math.round(performance.now() - start)}ms`, error);
+            throw error;
+        }
+    };
 
     const fetchData = useCallback(async (isSilent = false) => {
-        if (!session?.user?.id) return;
+        console.log('[DEBUG LOAD] fetchData INICIO');
+        if (!session?.user?.id) {
+            console.log('[DEBUG LOAD] RETURN — sesión no disponible');
+            return;
+        }
+        console.log('[DEBUG LOAD] sesión encontrada');
+        
+        if (isFetching.current) {
+            console.log('[DEBUG LOAD] RETURN — fetchData ignorado: ya hay una carga en progreso');
+            return;
+        }
+        isFetching.current = true;
+        
+        console.log(`[DEBUG LOAD] setLoading(true) - isSilent: ${isSilent}`);
         if (!isSilent) setLoading(true);
-        const generation = ++fetchDataGeneration;
-        console.log('[PLANIFICACION] inicio carga global (useSupabaseData)');
+        ++fetchDataGeneration;
+        console.log('[PLANIFICACION] inicio carga global por contexto (useSupabaseData)');
         try {
-            console.log('[PLANIFICACION] antes de consultar contexto de usuario y cursos');
+            console.log('[DEBUG LOAD] PASO 1: fetch perfil propio (sin JOIN) INICIO');
+            const startPerfil = performance.now();
+            
+            const { data: miPerfil, error: miPerfilError } = await supabase
+                .from('perfiles')
+                .select('user_id, nombre, nombre_docente, avatar_color, avatar_url, bio, tipo_institucion, asignaturas, centro_id, rol')
+                .eq('user_id', session.user.id)
+                .single();
+            
+            console.log(`[DEBUG LOAD] PASO 1: fetch perfil propio FIN: ${Math.round(performance.now() - startPerfil)}ms`, { error: miPerfilError, data: miPerfil });
+            
+            if (miPerfilError || !miPerfil) {
+                console.error('[DEBUG LOAD] RETURN — no se pudo obtener el perfil del usuario:', miPerfilError);
+                return;
+            }
+            
+            const userCentroId = (miPerfil as any).centro_id || null;
+            console.log('[DEBUG LOAD] userCentroId:', userCentroId);
+
+            console.log('[DEBUG LOAD] consultando mis cursos INICIO');
+            const startCursos = performance.now();
+            const misCursosDocenteResult = await supabase.from('curso_docentes').select('curso_id').eq('docente_id', session.user.id).eq('activo', true);
+            const misCursosDocente = misCursosDocenteResult.data;
+            console.log(`[DEBUG LOAD] consultando mis cursos FIN: ${Math.round(performance.now() - startCursos)}ms`, { error: misCursosDocenteResult.error });
+            
+            const misCursosIds = (misCursosDocente || []).map(cd => cd.curso_id);
+
+            // 2. Carga Contextual (Paso B)
+            const cursosQuery = misCursosIds.length > 0
+                ? supabase.from('cursos').select('*').or(`user_id.eq.${session.user.id},id.in.(${misCursosIds.join(',')})`)
+                : supabase.from('cursos').select('*').eq('user_id', session.user.id);
+
+            const suscripcionesQuery = userCentroId
+                ? supabase.from('suscripciones').select('*').or(`user_id.eq.${session.user.id},centro_id.eq.${userCentroId}`)
+                : supabase.from('suscripciones').select('*').eq('user_id', session.user.id);
+
+            const perfilesQuery = userCentroId
+                ? supabase.from('perfiles').select('*').eq('centro_id', userCentroId)
+                : supabase.from('perfiles').select('*').eq('user_id', session.user.id);
+
+            const centrosQuery = userCentroId
+                ? supabase.from('centros').select('*').eq('id', userCentroId)
+                : null;
+
+            console.log('[DEBUG LOAD] Phase 1 INICIO');
+            const startPhase1 = performance.now();
             const phase1 = await Promise.all([
-                supabase.from('perfiles').select('*, centros!perfiles_centro_id_fkey(*)'),
-                supabase.from('centro_roles').select('*'),
-                supabase.from('cursos').select('*'),
-                supabase.from('curso_docentes').select('*').eq('activo', true),
-                supabase.from('suscripciones').select('*'),
-                supabase.from('historial_colaboradores').select('*')
+                timeQuery('perfiles', perfilesQuery),
+                timeQuery('centro_roles', supabase.from('centro_roles').select('*').eq('user_id', session.user.id)),
+                timeQuery('cursos', cursosQuery),
+                timeQuery('curso_docentes', supabase.from('curso_docentes').select('*').eq('docente_id', session.user.id).eq('activo', true)),
+                timeQuery('suscripciones', suscripcionesQuery),
+                timeQuery('historial_colaboradores', supabase.from('historial_colaboradores').select('*').eq('usuario_id', session.user.id)),
+                timeQuery('centros', centrosQuery)
             ]);
+            console.log(`[DEBUG LOAD] Phase 1 FIN: ${Math.round(performance.now() - startPhase1)}ms`);
+
+            const fase1Fallidas = ['perfiles'].filter((_, idx) => !!phase1[idx].error);
+            if (fase1Fallidas.length > 0) {
+                console.log(`[DEBUG LOAD] RETURN — fase 1 falló (crítico): ${fase1Fallidas.join(', ')}`);
+                console.warn(`[Supabase fetchData] Perfiles no disponible (${fase1Fallidas.join(', ')}). Se conserva el estado actual.`);
+                return;
+            }
 
             const perfiles = phase1[0].data;
             const centroRoles = phase1[1].data;
@@ -99,35 +313,36 @@ export function useSupabaseData() {
             const cursoDocentes = phase1[3].data;
             const suscripciones = phase1[4].data;
             const historialColaboradores = phase1[5].data;
+            const centrosRaw = phase1[6]?.data || [];
 
-            // Catálogo único de centros (desde el join perfiles → centros).
             const centrosMap = new Map<string, Centro>();
+            if (centrosRaw && Array.isArray(centrosRaw)) {
+                centrosRaw.forEach((c: any) => {
+                    centrosMap.set(c.id, {
+                        id: c.id as string,
+                        nombre: c.nombre as string,
+                        codigoCentro: c.codigo_centro as string || '',
+                        tanda: c.tanda as string || 'Jornada Extendida',
+                        telefono: c.telefono as string || '',
+                        distritoEducativo: c.distrito_educativo as string || '',
+                        regionalEducacion: c.regional_educacion as string || '',
+                        provincia: c.provincia as string || '',
+                        municipio: c.municipio as string || '',
+                        createdBy: c.created_by as string,
+                        createdAt: c.created_at as string,
+                        updatedAt: c.updated_at as string,
+                        estado: (c.estado as Centro['estado']) || 'activo',
+                        afiliado: c.afiliado as boolean || false
+                    });
+                });
+            }
 
-            const mappedPerfiles = (perfiles || []).map((p: Record<string, unknown>): UserProfile => {
-                const cArray = p.centros;
-                const centroObj = (Array.isArray(cArray) ? cArray[0] : cArray) as Record<string, unknown> | undefined;
-                const resolvedCentro = centroObj ? {
-                    id: centroObj.id as string,
-                    nombre: centroObj.nombre as string,
-                    codigoCentro: centroObj.codigo_centro as string || '',
-                    tanda: centroObj.tanda as string || 'Jornada Extendida',
-                    telefono: centroObj.telefono as string || '',
-                    distritoEducativo: centroObj.distrito_educativo as string || '',
-                    regionalEducacion: centroObj.regional_educacion as string || '',
-                    provincia: centroObj.provincia as string || '',
-                    municipio: centroObj.municipio as string || '',
-                    createdBy: centroObj.created_by as string,
-                    createdAt: centroObj.created_at as string,
-                    updatedAt: centroObj.updated_at as string,
-                    estado: (centroObj.estado as Centro['estado']) || 'activo',
-                    afiliado: centroObj.afiliado as boolean || false
-                } : undefined;
+            const mappedPerfiles = (perfiles || []).map((p: any): UserProfile => {
+                const resolvedCentro = p.centro_id && centrosMap.has(p.centro_id)
+                    ? centrosMap.get(p.centro_id)
+                    : undefined;
 
-                // Catálogo institucional: permite resolver curso.centroId → CENTRO
-                // (boletines) sin depender del usuario que imprime.
-                if (resolvedCentro) centrosMap.set(resolvedCentro.id, resolvedCentro);
-
-                const hist = (historialColaboradores || []).find((h: Record<string, unknown>) => h.usuario_id === p.user_id);
+                const hist = (historialColaboradores || []).find((h: any) => h.usuario_id === p.user_id);
 
                 return {
                     userId: p.user_id as string,
@@ -142,18 +357,37 @@ export function useSupabaseData() {
                     centro: resolvedCentro,
                     rol: (p.rol as UserProfile['rol']) || undefined,
                     lastSeen: p.last_seen as string,
-                    currentModule: p.current_module as string,
                     publicacionesRealizadas: hist ? (hist.publicaciones_realizadas as number) : 0
                 };
             });
 
-            const currentUserProfile = mappedPerfiles.find(p => p.userId === session.user.id);
-            const userCentroId = currentUserProfile?.centro_id;
+            if (!mappedPerfiles.find((p: UserProfile) => p.userId === session.user.id)) {
+                const resolvedCentroMi = userCentroId && centrosMap.has(userCentroId)
+                    ? centrosMap.get(userCentroId)
+                    : undefined;
+                mappedPerfiles.unshift({
+                    userId: miPerfil.user_id as string,
+                    nombreDocente: (miPerfil as any).nombre_docente as string || (miPerfil as any).nombre as string || '',
+                    bio: (miPerfil as any).bio as string || '',
+                    avatarUrl: (miPerfil as any).avatar_url as string || '',
+                    avatarColor: (miPerfil as any).avatar_color as string || '',
+                    asignatura: Array.isArray((miPerfil as any).asignaturas) ? (miPerfil as any).asignaturas[0] : ((miPerfil as any).asignatura as string || ''),
+                    institucion: resolvedCentroMi?.nombre || '',
+                    instituto: resolvedCentroMi?.nombre || '',
+                    centro_id: userCentroId || undefined,
+                    centro: resolvedCentroMi,
+                    rol: ((miPerfil as any).rol as UserProfile['rol']) || undefined,
+                    lastSeen: (miPerfil as any).last_seen as string || new Date().toISOString(),
+                    publicacionesRealizadas: 0
+                });
+            }
+
+            const currentUserProfile = mappedPerfiles.find((p: any) => p.userId === session.user.id);
             let resolvedSuscripcionActual = undefined;
             if (suscripciones && suscripciones.length > 0) {
-                const institucionales = suscripciones.filter(s => s.centro_id === userCentroId && s.tipo === 'institucional' && s.estado === 'activa');
-                const individuales = suscripciones.filter(s => s.user_id === session.user.id && s.tipo === 'individual' && s.estado === 'activa');
-                const promocionales = suscripciones.filter(s => s.user_id === session.user.id && s.tipo === 'promocional' && s.estado === 'activa');
+                const institucionales = suscripciones.filter((s: any) => s.centro_id === userCentroId && s.tipo === 'institucional' && s.estado === 'activa');
+                const individuales = suscripciones.filter((s: any) => s.user_id === session.user.id && s.tipo === 'individual' && s.estado === 'activa');
+                const promocionales = suscripciones.filter((s: any) => s.user_id === session.user.id && s.tipo === 'promocional' && s.estado === 'activa');
                 
                 if (institucionales.length > 0) {
                     resolvedSuscripcionActual = institucionales[0];
@@ -176,26 +410,344 @@ export function useSupabaseData() {
                 };
             })();
 
-            const isCentroAdmin = !!resolvedCentroRolActual && resolvedCentroRolActual.rol === 'administrador';
+            console.log('[DEBUG LOAD] Actualizando estado global de Zustand (Zustand setState) INICIO');
+            const startZustand = performance.now();
 
-            const misCursosTutor = (cursos || [])
-                .filter((c: any) => c.is_tutor_oficial && String(c.user_id) === session.user.id)
-                .map((c: any) => c.id);
+            // Phase 1.5: Load registros anecdóticos + imágenes for Dashboard
+            const { data: registrosRaw } = await supabase
+                .from('registros_anecdoticos')
+                .select('*')
+                .eq('profile_id', session.user.id)
+                .eq('activo', true)
+                .order('created_at', { ascending: false });
 
-            const misCursosVinculados = Array.from(new Set(
-                (cursoDocentes || [])
-                    .filter((cd) => String(cd.docente_id) === session.user.id)
-                    .map((cd) => cd.curso_id as number)
-            ));
+            const registrosAnecdoticos = (registrosRaw || []).map(mapRegistroAnecdotico);
+            const registroIds = registrosAnecdoticos.map(r => r.id);
 
-            const cursosActivos = (cursos || []).filter((c: any) => 
-                isCentroAdmin ? (c.centro_id === userCentroId) : (String(c.user_id) === session.user.id || misCursosTutor.includes(c.id))
+            let registroImagenes: RegistroImagen[] = [];
+            if (registroIds.length > 0) {
+                const { data: imagenesRaw } = await supabase
+                    .from('registro_imagenes')
+                    .select('*')
+                    .in('registro_id', registroIds);
+                registroImagenes = (imagenesRaw || []).map(mapRegistroImagen);
+            }
+
+            setState(prev => {
+                const mappedDocentes = Array.from(new Map<string, Docente>([
+                    ...(perfiles || []).map((p: Record<string, unknown>): [string, Docente] => [p.nombre_docente as string || p.nombre as string, {
+                        id: p.user_id as string,
+                        userId: p.user_id as string,
+                        nombre: (p.nombre_docente as string || p.nombre as string || ''),
+                        asignatura: Array.isArray(p.asignaturas) ? p.asignaturas[0] : (p.asignatura as string || ''),
+                        avatarColor: p.avatar_color as string || '#3b82f6'
+                    }])
+                ]).values());
+
+                return {
+                    ...prev,
+                    perfiles: mappedPerfiles,
+                    docentes: mappedDocentes,
+                    cursos: (cursos || []).map((c: Record<string, unknown>): Curso | null => {
+                        const myLink = (cursoDocentes || []).find((cd: any) => cd.curso_id === c.id && String(cd.docente_id) === session.user.id);
+                        const isCreator = String(c.user_id) === session.user.id;
+                        const isCentroAdmin = !!resolvedCentroRolActual &&
+                            resolvedCentroRolActual.rol === 'administrador' &&
+                            !!c.centro_id && c.centro_id === resolvedCentroRolActual.centro_id;
+                        if (isCreator && !isCentroAdmin && userCentroId && c.centro_id && c.centro_id !== userCentroId) return null;
+                        if (!myLink && !isCreator && !isCentroAdmin) return null;
+                        return {
+                            id: c.id as number,
+                            nombre: c.nombre as string,
+                            asignatura: myLink ? (myLink.asignatura as string) : (c.asignatura as string),
+                            grado: c.grado as string,
+                            seccion: c.seccion as string,
+                            periodo: c.periodo as string,
+                            diasSemana: myLink ? (myLink.dias_semana as string[] || []) : [],
+                            color: c.color as string,
+                            isTutorOficial: c.is_tutor_oficial as boolean,
+                            userId: c.user_id as string,
+                            grupoId: c.grupo_id as number,
+                            sharedCourseId: (c.shared_course_id as string) || (c.grupo_id ? `group_${c.grupo_id}` : String(c.id)),
+                            centroId: c.centro_id as string,
+                            configuracionEvaluacion: c.configuracion_evaluacion as Record<string, unknown> || {},
+                            createdAt: c.created_at as string
+                        };
+                    }).filter((x: any): x is Curso => x !== null),
+                    cursoDocentes: (cursoDocentes || []).map((cd: Record<string, unknown>): CursoDocente => ({
+                        id: cd.id as number,
+                        cursoId: cd.curso_id as number,
+                        userId: String(cd.docente_id),
+                        rol: cd.rol as 'tutor' | 'co-docente',
+                        esTutor: cd.es_tutor as boolean,
+                        asignatura: cd.asignatura as string,
+                        diasSemana: cd.dias_semana as string[] || [],
+                        createdAt: cd.created_at as string
+                    })),
+                    suscripcionActual: resolvedSuscripcionActual,
+                    centroRolActual: resolvedCentroRolActual,
+                    centros: Array.from(centrosMap.values()),
+                    registrosAnecdoticos,
+                    registroImagenes
+                };
+            });
+            console.log(`[DEBUG LOAD] Actualizando estado global de Zustand (Zustand setState) FIN: ${Math.round(performance.now() - startZustand)}ms`);
+        } catch (error) {
+            console.error('[DEBUG LOAD] Error fetching data from Supabase:', error);
+            console.error('[PLANIFICACION] error', error);
+        } finally {
+            console.log('[DEBUG LOAD] FINALLY EJECUTADO');
+            isFetching.current = false;
+            console.log(`[DEBUG LOAD] setLoading(false) - isSilent: ${isSilent}`);
+            if (!isSilent) setLoading(false);
+            console.log('[DEBUG LOAD] fetchData TERMINÓ');
+        }
+    }, [session]);
+
+    const handleCalificacionRealtime = useCallback((payload: any) => {
+        const { eventType, new: newRow, old: oldRow } = payload;
+        const stateCursos = useAppStore.getState().state.cursos;
+        setState(s => {
+            let nextList = [...s.calificaciones];
+            if (eventType === 'DELETE') {
+                nextList = nextList.filter(c => !(c.estudianteId === oldRow.estudiante_id && c.actividadId === oldRow.actividad_id));
+            } else {
+                const mapped = mapCalificacion(newRow, stateCursos);
+                const idx = nextList.findIndex(c => c.estudianteId === mapped.estudianteId && c.actividadId === mapped.actividadId);
+                if (idx !== -1) {
+                    if (JSON.stringify(nextList[idx]) !== JSON.stringify(mapped)) {
+                        nextList[idx] = mapped;
+                    }
+                } else {
+                    nextList.push(mapped);
+                }
+            }
+            return { ...s, calificaciones: nextList };
+        });
+    }, [setState]);
+
+    const handleCursoDetalleRealtime = useCallback((payload: any) => {
+        const { eventType, new: newRow, old: oldRow } = payload;
+        setState(s => {
+            let nextList = [...s.cursoDetalle];
+            if (eventType === 'DELETE') {
+                nextList = nextList.filter(c => !(c.estudianteId === oldRow.estudiante_id && c.actividadId === oldRow.actividad_id));
+            } else {
+                const mapped = mapCursoDetalle(newRow);
+                const idx = nextList.findIndex(c => c.estudianteId === mapped.estudianteId && c.actividadId === mapped.actividadId);
+                if (idx !== -1) {
+                    if (JSON.stringify(nextList[idx]) !== JSON.stringify(mapped)) {
+                        nextList[idx] = mapped;
+                    }
+                } else {
+                    nextList.push(mapped);
+                }
+            }
+            return { ...s, cursoDetalle: nextList };
+        });
+    }, [setState]);
+
+    const handleActividadesRealtime = useCallback((payload: any) => {
+        const { eventType, new: newRow, old: oldRow } = payload;
+        const stateCursos = useAppStore.getState().state.cursos;
+        setState(s => {
+            let nextList = [...s.actividades];
+            if (eventType === 'DELETE') {
+                nextList = nextList.filter(a => a.id !== oldRow.id);
+            } else {
+                const mapped = mapActividad(newRow, stateCursos);
+                const idx = nextList.findIndex(a => a.id === mapped.id);
+                if (idx !== -1) {
+                    if (JSON.stringify(nextList[idx]) !== JSON.stringify(mapped)) {
+                        nextList[idx] = mapped;
+                    }
+                } else {
+                    nextList.push(mapped);
+                }
+            }
+            return { ...s, actividades: nextList };
+        });
+    }, [setState]);
+
+    const handleEstudiantesRealtime = useCallback((payload: any) => {
+        const { eventType, new: newRow, old: oldRow } = payload;
+        setState(s => {
+            let nextList = [...s.estudiantes];
+            if (eventType === 'DELETE') {
+                nextList = nextList.filter(e => e.id !== oldRow.id);
+            } else {
+                const mapped = mapEstudiante(newRow);
+                const idx = nextList.findIndex(e => e.id === mapped.id);
+                if (idx !== -1) {
+                    if (JSON.stringify(nextList[idx]) !== JSON.stringify(mapped)) {
+                        nextList[idx] = mapped;
+                    }
+                } else {
+                    nextList.push(mapped);
+                }
+            }
+            return { ...s, estudiantes: nextList };
+        });
+    }, [setState]);
+
+    const handleRecuperacionRealtime = useCallback((payload: any) => {
+        const { eventType, new: newRow, old: oldRow } = payload;
+        const stateCursos = useAppStore.getState().state.cursos;
+        setState(s => {
+            let nextList = [...s.recuperaciones];
+            if (eventType === 'DELETE') {
+                nextList = nextList.filter(r => !(r.estudianteId === oldRow.estudiante_id && r.cursoId === oldRow.curso_id && r.bc === oldRow.bc && r.periodo === oldRow.periodo && r.asignatura === oldRow.asignatura));
+            } else {
+                const mapped = mapRecuperacion(newRow, stateCursos);
+                const idx = nextList.findIndex(r => r.estudianteId === mapped.estudianteId && r.cursoId === mapped.cursoId && r.bc === mapped.bc && r.periodo === mapped.periodo && r.asignatura === mapped.asignatura);
+                if (idx !== -1) {
+                    if (JSON.stringify(nextList[idx]) !== JSON.stringify(mapped)) {
+                        nextList[idx] = mapped;
+                    }
+                } else {
+                    nextList.push(mapped);
+                }
+            }
+            return { ...s, recuperaciones: nextList };
+        });
+    }, [setState]);
+
+    useEffect(() => {
+        if (skipInit || !session?.user?.id) return;
+
+        // 1. Initial Load of context
+        fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [skipInit, session?.user?.id]); // solo depender de cambios de usuario reales
+
+    useEffect(() => {
+        if (skipInit || !session?.user?.id) return;
+        
+        // 2. Setup standard backup interval (15 minutes)
+        const interval = setInterval(() => fetchData(true), 900000);
+        return () => clearInterval(interval);
+    }, [skipInit, session?.user?.id, fetchData]);
+
+    useEffect(() => {
+        if (skipInit || !session?.user?.id) return;
+
+        // 3. Setup selective Realtime subscriptions
+        const userChannels: any[] = [];
+
+        // Channel A: User-scoped global events (notifications, anecdóticos, and posts)
+        const userGlobalChannelName = `user-global-${session.user.id}`;
+        console.log(`[REALTIME] CREATE canal=${userGlobalChannelName}`);
+        const userGlobalChannel = supabase.channel(userGlobalChannelName)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'notificaciones', filter: `user_id=eq.${session.user.id}` }, (payload) => {
+                const { eventType, new: newRow, old: oldRow } = payload;
+                setState(s => {
+                    let nextList = [...s.notificaciones];
+                    if (eventType === 'DELETE') {
+                        nextList = nextList.filter(n => n.id !== oldRow.id);
+                    } else {
+                        const mapped: Notification = {
+                            id: newRow.id,
+                            userId: newRow.user_id,
+                            actorId: newRow.actor_id,
+                            titulo: newRow.titulo,
+                            mensaje: newRow.mensaje,
+                            leida: newRow.leida,
+                            tipo: newRow.tipo,
+                            postId: newRow.post_id,
+                            tareaId: newRow.tarea_institucional_id,
+                            createdAt: newRow.created_at,
+                            fechaLectura: newRow.fecha_lectura
+                        };
+                        const idx = nextList.findIndex(n => n.id === mapped.id);
+                        if (idx !== -1) {
+                            nextList[idx] = mapped;
+                        } else {
+                            nextList.unshift(mapped);
+                        }
+                    }
+                    return { ...s, notificaciones: nextList };
+                });
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'registros_anecdoticos', filter: `profile_id=eq.${session.user.id}` }, (payload) => {
+                const { eventType, new: newRow, old: oldRow } = payload;
+                setState(s => {
+                    let nextList = [...s.registrosAnecdoticos];
+                    if (eventType === 'DELETE') {
+                        nextList = nextList.filter(r => r.id !== oldRow.id);
+                    } else {
+                        const mapped = mapRegistroAnecdotico(newRow);
+                        const idx = nextList.findIndex(r => r.id === mapped.id);
+                        if (idx !== -1) {
+                            nextList[idx] = mapped;
+                        } else {
+                            nextList.unshift(mapped);
+                        }
+                    }
+                    return { ...s, registrosAnecdoticos: nextList };
+                });
+            })
+            .subscribe();
+
+        userChannels.push(userGlobalChannel);
+
+        // Channel B: Course-specific events (only active if selectedCursoId is set!)
+        let courseChannel: any = null;
+        if (selectedCursoId) {
+            const courseChannelName = `curso-context-${selectedCursoId}`;
+            console.log(`[REALTIME] CREATE canal=${courseChannelName} curso=${selectedCursoId}`);
+            courseChannel = supabase.channel(courseChannelName)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'calificaciones', filter: `curso_id=eq.${selectedCursoId}` }, handleCalificacionRealtime)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_detalle', filter: `curso_id=eq.${selectedCursoId}` }, handleCursoDetalleRealtime)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'actividades', filter: `curso_id=eq.${selectedCursoId}` }, handleActividadesRealtime)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'estudiantes', filter: `curso_id=eq.${selectedCursoId}` }, handleEstudiantesRealtime)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones', filter: `curso_id=eq.${selectedCursoId}` }, handleRecuperacionRealtime)
+                .subscribe();
+                
+            userChannels.push(courseChannel);
+        }
+
+        return () => {
+            userChannels.forEach(ch => {
+                console.log(`[REALTIME] REMOVE canal=${ch.topic}`);
+                supabase.removeChannel(ch);
+            });
+        };
+    }, [skipInit, session?.user?.id, selectedCursoId, handleCalificacionRealtime, handleCursoDetalleRealtime, handleActividadesRealtime, handleEstudiantesRealtime, handleRecuperacionRealtime]);
+
+    const loadDashboardData = useCallback(async () => {
+        if (!session?.user?.id) return;
+        if (loadedModules.includes('dashboard')) return;
+        console.log('[PLANIFICACION] lazy loading Dashboard data');
+        setLoading(true);
+        try {
+            const currentProfile = state.perfiles.find(p => p.userId === session.user.id);
+            const userCentroId = currentProfile?.centro_id;
+            const isCentroAdmin = esRolAdministrador(currentProfile?.rol);
+
+            if (!currentProfile) {
+                console.log('[PLANIFICACION] loadDashboardData: perfiles no disponibles aún, omitiendo carga (sin marcar loaded)');
+                setLoading(false);
+                return;
+            }
+            
+            const misCursosTutor = state.cursos
+                .filter(c => c.isTutorOficial && String(c.userId) === session.user.id)
+                .map(c => c.id);
+                
+            const misCursosVinculados = state.cursoDocentes
+                .filter(cd => cd.userId === session.user.id)
+                .map(cd => cd.cursoId);
+                
+            const cursosActivos = state.cursos.filter(c => 
+                isCentroAdmin ? (c.centroId === userCentroId) : (String(c.userId) === session.user.id || misCursosTutor.includes(c.id))
             );
-
+            
             const cursosParticipaIds = Array.from(new Set<number>([
-                ...cursosActivos.map((c) => c.id),
+                ...cursosActivos.map(c => c.id),
                 ...misCursosVinculados
             ]));
+
+            const activeQuery = (table: string) => supabase.from(table).select('*').eq('activo', true);
 
             const userFilter = (query: any, userCol = 'user_id') => {
                 if (isCentroAdmin && misCursosTutor.length === 0) {
@@ -213,231 +765,49 @@ export function useSupabaseData() {
                 }
                 return query.eq('user_id', session.user.id);
             };
-
-            const activeQuery = (table: string) => supabase.from(table).select('*').eq('activo', true);
-            const baseQuery = (table: string) => supabase.from(table).select('*');
-
-            console.log(`[PLANIFICACION] Fase 2: solicitando tablas secundarias para usuario (isCentroAdmin: ${isCentroAdmin}, tutorOficialEn: ${misCursosTutor.length} cursos)`);
             
+            const misSharedCourseIds = Array.from(new Set(
+                state.cursos
+                    .filter(c => cursosParticipaIds.includes(c.id))
+                    .map(c => c.sharedCourseId)
+                    .filter(Boolean)
+            ));
+            
+            const incidenciaOrFilter =
+                `user_id.eq.${session.user.id}` +
+                (misSharedCourseIds.length > 0 ? `,shared_course_id.in.(${misSharedCourseIds.join(',')})` : '');
+
+            console.log(`[PLANIFICACION] Dashboard queries (isCentroAdmin: ${isCentroAdmin}, cursos: ${cursosParticipaIds.length})`);
+
             const results = await Promise.all([
-                supabase.from('estudiantes').select('*').eq('activo', true),
+                supabase.from('estudiantes').select('*').eq('activo', true).in('curso_id', cursosParticipaIds.length > 0 ? cursosParticipaIds : [-1]),
                 userFilter(activeQuery('actividades')),
                 userOrTutorFilter(activeQuery('calificaciones')),
-                userOrTutorFilter(activeQuery('recuperaciones')),
-                userFilter(activeQuery('secuencias')),
-                userFilter(activeQuery('incidencias')),
+                supabase.from('incidencias').select('*').eq('activo', true).or(incidenciaOrFilter),
                 supabase.from('eventos').select('*'),
-                supabase.from('posts').select('*, profiles:perfiles(nombre_docente, avatar_url, bio)').order('id', { ascending: false }),
-                userFilter(baseQuery('evaluaciones_rubrica')),
-                userFilter(baseQuery('evaluaciones_cotejo')),
-                supabase.from('criterios_cotejo').select('*'),
-                supabase.from('descriptores_rubrica').select('*'),
-                supabase.from('niveles_puntaje').select('*'),
-                supabase.from('plantillas').select('*').eq('archivado', false).order('created_at', { ascending: false }),
-                supabase.from('curso_detalle').select('*'),
-                userFilter(baseQuery('notificaciones')).eq('leida', false).order('created_at', { ascending: false }),
+                supabase.from('notificaciones').select('*').eq('user_id', session.user.id).eq('leida', false).order('created_at', { ascending: false }),
                 supabase.from('grupos').select('*'),
-                userFilter(activeQuery('registros_anecdoticos'), 'profile_id').order('fecha', { ascending: false }),
-                supabase.from('registro_imagenes').select('*'),
                 supabase.from('tareas_institucionales').select('*'),
-                supabase.from('tarea_docente').select('*')
+                supabase.from('tarea_docente').select('*'),
+                supabase.from('calendario_minerd').select('*')
             ]);
 
-            // Una carga iniciada antes pero resuelta después no debe
-            // sobrescribir el estado ya actualizado por una carga más reciente.
-            if (generation !== fetchDataGeneration) {
-                console.warn('[Supabase fetchData] Respuesta obsoleta descartada: existe una carga más reciente.');
-                return;
-            }
-
-            const tableNames = [
-                'estudiantes', 'actividades', 'calificaciones', 'recuperaciones', 'secuencias', 'incidencias',
-                'eventos', 'posts', 'evaluaciones_rubrica', 'evaluaciones_cotejo', 'criterios_cotejo', 'descriptores_rubrica',
-                'niveles_puntaje', 'plantillas', 'curso_detalle', 'notificaciones', 'grupos', 'registros_anecdoticos',
-                'registro_imagenes', 'tareas_institucionales', 'tarea_docente'
-            ];
-
-            const queryErrors: string[] = [];
-            results.forEach((result, idx) => {
-                if (result.error) {
-                    queryErrors.push(`[${tableNames[idx]}] ${result.error.message} (code: ${result.error.code})`);
-                    console.error(`[Supabase fetchData] Error en tabla "${tableNames[idx]}":`, result.error);
-                }
-            });
-            if (queryErrors.length > 0) {
-                console.warn(`[Supabase fetchData] ${queryErrors.length} consulta(s) fallaron. Las tablas afectadas conservarán sus valores previos.`);
-            }
-
-            // Si una consulta falla (RLS/permisos, token rotado, red), se preserva
-            // el estado previo de esa tabla en lugar de reemplazarlo por vacío.
-            const estudiantes = results[0].error ? null : results[0].data;
-            const actividades = results[1].error ? null : results[1].data;
-            const calificaciones = results[2].error ? null : results[2].data;
-            const recuperaciones = results[3].error ? null : results[3].data;
-            const secuencias = results[4].data;
-            // La bitácora depende de estudiantes para resolver sharedCourseId:
-            // solo se actualiza si ambas consultas fueron exitosas.
-            const incidencias = (results[0].error || results[5].error) ? null : results[5].data;
-            const eventos = results[6].data;
-            const posts = results[7].data;
-            const evaluacionesRubrica = results[8].data;
-            const evaluacionesCotejo = results[9].data;
-            const criteriosCotejo = results[10].data;
-            const descriptoresRubrica = results[11].data;
-            const nivelesPuntaje = results[12].data;
-            const plantillas = results[13].data;
-            const cursoDetalle = results[14].data;
-            const notificaciones = results[15].data;
-            const grupos = results[16].data;
-            const registrosAnecdoticos = results[17].data;
-            const registroImagenes = results[18].data;
-            const tareas = results[19].data;
-            const tareaAsignaciones = results[20].data;
+            const estudiantes = results[0].data || [];
+            const actividades = results[1].data || [];
+            const calificaciones = results[2].data || [];
+            const incidencias = results[3].data || [];
+            const eventos = results[4].data || [];
+            const notificaciones = results[5].data || [];
+            const grupos = results[6].data || [];
+            const tareas = results[7].data || [];
+            const tareaAsignaciones = results[8].data || [];
+            const calendarioMinerd = results[9].data || [];
 
             setState(prev => {
-                const mappedPosts = (posts || []).map((p: Record<string, unknown>): Post => {
-                    const prof = (Array.isArray(p.profiles) ? p.profiles[0] : p.profiles) as Record<string, unknown> | undefined;
-                    
-                    let resolvedRecursoDatos = p.recurso_datos as Record<string, unknown> | undefined;
-                    if (!resolvedRecursoDatos && p.recurso_id && p.tipo) {
-                        if (p.tipo === 'secuencia') {
-                            resolvedRecursoDatos = (secuencias || []).find((s: Record<string, unknown>) => s.id === p.recurso_id) as Record<string, unknown> | undefined;
-                        } else if (p.tipo === 'rubrica' || p.tipo === 'cotejo') {
-                            resolvedRecursoDatos = (plantillas || []).find((pl: Record<string, unknown>) => pl.id === p.recurso_id) as Record<string, unknown> | undefined;
-                        }
-                    }
-
-                    return {
-                        id: p.id as number,
-                        autor: prof?.nombre_docente as string || p.autor as string,
-                        cargo: p.cargo as string,
-                        avatarUrl: prof?.avatar_url as string || '',
-                        contenido: p.contenido as string,
-                        tiempo: p.tiempo as string || 'Hace un momento',
-                        fechaPublicacion: p.fecha_publicacion as string,
-                        tipo: p.tipo as 'rubrica' | 'secuencia' | 'general' | 'cotejo',
-                        asignatura: p.asignatura as string,
-                        userId: p.user_id as string,
-                        userBio: prof?.bio as string || '',
-                        expiresAt: p.expires_at as string,
-                        recursoDatos: resolvedRecursoDatos || {},
-                        recursoId: p.recurso_id as number,
-                    };
-                });
-
-                const optimisticPosts = prev.posts.filter(p => 
-                    p.isOptimistic && !mappedPosts.some(mp => mp.id === p.id)
-                );
-
-                return {
-                ...prev,
-                perfiles: mappedPerfiles,
-                cursos: (cursos || []).map((c: Record<string, unknown>): Curso | null => {
-                    const myLink = (cursoDocentes || []).find((cd: any) => cd.curso_id === c.id && String(cd.docente_id) === session.user.id);
-                    const isCreator = String(c.user_id) === session.user.id;
-                    const isCentroAdmin = !!resolvedCentroRolActual &&
-                        resolvedCentroRolActual.rol === 'administrador' &&
-                        !!c.centro_id && c.centro_id === resolvedCentroRolActual.centro_id;
-                    // Aislamiento entre centros: un curso creado por el docente en
-                    // OTRO centro (diferente al que está vinculado ahora) no debe
-                    // seguir apareciendo en su entorno tras un cambio de centro.
-                    if (isCreator && !isCentroAdmin && userCentroId && c.centro_id && c.centro_id !== userCentroId) return null;
-                    if (!myLink && !isCreator && !isCentroAdmin) return null;
-                    return {
-                        id: c.id as number,
-                        nombre: c.nombre as string,
-                        asignatura: myLink ? (myLink.asignatura as string) : (c.asignatura as string),
-                        grado: c.grado as string,
-                        seccion: c.seccion as string,
-                        periodo: c.periodo as string,
-                        diasSemana: myLink ? (myLink.dias_semana as string[] || []) : [],
-                        color: c.color as string,
-                        isTutorOficial: c.is_tutor_oficial as boolean,
-                        userId: c.user_id as string,
-                        grupoId: c.grupo_id as number,
-                        sharedCourseId: (c.shared_course_id as string) || (c.grupo_id ? `group_${c.grupo_id}` : String(c.id)),
-                        centroId: c.centro_id as string,
-                        configuracionEvaluacion: c.configuracion_evaluacion as Record<string, unknown> || {},
-                        createdAt: c.created_at as string
-                    };
-                }).filter((x): x is Curso => x !== null),
-                estudiantes: estudiantes === null ? prev.estudiantes : estudiantes.map((e: Record<string, unknown>): Estudiante => ({
-                    id: e.id as number,
-                    nombre: e.nombre as string,
-                    apellido: e.apellido as string,
-                    avatarColor: e.avatar_color as string,
-                    cursoId: e.curso_id as number,
-                    grupoId: e.grupo_id as number,
-                    userId: e.docente_id as string,
-                    sharedCourseId: (e.shared_course_id as string) || (e.grupo_id ? `group_${e.grupo_id}` : String(e.curso_id)),
-                    nivel: e.nivel as 1 | 2 | 3 | 4,
-                    puntaje: e.puntaje as number,
-                    bc1: e.bc1 as BCScore || { nivel: 1, puntaje: 0 },
-                    bc2: e.bc2 as BCScore || { nivel: 1, puntaje: 0 },
-                    bc3: e.bc3 as BCScore || { nivel: 1, puntaje: 0 },
-                    bc4: e.bc4 as BCScore || { nivel: 1, puntaje: 0 },
-                    actividadesRecientes: e.actividades_recientes as number,
-                    enRiesgo: e.en_riesgo as boolean,
-                    numeroLista: e.numero_lista as number
-                })),
-                actividades: actividades === null ? prev.actividades : actividades.map((a: Record<string, unknown>): Actividad => ({
-                    id: a.id as number,
-                    nombre: a.nombre as string,
-                    cursoId: a.curso_id as number,
-                    fecha: a.fecha as string,
-                    periodo: a.periodo as string,
-                    bcAsignados: (a.bc_asignados && (a.bc_asignados as BCKey[]).length > 0)
-                        ? a.bc_asignados as BCKey[]
-                        : ['BC1'] as BCKey[],
-                    secuenciaId: a.secuencia_id as number,
-                    isRec: a.is_rec as boolean,
-                    userId: a.user_id as string,
-                    asignatura: a.asignatura as string,
-                    sharedCourseId: a.shared_course_id as string || (cursos?.find(cur => cur.id === a.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === a.curso_id)?.grupo_id}` : String(a.curso_id)),
-                    indicador: a.indicador as string
-                })),
-                // Si la consulta de calificaciones falló (RLS/permisos), conservar estado previo
-                calificaciones: calificaciones === null ? prev.calificaciones : calificaciones.map((c: Record<string, unknown>): CalificacionActividad => ({
-                    id: c.id as number,
-                    cursoId: c.curso_id as number,
-                    estudianteId: c.estudiante_id as number,
-                    actividadId: c.actividad_id as number,
-                    userId: c.user_id as string || '',
-                    asignatura: c.asignatura as string || '',
-                    periodo: c.periodo as string,
-                    competencias: c.competencias as BCKey[] || [],
-                    descriptores: c.descriptores as string[] || [],
-                    puntaje: c.puntaje as number,
-                    recuperacion: c.recuperacion as number,
-                    sharedCourseId: (c.shared_course_id as string) || (cursos?.find(cur => cur.id === c.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === c.curso_id)?.grupo_id}` : String(c.curso_id))
-                })),
-                // Si la consulta de recuperaciones falló (RLS/permisos), conservar estado previo
-                recuperaciones: recuperaciones === null ? prev.recuperaciones : recuperaciones.map((r: Record<string, unknown>): RecuperacionBC => ({
-                    estudianteId: r.estudiante_id as number,
-                    cursoId: r.curso_id as number,
-                    bc: Number(r.bc) as 1 | 2 | 3 | 4,
-                    puntaje: r.puntaje as number,
-                    periodo: r.periodo as string,
-                    sharedCourseId: (r.shared_course_id as string) || (cursos?.find(cur => cur.id === r.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === r.curso_id)?.grupo_id}` : String(r.curso_id)),
-                    userId: r.user_id as string,
-                    asignatura: r.asignatura as string,
-                    fecha: r.created_at as string
-                })),
-                secuencias: (secuencias || []).map((s: Record<string, unknown>): Secuencia => ({
-                    id: s.id as number,
-                    titulo: s.titulo as string,
-                    cursoId: s.curso_id as number,
-                    fechaInicio: s.fecha_inicio as string,
-                    contenidoHtml: s.contenido_html as string,
-                    estado: s.estado as 'Pendiente' | 'En progreso' | 'Completada',
-                    archivoUrl: s.archivo_url as string | undefined,
-                    archivoNombre: s.archivo_nombre as string | undefined,
-                    archivoSize: s.archivo_size as number | undefined,
-                    archivoTipo: s.archivo_tipo as string | undefined,
-                    archivoFechaCarga: s.archivo_fecha_carga as string | undefined,
-                    recursos: Array.isArray(s.recursos) ? s.recursos : (typeof s.recursos === 'string' ? (() => { try { return JSON.parse(s.recursos); } catch(e) { return []; } })() : [])
-                })),
-                                incidencias: incidencias === null ? prev.incidencias : incidencias.map((i: Record<string, unknown>): Incidencia => ({
+                const mappedEst = estudiantes.map(e => mapEstudiante(e));
+                const mappedAct = actividades.map((a: Record<string, unknown>) => mapActividad(a, prev.cursos));
+                const mappedCal = calificaciones.map((c: Record<string, unknown>) => mapCalificacion(c, prev.cursos));
+                const mappedIncidencias = incidencias.map((i: Record<string, unknown>): Incidencia => ({
                     id: i.id as number,
                     estudianteId: i.estudiante_id as number,
                     categoria: i.categoria as 'Conducta' | 'Académico' | 'Salud' | 'Otro',
@@ -447,135 +817,32 @@ export function useSupabaseData() {
                     fecha: i.fecha as string,
                     gravedad: i.gravedad as 'leve' | 'moderada' | 'grave',
                     userId: i.user_id as string,
-                    sharedCourseId: (i.shared_course_id as string) || (estudiantes?.find(e => e.id === i.estudiante_id)?.shared_course_id as string) || (estudiantes?.find(e => e.id === i.estudiante_id)?.curso_id ? String(estudiantes?.find(e => e.id === i.estudiante_id)?.curso_id) : '')
-                })),
-                eventos: (eventos || []).map((ev: Record<string, unknown>): EventoCalendario => ({
+                    sharedCourseId: (i.shared_course_id as string) || ''
+                }));
+
+                const mappedEventos = (eventos || []).map((ev: Record<string, unknown>): EventoCalendario => ({
                     id: ev.id as number,
                     titulo: ev.titulo as string,
                     fecha: ev.fecha as string,
-                    tipo: ev.tipo as 'evaluacion' | 'reunion' | 'actividad' | 'otro'
-                })),
-                posts: [...optimisticPosts, ...mappedPosts],
-                docentes: Array.from(new Map<string, Docente>([
-                    ...(perfiles || []).map((p: Record<string, unknown>): [string, Docente] => [p.nombre_docente as string || p.nombre as string, {
-                        id: p.user_id as string,
-                        userId: p.user_id as string,
-                        nombre: (p.nombre_docente as string || p.nombre as string || ''),
-                        asignatura: Array.isArray(p.asignaturas) ? p.asignaturas[0] : (p.asignatura as string || ''),
-                        avatarColor: p.avatar_color as string || '#3b82f6'
-                    }])
-                ]).values()),
-                evaluacionesRubrica: (evaluacionesRubrica || []).map((er: Record<string, unknown>): EvaluacionRubrica => ({
-                    id: er.id as number,
-                    estudianteId: er.estudiante_id as number,
-                    actividadId: er.actividad_id as number,
-                    cursoId: er.curso_id as number,
-                    fecha: er.fecha as string,
-                    selecciones: er.selecciones as Partial<Record<BCKey, Nivel>>,
-                    observaciones: er.observaciones as string,
-                    puntajeTotal: er.puntaje_total as number,
-                    sharedCourseId: er.shared_course_id as string || String(er.curso_id)
-                })),
-                evaluacionesCotejo: (evaluacionesCotejo || []).map((ec: Record<string, unknown>): EvaluacionCotejo => ({
-                    id: ec.id as number,
-                    estudianteId: ec.estudiante_id as number,
-                    actividadId: ec.actividad_id as number,
-                    cursoId: ec.curso_id as number,
-                    fecha: ec.fecha as string,
-                    respuestas: ec.respuestas as Record<number, number | null>,
-                    comentarios: ec.comentarios as string,
-                    puntaje: ec.puntaje as number,
-                    sharedCourseId: ec.shared_course_id as string || String(ec.curso_id)
-                })),
-                criteriosCotejo: (criteriosCotejo || []).map((cc: Record<string, unknown>): CriterioCotejo => ({
-                    id: cc.id as number,
-                    titulo: cc.titulo as string,
-                    descripcion: cc.descripcion as string,
-                })),
-                descriptoresRubrica: (descriptoresRubrica || []).map((dr: Record<string, unknown>): DescriptorRubrica => ({
-                    id: String(dr.id),
-                    bc: dr.bc as BCKey,
-                    indicador: dr.indicador as string,
-                    estrategico: dr.estrategico as string,
-                    autonomo: dr.autonomo as string,
-                    resolutivo: dr.resolutivo as string,
-                    receptivo: dr.receptivo as string,
-                    plantillaId: dr.plantilla_id ? Number(dr.plantilla_id) : null
-                })),
-                nivelesPuntaje: sanitizeNivelesPuntaje(nivelesPuntaje),
-                plantillas: (plantillas || []).map((p): Plantilla => ({
-                    id: p.id,
-                    tipo: p.tipo,
-                    nombre: p.nombre,
-                    datos: p.datos || {},
-                    createdAt: p.created_at,
-                })),
-                cursoDetalle: (cursoDetalle || []).map((cd: Record<string, unknown>): CursoDetalleEvaluacion => ({
-                    id: cd.id as number,
-                    cursoId: cd.curso_id as number,
-                    actividadId: cd.actividad_id as number,
-                    estudianteId: cd.estudiante_id as number,
-                    rubricaData: cd.rubrica_data as Record<string, unknown> || {},
-                    cotejoData: cd.cotejo_data as Record<string, unknown> || {},
-                    puntajeTotal: cd.puntaje_total as number,
-                    observaciones: parseObservaciones(cd.observaciones),
-                    plantillaId: cd.plantilla_id as number,
-                    descriptores: [], 
-                    createdAt: cd.created_at as string,
-                    sharedCourseId: cd.shared_course_id as string || String(cd.curso_id)
-                })),
-                notificaciones: (notificaciones || []).map((n: Record<string, unknown>): Notification => ({
-                    id: n.id as number,
-                    userId: n.user_id as string,
-                    actorId: n.actor_id as string,
-                    titulo: n.titulo as string,
-                    mensaje: n.mensaje as string,
-                    leida: n.leida as boolean,
-                    tipo: n.tipo as string,
-                    postId: n.post_id as number,
-                    tareaId: n.tarea_institucional_id as string,
-                    grado: n.grado as string,
-                    seccion: n.seccion as string,
-                    estado: n.estado as 'pendiente' | 'resuelto',
-                    createdAt: n.created_at as string,
-                    fechaLectura: n.fecha_lectura as string
-                })),
+                    tipo: ev.tipo as EventoCalendario['tipo'],
+                    descripcion: (ev.descripcion as string) || undefined,
+                    fechaInicio: (ev.fecha_inicio as string) || undefined,
+                    fechaFin: (ev.fecha_fin as string) || undefined,
+                    updatedAt: (ev.updated_at as string) || undefined,
+                }));
 
-                cursoDocentes: (cursoDocentes || []).map((cd: Record<string, unknown>): CursoDocente => ({
-                    id: cd.id as number,
-                    cursoId: cd.curso_id as number,
-                    userId: String(cd.docente_id),
-                    rol: cd.rol as 'tutor' | 'co-docente',
-                    esTutor: cd.es_tutor as boolean,
-                    asignatura: cd.asignatura as string,
-                    diasSemana: cd.dias_semana as string[] || [],
-                    createdAt: cd.created_at as string
-                })),
-                grupos: (grupos || []).map((g: Record<string, unknown>): Grupo => ({
-                    id: g.id as number,
-                    nombre: g.nombre as string,
-                    grado: g.grado as string,
-                    seccion: g.seccion as string,
-                    createdAt: g.created_at as string
-                })),
-                                registrosAnecdoticos: (registrosAnecdoticos || []).map((ra: Record<string, unknown>): RegistroAnecdotico => ({
-                    id: ra.id as number,
-                    cursoId: ra.curso_id as number,
-                    profileId: ra.profile_id as string,
-                    fecha: ra.fecha as string,
-                    titulo: ra.titulo as string,
-                    descripcion: ra.descripcion as string,
-                    createdAt: ra.created_at as string,
-                    updatedAt: ra.updated_at as string
-                })),
-                registroImagenes: (registroImagenes || []).map((ri: Record<string, unknown>): RegistroImagen => ({
-                    id: ri.id as number,
-                    registroId: ri.registro_id as number,
-                    imagenUrl: ri.imagen_url as string,
-                    createdAt: ri.created_at as string
-                })),
+                const mappedCalendarioMinerd = (calendarioMinerd || []).map((ev: Record<string, unknown>): EventoCalendario => ({
+                    id: ev.id as number,
+                    titulo: ev.titulo as string,
+                    fecha: ev.fecha_inicio as string,
+                    tipo: ev.tipo as EventoCalendario['tipo'],
+                    descripcion: (ev.descripcion as string) || undefined,
+                    fechaInicio: (ev.fecha_inicio as string) || undefined,
+                    fechaFin: (ev.fecha_fin as string) || undefined,
+                    updatedAt: (ev.updated_at as string) || undefined,
+                }));
 
-                tareas: (tareas || []).map((t: Record<string, unknown>): TareaInstitucional => ({
+                const mappedTareas = (tareas || []).map((t: Record<string, unknown>): TareaInstitucional => ({
                     id: t.id as string,
                     centroId: t.centro_id as string,
                     titulo: t.titulo as string,
@@ -596,67 +863,266 @@ export function useSupabaseData() {
                             archivosEntrega: ta.archivos_entrega as string,
                             createdAt: ta.created_at as string
                         }))
-                })),
+                }));
 
-                suscripcionActual: resolvedSuscripcionActual,
-                centroRolActual: resolvedCentroRolActual,
-                centros: Array.from(centrosMap.values())
-            };});
+                const mappedNotificaciones = (notificaciones || []).map((n: Record<string, unknown>): Notification => ({
+                    id: n.id as number,
+                    userId: n.user_id as string,
+                    actorId: n.actor_id as string,
+                    titulo: n.titulo as string,
+                    mensaje: n.mensaje as string,
+                    leida: n.leida as boolean,
+                    tipo: n.tipo as string,
+                    postId: n.post_id as number,
+                    tareaId: n.tarea_institucional_id as string,
+                    grado: n.grado as string,
+                    seccion: n.seccion as string,
+                    estado: n.estado as 'pendiente' | 'resuelto',
+                    createdAt: n.created_at as string,
+                    fechaLectura: n.fecha_lectura as string
+                }));
+
+                const mappedGrupos = (grupos || []).map((g: Record<string, unknown>): Grupo => ({
+                    id: g.id as number,
+                    nombre: g.nombre as string,
+                    grado: g.grado as string,
+                    seccion: g.seccion as string,
+                    createdAt: g.created_at as string
+                }));
+
+                return {
+                    ...prev,
+                    estudiantes: mappedEst,
+                    actividades: mappedAct,
+                    calificaciones: mappedCal,
+                    incidencias: mappedIncidencias,
+                    eventos: mappedEventos,
+                    calendarioMinerd: mappedCalendarioMinerd,
+                    tareas: mappedTareas,
+                    notificaciones: mappedNotificaciones,
+                    grupos: mappedGrupos
+                };
+            });
+            addLoadedModule('dashboard');
         } catch (error) {
-            console.error('Error fetching data from Supabase:', error);
-            console.error('[PLANIFICACION] error', error);
+            console.error('Error loading Dashboard data:', error);
         } finally {
-            console.log('[PLANIFICACION] finalizando carga global. isSilent:', isSilent);
-            if (!isSilent) setLoading(false);
-        }
-    }, [session]);
-
-    const debouncedFetchDataRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const debouncedFetchData = useCallback(() => {
-        if (debouncedFetchDataRef.current) {
-            clearTimeout(debouncedFetchDataRef.current);
-        }
-        debouncedFetchDataRef.current = setTimeout(() => {
-            fetchData(true);
-        }, 3000); // Debounce de 3 segundos para amortiguar eventos Realtime
-    }, [fetchData]);
-
-    useEffect(() => {
-        if (session) {
-            fetchData();
-            // Intervalo silencioso de respaldo muy largo (15 minutos)
-            const interval = setInterval(() => fetchData(true), 900000);
-
-            // Realtime para evitar recargas constantes pero mantener sincronización (Optimizado con Debounce)
-            const channel = supabase.channel(`db-changes-${session.user.id}-${Date.now()}`)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'historial_colaboradores' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'notificaciones', filter: `user_id=eq.${session.user.id}` }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_detalle' }, debouncedFetchData)
-
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'calificaciones' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_docentes' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'cursos' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'estudiantes' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'actividades' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'grupos' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'registros_anecdoticos', filter: `profile_id=eq.${session.user.id}` }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'registro_imagenes' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tareas_institucionales' }, debouncedFetchData)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tarea_docente' }, debouncedFetchData)
-                .subscribe();
-
-            return () => {
-                clearInterval(interval);
-                supabase.removeChannel(channel);
-            };
-        } else {
             setLoading(false);
         }
-    }, [session, fetchData, debouncedFetchData]);
+    }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
 
+    const loadCursoData = useCallback(async (cursoId: number) => {
+        if (!session?.user?.id || !cursoId) return;
+        if (loadedCursos.includes(cursoId)) return;
+        console.log(`[PLANIFICACION] lazy loading Curso data for course ${cursoId}`);
+        setLoading(true);
+        try {
+            const stateCursos = useAppStore.getState().state.cursos;
+
+            const results = await Promise.all([
+                supabase.from('estudiantes').select('*').eq('activo', true).eq('curso_id', cursoId),
+                supabase.from('actividades').select('*').eq('activo', true).eq('curso_id', cursoId),
+                supabase.from('calificaciones').select('*').eq('curso_id', cursoId),
+                supabase.from('recuperaciones').select('*').eq('curso_id', cursoId),
+                supabase.from('curso_detalle').select('*').eq('curso_id', cursoId)
+            ]);
+
+            const estudiantes = results[0].data || [];
+            const actividades = results[1].data || [];
+            const calificaciones = results[2].data || [];
+            const recuperaciones = results[3].data || [];
+            const cursoDetalle = results[4].data || [];
+
+            setState(prev => {
+                const mappedEst = estudiantes.map(e => mapEstudiante(e));
+                const mappedAct = actividades.map(a => mapActividad(a, stateCursos));
+                const mappedCal = calificaciones.map(c => mapCalificacion(c, stateCursos));
+                const mappedRec = recuperaciones.map(r => mapRecuperacion(r, stateCursos));
+                const mappedDet = cursoDetalle.map(cd => mapCursoDetalle(cd));
+
+                const mergedEst = [...prev.estudiantes.filter(e => e.cursoId !== cursoId), ...mappedEst];
+                const mergedAct = [...prev.actividades.filter(a => a.cursoId !== cursoId), ...mappedAct];
+                const mergedCal = [...prev.calificaciones.filter(c => c.cursoId !== cursoId), ...mappedCal];
+                const mergedRec = [...prev.recuperaciones.filter(r => r.cursoId !== cursoId), ...mappedRec];
+                const mergedDet = [...prev.cursoDetalle.filter(cd => cd.cursoId !== cursoId), ...mappedDet];
+
+                return {
+                    ...prev,
+                    estudiantes: mergedEst,
+                    actividades: mergedAct,
+                    calificaciones: mergedCal,
+                    recuperaciones: mergedRec,
+                    cursoDetalle: mergedDet
+                };
+            });
+            addLoadedCurso(cursoId);
+        } catch (error) {
+            console.error(`Error loading Curso data for ${cursoId}:`, error);
+        } finally {
+            setLoading(false);
+        }
+    }, [session, loadedCursos, addLoadedCurso, setState, setLoading, state.perfiles, state.cursoDocentes]);
+
+    const loadComunidadData = useCallback(async () => {
+        if (!session?.user?.id) return;
+        if (loadedModules.includes('comunidad')) return;
+        console.log('[PLANIFICACION] lazy loading Comunidad data');
+        setLoading(true);
+        try {
+            const results = await Promise.all([
+                supabase.from('posts').select('*, profiles:perfiles(nombre_docente, avatar_url, bio)').order('id', { ascending: false }).limit(20),
+                supabase.from('historial_colaboradores').select('*').eq('usuario_id', session.user.id)
+            ]);
+
+            const posts = results[0].data || [];
+            
+            setState(prev => {
+                const mappedPosts = posts.map((p: any): Post => {
+                    const prof = (Array.isArray(p.profiles) ? p.profiles[0] : p.profiles) as Record<string, unknown> | undefined;
+                    return {
+                        id: p.id as number,
+                        autor: prof?.nombre_docente as string || p.autor as string || 'Docente',
+                        cargo: p.cargo as string || 'Docente',
+                        avatarUrl: prof?.avatar_url as string || '',
+                        contenido: p.contenido as string,
+                        tiempo: p.tiempo as string || 'Hace un momento',
+                        fechaPublicacion: p.fecha_publicacion as string,
+                        tipo: p.tipo as 'rubrica' | 'secuencia' | 'general' | 'cotejo',
+                        asignatura: p.asignatura as string,
+                        userId: p.user_id as string,
+                        userBio: prof?.bio as string || '',
+                        expiresAt: p.expires_at as string,
+                        recursoDatos: p.recurso_datos || {},
+                        recursoId: p.recurso_id as number,
+                    };
+                });
+
+                return {
+                    ...prev,
+                    posts: mappedPosts
+                };
+            });
+            addLoadedModule('comunidad');
+        } catch (error) {
+            console.error('Error loading Comunidad data:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [session, loadedModules, addLoadedModule, setState, setLoading]);
+
+    const loadPlanificacionData = useCallback(async () => {
+        if (!session?.user?.id) return;
+        if (loadedModules.includes('planificacion')) return;
+        console.log('[PLANIFICACION] lazy loading Planificacion data');
+        setLoading(true);
+        try {
+            const currentProfile = state.perfiles.find(p => p.userId === session.user.id);
+            const userCentroId = currentProfile?.centro_id;
+            const isCentroAdmin = esRolAdministrador(currentProfile?.rol);
+
+            if (!currentProfile) {
+                console.log('[PLANIFICACION] loadPlanificacionData: perfiles no disponibles aún, omitiendo carga (sin marcar loaded)');
+                setLoading(false);
+                return;
+            }
+
+            const misCursosTutor = state.cursos
+                .filter(c => c.isTutorOficial && String(c.userId) === session.user.id)
+                .map(c => c.id);
+
+            const misCursosVinculados = state.cursoDocentes
+                .filter(cd => cd.userId === session.user.id)
+                .map(cd => cd.cursoId);
+
+            const cursosActivos = state.cursos.filter(c =>
+                isCentroAdmin ? (c.centroId === userCentroId) : (String(c.userId) === session.user.id || misCursosTutor.includes(c.id))
+            );
+
+            const cursosParticipaIds = Array.from(new Set<number>([
+                ...cursosActivos.map(c => c.id),
+                ...misCursosVinculados
+            ]));
+
+            let secuenciaQuery = supabase.from('secuencias').select('*').eq('activo', true);
+            if (isCentroAdmin && misCursosTutor.length === 0) {
+                secuenciaQuery = secuenciaQuery.in('curso_id', cursosActivos.map(c => c.id));
+            } else if (cursosParticipaIds.length > 0) {
+                secuenciaQuery = secuenciaQuery.in('curso_id', cursosParticipaIds);
+            } else {
+                secuenciaQuery = secuenciaQuery.eq('user_id', session.user.id);
+            }
+
+            const { data: secuencias } = await secuenciaQuery;
+            
+            setState(prev => {
+                const mappedSecuencias = (secuencias || []).map((s: Record<string, unknown>): Secuencia => ({
+                    id: s.id as number,
+                    titulo: s.titulo as string,
+                    cursoId: s.curso_id as number,
+                    fechaInicio: s.fecha_inicio as string,
+                    contenidoHtml: s.contenido_html as string,
+                    estado: s.estado as 'Pendiente' | 'En progreso' | 'Completada',
+                    archivoUrl: s.archivo_url as string | undefined,
+                    archivoNombre: s.archivo_nombre as string | undefined,
+                    archivoSize: s.archivo_size as number | undefined,
+                    archivoTipo: s.archivo_tipo as string | undefined,
+                    archivoFechaCarga: s.archivo_fecha_carga as string | undefined,
+                    recursos: Array.isArray(s.recursos) ? s.recursos : (typeof s.recursos === 'string' ? (() => { try { return JSON.parse(s.recursos); } catch(e) { return []; } })() : [])
+                }));
+
+                return {
+                    ...prev,
+                    secuencias: mappedSecuencias
+                };
+            });
+            addLoadedModule('planificacion');
+        } catch (error) {
+            console.error('Error loading Planificacion data:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
+
+    const loadRubricaCotejoData = useCallback(async () => {
+        if (!session?.user?.id) return;
+        if (loadedModules.includes('evaluacion')) return;
+        console.log('[PLANIFICACION] lazy loading Evaluacion (Rubricas/Cotejo) data');
+        setLoading(true);
+        try {
+            const { data: plantillas } = await supabase
+                .from('plantillas')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .eq('archivado', false)
+                .order('created_at', { ascending: false });
+
+            setState(prev => {
+                const mappedPlantillas = (plantillas || []).map((p): Plantilla => ({
+                    id: p.id,
+                    userId: p.user_id as string,
+                    tipo: p.tipo,
+                    nombre: p.nombre,
+                    datos: p.datos || {},
+                    createdAt: p.created_at
+                }));
+
+                return {
+                    ...prev,
+                    evaluacionesRubrica: [],
+                    evaluacionesCotejo: [],
+                    criteriosCotejo: [],
+                    descriptoresRubrica: [],
+                    nivelesPuntaje: sanitizeNivelesPuntaje([]),
+                    plantillas: mappedPlantillas
+                };
+            });
+            addLoadedModule('evaluacion');
+        } catch (error) {
+            console.error('Error loading evaluacion data:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [session, loadedModules, addLoadedModule, setState, setLoading]);
 
     const syncUpsert = useCallback(async (table: string, data: Record<string, unknown> | Record<string, unknown>[]) => {
         if (!session?.user?.id) return;
@@ -716,6 +1182,11 @@ export function useSupabaseData() {
         session,
         syncUpsert,
         syncDelete,
-        refresh: fetchData
+        refresh: fetchData,
+        loadDashboardData,
+        loadCursoData,
+        loadComunidadData,
+        loadPlanificacionData,
+        loadRubricaCotejoData
     };
 }

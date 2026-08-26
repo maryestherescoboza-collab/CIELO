@@ -175,5 +175,57 @@ export const CATALOGO_GUIAS: Guide[] = [
         evento: 'click'
       }
     ]
+  },
+  {
+    id: 'crear-plantilla-rubrica',
+    titulo: 'Crear una plantilla de rúbrica',
+    steps: [
+      {
+        selector: '.app-bottom-nav button:nth-child(7)',
+        texto: 'Haz clic en «Rúbrica».',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="editor-descriptor"]',
+        texto: 'Completa los niveles y descriptores: haz clic dentro de una celda de la rúbrica y escribe el descriptor.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-guardar-plantilla"]',
+        texto: 'Haz clic en «Guardar como Plantilla», escribe el nombre de la plantilla en la ventana que aparece y confírmalo.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="selector-plantilla"]',
+        texto: 'Tu plantilla quedó guardada. Haz clic aquí y selecciona su nombre en la lista para comprobarlo.',
+        evento: 'change'
+      }
+    ]
+  },
+  {
+    id: 'crear-plantilla-cotejo',
+    titulo: 'Crear una plantilla de lista de cotejo',
+    steps: [
+      {
+        selector: '.app-bottom-nav button:nth-child(8)',
+        texto: 'Haz clic en «Cotejo».',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="criterio-cotejo"]',
+        texto: 'Completa los criterios: haz clic en una fila, escribe la descripción del indicador y haz clic fuera para continuar.',
+        evento: 'change'
+      },
+      {
+        selector: '[data-guide="btn-guardar-plantilla"]',
+        texto: 'Haz clic en «Guardar como Plantilla», escribe el nombre de la plantilla en la ventana que aparece y confírmalo.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="selector-plantilla"]',
+        texto: 'Tu plantilla quedó guardada. Haz clic aquí y selecciona su nombre en la lista para comprobarlo.',
+        evento: 'change'
+      }
+    ]
   }
 ];

@@ -17,7 +17,6 @@ export interface PresenceUser {
     nombre: string;
     avatarUrl?: string;
     asignatura?: string;
-    currentModule?: string;
     onlineSince: string;
 }
 
@@ -68,6 +67,7 @@ export interface Actividad {
     asignatura?: string;
     sharedCourseId?: string;
     indicador?: string;
+    producto?: string;
 }
 
 export interface CalificacionActividad {
@@ -108,7 +108,7 @@ export interface Secuencia {
     recursos?: any[];
 }
 
-export type TipoRecurso = 'documento' | 'video' | 'web' | 'canva' | 'pdf' | 'presentacion' | 'otro';
+export type TipoRecurso = 'documento' | 'video' | 'web' | 'canva' | 'pdf' | 'presentacion' | 'otro' | 'wakelet';
 
 export interface RecursoPlanificacion {
     id: number;
@@ -130,9 +130,19 @@ export interface Incidencia {
     userId?: string;
 }
 
+export type PrioridadEvento = 'CRITICA' | 'ALTA' | 'MEDIA' | 'BAJA';
+
 export interface EventoCalendario {
-    id: number; titulo: string; fecha: string;
-    tipo: 'evaluacion' | 'reunion' | 'actividad' | 'otro';
+    id: number;
+    titulo: string;
+    fecha: string;
+    tipo: 'evaluacion' | 'reunion' | 'actividad' | 'otro'
+        | 'academico' | 'administrativo' | 'feriado' | 'receso'
+        | 'institucional' | 'conmemoracion' | 'planificacion';
+    descripcion?: string;
+    fechaInicio?: string;
+    fechaFin?: string;
+    updatedAt?: string;
 }
 
 export interface TareaDocente {
@@ -163,13 +173,21 @@ export interface ResourceData {
     titulo?: string;
     criterios?: Array<{ indicador?: string; titulo?: string; descripcion?: string }>;
     contenidoHtml?: string;
+    recursoCompartido?: {
+        id: string;
+        url: string;
+        tipo: string;
+        titulo: string;
+        categoria?: string;
+        descripcion?: string;
+    };
 }
 
 export interface Post {
     id: number; autor: string; cargo: string; avatarUrl?: string; avatarColor?: string;
     contenido: string; tiempo: string; fechaPublicacion: string;
     created_at_ts?: number; // Numeric timestamp for performance
-    tipo: 'rubrica' | 'secuencia' | 'general' | 'cotejo'; asignatura: string;
+    tipo: 'rubrica' | 'secuencia' | 'general' | 'cotejo' | 'recurso'; asignatura: string;
     userId?: string;
     userBio?: string;
     expiresAt?: string;
@@ -247,7 +265,6 @@ export interface UserProfile {
     asignatura: string;
     asignaturas?: string[];
     lastSeen?: string;
-    currentModule?: string;
     publicacionesRealizadas?: number;
     avatarColor?: string;
     institucion?: string;
@@ -307,7 +324,7 @@ export interface NivelPuntaje {
 export interface EvaluacionRubrica {
     id: number; estudianteId: number; actividadId: number; cursoId: number;
     fecha: string; selecciones: Partial<Record<Competencia, Nivel>>;
-    observaciones?: string; puntajeTotal: number; plantillaId?: number | null;
+    observaciones?: string; puntajeTotal?: number; plantillaId?: number | null;
     sharedCourseId?: string;
 }
 
@@ -336,6 +353,7 @@ export interface Plantilla {
     nombre: string;
     datos: Record<string, unknown>;
     createdAt?: string;
+    userId?: string;
 }
 
 export interface CursoDetalleEvaluacion {
@@ -386,6 +404,7 @@ export interface AppState {
     recuperaciones: RecuperacionBC[];
     secuencias: Secuencia[];
     eventos: EventoCalendario[];
+    calendarioMinerd: EventoCalendario[];
     posts: Post[];
     descriptoresRubrica: DescriptorRubrica[];
     nivelesPuntaje: NivelPuntaje[];
@@ -426,6 +445,7 @@ export interface RegistroAnecdotico {
     fecha: string;
     titulo: string;
     descripcion: string;
+    activo: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -434,6 +454,9 @@ export interface RegistroImagen {
     id: number;
     registroId: number;
     imagenUrl: string;
+    driveFileId?: string;
+    driveThumbnailUrl?: string;
+    storageProvider: 'supabase_storage' | 'google_drive';
     createdAt: string;
 }
 

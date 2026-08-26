@@ -105,6 +105,8 @@ interface RubricaRowProps {
     onDecouple?: () => void;
     isFloatingMode?: boolean;
     onContextMenu?: (e: React.MouseEvent) => void;
+    isAssociated?: boolean;
+    hasSelectedActivity?: boolean;
 }
 
 export const RubricaRow: React.FC<RubricaRowProps> = ({
@@ -125,14 +127,23 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
     onDecouple,
     isFloatingMode = false,
     onContextMenu,
+    isAssociated = false,
+    hasSelectedActivity = false,
 }) => {
     function getCellRefKey(descriptorId: string, key: RichFieldKey): string {
         return `${descriptorId}:${String(key)}`;
     }
 
+    const rowClass = hasSelectedActivity
+        ? isAssociated
+            ? "bg-primary/5 shadow-xs transition-all duration-300 ease-in-out font-medium"
+            : "opacity-40 hover:opacity-85 transition-all duration-300 ease-in-out"
+        : "group hover:bg-(--linen)/10 transition-colors duration-300 ease-in-out";
+
     return (
-        <tr className="group hover:bg-(--linen)/10 transition-colors" onContextMenu={onContextMenu}>
-            <td className="w-[30%] border-r border-(--border-soft) px-2 py-2 align-middle text-center relative">
+        <tr className={rowClass} onContextMenu={onContextMenu}>
+            <td className={`w-[30%] border-r border-(--border-soft) px-2 py-2 align-middle text-center relative transition-all duration-300 ease-in-out
+                ${hasSelectedActivity && isAssociated ? 'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary' : ''}`}>
                 <div className="flex min-h-26 items-center justify-center gap-2">
                     {(() => {
                         const CompetenciaIcon = COMPETENCIAS[index % COMPETENCIAS.length].icon;
@@ -259,6 +270,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                             node.innerHTML = richValue;
                                         }
                                     }}
+                                    data-guide="editor-descriptor"
                                     contentEditable={!readOnly}
                                     suppressContentEditableWarning
                                     className={`w-full min-h-17.5 rounded-md border border-transparent px-2 py-1 text-[12px] leading-[1.3] text-center outline-none transition-all ${isSelected ? 'text-[#1E293B]' : 'text-slate-500 group-cell-hover:text-[#1E293B]'}`}

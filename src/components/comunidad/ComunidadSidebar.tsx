@@ -12,23 +12,7 @@ interface Props {
     onSetFilter: (filter: string) => void;
 }
 
-const getModuleActivity = (module?: string) => {
-    switch (module) {
-        case 'cursos':
-        case 'curso-detalle':
-            return 'trabajando en secuencia';
-        case 'estudiante':
-            return 'revisando progreso';
-        case 'comunidad':
-            return 'participando en comunidad';
-        case 'rubrica':
-            return 'trabajando en rúbrica';
-        case 'cotejo':
-            return 'trabajando en cotejo';
-        default:
-            return 'activo ahora';
-    }
-};
+const getModuleActivity = () => 'activo ahora';
 
 export default function ComunidadSidebar({ 
     topColaboradores, onlineUsers, onViewProfile,
@@ -126,7 +110,7 @@ export default function ComunidadSidebar({
                                 <div className="flex flex-col min-w-0">
                                     <span className="text-xs font-bold text-[#2E3330] truncate leading-tight mb-0.5">{user.nombre}</span>
                                     <span className="text-xs font-black uppercase tracking-widest text-[#5F665E] italic truncate">
-                                        {getModuleActivity(user.currentModule || '')}
+                                        {getModuleActivity()}
                                     </span>
                                 </div>
                             </div>
