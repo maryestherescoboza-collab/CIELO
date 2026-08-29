@@ -77,9 +77,9 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
         <div className="flex flex-1 min-h-screen bg-artisan-main">
             <div className="flex-1 px-6 py-6 md:px-12 scroll-smooth scrollbar-hide">
                 {/* Refined Welcome Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
-                        <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2 font-notion-title">
+                        <h1 className="text-2xl font-black text-[#2E3330] tracking-tight mb-2 font-notion-title">
                             Saludos, <span className="text-primary">{docenteNombre.split(' ')[0]}</span>
                         </h1>
                         <div className="flex items-center gap-4">
@@ -157,7 +157,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                     </div>
                 </div>
 
-                <div className="mb-12 opacity-40">
+                <div className="mb-8 opacity-40">
                     <svg width="100%" height="20" viewBox="0 0 800 20" preserveAspectRatio="none">
                         <path d="M0 10 Q 100 5, 200 12 T 400 10 T 600 8 T 800 10" stroke="currentColor" fill="none" strokeWidth="1" strokeDasharray="5,5" className="text-slate-500" />
                     </svg>
@@ -165,7 +165,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
 
                 {isLoading ? (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
                             {[1, 2, 3, 4].map(i => (
                                 <div key={i} className="min-h-35 rounded-[16px] bg-slate-200/40 animate-pulse border border-slate-200" />
                             ))}

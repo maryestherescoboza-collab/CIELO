@@ -65,14 +65,14 @@ export const CieloPopover: React.FC<CieloPopoverProps> = ({
     return (
         <div 
             ref={popoverRef}
-            className={`absolute z-50 ${positionClasses[position]} ${widthMap[width]} bg-white rounded-(--radius-md) shadow-md border border-(--border-soft) p-5 animate-in fade-in slide-in-from-top-2 duration-200 ${className}`}
+            className={`absolute z-50 ${positionClasses[position]} ${widthMap[width]} bg-white rounded-(--radius-md) shadow-md border border-(--border-soft) p-4 animate-in fade-in slide-in-from-top-2 duration-200 ${className}`}
         >
             {title && (
-                <div className="flex items-center justify-between border-b border-(--border-soft) pb-3 mb-4">
+                <div className="flex items-center justify-between border-b border-(--border-soft) pb-2.5 mb-3">
                     <h3 className="text-xs font-black text-(--ink) uppercase tracking-widest">{title}</h3>
                 </div>
             )}
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {children}
             </div>
         </div>

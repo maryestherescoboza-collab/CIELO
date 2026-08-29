@@ -261,7 +261,7 @@ export default function Estudiante() {
                 </div>
             </div>
 
-            <footer className="w-[92%] max-w-7xl mt-16 text-center py-10 opacity-40 select-none">
+            <footer className="w-[92%] max-w-7xl mt-12 text-center py-8 opacity-40 select-none">
                 <p className="text-(--ink-soft) text-[14px] font-bold uppercase tracking-[0.5em] mb-2">Plataforma Educativa Noether</p>
                 <div className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-(--ink-soft)/70">
                     <School size={14} />

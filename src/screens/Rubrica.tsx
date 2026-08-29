@@ -823,9 +823,9 @@ export default function Rubrica({
 
             <main className="flex-1 overflow-y-auto px-3 py-3 md:px-5 scroll-smooth scrollbar-hide">
                 <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both space-y-1.5">
-                    <div className="flex flex-wrap items-center justify-between gap-6 pb-3">
+                    <div className="flex flex-wrap items-center justify-between gap-5 pb-3">
                         <div>
-                            <h1 className="text-3xl font-black text-[#2E3330] tracking-tight mb-2.5 font-notion-title">
+                            <h1 className="text-2xl font-black text-[#2E3330] tracking-tight mb-2 font-notion-title">
                                 {readOnly ? 'Vista Previa de Rúbrica' : 'Evaluación por Rúbrica'}
                             </h1>
                             <div className="flex items-center gap-3">

@@ -49,6 +49,48 @@
   --border: var(--border-unificado);
 }
 
+/* ── CIELO Density & Scaling Tokens ────────────────────────────
+   Sistema único de spacing/typography/layout. Las clases globales
+   y los componentes reutilizables consumen estos tokens para que
+   la densidad se ajuste desde un solo lugar (100% de zoom nativo). */
+:root {
+  /* Spacing scale (8px base rhythm) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+
+  /* Typography scale (información → títulos) */
+  --text-xs: 13px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 28px;
+  --text-4xl: 32px;
+
+  /* Layout / density policy */
+  --app-page-padding-x: 24px;
+  --app-page-padding-y: 24px;
+  --app-page-header-gap: 24px;
+  --app-section-gap: 24px;
+  --app-card-padding: 20px;
+  --app-card-padding-sm: 16px;
+  --app-control-height: 40px;
+  --app-control-height-lg: 44px;
+  --app-radius: var(--radius-unificado, 14px);
+  --app-sidebar-width: 264px;
+  --app-content-max-width: 1400px;
+  --app-content-max-width-narrow: 800px;
+}
+
 @theme {
   --color-olive-branch: var(--olive-branch);
   --color-herb-garden: var(--herb-garden);
@@ -331,14 +373,14 @@
 .view-container {
   flex: 1;
   width: 100%;
-  padding: 1.5rem 2.5rem 10rem;
+  padding: var(--app-page-padding-y) var(--app-page-padding-x) 7rem;
   display: flex;
   flex-direction: column;
 }
 
 @media (max-width: 768px) {
   .view-container {
-    padding: 1.25rem;
+    padding: var(--app-page-padding-y) 1rem 7rem;
   }
 }
 
@@ -365,7 +407,7 @@
   .btn-danger,
   .btn-destructive {
     @apply inline-flex items-center justify-center gap-2 px-6 font-bold transition-all duration-200 active:scale-95;
-    height: 48px;
+    height: var(--app-control-height-lg);
     font-size: 14px;
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-sm);
@@ -429,7 +471,7 @@
   /* Cards */
   .card-saas {
     @apply transition-all duration-300;
-    padding: 1.5rem;
+    padding: var(--app-card-padding);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-soft);
     box-shadow: var(--shadow-sm);
@@ -459,14 +501,16 @@
   /* Module Headings & typography */
   .heading-md {
     font-family: var(--font-notion-title);
-    @apply text-[32px] font-semibold tracking-tight leading-[1.2];
+    @apply font-semibold tracking-tight leading-[1.2];
+    font-size: var(--text-3xl);
     color: var(--notion-black);
-    margin-bottom: 1rem;
+    margin-bottom: var(--app-page-header-gap);
   }
 
   .heading-sm {
     font-family: var(--font-notion-title);
-    @apply text-[24px] font-medium leading-[1.3] tracking-tight;
+    @apply font-medium leading-[1.3] tracking-tight;
+    font-size: var(--text-2xl);
     color: var(--notion-black);
     margin-bottom: 0.75rem;
     text-transform: none;
@@ -488,7 +532,7 @@
   .teacher-select,
   .settings-input {
     @apply w-full outline-none transition-all duration-200 font-medium;
-    height: 46px;
+    height: var(--app-control-height);
     padding: 0 1rem;
     border-radius: var(--radius-sm);
     color: var(--text-primary);
@@ -506,13 +550,13 @@
 
   .teacher-textarea {
     @apply w-full outline-none transition-all duration-200 p-4 border border-(--border-unificado) rounded-lg bg-white;
-    min-height: 120px;
+    min-height: calc(var(--app-control-height) * 2.5);
     box-shadow: var(--shadow-sm);
   }
 
   .search-container {
     @apply flex items-center gap-3 px-4 bg-white border border-(--border-unificado) rounded-lg transition-all;
-    height: 44px;
+    height: var(--app-control-height);
   }
 
   .search-container:focus-within {
@@ -595,11 +639,11 @@
   }
 
   .table-curso-detalle th {
-    @apply bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-slate-500 text-center border-b border-(--border-unificado);
+    @apply bg-slate-50 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-500 text-center border-b border-(--border-unificado);
   }
 
   .table-curso-detalle td {
-    @apply px-4 py-4 text-sm font-medium border-b border-(--border-unificado) text-slate-700;
+    @apply px-4 py-2.5 text-sm font-medium border-b border-(--border-unificado) text-slate-700;
   }
 
   .table-curso-detalle tr:hover td {
@@ -609,7 +653,7 @@
   /* Sidebar */
   .module-sidebar {
     @apply bg-white border border-(--border-unificado) rounded-xl overflow-hidden;
-    width: 280px;
+    width: var(--app-sidebar-width);
     box-shadow: var(--shadow-sm);
   }
 
@@ -628,11 +672,11 @@
   }
 
   .module-sidebar__hero {
-    @apply p-6 border-b border-(--border-unificado);
+    @apply p-5 border-b border-(--border-unificado);
   }
 
   .module-sidebar__section {
-    @apply p-6 border-b border-(--border-unificado);
+    @apply p-5 border-b border-(--border-unificado);
   }
 
   /* Modals */

@@ -26,6 +26,7 @@ const getTipoLabel = (tipo: Post['tipo']) => {
         case 'rubrica': return 'Rúbrica';
         case 'cotejo': return 'Cotejo';
         case 'secuencia': return 'Planificación';
+        case 'recurso': return 'Recurso';
         default: return 'General';
     }
 };

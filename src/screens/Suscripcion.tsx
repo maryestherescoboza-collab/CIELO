@@ -62,7 +62,7 @@ export default function Suscripcion() {
   const anual = mensual * 12;
 
   return (
-    <div className="min-h-screen bg-(--background) pt-6 pb-20 px-4 md:px-8">
+    <div className="min-h-screen bg-(--background) pt-5 pb-16 px-4 md:px-8">
       {hasPremium && suscripcionActual ? (
         <div className="max-w-4xl mx-auto mb-8 bg-(--linen)/50 border border-(--border-soft) rounded-2xl p-6 flex items-start gap-4">
           <div className="w-12 h-12 bg-(--linen) rounded-full flex items-center justify-center shrink-0">
@@ -117,7 +117,7 @@ export default function Suscripcion() {
 
       <div className="w-full max-w-5xl mx-auto relative z-10">
         {/* Header Section */}
-        <div className="text-center mb-8 max-w-2xl mx-auto">
+        <div className="text-center mb-6 max-w-2xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-light text-(--ink) tracking-tight mb-2">
             Planes diseñados para tu realidad.
           </h2>

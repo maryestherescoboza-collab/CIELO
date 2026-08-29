@@ -14,7 +14,7 @@ export default function PostComposer({ state, onAddPost }: Props) {
     const [selectedResource, setSelectedResource] = useState<any>(null);
     const [form, setForm] = useState<{ contenido: string; tipo: Post['tipo']; asignatura: string; recursoId: number }>({
         contenido: '',
-        tipo: 'general',
+        tipo: 'secuencia',
         asignatura: ASIGNATURAS_CATALOGO[0].id,
         recursoId: 0,
     });
@@ -47,7 +47,7 @@ export default function PostComposer({ state, onAddPost }: Props) {
                 } : undefined
             });
 
-            setForm({ contenido: '', tipo: 'general', asignatura: ASIGNATURAS_CATALOGO[0].id, recursoId: 0 });
+            setForm({ contenido: '', tipo: 'secuencia', asignatura: ASIGNATURAS_CATALOGO[0].id, recursoId: 0 });
             setSelectedResource(null);
             setIsExpanded(false);
         } catch (error) {
@@ -83,7 +83,6 @@ export default function PostComposer({ state, onAddPost }: Props) {
                                     }}
                                     className="w-full bg-white border border-(--border-soft) rounded-(--radius-sm) px-3 py-2 text-xs font-bold text-(--ink) outline-none transition-all cursor-pointer focus-visible:border-(--primary) focus-visible:ring-2 focus-visible:ring-(--primary)/50"
                                 >
-                                    <option value="general">Mensaje / Idea</option>
                                     <option value="secuencia">Planificación</option>
                                     <option value="recurso">Recurso de Secuencia</option>
                                     <option value="rubrica">Rúbrica</option>

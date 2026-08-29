@@ -61,7 +61,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     isTutor = true
 }) => {
     return (
-        <div className="flex flex-col gap-6 p-6 md:p-8 bg-white border-b border-(--border-soft) shadow-sm relative z-20">
+        <div className="flex flex-col gap-4 p-5 md:p-6 bg-white border-b border-(--border-soft) shadow-sm relative z-20">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-6">
                     <button
@@ -73,7 +73,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <CieloPill variant="primary" uppercase className="px-3.5 h-6">CURSO ACTIVO</CieloPill>
-                            <h1 className="text-3xl font-black text-[#2E3330] tracking-tighter uppercase italic">{curso?.grado} {curso?.seccion}</h1>
+                            <h1 className="text-2xl font-black text-[#2E3330] tracking-tighter uppercase italic">{curso?.grado} {curso?.seccion}</h1>
                         </div>
                         <p className="text-[#5F665E] font-semibold text-sm uppercase tracking-widest flex items-center gap-2">
                             <Layout size={14} /> GESTION DEL PERIODO / {curso?.periodo}

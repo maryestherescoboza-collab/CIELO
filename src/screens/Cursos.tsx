@@ -117,10 +117,10 @@ export default function Cursos({
 
     return (
         <div className="flex flex-col flex-1 h-full overflow-hidden bg-(--background)">
-            <div className="flex-1 overflow-y-auto px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex-1 overflow-y-auto px-6 py-6 md:px-12 scroll-smooth scrollbar-hide">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div>
-                        <h1 className="text-3xl font-black text-(--ink) tracking-tight mb-2.5 font-notion-title">
+                        <h1 className="text-2xl font-black text-(--ink) tracking-tight mb-2 font-notion-title">
                             Gestión Académica
                         </h1>
                         <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-[0.08em]">

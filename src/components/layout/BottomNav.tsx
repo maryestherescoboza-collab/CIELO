@@ -1,6 +1,8 @@
 import React from 'react';
-import { Home, BookOpen, TrendingUp, AlertTriangle, Calendar, Users, ClipboardList, SquareCheck, User, X } from 'lucide-react';
+import { Home, BookOpen, TrendingUp, AlertTriangle, Calendar, Users, ClipboardList, SquareCheck, User, X, HelpCircle } from 'lucide-react';
 import type { Screen } from '../../types';
+
+const SUPPORT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfhlDqJnUXMrxOtz8mkE5NWmMz6E33JgwCyd13dLao2_nDtyA/viewform?usp=preview';
 
 interface BottomNavProps {
     currentScreen: Screen;
@@ -48,6 +50,22 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                     </button>
                 );
             })}
+
+                    {/* Acceso global a Soporte (navegación externa, al final de la barra) */}
+                    <div className="mx-1 h-8 w-px bg-(--border-soft)" aria-hidden="true" />
+                    <a
+                        href={SUPPORT_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 bg-transparent text-(--ink) hover:bg-(--linen)/40"
+                        style={{ minWidth: '72px', height: '40px' }}
+                        aria-label="Soporte - Formulario oficial de CIELO"
+                    >
+                        <div className="text-(--ink)">
+                            <HelpCircle size={18} />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-(--ink)">Soporte</span>
+                    </a>
         </nav>
     );
 };

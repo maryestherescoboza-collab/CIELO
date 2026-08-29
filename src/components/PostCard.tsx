@@ -106,19 +106,28 @@ const PostCard = ({
                         </button>
                     </>
                 ) : (
-                    <button
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (post.recursoDatos?.recursoCompartido?.url) {
-                                window.open(post.recursoDatos.recursoCompartido.url, '_blank', 'noopener,noreferrer');
-                            }
-                        }}
-                        className="h-8 px-3 rounded-lg bg-(--primary) border border-transparent flex items-center gap-1.5 text-white hover:opacity-90 active:scale-95 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--primary) cursor-pointer"
-                        title="Abrir enlace"
-                    >
-                        <span className="text-xs font-black uppercase tracking-wider">Abrir Enlace</span>
-                    </button>
+                    <>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (post.recursoDatos?.recursoCompartido?.url) {
+                                    window.open(post.recursoDatos.recursoCompartido.url, '_blank', 'noopener,noreferrer');
+                                }
+                            }}
+                            className="h-8 px-3 rounded-lg bg-(--primary) border border-transparent flex items-center gap-1.5 text-white hover:opacity-90 active:scale-95 transition-all shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--primary) cursor-pointer"
+                            title="Abrir enlace"
+                        >
+                            <span className="text-xs font-black uppercase tracking-wider">Abrir Enlace</span>
+                        </button>
+                        <button
+                            onClick={() => onImport?.(post)}
+                            className="h-8 w-8 rounded-lg bg-(--linen)/20 border border-(--border-soft) flex items-center justify-center text-(--ink) hover:bg-(--primary) hover:text-white transition-all shadow-sm outline-none cursor-pointer"
+                            title="Añadir"
+                        >
+                            <Plus size={14} />
+                        </button>
+                    </>
                 )}
             </div>
         </div>

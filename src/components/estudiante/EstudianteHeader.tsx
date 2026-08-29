@@ -19,7 +19,7 @@ const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
 }) => {
     return (
         <>
-            <div className="w-full flex justify-between items-center mb-8 px-8 mt-2 custom-estudiante-header">
+            <div className="w-full flex justify-between items-center mb-6 px-6 mt-2 custom-estudiante-header">
                 <style dangerouslySetInnerHTML={{ __html: `
                   .custom-estudiante-header {
                     --navy: #1c4e8a;
@@ -56,7 +56,7 @@ const EstudianteHeader: React.FC<EstudianteHeaderProps> = ({
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab as 'Perfil' | 'Evaluación')}
-                        className={`px-10 sm:px-14 py-4 text-[13px] font-extrabold uppercase tracking-[0.08em] rounded-t-2xl border-x-2 border-t-2 transition-all duration-200 relative ${
+                        className={`px-8 sm:px-10 py-3 text-[13px] font-extrabold uppercase tracking-[0.08em] rounded-t-2xl border-x-2 border-t-2 transition-all duration-200 relative ${
                             activeTab === tab 
                             ? 'bg-white border-(--navy) border-b-transparent z-10 text-(--navy-dark) shadow-[0_-2px_6px_rgba(0,0,0,0.03)]' 
                             : 'bg-slate-100 border-slate-200 border-b-transparent z-0 text-slate-500 hover:bg-slate-200/60 hover:text-slate-800'

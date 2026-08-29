@@ -386,7 +386,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
             <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 scroll-smooth scrollbar-hide">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div>
-                        <h1 className="text-3xl font-black text-(--ink) tracking-tight mb-2.5 font-notion-title">
+                        <h1 className="text-2xl font-black text-(--ink) tracking-tight mb-2 font-notion-title">
                             Secuencias Didácticas
                         </h1>
                         <div className="flex items-center gap-3">

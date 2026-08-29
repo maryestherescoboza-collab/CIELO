@@ -156,11 +156,11 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
 
     return (
         <div className="flex flex-col flex-1 h-full overflow-hidden bg-(--background)">
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 flex flex-col gap-6 scroll-smooth scrollbar-hide">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-5 scroll-smooth scrollbar-hide">
                 {/* Main Header */}
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div>
-                        <h1 className="text-3xl font-black tracking-tight mb-4 text-(--ink) font-notion-title">Registro Anecdótico</h1>
+                        <h1 className="text-2xl font-black tracking-tight mb-3 text-(--ink) font-notion-title">Registro Anecdótico</h1>
                         <nav className="flex flex-wrap gap-2 text-sm font-semibold">
                             <span className="px-5 py-2.5 bg-(--linen)/50 rounded-full text-(--ink) shadow-sm uppercase tracking-widest text-xs font-black">
                                 SEGUIMIENTO DISCIPLINARIO

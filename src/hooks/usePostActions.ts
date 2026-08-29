@@ -5,6 +5,25 @@ import type { Post, ResourceData, Plantilla, Secuencia } from '../types';
 import { clearPlantillaCache } from '../cache/plantillaCache';
 import { getValidSecuenciasByIds, saveRawSecuencia } from '../cache/secuenciaCache';
 
+function parseRecursoCompartido(raw: string): { url?: string; titulo?: string; tipo?: string; categoria?: string; descripcion?: string } | undefined {
+    try {
+        const parsed: unknown = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return undefined;
+        const rc = (parsed as Record<string, unknown>).recursoCompartido;
+        if (!rc || typeof rc !== 'object') return undefined;
+        const o = rc as Record<string, unknown>;
+        return {
+            url: typeof o.url === 'string' ? o.url : undefined,
+            titulo: typeof o.titulo === 'string' ? o.titulo : undefined,
+            tipo: typeof o.tipo === 'string' ? o.tipo : undefined,
+            categoria: typeof o.categoria === 'string' ? o.categoria : undefined,
+            descripcion: typeof o.descripcion === 'string' ? o.descripcion : undefined
+        };
+    } catch {
+        return undefined;
+    }
+}
+
 export function usePostActions() {
     const state = useAppStore(s => s.state);
     const setState = useAppStore(s => s.setAppState);
@@ -363,6 +382,60 @@ export function usePostActions() {
                     setState(s => ({ ...s, secuencias: [...s.secuencias, mappedSeq] }));
                     saveRawSecuencia(session.user.id, insertedSeq[0]);
                     alert('Planificación importada exitosamente a tus recursos.');
+                }
+            } else if (tipo === 'recurso') {
+                // Los recursos compartidos viven dentro de las secuencias
+                // (secuencias.recursos). Se crea una planificación nueva para
+                // el usuario receptor con una COPIA del recurso; la fila y el
+                // contenido original de quien lo publicó permanecen intactos.
+                const rc = typeof resourceData === 'string'
+                    ? parseRecursoCompartido(resourceData)
+                    : resourceData?.recursoCompartido;
+                if (!rc?.url) {
+                    console.error('[Comunidad] Recurso compartido sin URL:', resourceData);
+                    return;
+                }
+
+                const recursoTitulo = rc.titulo || rc.categoria || 'Recurso compartido';
+                const cursoIdB = Number(state.cursos[0]?.id ?? 0);
+                const recursoCopiado = {
+                    id: Date.now().toString(),
+                    titulo: rc.titulo || rc.categoria || 'Sin título',
+                    categoria: rc.categoria || rc.tipo || 'Otro',
+                    url: String(rc.url),
+                    tipo: rc.tipo || 'web',
+                    descripcion: rc.descripcion || '',
+                    orden: 1
+                };
+
+                const { data: insertedSeq, error: seqError } = await supabase
+                    .from('secuencias')
+                    .insert([{
+                        user_id: session.user.id,
+                        titulo: `Recurso compartido: ${recursoTitulo}`,
+                        curso_id: cursoIdB,
+                        fecha_inicio: new Date().toISOString().split('T')[0],
+                        contenido_html: rc.descripcion || '',
+                        estado: 'Pendiente',
+                        activo: true,
+                        recursos: [recursoCopiado]
+                    }])
+                    .select();
+
+                if (seqError) throw seqError;
+                if (insertedSeq && insertedSeq[0]) {
+                    const mappedSeq: Secuencia = {
+                        id: insertedSeq[0].id,
+                        titulo: insertedSeq[0].titulo,
+                        cursoId: insertedSeq[0].curso_id ?? cursoIdB,
+                        fechaInicio: insertedSeq[0].fecha_inicio,
+                        contenidoHtml: insertedSeq[0].contenido_html || '',
+                        estado: insertedSeq[0].estado || 'Pendiente',
+                        recursos: insertedSeq[0].recursos || [recursoCopiado]
+                    };
+                    setState(s => ({ ...s, secuencias: [...s.secuencias, mappedSeq] }));
+                    saveRawSecuencia(session.user.id, insertedSeq[0]);
+                    alert('Recurso añadido exitosamente a tus planificaciones.');
                 }
             }
         } catch (err) {

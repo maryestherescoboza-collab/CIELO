@@ -341,7 +341,7 @@ export default function Dashboard({ docenteNombre }: Props) {
         {/* ═══ HEADER ═══ */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div>
-            <h1 className="text-3xl font-black text-(--ink) tracking-tight mb-1.5 font-notion-title">
+            <h1 className="text-2xl font-black text-(--ink) tracking-tight mb-1.5 font-notion-title">
                 Dashboard Analítico
             </h1>
             <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest">

@@ -75,16 +75,16 @@ export const CieloModal: React.FC<CieloModalProps> = ({
             >
                 {/* Header */}
                 {(title || !hideCloseButton) && (
-                    <div className="px-6 py-5 border-b border-(--border-soft) flex items-start justify-between bg-white shrink-0">
+                    <div className="px-5 py-4 border-b border-(--border-soft) flex items-start justify-between bg-white shrink-0">
                         <div className="flex items-center gap-3">
                             {icon && (
-                                <div className="p-2.5 rounded-xl bg-(--linen)/50 text-(--ink) border border-(--border-soft) shadow-sm">
+                                <div className="p-2 rounded-xl bg-(--linen)/50 text-(--ink) border border-(--border-soft) shadow-sm">
                                     {icon}
                                 </div>
                             )}
                             <div>
                                 {title && (
-                                    <h2 className="text-lg font-black text-(--ink) tracking-tight uppercase">
+                                    <h2 className="text-base font-black text-(--ink) tracking-tight uppercase">
                                         {title}
                                     </h2>
                                 )}
@@ -102,20 +102,20 @@ export const CieloModal: React.FC<CieloModalProps> = ({
                                 className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-(--linen) transition-colors text-(--ink-soft) hover:text-(--ink) shrink-0 ml-4"
                                 aria-label="Cerrar modal"
                             >
-                                <X size={20} />
+                                <X size={18} />
                             </button>
                         )}
                     </div>
                 )}
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-5">
                     {children}
                 </div>
 
                 {/* Footer */}
                 {footer && (
-                    <div className="px-6 py-4 bg-(--linen)/30 border-t border-(--border-soft) shrink-0">
+                    <div className="px-5 py-3.5 bg-(--linen)/30 border-t border-(--border-soft) shrink-0">
                         {footer}
                     </div>
                 )}

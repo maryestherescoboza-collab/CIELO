@@ -150,7 +150,7 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
     if (!curso) return null;
 
     return (
-        <div className="min-h-screen bg-(--background) p-4 md:p-8 print:p-0 font-body">
+        <div className="min-h-screen bg-(--background) p-4 md:p-6 print:p-0 font-body">
             <style>{`
                 @media print {
                     @page {
@@ -165,7 +165,7 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                 }
             `}</style>
             {/* Header / Tools */}
-            <div className="max-w-300 mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 print:hidden">
+            <div className="max-w-300 mx-auto mb-6 flex flex-col md:flex-row md:items-center justify-between gap-5 print:hidden">
                 <div>
                     <button
                         onClick={() => onNavigate('cursos')}

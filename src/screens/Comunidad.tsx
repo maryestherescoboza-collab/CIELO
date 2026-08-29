@@ -60,8 +60,8 @@ export default function Comunidad({
 
     return (
         <div className="flex flex-col flex-1 min-h-screen bg-(--background)">
-            <main className="flex-1 px-6 py-10 md:pl-8 md:pr-12 scroll-smooth scrollbar-hide">
-                <div className="max-w-350 ml-0 mr-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <main className="flex-1 px-6 py-6 md:pl-8 md:pr-12 scroll-smooth scrollbar-hide">
+                <div className="max-w-350 ml-0 mr-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <div className="lg:col-span-3 hidden lg:block">
                         <ComunidadSidebar
                             topColaboradores={topColaboradores}
@@ -75,7 +75,7 @@ export default function Comunidad({
                     <div className="lg:col-span-9 space-y-8">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-2">
                             <div>
-                                <h1 className="text-3xl font-black text-(--ink) tracking-tight mb-2.5 font-notion-title">
+                                <h1 className="text-2xl font-black text-(--ink) tracking-tight mb-2 font-notion-title">
                                     Comunidad Educativa
                                 </h1>
                                 <div className="flex items-center gap-3">

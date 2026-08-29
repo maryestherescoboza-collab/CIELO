@@ -127,7 +127,7 @@ export default function CentroPanel({ onLogout }: Props) {
     return (
         <div className="min-h-screen bg-(--background) text-(--ink) font-sans flex flex-col selection:bg-(--primary)/20">
             {/* ── Encabezado Editorial ─────────────────────────────── */}
-            <header className="px-6 py-4 border-b border-(--border-soft) flex flex-col md:flex-row md:items-center justify-between bg-(--background) sticky top-0 z-40 gap-4">
+            <header className="px-6 py-3 border-b border-(--border-soft) flex flex-col md:flex-row md:items-center justify-between bg-(--background) sticky top-0 z-40 gap-4">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-[10px] bg-white border border-(--border-soft) flex items-center justify-center shadow-sm shrink-0">
                         <img src={logo} alt="CIELO" className="w-6 h-6 object-contain opacity-90" />
@@ -157,7 +157,7 @@ export default function CentroPanel({ onLogout }: Props) {
 
             <div className="flex-1 flex flex-col w-full max-w-7xl mx-auto">
                 {/* ── Navegación Horizontal ─────────────────────────────── */}
-                <nav className="w-full px-6 py-4 flex gap-8 border-b border-(--border-soft) bg-white sticky top-0 z-30 overflow-x-auto scrollbar-hide">
+                <nav className="w-full px-6 py-3 flex gap-6 border-b border-(--border-soft) bg-white sticky top-0 z-30 overflow-x-auto scrollbar-hide">
                     {['centro', 'tareas', 'boletines', 'incidencias'].map((seccion) => (
                         <button 
                             key={seccion}
@@ -174,7 +174,7 @@ export default function CentroPanel({ onLogout }: Props) {
                 </nav>
 
                 {/* ── Contenido Principal ─────────────────────────────── */}
-                <main className="flex-1 min-w-0 p-4 lg:p-10 bg-(--background) relative z-10">
+                <main className="flex-1 min-w-0 p-4 lg:p-8 bg-(--background) relative z-10">
                     <div className="max-w-5xl mx-auto h-full flex flex-col pb-16">
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
                             {activeSection === 'centro' && (
