@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
     requestGoogleAccessToken,
+    requestSilentToken,
     getStoredToken,
     clearStoredToken,
     isDriveConnected,
@@ -8,6 +9,7 @@ import {
     getCIELOFolderId,
     uploadToDrive,
     deleteFileFromDrive,
+    fetchFileThumbnailLink,
     fetchThumbnailBlob,
     getDriveViewUrl,
 } from '../lib/googleDrive';
@@ -37,6 +39,15 @@ export function useGoogleDrive() {
                     try { email = await getDriveUserEmail(token); } catch { /* ignore */ }
                 }
                 setState({ isConnected: true, isConnecting: false, email, error: '' });
+                return;
+            }
+
+            try {
+                const token = await requestSilentToken();
+                const email = await getDriveUserEmail(token);
+                setState({ isConnected: true, isConnecting: false, email, error: '' });
+            } catch {
+                // Silent auth failed — user needs to click "Conectar Google Drive"
             }
         })();
     }, []);
@@ -78,6 +89,8 @@ export function useGoogleDrive() {
     const fetchDriveThumbnail = useCallback(async (fileId: string): Promise<string | null> => {
         const token = getStoredToken();
         if (!token) return null;
+        const link = await fetchFileThumbnailLink(fileId, token);
+        if (link) return link;
         return fetchThumbnailBlob(fileId, token);
     }, []);
 

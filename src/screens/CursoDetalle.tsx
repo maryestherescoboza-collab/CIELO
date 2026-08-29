@@ -4,9 +4,10 @@ import { useAppStore } from '../store/appStore';
 import { useCursoDetalleData } from '../hooks/useCursoDetalleData';
 import CursoDetalleHeader from '../components/curso-detalle/CursoDetalleHeader';
 import GradeTable from '../components/curso-detalle/GradeTable';
-import RubricModal from '../components/curso-detalle/RubricModal';
+import RecuperacionCotejoModal from '../components/curso-detalle/RecuperacionCotejoModal';
 import VincularDocentesModal from '../components/curso-detalle/VincularDocentesModal';
-import type { BCKey, Curso, Actividad, CalificacionActividad, RecuperacionBC, CursoDocente, Estudiante } from '../types';
+import AgregarActividadModal from '../components/curso-detalle/AgregarActividadModal';
+import type { BCKey, Curso, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, CursoDocente, Estudiante } from '../types';
 import { BC_ICONS, BC_COLOR_THEMES } from '../constants/competencias';
 import { getGradeClass } from '../utils/academic';
 import { getAsignaturaNombre } from '../constants/asignaturas';
@@ -25,6 +26,7 @@ interface Props {
     onUpdateActividad?: (id: number, a: Partial<Actividad>) => Promise<any>;
     onDeleteActividad?: (id: number) => Promise<any>;
     onSaveCalificaciones?: (califs: CalificacionActividad[], recs: RecuperacionBC[], cursoId: number) => Promise<any>;
+    onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, contextos?: ContextoRecuperacion[]) => Promise<void>;
     onToggleDocenteCurso?: (cId: number, tUid: string, r: 'tutor'|'co-docente', a: string) => void;
 }
 
@@ -71,20 +73,26 @@ export default function CursoDetalle(props: Props) {
         gradeAnimations,
         localCalifs,
         localRecs,
+        localRecCotejo,
+        setCotejoCelda,
+        saveCotejo,
+        discardCotejo,
+        isSavingCotejo,
         bcSel,
         setBcSel,
         actividades,
         enhancedEstudiantes,
         setCalif,
-        setRec,
         triggerAnimation,
         isDirty,
+        isDirtyCotejo,
         setIsDirty,
         myAsignatura,
         sharedCourseId
-    } = useCursoDetalleData({ state, cursoId, currentUserId, currentCourseRole, onSaveCalificaciones: props.onSaveCalificaciones });
+    } = useCursoDetalleData({ state, cursoId, currentUserId, currentCourseRole, onSaveCalificaciones: props.onSaveCalificaciones, onSaveRecuperacionCotejo: props.onSaveRecuperacionCotejo });
 
     const [showVincular, setShowVincular] = useState(false);
+    const [showAgregarActividad, setShowAgregarActividad] = useState(false);
 
     const onSave = async () => {
         setIsSaving(true);
@@ -100,17 +108,25 @@ export default function CursoDetalle(props: Props) {
 
     const onAddActividad = () => {
         if (props.onAddActividad) {
-            props.onAddActividad({
-                nombre: `Actividad ${actividades.length + 1}`,
-                cursoId,
-                sharedCourseId,
-                periodo: selectedPeriodo,
-                asignatura: myAsignatura,
-                bcAsignados: ['BC1'],
-                userId: currentUserId,
-                fecha: new Date().toISOString().split('T')[0]
-            });
+            setShowAgregarActividad(true);
         }
+    };
+
+    const confirmAgregarActividad = async (indicador: string, producto: string): Promise<boolean> => {
+        if (!curso || !props.onAddActividad) return false;
+        const result = await props.onAddActividad({
+            nombre: `Actividad ${actividades.length + 1}`,
+            cursoId,
+            sharedCourseId,
+            periodo: selectedPeriodo,
+            asignatura: myAsignatura,
+            bcAsignados: ['BC1'],
+            userId: currentUserId,
+            fecha: new Date().toISOString().split('T')[0],
+            indicador,
+            producto
+        });
+        return !!result;
     };
 
     const onToggleBc = (actId: number, bc: BCKey) => {
@@ -154,7 +170,7 @@ export default function CursoDetalle(props: Props) {
                 curso={curso}
                 buscar={buscar}
                 setBuscar={setBuscar}
-                isDirty={isDirty}
+                isDirty={isDirty || isDirtyCotejo}
                 isSaving={isSaving}
                 onSave={onSave}
                 isFullScreen={isFullScreen}
@@ -200,14 +216,23 @@ export default function CursoDetalle(props: Props) {
                 BC_ICONS={BC_ICONS}
             />
 
-            <RubricModal 
+            <RecuperacionCotejoModal 
                 targetEst={targetEst}
-                rubricTarget={rubricTarget}
-                onClose={() => setRubricTarget(null)}
-                onSetRec={setRec}
+                target={rubricTarget}
+                onClose={() => {
+                    discardCotejo();
+                    setRubricTarget(null);
+                }}
+onSetCelda={setCotejoCelda}
+                   onSave={(contextos) => saveCotejo(contextos)}
+                isSaving={isSavingCotejo}
+                isDirty={isDirtyCotejo}
                 selectedPeriodo={selectedPeriodo}
                 BC_COLOR_THEMES={BC_COLOR_THEMES}
                 BC_ICONS={BC_ICONS}
+                celdas={localRecCotejo}
+                actividades={actividades}
+                calificaciones={localCalifs}
             />
 
             <VincularDocentesModal 
@@ -218,6 +243,12 @@ export default function CursoDetalle(props: Props) {
                 currentUserId={currentUserId!}
                 onToggleDocenteCurso={(cId, tUid, r, a) => props.onToggleDocenteCurso?.(cId, tUid, r, a)}
                 getAsignaturaNombre={getAsignaturaNombre}
+            />
+
+            <AgregarActividadModal
+                show={showAgregarActividad}
+                onClose={() => setShowAgregarActividad(false)}
+                onConfirm={confirmAgregarActividad}
             />
         </div>
     );

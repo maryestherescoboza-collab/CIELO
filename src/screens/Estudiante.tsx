@@ -18,7 +18,7 @@ export default function Estudiante() {
         session,
         selectedEstudianteId
     } = useAppStore();
-    const { loadDashboardData } = useSupabaseData(true);
+    const { loadDashboardData, loadCursoData } = useSupabaseData(true);
 
     useEffect(() => {
         loadDashboardData();
@@ -30,6 +30,13 @@ export default function Estudiante() {
     const cursoBase = estBase ? state.cursos.find(c => c.id === estBase.cursoId) : null;
     const currentCourseRole = state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoBase?.id && cd.userId === session?.user?.id);
     const isTutor = !currentCourseRole || currentCourseRole.rol === 'tutor' || currentCourseRole.esTutor;
+
+    // Recuperaciones y cotejo de recuperación solo se cargan via loadCursoData
+    // (loadDashboardData NO los trae). Si no se visitó el curso antes, el Perfil
+    // no tendría esos datos: garantiza la carga del curso del estudiante.
+    useEffect(() => {
+        if (cursoBase?.id) loadCursoData(cursoBase.id);
+    }, [cursoBase?.id, loadCursoData]);
 
     const {
         periodo,
@@ -221,6 +228,7 @@ export default function Estudiante() {
                             est={est}
                             curso={curso}
                             periodo={periodo}
+                            setPeriodo={setPeriodo}
                             promedioPeriodo={promedioPeriodo}
                             rankingPeriodo={rankingPeriodo}
                             studentHabilidades={studentHabilidades}

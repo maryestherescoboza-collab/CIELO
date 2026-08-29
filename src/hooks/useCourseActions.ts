@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
+import { clearCursoCache } from '../cache/cursoCache';
+import { clearAcademicCacheByUser } from '../cache/academicCache';
 import type { Curso } from '../types';
 
 export function useCourseActions() {
@@ -191,6 +193,9 @@ export function useCourseActions() {
                 };
             });
 
+            // Invalidar el caché de cursos: el conjunto visible cambió.
+            clearCursoCache(session.user.id);
+
             return mapped;
         }
         return null;
@@ -217,6 +222,11 @@ export function useCourseActions() {
             // Filter out the course locally if no longer linked
             cursos: s.cursos.filter(c => c.id !== id || s.cursoDocentes.some(cd => cd.cursoId === c.id && cd.userId !== session.user.id && cd.cursoId !== id)) 
         }));
+        // Invalidar el caché de cursos: el conjunto visible cambió.
+        clearCursoCache(session.user.id);
+        // Paso 7 — invalidar únicamente las slices académicas de ESTE curso (por clave),
+        // nunca limpiar indiscriminadamente los datos del usuario.
+        clearAcademicCacheByUser(session.user.id, id);
     }, [session, setState]);
 
     const handleSaveCurso = useCallback(async (c: Curso) => {
@@ -244,6 +254,8 @@ export function useCourseActions() {
             user_id: session.user.id,
             grupo_id: grupo_id
         });
+        // Invalidar el caché de cursos: el curso fue editado.
+        clearCursoCache(session.user.id);
     }, [session, setState]);
 
     const handleToggleDocenteCurso = useCallback(async (cursoId: number, targetUserId: string, rol: 'tutor' | 'co-docente', asignatura: string, sendNotification: any, syncDelete: any) => {
@@ -293,6 +305,8 @@ export function useCourseActions() {
                 });
             }
         }
+        // Invalidar el caché de cursos del usuario actual: cambió una relación docente-curso.
+        clearCursoCache(session.user.id);
     }, [session, state.cursoDocentes, state.cursos, setState]);
 
     const handleUpdateDocenteAsignatura = useCallback(async (cursoId: number, asignatura: string) => {
@@ -357,6 +371,8 @@ export function useCourseActions() {
                     cursoDocentes: [...s.cursoDocentes, newLink],
                     cursos: s.cursos.map(cu => cu.id === cursoId ? { ...cu, asignatura, diasSemana: newLink.diasSemana } : cu)
                 }));
+                // Invalidar el caché de cursos: cambió la asignatura/relación del curso.
+                clearCursoCache(session.user.id);
                 return;
             } else {
                 return;
@@ -380,6 +396,8 @@ export function useCourseActions() {
                 cursos: s.cursos.map(cu => cu.id === cursoId ? { ...cu, asignatura } : cu)
             }));
         }
+        // Invalidar el caché de cursos: cambió la asignatura/relación del curso.
+        clearCursoCache(session.user.id);
     }, [session, state.cursoDocentes, state.cursos, setState, setGenericToast]);
 
     const handleUpdateDocenteDias = useCallback(async (cursoId: number, diasSemana: string[]) => {
@@ -418,6 +436,8 @@ export function useCourseActions() {
                     cursoDocentes: [...s.cursoDocentes, newLink],
                     cursos: s.cursos.map(cu => cu.id === cursoId ? { ...cu, diasSemana, asignatura: newLink.asignatura } : cu)
                 }));
+                // Invalidar el caché de cursos: cambiaron los días de clase.
+                clearCursoCache(session.user.id);
                 return;
             } else {
                 return;
@@ -441,6 +461,8 @@ export function useCourseActions() {
                 cursos: s.cursos.map(cu => cu.id === cursoId ? { ...cu, diasSemana } : cu)
             }));
         }
+        // Invalidar el caché de cursos: cambiaron los días de clase.
+        clearCursoCache(session.user.id);
     }, [session, state.cursoDocentes, state.cursos, setState, setGenericToast]);
 
     return {

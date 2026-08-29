@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
 import type { Post, ResourceData, Plantilla, Secuencia } from '../types';
+import { clearPlantillaCache } from '../cache/plantillaCache';
+import { getValidSecuenciasByIds, saveRawSecuencia } from '../cache/secuenciaCache';
 
 export function usePostActions() {
     const state = useAppStore(s => s.state);
@@ -226,6 +228,8 @@ export function usePostActions() {
                         createdAt: templateData[0].created_at
                     };
                     setState(s => ({ ...s, plantillas: [newPlantilla, ...s.plantillas] }));
+                    // Invalidar el caché de plantillas: se importó una rúbrica.
+                    clearPlantillaCache(session.user.id);
                     alert('Rúbrica importada exitosamente a tus plantillas locales.');
                 }
             } else if (tipo === 'cotejo') {
@@ -273,6 +277,8 @@ export function usePostActions() {
                         createdAt: templateData[0].created_at
                     };
                     setState(s => ({ ...s, plantillas: [newPlantilla, ...s.plantillas] }));
+                    // Invalidar el caché de plantillas: se importó un cotejo.
+                    clearPlantillaCache(session.user.id);
                     alert('Cotejo importado exitosamente a tus plantillas locales.');
                 }
             } else if (tipo === 'secuencia') {
@@ -280,17 +286,35 @@ export function usePostActions() {
 
                 // 1) Obtener la secuencia ORIGINAL publicada: posts.recurso_id -> secuencias.
                 //    (RLS permite leerla porque está publicada en Comunidad.)
+                //    Cache-first: si la secuencia pública ya está en el caché de
+                //    secuencias (p. ej. desde un detalle previo), se evita la consulta.
                 let original: Record<string, unknown> | null = null;
                 if (recursoId) {
-                    const origRes = await supabase
-                        .from('secuencias')
-                        .select('titulo, curso_id, fecha_inicio, contenido_html, archivo_url, archivo_nombre, archivo_size, archivo_tipo, archivo_fecha_carga')
-                        .eq('id', recursoId)
-                        .maybeSingle();
-                    if (origRes.error) {
-                        console.error('[Comunidad] Error al obtener la secuencia original:', origRes.error);
-                    } else if (origRes.data) {
-                        original = origRes.data as Record<string, unknown>;
+                    const cacheadas = getValidSecuenciasByIds(session.user.id, [recursoId]);
+                    if (cacheadas.cacheadas.length > 0) {
+                        const c = cacheadas.cacheadas[0];
+                        original = {
+                            titulo: c.titulo,
+                            curso_id: c.cursoId,
+                            fecha_inicio: c.fechaInicio,
+                            contenido_html: c.contenidoHtml,
+                            archivo_url: c.archivoUrl,
+                            archivo_nombre: c.archivoNombre,
+                            archivo_size: c.archivoSize,
+                            archivo_tipo: c.archivoTipo,
+                            archivo_fecha_carga: c.archivoFechaCarga,
+                        };
+                    } else {
+                        const origRes = await supabase
+                            .from('secuencias')
+                            .select('titulo, curso_id, fecha_inicio, contenido_html, archivo_url, archivo_nombre, archivo_size, archivo_tipo, archivo_fecha_carga')
+                            .eq('id', recursoId)
+                            .maybeSingle();
+                        if (origRes.error) {
+                            console.error('[Comunidad] Error al obtener la secuencia original:', origRes.error);
+                        } else if (origRes.data) {
+                            original = origRes.data as Record<string, unknown>;
+                        }
                     }
                 }
 
@@ -337,6 +361,7 @@ export function usePostActions() {
                         archivoFechaCarga: insertedSeq[0].archivo_fecha_carga
                     };
                     setState(s => ({ ...s, secuencias: [...s.secuencias, mappedSeq] }));
+                    saveRawSecuencia(session.user.id, insertedSeq[0]);
                     alert('Planificación importada exitosamente a tus recursos.');
                 }
             }

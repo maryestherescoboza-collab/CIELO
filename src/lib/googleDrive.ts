@@ -110,6 +110,27 @@ export function requestGoogleAccessToken(): Promise<string> {
     });
 }
 
+export function requestSilentToken(): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        if (!clientId || !window.google?.accounts?.oauth2) {
+            reject(new Error('GIS not ready'));
+            return;
+        }
+        const client = window.google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: SCOPES,
+            callback: (tokenResponse) => {
+                cachedAccessToken = tokenResponse.access_token;
+                tokenExpiresAt = Date.now() + tokenResponse.expires_in * 1000;
+                resolve(tokenResponse.access_token);
+            },
+            error_callback: () => reject(new Error('Silent auth failed')),
+        });
+        client.requestAccessToken({ prompt: 'none' });
+    });
+}
+
 export function getStoredToken(): string | null {
     if (cachedAccessToken && Date.now() < tokenExpiresAt - 60000) {
         return cachedAccessToken;
@@ -174,25 +195,6 @@ export async function deleteFileFromDrive(fileId: string, token: string): Promis
     });
 }
 
-export function getDriveThumbnailUrl(fileId: string): string {
-    return `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
-}
-
-export async function fetchThumbnailBlob(fileId: string, token: string): Promise<string | null> {
-    try {
-        const res = await fetch(
-            `${DRIVE_API}/files/${fileId}?alt=media`,
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!res.ok) return null;
-        const blob = await res.blob();
-        if (!blob.type.startsWith('image/')) return null;
-        return URL.createObjectURL(blob);
-    } catch {
-        return null;
-    }
-}
-
 export function getDriveViewUrl(fileId: string): string {
     return `https://drive.google.com/file/d/${fileId}/view`;
 }
@@ -202,8 +204,44 @@ export function buildOriginalUrl(imagenUrl: string, driveFileId?: string): strin
     return imagenUrl;
 }
 
-export function buildThumbnailUrl(imagenUrl: string, driveFileId?: string, driveThumbnailUrl?: string): string {
-    if (driveThumbnailUrl) return driveThumbnailUrl;
-    if (driveFileId) return getDriveThumbnailUrl(driveFileId);
-    return imagenUrl;
+const thumbnailMetadataCache = new Map<string, string | null>();
+const thumbnailBlobCache = new Map<string, string>();
+
+export async function fetchFileThumbnailLink(fileId: string, token: string): Promise<string | null> {
+    const cached = thumbnailMetadataCache.get(fileId);
+    if (cached !== undefined) return cached;
+
+    const url = `${DRIVE_API}/files/${fileId}?fields=thumbnailLink`;
+    try {
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) {
+            thumbnailMetadataCache.set(fileId, null);
+            return null;
+        }
+        const data = await res.json();
+        const link = data.thumbnailLink || null;
+        thumbnailMetadataCache.set(fileId, link);
+        return link;
+    } catch {
+        thumbnailMetadataCache.set(fileId, null);
+        return null;
+    }
+}
+
+export async function fetchThumbnailBlob(fileId: string, token: string): Promise<string | null> {
+    const cached = thumbnailBlobCache.get(fileId);
+    if (cached) return cached;
+
+    const url = `${DRIVE_API}/files/${fileId}?alt=media`;
+    try {
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        if (!blob.type.startsWith('image/')) return null;
+        const blobUrl = URL.createObjectURL(blob);
+        thumbnailBlobCache.set(fileId, blobUrl);
+        return blobUrl;
+    } catch {
+        return null;
+    }
 }

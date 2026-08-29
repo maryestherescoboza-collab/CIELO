@@ -34,7 +34,7 @@ FOR EACH ROW EXECUTE PROCEDURE public.sync_post_likes_count();
 
 -- 3. Configurar Expiración Automática
 ALTER TABLE public.posts 
-ALTER COLUMN expires_at SET DEFAULT (now() + interval '15 days');
+ALTER COLUMN expires_at SET DEFAULT (now() + interval '60 days');
 
 -- 4. Política RLS para Ocultar Expirados
 DROP POLICY IF EXISTS "Lectura pública posts" ON public.posts;
@@ -44,9 +44,9 @@ USING (expires_at > now() OR expires_at IS NULL);
 
 -- 5. Inicialización de datos existentes
 -- Asegurar que todos los posts tengan una fecha de expiración si no la tienen
-UPDATE public.posts SET expires_at = (created_at + interval '15 days') WHERE expires_at IS NULL;
+UPDATE public.posts SET expires_at = (created_at + interval '60 days') WHERE expires_at IS NULL;
 -- En caso de que created_at también sea null (poco probable), usar now()
-UPDATE public.posts SET expires_at = (now() + interval '15 days') WHERE expires_at IS NULL;
+UPDATE public.posts SET expires_at = (now() + interval '60 days') WHERE expires_at IS NULL;
 
 -- Sincronizar contador de likes basado en la tabla relacional
 UPDATE public.posts p 

@@ -83,13 +83,15 @@ export function useEstudianteData({ state, selectedId, currentCourseRole, curren
 
     const actividadesPeriodo = useMemo(() => {
         if (!est || !curso) return [];
-        return state.actividades.filter(a => {
+        const res = state.actividades.filter(a => {
             const actCurso = state.cursos.find(c => c.id === a.cursoId);
             const isMatch = (actCurso?.sharedCourseId === est.sharedCourseId || a.cursoId === curso.id) && a.periodo === periodo;
             const actAsignatura = a.asignatura || actCurso?.asignatura || '';
             const matchesRole = !currentCourseRole || actAsignatura === currentCourseRole.asignatura;
             return isMatch && matchesRole;
         }).sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+        console.log(`[DIAG][SCREEN] Estudiante cursoId=${curso.id} estudianteId=${est.id} sharedCourseId=${est.sharedCourseId ?? 'sin-shared'} periodo=${periodo} actividadesConsumidas=${res.length} calificacionesGlobal=${state.calificaciones.length} ts=${new Date().toISOString()}`);
+        return res;
     }, [est, curso, periodo, state.cursos, state.actividades, currentCourseRole]);
 
     const incidenciasEstudiante = useMemo(() => {

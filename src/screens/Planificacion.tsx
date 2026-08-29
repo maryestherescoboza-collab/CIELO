@@ -3,6 +3,7 @@ import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark, Link as Lin
 import blueBookIcon from '../assets/book-blue.png';
 import purpleBookIcon from '../assets/book-purple.png';
 import type { Curso, Secuencia, TipoRecurso } from '../types';
+
 import { getPlanificacionDiariaTemplate } from '../templates/planificacion-diaria';
 import { getPlanRecuperacionTemplate, PERIODOS_RECUPERACION, isPeriodoDisponible } from '../templates/plan-recuperacion';
 import { CieloPill } from '../components/ui/CieloPill';
@@ -10,6 +11,7 @@ import { CieloModal } from '../components/ui/CieloModal';
 import { supabase } from '../lib/supabase';
 
 import { useAppStore } from '../store/appStore';
+import RegistroAnecdotico from '../components/RegistroAnecdotico';
 
 export function detectResourceType(url: string): TipoRecurso {
     const lowerUrl = url.toLowerCase();
@@ -107,20 +109,20 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-auto bg-slate-50 p-6 sm:p-10">
-                    <div className="flex min-h-full items-start justify-center">
-                        <div className="w-full max-w-4xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-14">
+                <div className="flex-1 overflow-auto bg-slate-50 p-4 sm:p-6">
+                    <div className="flex min-h-full items-start">
+                        <div className="w-full max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
                             {initialDatos.contenidoHtml ? (
                                 <div
                                     className="prose prose-slate prose-lg mx-auto max-w-none text-slate-800 prose-headings:font-extrabold prose-headings:tracking-tight prose-headings:text-slate-900 prose-p:text-slate-600 prose-strong:text-slate-900 prose-code:text-emerald-600"
                                     dangerouslySetInnerHTML={{ __html: initialDatos.contenidoHtml }}
                                 />
                             ) : (
-                                <div className="flex min-h-96 flex-col items-center justify-center text-center">
-                                    <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-6">
-                                        <BookOpen size={32} className="text-slate-300" />
+                                <div className="flex min-h-64 flex-col items-start text-left">
+                                    <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-4">
+                                        <BookOpen size={24} className="text-slate-300" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-900">
+                                    <h3 className="text-lg font-bold text-slate-900">
                                         Esta secuencia aún no tiene contenido
                                     </h3>
                                 </div>
@@ -224,7 +226,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
         recursos?: any[];
     }>({
         titulo: '',
-        cursoId: state.cursos[0]?.id ?? 0,
+        cursoId: 0,
         fechaInicio: new Date().toISOString().split('T')[0],
         contenidoHtml: '',
         archivoUrl: undefined,
@@ -372,17 +374,17 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
         return (
             <div className="flex h-full w-full items-center justify-center bg-base-creme">
                 <div className="flex flex-col items-center">
-                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-(--primary) border-t-transparent" />
-                    <p className="mt-4 text-sm font-bold text-(--ink-soft)">Cargando secuencias didácticas...</p>
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-(--primary) border-t-transparent" />
+                    <p className="mt-3 text-xs font-bold text-(--ink-soft)">Cargando secuencias didácticas...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col flex-1 h-full overflow-hidden bg-(--background)">
-            <div className="flex-1 overflow-y-auto px-6 py-10 md:px-12 scroll-smooth scrollbar-hide">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col lg:flex-row flex-1 h-full overflow-hidden bg-(--background)">
+            <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 scroll-smooth scrollbar-hide">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div>
                         <h1 className="text-3xl font-black text-(--ink) tracking-tight mb-2.5 font-notion-title">
                             Secuencias Didácticas
@@ -429,31 +431,30 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                     </div>
                 </div>
 
-                <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
+                <div className="max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
                     {/* SECCIÓN RECURSOS */}
-                    <div className="mb-10">
-                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-widest mb-4 border-b border-(--border-soft) pb-2 flex justify-between items-end">
+                    <div className="mb-6">
+                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-widest mb-3 border-b border-(--border-soft) pb-2 flex justify-between items-end">
                             <span>Recursos del Curso</span>
                         </h2>
                         
                         {allRecursos.length > 0 ? (
-                            <div className="flex overflow-x-auto pb-6 gap-5 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                            <div className="flex overflow-x-auto pb-4 gap-3 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                                 {allRecursos.map((recurso: any, index: number) => {
                                     const cat = recurso.categoria || recurso.titulo || 'Otro';
                                     const { icon: Icon, bg, text, border } = getCategoriaConfig(cat);
                                     return (
-                                        <div key={`${recurso.id}-${index}`} className="relative group flex flex-col items-center gap-2 w-20 shrink-0">
+                                        <div key={`${recurso.id}-${index}`} className="relative group flex flex-col items-start gap-1.5 w-14 shrink-0">
                                             <button
                                                 onClick={() => window.open(recurso.url, "_blank", "noopener,noreferrer")}
                                                 title="Abrir recurso"
-                                                className={`relative w-17.5 h-24.5 rounded-r-md rounded-l-sm border ${bg} ${border} shadow-sm transition-all duration-300 ease-out flex flex-col items-center justify-center cursor-pointer outline-none group-hover:-translate-y-1.5 group-hover:shadow-md`}
+                                                className={`relative w-14 h-18 rounded-r-md rounded-l-sm border ${bg} ${border} shadow-sm transition-all duration-300 ease-out flex flex-col items-center justify-center cursor-pointer outline-none group-hover:-translate-y-1 group-hover:shadow-md`}
                                             >
-                                                <div className="absolute left-0 top-0 bottom-0 w-1.5 opacity-15 mix-blend-multiply bg-black rounded-l-sm"></div>
-                                                <Icon size={24} className={`${text} opacity-80`} />
-                                                <div className="absolute bottom-2 left-2 right-2 h-0.5 bg-black/5 rounded-full"></div>
-                                                <div className="absolute bottom-3 left-2 right-3 h-0.5 bg-black/5 rounded-full"></div>
+                                                <div className="absolute left-0 top-0 bottom-0 w-1 opacity-15 mix-blend-multiply bg-black rounded-l-sm"></div>
+                                                <Icon size={18} className={`${text} opacity-80`} />
+                                                <div className="absolute bottom-1.5 left-1.5 right-1.5 h-0.5 bg-black/5 rounded-full"></div>
                                             </button>
-                                            <span className="text-[10px] font-bold text-(--ink-soft) text-center leading-tight w-full line-clamp-2 px-1" title={cat}>
+                                            <span className="text-[9px] font-bold text-(--ink-soft) text-left leading-tight w-full line-clamp-2 px-0.5" title={cat}>
                                                 {cat}
                                             </span>
                                             
@@ -484,8 +485,8 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                 })}
                             </div>
                         ) : (
-                            <div className="py-8 px-6 bg-(--linen)/30 border border-dashed border-(--border-soft) rounded-2xl flex flex-col items-center justify-center text-center">
-                                <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-2">No hay recursos</p>
+                            <div className="py-5 px-5 bg-(--linen)/30 border border-dashed border-(--border-soft) rounded-xl flex flex-col items-start text-left">
+                                <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-1">No hay recursos</p>
                                 <p className="text-xs text-(--ink-soft)/70 max-w-sm">Los enlaces y recursos que agregues a las secuencias de este curso aparecerán aquí como acceso rápido.</p>
                             </div>
                         )}
@@ -493,18 +494,18 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
                     {/* SECCIÓN PLANTILLAS */}
                     <div>
-                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-widest mb-4 border-b border-(--border-soft) pb-2 flex justify-between items-end">
+                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-widest mb-3 border-b border-(--border-soft) pb-2 flex justify-between items-end">
                             <span>Plantillas y Secuencias</span>
                         </h2>
                         
-                        <div className="flex overflow-x-auto pb-8 gap-8 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pt-2 px-2">
+                        <div className="flex overflow-x-auto pb-6 gap-5 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pt-1">
                             {/* Especificaciones Curriculares */}
                             <button
                                 type="button"
                                 onClick={() => window.open(`/especificaciones.html?cursoId=${cursoSel}`, '_blank')}
-                                className="relative w-35 shrink-0 group flex flex-col items-center text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-2"
+                                className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"
                             >
-                                <div className="w-full h-47.5 flex flex-col items-center justify-center mb-3">
+                                <div className="w-full h-32 flex flex-col items-center justify-center mb-2">
                                     <img
                                         src="/especificaciones-icon.png"
                                         alt=""
@@ -512,10 +513,10 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                         onError={(e) => { e.currentTarget.src = BOOK_ICONS[0]; }}
                                     />
                                 </div>
-                                <h3 className="text-xs font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-center w-full px-1 line-clamp-2 leading-snug">
+                                <h3 className="text-[10px] font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-left w-full px-0.5 line-clamp-2 leading-snug">
                                     Especificaciones Curriculares
                                 </h3>
-                                <p className="mt-1.5 text-[10px] font-bold text-(--primary) text-center uppercase tracking-widest bg-(--primary)/10 px-2 py-0.5 rounded-full">
+                                <p className="mt-1 text-[9px] font-bold text-(--primary) text-left uppercase tracking-widest bg-(--primary)/10 px-1.5 py-0.5 rounded-full">
                                     Interactivo
                                 </p>
                             </button>
@@ -535,9 +536,9 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                             e.preventDefault();
                                             setViewerSeq(seq);
                                         }}
-                                        className="relative w-35 shrink-0 group flex flex-col items-center text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-2"
+                                        className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"
                                     >
-                                        <div className="w-full h-47.5 flex flex-col items-center justify-center mb-3">
+                                        <div className="w-full h-32 flex flex-col items-center justify-center mb-2">
                                             <img
                                                 src={bookIcon}
                                                 alt=""
@@ -545,12 +546,12 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                             />
                                         </div>
                                         
-                                        <h3 className="text-xs font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-center w-full px-1 line-clamp-2 leading-snug" title={seq.titulo}>
+                                        <h3 className="text-[10px] font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-left w-full px-0.5 line-clamp-2 leading-snug" title={seq.titulo}>
                                             {seq.titulo}
                                         </h3>
                                         
-                                        <div className="mt-1.5 flex flex-col items-center gap-1.5 w-full">
-                                            <p className="text-[10px] font-bold text-(--ink-soft) uppercase tracking-widest text-center truncate w-full px-2">
+                                        <div className="mt-1 flex flex-col items-start gap-1 w-full">
+                                            <p className="text-[9px] font-bold text-(--ink-soft) uppercase tracking-widest text-left truncate w-full px-0.5">
                                                 {curso?.grado} {curso?.seccion}
                                             </p>
                                             <div className="flex items-center gap-1">
@@ -570,12 +571,17 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                 </div>
             </div>
 
+            {/* Right column: Registro Anecdótico */}
+            <div className="w-full lg:w-90 border-t lg:border-t-0 lg:border-l border-(--border-soft) bg-white shrink-0 shadow-sm">
+                <RegistroAnecdotico cursoId={cursoSel} />
+            </div>
+
                       {viewerSeq && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-(--ink)/40 p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-200">
                     <div
                         className="flex h-[min(92vh,58rem)] w-full max-w-6xl flex-col overflow-hidden rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-md animate-in zoom-in-95 duration-300"
                     >
-                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-(--border-soft) bg-white px-8 py-6">
+                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-(--border-soft) bg-white px-6 py-4">
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 mb-1.5">
                                     <span className="text-xs font-bold uppercase tracking-widest text-(--ink) bg-(--primary)/15 px-2.5 py-1 rounded-full border border-(--border-soft)">
@@ -675,8 +681,8 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-auto bg-(--linen)/20 p-6 sm:p-10">
-                            <div className="w-full max-w-4xl mx-auto mb-6">
+                            <div className="flex-1 overflow-auto bg-(--linen)/20 p-4 sm:p-6">
+                            <div className="w-full max-w-4xl mb-4">
                                 <div className="flex flex-wrap items-center gap-2">
                                     {viewerRecursos.map((recurso: any) => {
                                         const cat = recurso.categoria || recurso.titulo || 'Otro';
@@ -792,8 +798,8 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                 )}
                             </div>
 
-                            <div className="flex min-h-full items-start justify-center">
-                                <div className="w-full max-w-4xl rounded-(--radius-lg) border border-(--border-soft) bg-white p-8 shadow-sm sm:p-14">
+                            <div className="flex min-h-full items-start">
+                                <div className="w-full max-w-4xl rounded-(--radius-lg) border border-(--border-soft) bg-white p-6 shadow-sm sm:p-10">
                                     {viewerSeq.contenidoHtml ? (
                                         <div
                                             id="viewer-content-container"
@@ -801,14 +807,14 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                             dangerouslySetInnerHTML={{ __html: viewerSeq.contenidoHtml }}
                                         />
                                     ) : (
-                                        <div className="flex min-h-96 flex-col items-center justify-center text-center">
-                                            <div className="w-16 h-16 rounded-full bg-(--linen)/20 flex items-center justify-center mb-6">
-                                                <BookOpen size={32} className="text-(--ink-soft)" />
+                                        <div className="flex min-h-64 flex-col items-start text-left">
+                                            <div className="w-12 h-12 rounded-full bg-(--linen)/20 flex items-center justify-center mb-4">
+                                                <BookOpen size={24} className="text-(--ink-soft)" />
                                             </div>
-                                            <h3 className="text-xl font-bold text-(--ink)">
+                                            <h3 className="text-lg font-bold text-(--ink)">
                                                 Esta secuencia aún no tiene contenido
                                             </h3>
-                                            <p className="mt-3 max-w-sm text-sm font-medium text-(--ink-soft) leading-relaxed">
+                                            <p className="mt-2 max-w-sm text-xs font-medium text-(--ink-soft) leading-relaxed">
                                                 Puedes editar esta secuencia para agregar el contenido didáctico, imágenes o recursos para tu clase.
                                             </p>
                                         </div>
@@ -839,12 +845,12 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                          )}
 
                          {importStep === 'select-template' && (
-                              <div className="p-8 space-y-4">
+                              <div className="p-5 space-y-3">
                                          {/* SECCIÓN RECURSOS */}
-                                  <div className="mb-8">
-                                      <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-sm font-bold text-(--ink) uppercase tracking-widest flex items-center gap-2">
-                                            <Bookmark size={16} className="text-(--primary)" /> Recursos Rápidos
+                                  <div className="mb-5">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-xs font-bold text-(--ink) uppercase tracking-widest flex items-center gap-1.5">
+                                            <Bookmark size={14} className="text-(--primary)" /> Recursos Rápidos
                                         </h3>
                                       </div>
 
@@ -975,48 +981,37 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                           </div>
                                       )}
                                   </div>
-                                  <div className="border-t border-(--border-soft) pt-8">
-                                      <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-6">
+                                  <div className="border-t border-(--border-soft) pt-5">
+                                      <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-4">
                                           Plantillas Disponibles
                                       </p>
-                                      <div className="grid gap-4">
+                                      <div className="grid gap-3">
                                       <button
-                                          onClick={async () => {
-                                               const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
-                                               const centroNombre = session?.user?.user_metadata?.centro_nombre || 'Mi Centro'; // Simplified fallback
-                                               const codigoCentro = session?.user?.user_metadata?.codigo_centro || '';
-                                               const docenteNombre = session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
-                                               
-                                               const htmlContent = getPlanificacionDiariaTemplate({
-                                                   centro: centroNombre,
-                                                   codigoCentro: codigoCentro,
-                                                   docente: docenteNombre,
-                                                   asignatura: curso?.asignatura || '',
-                                                   grado: curso?.grado || '',
-                                                   seccion: curso?.seccion || '',
-                                                   fecha: form.fechaInicio
-                                               });
-                                               
-                                               const title = 'Planificación - ' + (curso?.asignatura || 'Clase');
-                                               if (onAddSecuencia) {
-                                                   const newSeq = await onAddSecuencia({
-                                                       titulo: title,
-                                                       cursoId: form.cursoId,
-                                                       fechaInicio: form.fechaInicio,
-                                                       contenidoHtml: htmlContent,
-                                                       estado: 'Pendiente',
-                                                       recursos: form.recursos || []
-                                                   });
-                                                   if (newSeq) {
-                                                       window.open(`/planificacion-diaria/${newSeq.id}`, '_blank');
-                                                   }
-                                               }
-                                               setShowModal(false);
-                                           }}
-                                          className="w-full text-left p-6 rounded-2xl border border-(--border-soft) bg-white hover:border-(--primary) hover:bg-(--linen)/20 transition-all cursor-pointer group flex items-start gap-4"
+                                          onClick={() => {
+                                                const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                                const centroNombre = session?.user?.user_metadata?.centro_nombre || 'Mi Centro';
+                                                const codigoCentro = session?.user?.user_metadata?.codigo_centro || '';
+                                                const docenteNombre = session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
+                                                const htmlContent = getPlanificacionDiariaTemplate({
+                                                    centro: centroNombre,
+                                                    codigoCentro,
+                                                    docente: docenteNombre,
+                                                    asignatura: curso?.asignatura || '',
+                                                    grado: curso?.grado || '',
+                                                    seccion: curso?.seccion || '',
+                                                    fecha: form.fechaInicio
+                                                });
+                                                setForm(prev => ({
+                                                    ...prev,
+                                                    titulo: 'Planificación - ' + (curso?.asignatura || 'Clase'),
+                                                    contenidoHtml: htmlContent
+                                                }));
+                                                setImportStep('template-editor');
+                                          }}
+                                          className="w-full text-left p-4 rounded-xl border border-(--border-soft) bg-white hover:border-(--primary) hover:bg-(--linen)/20 transition-all cursor-pointer group flex items-start gap-3"
                                       >
-                                          <div className="w-12 h-12 rounded-xl bg-(--tag-indigo-bg) flex items-center justify-center shrink-0 border border-(--border-soft)">
-                                             <BookOpen size={24} className="text-(--primary)" />
+                                          <div className="w-10 h-10 rounded-lg bg-(--tag-indigo-bg) flex items-center justify-center shrink-0 border border-(--border-soft)">
+                                             <BookOpen size={20} className="text-(--primary)" />
                                           </div>
                                           <div>
                                              <h3 className="text-sm font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors">
@@ -1114,10 +1109,10 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                                window.open(url, '_blank');
                                                setShowModal(false);
                                            }}
-                                          className="w-full text-left p-6 rounded-2xl border border-(--border-soft) bg-white hover:border-herb-garden hover:bg-herb-garden/5 transition-all cursor-pointer group flex items-start gap-4"
+                                          className="w-full text-left p-4 rounded-xl border border-(--border-soft) bg-white hover:border-herb-garden hover:bg-herb-garden/5 transition-all cursor-pointer group flex items-start gap-3"
                                       >
-                                          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-200">
-                                             <RotateCcw size={24} className="text-herb-garden" />
+                                          <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-200">
+                                             <RotateCcw size={20} className="text-herb-garden" />
                                           </div>
                                           <div>
                                              <h3 className="text-sm font-black uppercase tracking-wider text-(--ink) group-hover:text-herb-garden transition-colors">
@@ -1137,7 +1132,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
              {showModal && importStep === 'template-editor' && (
                  <div className="fixed inset-0 z-100 bg-(--background) flex flex-col w-full h-full">
-                     <div className="bg-white border-b border-(--border-soft) px-6 py-4 flex items-center justify-between shrink-0 shadow-sm">
+                     <div className="bg-white border-b border-(--border-soft) px-4 py-3 flex items-center justify-between shrink-0 shadow-sm">
                          <div className="flex flex-col gap-1">
                              <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Título de la Planificación</label>
                              <input 
@@ -1154,6 +1149,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                  value={form.cursoId}
                                  onChange={e => setForm(prev => ({...prev, cursoId: Number(e.target.value)}))}
                              >
+                                 <option value={0}>Selecciona un curso</option>
                                  {state.cursos.map(c => <option key={c.id} value={c.id}>{getCursoLabel(c)}</option>)}
                              </select>
                          </div>
@@ -1167,49 +1163,45 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                               </button>
                               <button
                                   type="button"
-                                  onClick={async () => {
-                                      const container = document.getElementById('template-editor-container');
-                                      if (container) {
-                                          const html = container.innerHTML;
-                                          const newSeq = await onAddSecuencia({
-                                              titulo: form.titulo,
-                                              cursoId: form.cursoId,
-                                              fechaInicio: form.fechaInicio,
-                                              contenidoHtml: html,
-                                              estado: 'Pendiente'
-                                          });
-                                          if (newSeq) {
-                                              window.open(`/planificacion-diaria/${newSeq.id}`, '_blank');
-                                          }
-                                          setShowModal(false);
-                                          setForm({
-                                             titulo: '',
-                                             cursoId: state.cursos[0]?.id ?? 0,
-                                             fechaInicio: new Date().toISOString().split('T')[0],
-                                             contenidoHtml: '',
-                                          });
-                                      }
-                                  }}
+onClick={() => {
+                                       const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                       const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
+                                       const centroNombre = state.centros?.find(c => c.id === miPerfil?.centro_id)?.nombre || session?.user?.user_metadata?.centro_nombre || 'Mi Centro';
+                                       const codigoCentro = state.centros?.find(c => c.id === miPerfil?.centro_id)?.codigoCentro || session?.user?.user_metadata?.codigo_centro || '';
+                                       const docenteNombre = miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
+                                       const params = new URLSearchParams();
+                                       if (form.cursoId) params.set('cursoId', String(form.cursoId));
+                                       if (form.fechaInicio) params.set('fecha', form.fechaInicio);
+                                       if (curso?.asignatura) params.set('asignatura', curso.asignatura);
+                                       if (curso?.grado) params.set('grado', curso.grado);
+                                       if (curso?.seccion) params.set('seccion', curso.seccion);
+                                       params.set('centro', centroNombre);
+                                       params.set('codigo', codigoCentro);
+                                       params.set('docente', docenteNombre);
+                                       const qs = params.toString();
+                                       window.open(`/planificacion-diaria/plantilla${qs ? `?${qs}` : ''}`, '_blank');
+                                       setShowModal(false);
+                                   }}
                                   className="px-6 py-2.5 rounded-xl bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-(--linen)/30 transition-all outline-none"
                               >
                                   Abrir en otra pestaña
                               </button>
                               <button
                                   type="button"
-                                  onClick={() => {
-                                      const container = document.getElementById('template-editor-container');
-                                      if (container) {
-                                          setForm(prev => ({ ...prev, contenidoHtml: container.innerHTML }));
-                                          onAddSecuencia({ ...form, contenidoHtml: container.innerHTML, estado: 'Pendiente', cursoId: form.cursoId });
-                                          setShowModal(false);
-                                          setForm({
-                                             titulo: '',
-                                             cursoId: state.cursos[0]?.id ?? 0,
-                                             fechaInicio: new Date().toISOString().split('T')[0],
-                                             contenidoHtml: '',
-                                          });
-                                      }
-                                  }}
+onClick={async () => {
+                                       const container = document.getElementById('template-editor-container');
+                                       if (container) {
+                                           const creada = await onAddSecuencia({ ...form, contenidoHtml: container.innerHTML, estado: 'Pendiente', cursoId: form.cursoId });
+                                           if (!creada) return;
+                                           setShowModal(false);
+                                           setForm({
+                                              titulo: '',
+                                              cursoId: 0,
+                                              fechaInicio: new Date().toISOString().split('T')[0],
+                                              contenidoHtml: '',
+                                           });
+                                       }
+                                   }}
                                   className="px-6 py-2.5 rounded-xl bg-(--primary) text-white text-xs font-black uppercase tracking-widest shadow-sm hover:opacity-90 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50"
                               >
                                   Guardar
@@ -1217,7 +1209,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                           </div>
                      </div>
                      
-                     <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-(--linen)/20 flex justify-center">
+                     <div className="flex-1 overflow-y-auto p-3 md:p-6 bg-(--linen)/20 flex justify-center">
                          <div className="w-full max-w-6xl bg-white shadow-sm border border-(--border-soft) p-8 rounded-(--radius-md) shrink-0">
                              <div 
                                  id="template-editor-container"

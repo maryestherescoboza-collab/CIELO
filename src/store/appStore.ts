@@ -1,8 +1,98 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Session } from '@supabase/supabase-js';
-import type { AppState, SearchResults, FloatingRubricWindow, Nivel } from '../types';
+import type { AppState, SearchResults, FloatingRubricWindow, Nivel, Centro, Curso, CursoDocente, Plantilla, Actividad, CalificacionActividad, Secuencia } from '../types';
 import { initialState } from '../data/mockData';
+
+export interface CentroCacheEntry {
+    centroId: string;
+    data: Centro;
+    cachedAt: number;
+    expiresAt: number;
+}
+
+export interface PerfilCacheEntry {
+    userId: string;
+    data: {
+        nombre?: string;
+        avatar_url?: string;
+        nombre_docente?: string;
+        centro_id?: string | null;
+        rol?: string;
+    };
+    cachedAt: number;
+    expiresAt: number;
+}
+
+export interface CursoCacheData {
+    cursos: Curso[];
+    cursoDocentes: CursoDocente[];
+}
+
+export interface CursoCacheEntry {
+    /** Clave compuesta `${userId}:${centroId}` para aislar por usuario y centro. */
+    key: string;
+    userId: string;
+    centroId?: string;
+    /** Cursos ya filtrados para el usuario + sus relaciones de docente activas. */
+    data: CursoCacheData;
+    cachedAt: number;
+    expiresAt: number;
+}
+
+export interface PlantillaCacheEntry {
+    /** Clave `${userId}`: una plantilla pertenece a su creador, aislado por user_id. */
+    key: string;
+    userId: string;
+    /** Colección de plantillas activas del usuario, exactamente como se guardan en Zustand. */
+    data: Plantilla[];
+    cachedAt: number;
+    expiresAt: number;
+}
+
+/**
+ * Slice EN MEMORIA del caché académico por curso + período (Paso 7).
+ * Almacena SOLO datos fuente (actividades + calificaciones) de un curso en un
+ * período. Los períodos son conjuntos independientes: P1 en caché NO implica
+ * P2/P3/P4. Por diseño NO se persiste en `localStorage` (el estado académico
+ * masivo no debe copiarse al almacenamiento persistente).
+ */
+export interface AcademicCacheEntry {
+    /** Clave `${userId}:${centroId}:${cursoId}:${periodo}`: aísla por usuario, centro, curso y período. */
+    key: string;
+    userId: string;
+    centroId?: string;
+    cursoId: number;
+    periodo: string;
+    data: {
+        actividades: Actividad[];
+        calificaciones: CalificacionActividad[];
+    };
+    cachedAt: number;
+    expiresAt: number;
+}
+
+/**
+ * Entrada EN MEMORIA de UNA secuencia completa.
+ * Una sola entrada incluye metadata + `contenidoHtml` + `recursos` (el HTML
+ * nunca se duplica en un caché aparte). NO se persiste en localStorage: el
+ * contenido HTML no debe sobrevivir a recargas ni sesiones.
+ */
+export interface SecuenciaCacheEntry {
+    /** Clave `${userId}:${cursoId}:${secuenciaId}`: aísla por usuario y curso. */
+    key: string;
+    userId: string;
+    cursoId: number;
+    secuenciaId: number;
+    /** user_id real de la fila (creador), cuando lo aporta la lectura fuente. */
+    autorId?: string;
+    activo?: boolean;
+    createdAt?: string;
+    /** Secuencia completa mapeada (incluye contenidoHtml + recursos). */
+    data: Secuencia;
+    cachedAt: number;
+    expiresAt: number;
+}
 
 interface AppStore {
     // Data State
@@ -10,6 +100,32 @@ interface AppStore {
     session: Session | null;
     loading: boolean;
     authInitialized: boolean;
+
+    // Caché persistente del registro del centro, aislado por centroId.
+    centroCache: Record<string, CentroCacheEntry>;
+    setCentroCache: (entry: CentroCacheEntry | ((prev: Record<string, CentroCacheEntry>) => Record<string, CentroCacheEntry>)) => void;
+
+    // Caché persistente del perfil básico del usuario, aislado por userId.
+    perfilCache: Record<string, PerfilCacheEntry>;
+    setPerfilCache: (entry: PerfilCacheEntry | ((prev: Record<string, PerfilCacheEntry>) => Record<string, PerfilCacheEntry>)) => void;
+
+    // Caché persistente de los cursos del usuario, aislado por {userId}:{centroId}.
+    cursoCache: Record<string, CursoCacheEntry>;
+    setCursoCache: (entry: CursoCacheEntry | ((prev: Record<string, CursoCacheEntry>) => Record<string, CursoCacheEntry>)) => void;
+
+    // Caché persistente de las plantillas del usuario, aislado por {userId}.
+    plantillaCache: Record<string, PlantillaCacheEntry>;
+    setPlantillaCache: (entry: PlantillaCacheEntry | ((prev: Record<string, PlantillaCacheEntry>) => Record<string, PlantillaCacheEntry>)) => void;
+
+    // Caché EN MEMORIA por curso + período (actividades + calificaciones), aislado por
+    // {userId}:{centroId}:{cursoId}:{periodo}. NO se persiste en localStorage.
+    academicCache: Record<string, AcademicCacheEntry>;
+    setAcademicCache: (entry: AcademicCacheEntry | ((prev: Record<string, AcademicCacheEntry>) => Record<string, AcademicCacheEntry>)) => void;
+
+    // Caché EN MEMORIA de secuencias completas, aislado por {userId}:{cursoId}:{secuenciaId}.
+    // NO se persiste en localStorage; se limpia en setSession al cambiar de usuario.
+    secuenciaCache: Record<string, SecuenciaCacheEntry>;
+    setSecuenciaCache: (entry: SecuenciaCacheEntry | ((prev: Record<string, SecuenciaCacheEntry>) => Record<string, SecuenciaCacheEntry>)) => void;
     
     // UI State
     darkMode: boolean;
@@ -86,6 +202,54 @@ export const useAppStore = create<AppStore>()(
         loading: false, // Start false, use authInitialized for initial splash
         authInitialized: false,
 
+        // Cache del registro del centro (en memoria), persistido por Zustand.
+        centroCache: {},
+        setCentroCache: (entry: CentroCacheEntry | ((prev: Record<string, CentroCacheEntry>) => Record<string, CentroCacheEntry>)) => set((s: AppStore) => ({
+            centroCache: typeof entry === 'function'
+                ? entry(s.centroCache)
+                : { ...s.centroCache, [entry.centroId]: entry }
+        })),
+
+        // Cache del perfil básico del usuario (en memoria), persistido por Zustand.
+        perfilCache: {},
+        setPerfilCache: (entry: PerfilCacheEntry | ((prev: Record<string, PerfilCacheEntry>) => Record<string, PerfilCacheEntry>)) => set((s: AppStore) => ({
+            perfilCache: typeof entry === 'function'
+                ? entry(s.perfilCache)
+                : { ...s.perfilCache, [entry.userId]: entry }
+        })),
+
+        // Cache de los cursos del usuario (en memoria), persistido por Zustand.
+        cursoCache: {},
+        setCursoCache: (entry: CursoCacheEntry | ((prev: Record<string, CursoCacheEntry>) => Record<string, CursoCacheEntry>)) => set((s: AppStore) => ({
+            cursoCache: typeof entry === 'function'
+                ? entry(s.cursoCache)
+                : { ...s.cursoCache, [entry.key]: entry }
+        })),
+
+        // Cache de las plantillas del usuario (en memoria), persistido por Zustand.
+        plantillaCache: {},
+        setPlantillaCache: (entry: PlantillaCacheEntry | ((prev: Record<string, PlantillaCacheEntry>) => Record<string, PlantillaCacheEntry>)) => set((s: AppStore) => ({
+            plantillaCache: typeof entry === 'function'
+                ? entry(s.plantillaCache)
+                : { ...s.plantillaCache, [entry.key]: entry }
+        })),
+
+        // Cache EN MEMORIA por curso + período. No se persiste.
+        academicCache: {},
+        setAcademicCache: (entry: AcademicCacheEntry | ((prev: Record<string, AcademicCacheEntry>) => Record<string, AcademicCacheEntry>)) => set((s: AppStore) => ({
+            academicCache: typeof entry === 'function'
+                ? entry(s.academicCache)
+                : { ...s.academicCache, [entry.key]: entry }
+        })),
+
+        // Cache EN MEMORIA de secuencias completas. No se persiste.
+        secuenciaCache: {},
+        setSecuenciaCache: (entry: SecuenciaCacheEntry | ((prev: Record<string, SecuenciaCacheEntry>) => Record<string, SecuenciaCacheEntry>)) => set((s: AppStore) => ({
+            secuenciaCache: typeof entry === 'function'
+                ? entry(s.secuenciaCache)
+                : { ...s.secuenciaCache, [entry.key]: entry }
+        })),
+        
         // UI State
         darkMode: false,
         selectedCursoId: null,
@@ -123,7 +287,8 @@ export const useAppStore = create<AppStore>()(
         setSession: (session: Session | null) => set((s: AppStore) => {
             const userChanged = s.session?.user?.id !== session?.user?.id;
             if (userChanged) {
-                return { session, loadedModules: [], loadedCursos: [] };
+                console.log(`[DIAG][SETSESSION] userChanged old=${s.session?.user?.id ?? 'null'} new=${session?.user?.id ?? 'null'} limpia=loadedModules,loadedCursos,cursoCache,plantillaCache,academicCache,secuenciaCache conserva=state(perfiles,estudiantes,actividades,calificaciones,secuencias,grupos,...),centroCache,perfilCache ts=${new Date().toISOString()}`);
+                return { session, loadedModules: [], loadedCursos: [], cursoCache: {}, plantillaCache: {}, academicCache: {}, secuenciaCache: {} };
             }
             return { session };
         }),
@@ -181,16 +346,61 @@ export const useAppStore = create<AppStore>()(
         selectedCursoId: state.selectedCursoId, 
         selectedEstudianteId: state.selectedEstudianteId,
         selectedPeriodo: state.selectedPeriodo,
-        darkMode: state.darkMode
+        darkMode: state.darkMode,
+        centroCache: state.centroCache,
+        perfilCache: state.perfilCache,
+        cursoCache: state.cursoCache,
+        plantillaCache: state.plantillaCache
       }),
       merge: (persistedState: any, currentState: any) => {
         // Only merge the keys we explicitly partialize, discarding any legacy corrupted state
+        // Las entradas de caché de centro expiradas se descartan al hidratar.
+        const nowMs = Date.now();
+        const persistedCache = (persistedState?.centroCache || {}) as Record<string, CentroCacheEntry>;
+        const validCache: Record<string, CentroCacheEntry> = {};
+        for (const key of Object.keys(persistedCache)) {
+          const entry = persistedCache[key];
+          if (entry && typeof entry.expiresAt === 'number' && entry.expiresAt > nowMs && entry.data) {
+            validCache[key] = entry;
+          }
+        }
+        // Las entradas de caché de perfil expiradas se descartan al hidratar.
+        const persistedPerfilCache = (persistedState?.perfilCache || {}) as Record<string, PerfilCacheEntry>;
+        const validPerfilCache: Record<string, PerfilCacheEntry> = {};
+        for (const key of Object.keys(persistedPerfilCache)) {
+          const entry = persistedPerfilCache[key];
+          if (entry && typeof entry.expiresAt === 'number' && entry.expiresAt > nowMs && entry.data) {
+            validPerfilCache[key] = entry;
+          }
+        }
+        // Las entradas de caché de cursos expiradas se descartan al hidratar.
+        const persistedCursoCache = (persistedState?.cursoCache || {}) as Record<string, CursoCacheEntry>;
+        const validCursoCache: Record<string, CursoCacheEntry> = {};
+        for (const key of Object.keys(persistedCursoCache)) {
+          const entry = persistedCursoCache[key];
+          if (entry && typeof entry.expiresAt === 'number' && entry.expiresAt > nowMs && entry.data) {
+            validCursoCache[key] = entry;
+          }
+        }
+        // Las entradas de caché de plantillas expiradas se descartan al hidratar.
+        const persistedPlantillaCache = (persistedState?.plantillaCache || {}) as Record<string, PlantillaCacheEntry>;
+        const validPlantillaCache: Record<string, PlantillaCacheEntry> = {};
+        for (const key of Object.keys(persistedPlantillaCache)) {
+          const entry = persistedPlantillaCache[key];
+          if (entry && typeof entry.expiresAt === 'number' && entry.expiresAt > nowMs && Array.isArray(entry.data)) {
+            validPlantillaCache[key] = entry;
+          }
+        }
         return {
           ...currentState,
           selectedCursoId: persistedState?.selectedCursoId ?? currentState.selectedCursoId,
           selectedEstudianteId: persistedState?.selectedEstudianteId ?? currentState.selectedEstudianteId,
           selectedPeriodo: persistedState?.selectedPeriodo ?? currentState.selectedPeriodo ?? 'P1',
           darkMode: persistedState?.darkMode ?? currentState.darkMode,
+          centroCache: validCache,
+          perfilCache: validPerfilCache,
+          cursoCache: validCursoCache,
+          plantillaCache: validPlantillaCache,
         };
       },
     }

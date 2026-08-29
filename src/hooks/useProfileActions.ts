@@ -1,10 +1,18 @@
 import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
+import { savePerfilCache } from '../cache/perfilCache';
 
 export function useProfileActions() {
     const session = useAppStore(s => s.session);
     const setState = useAppStore(s => s.setAppState);
+
+    // Mantiene sincronizado el caché persistente del perfil con el estado en memoria.
+    // Se llama SOLO tras una operación confirmada exitosamente en Supabase.
+    const syncPerfilCache = useCallback((userId: string) => {
+        const perfilActual = useAppStore.getState().state.perfiles.find(p => p.userId === userId);
+        savePerfilCache(userId, perfilActual);
+    }, []);
 
     const handleUpdateBio = useCallback(async (bio: string) => {
         if (!session?.user?.id) return;
@@ -45,9 +53,11 @@ export function useProfileActions() {
                 return { ...s, perfilAvatarUrl: url, perfiles: updatedPerfiles };
             });
             await supabase.from('perfiles').upsert({ user_id: session.user.id, avatar_url: url });
+            // Solo tras confirmación exitosa en Supabase: renovar el caché del perfil.
+            syncPerfilCache(session.user.id);
         }
         return url;
-    }, [session, setState]);
+    }, [session, setState, syncPerfilCache]);
 
     const updatePerfilProfesional = useCallback(async (tipoInstitucion: 'publica' | 'privada', asignaturas: string[], centroId?: string | null) => {
         if (!session?.user?.id) return;
@@ -81,7 +91,11 @@ export function useProfileActions() {
                 perfiles: updatedPerfiles
             };
         });
-    }, [session?.user?.id, setState]);
+
+        // Solo tras confirmación exitosa en Supabase: renovar el caché del perfil
+        // (refleja el posible cambio de centro_id).
+        syncPerfilCache(session.user.id);
+    }, [session?.user?.id, setState, syncPerfilCache]);
 
     const handleUpdateFullProfile = useCallback(async (nombreDocente: string, bio: string) => {
         if (!session?.user?.id) return;
@@ -113,7 +127,11 @@ export function useProfileActions() {
                 perfiles: updatedPerfiles
             };
         });
-    }, [session, setState]);
+
+        // Solo tras confirmación exitosa en Supabase: renovar el caché del perfil
+        // (refleja el cambio de nombre / nombre_docente).
+        syncPerfilCache(session.user.id);
+    }, [session, setState, syncPerfilCache]);
 
     const handleUpdateAvatarColor = useCallback(async (color: string) => {
         if (!session?.user?.id) return;

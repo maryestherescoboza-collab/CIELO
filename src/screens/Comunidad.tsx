@@ -126,7 +126,7 @@ export default function Comunidad({
             <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
                 <div className="bg-(--ink) text-white px-6 h-12 rounded-2xl shadow-sm flex items-center gap-3 border border-(--border-soft)/20 scale-90 md:scale-100">
                     <Info size={16} className="text-(--primary)" />
-                    <span className="text-xs font-black uppercase tracking-widest text-[#EAE4DA]">Los recursos expiran automáticamente cada 15 días</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-[#EAE4DA]">Los recursos expiran automáticamente cada 60 días</span>
                 </div>
             </div>
         </div>

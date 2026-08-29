@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
+import { saveRawSecuencia, saveSecuencia, removeSecuenciaCached } from '../cache/secuenciaCache';
 import type { Secuencia } from '../types';
 
 export function useSecuenciaActions() {
@@ -11,6 +12,18 @@ export function useSecuenciaActions() {
 
     const addSecuencia = useCallback(async (seq: Omit<Secuencia, 'id'>) => {
         if (!session?.user?.id) return null;
+
+        const cursoIdValido = typeof seq.cursoId === 'number' && Number.isInteger(seq.cursoId) && seq.cursoId > 0;
+        if (!cursoIdValido) {
+            console.warn('[secuencias] INSERT bloqueado: curso_id inválido.', seq.cursoId);
+            setGenericToast({
+                message: 'Selecciona un curso para guardar la planificación.',
+                type: 'error'
+            });
+            setTimeout(() => setGenericToast(null), 3000);
+            return null;
+        }
+
         const { data, error } = await supabase.from('secuencias').insert([{
             titulo: seq.titulo,
             curso_id: seq.cursoId,
@@ -51,6 +64,7 @@ export function useSecuenciaActions() {
                 recursos: parsedRecursos
             };
             setState(s => ({ ...s, secuencias: [...s.secuencias, mapped] }));
+            saveRawSecuencia(session.user.id, data[0]);
             return mapped;
         }
         return null;
@@ -59,6 +73,7 @@ export function useSecuenciaActions() {
     const updateSecuencia = useCallback(async (sec: Secuencia) => {
         if (!session?.user?.id) return;
         setState(s => ({ ...s, secuencias: s.secuencias.map(x => x.id === sec.id ? sec : x) }));
+        saveSecuencia(session.user.id, sec);
         const { error } = await supabase.from('secuencias').upsert({
             id: sec.id,
             titulo: sec.titulo,
@@ -77,6 +92,7 @@ export function useSecuenciaActions() {
         try {
             await supabase.from('secuencias').delete().eq('id', id);
             setState(s => ({ ...s, secuencias: s.secuencias.filter(x => x.id !== id) }));
+            removeSecuenciaCached(session.user.id, id);
         } catch (error) {
             console.error('Error deleting secuencia:', error);
         }

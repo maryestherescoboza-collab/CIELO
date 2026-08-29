@@ -2,7 +2,9 @@ import React from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import type { 
   Actividad, Screen, NavExtra, 
-  CalificacionActividad
+  CalificacionActividad,
+  AppState,
+  Secuencia
 } from './types';
 
 const Inicio = React.lazy(() => import('./screens/Inicio'));
@@ -24,6 +26,7 @@ const Suscripcion = React.lazy(() => import('./screens/Suscripcion'));
 import LoadingMessage from './components/LoadingMessage';
 import { BookOpen } from 'lucide-react';
 import { esRolAdministrador } from './utils/autorizacion';
+import { useSupabaseData } from './hooks/useSupabaseData';
 
 const CourseDetailRouteWrapper: React.FC<{
   setSelectedCursoId: (id: number | null) => void;
@@ -67,6 +70,32 @@ const CalificacionesAnualesRouteWrapper: React.FC<{
   return renderCalificacionesAnuales(numId);
 };
 
+// Asegura que las secuencias del usuario estén cargadas antes de renderizar el editor
+// de una planificación EXISTENTE (ruta /planificacion-diaria/:id). El editor conserva su
+// lógica original; esta carga lazy es aislada y no afecta la ruta /planificacion-diaria/plantilla.
+const PlanificacionDiariaExistenteWrapper: React.FC<{
+  state: AppState;
+  onUpdateSecuencia?: (seq: Secuencia) => Promise<void> | void;
+  onAddSecuencia?: (seq: Omit<Secuencia, 'id'>) => Promise<Secuencia | null>;
+}> = ({ state, onUpdateSecuencia, onAddSecuencia }) => {
+  const { id } = useParams<{ id: string }>();
+  const { loadPlanificacionData } = useSupabaseData(true);
+
+  React.useEffect(() => {
+    if (id && id !== 'plantilla') {
+      loadPlanificacionData();
+    }
+  }, [id, loadPlanificacionData]);
+
+  return (
+    <PlanificacionDiariaEditor
+      state={state}
+      onUpdateSecuencia={onUpdateSecuencia}
+      onAddSecuencia={onAddSecuencia}
+    />
+  );
+};
+
 interface AppRoutesProps {
   state: any;
   session: any;
@@ -86,6 +115,7 @@ interface AppRoutesProps {
   updateActividad: any;
   deleteActividad: any;
   saveCalificaciones: any;
+  saveRecuperacionCotejo: any;
   addCurso: any;
   deleteCurso: any;
   saveCurso: any;
@@ -133,7 +163,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   setSelectedCursoId, setSelectedEstudianteId,
   currentCourseRole, visibleActividades, visibleCalificaciones,
   onlineUsers, currentUserProfile,
-  addActividad, updateActividad, deleteActividad, saveCalificaciones,
+  addActividad, updateActividad, deleteActividad, saveCalificaciones, saveRecuperacionCotejo,
   addCurso, deleteCurso, saveCurso, toggleDocenteCurso, updateDocenteAsignatura, updateDocenteDias,
   addEstudiante, updateEstudiante, deleteEstudiante,
   addIncidencia, deleteIncidencia,
@@ -215,6 +245,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         onUpdateActividad={updateActividad}
         onDeleteActividad={deleteActividad}
         onSaveCalificaciones={saveCalificaciones}
+        onSaveRecuperacionCotejo={saveRecuperacionCotejo}
         onToggleDocenteCurso={(cId, tUid, r, a) => toggleDocenteCurso(cId, tUid, r, a, sendNotification, syncDelete)}
       />
     );
@@ -245,7 +276,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/print-boletines/:cursoId" element={<PrintBoletines state={state} docenteNombre={docenteNombre} />} />
       <Route path="/incidencias" element={<Incidencias state={state} onAddIncidencia={addIncidencia} onDeleteIncidencia={deleteIncidencia} />} />
       <Route path="/planificacion" element={<Planificacion onAddSecuencia={addSecuencia} onUpdateSecuencia={updateSecuencia} onDeleteSecuencia={deleteSecuencia} />} />
-      <Route path="/planificacion-diaria/:id" element={<PlanificacionDiariaEditor state={state} onUpdateSecuencia={updateSecuencia} />} />
+      <Route path="/planificacion-diaria/plantilla" element={<PlanificacionDiariaEditor state={state} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
+      <Route path="/planificacion-diaria/:id" element={<PlanificacionDiariaExistenteWrapper state={state} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
       <Route path="/comunidad" element={
         <Comunidad
           onAddPost={addPost}

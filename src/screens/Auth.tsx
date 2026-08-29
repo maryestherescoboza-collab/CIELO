@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { Mail, Lock, Loader2, User, ArrowRight, Building2, ChevronLeft, Check } from 'lucide-react';
+import { Mail, Lock, Loader2, User, ArrowRight, Building2, ChevronLeft, Check, Search } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 interface AuthProps {
@@ -10,10 +10,25 @@ interface AuthProps {
 const PENDING_CENTRO_KEY = 'pendingCentroCIELO';
 const PENDING_VINCULO_KEY = 'pendingVinculoCIELO';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface CentroFormData {
   nombre: string;
   distritoEducativo: string;
   telefono: string;
+}
+
+interface CentroRow {
+  id: string;
+  nombre: string;
+  distrito_educativo?: string | null;
+  telefono?: string | null;
+  codigo_centro?: string | null;
+}
+
+interface CentroExistenteInfo {
+  found: boolean;
+  centro: CentroRow | null;
 }
 
 const Auth = ({ onAuthSuccess }: AuthProps) => {
@@ -25,9 +40,16 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   const [error, setError] = useState<string | null>(null);
 
   // Registro (flujo único)
-  const [regStep, setRegStep] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
+  const [regStep, setRegStep] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9>(1);
   const [crearCentro, setCrearCentro] = useState<boolean | null>(null);
+  const [modoCentroRegistro, setModoCentroRegistro] = useState<'nuevo' | 'existente' | null>(null);
   const [centroForm, setCentroForm] = useState<CentroFormData>({ nombre: '', distritoEducativo: '', telefono: '' });
+
+  // Flujo "Sí, mis docentes ya usan CIELO": buscar un centro existente por ID
+  const [centroExistenteBusqueda, setCentroExistenteBusqueda] = useState('');
+  const [buscandoCentroExistente, setBuscandoCentroExistente] = useState(false);
+  const [centroExistenteInfo, setCentroExistenteInfo] = useState<CentroExistenteInfo | null>(null);
+  const [modoRegistroFinalizado, setModoRegistroFinalizado] = useState<'nuevo' | 'existente' | null>(null);
 
   // Opciones del flujo "No, continuar como usuario" (buscador de centros)
   const [centrosList, setCentrosList] = useState<{ id: string; nombre: string }[]>([]);
@@ -87,6 +109,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setPassword('');
     setRegStep(1);
     setCrearCentro(null);
+    setModoCentroRegistro(null);
     setCentroForm({ nombre: '', distritoEducativo: '', telefono: '' });
     setCentrosList([]);
     setCentroSel('');
@@ -94,6 +117,10 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setCodigoInfo(null);
     setBusquedaCentro('');
     setDetectandoSuscripcion(false);
+    setCentroExistenteBusqueda('');
+    setBuscandoCentroExistente(false);
+    setCentroExistenteInfo(null);
+    setModoRegistroFinalizado(null);
     setNeedsEmailConfirmation(false);
     setRegisteredWithCentro(false);
     setError(null);
@@ -165,6 +192,86 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     }
   };
 
+  // Busca un centro que YA existe en CIELO usando su ID (UUID de centros.id)
+  // o su código de centro (codigo_centro). NO crea centros nuevos.
+  const buscarCentroExistente = async () => {
+    const q = centroExistenteBusqueda.trim();
+    if (!q) { setError('Ingresa el ID del centro.'); return; }
+
+    setBuscandoCentroExistente(true);
+    setError(null);
+    setCentroExistenteInfo(null);
+    try {
+      const matches: CentroRow[] = [];
+      const esUuid = UUID_RE.test(q);
+
+      if (esUuid) {
+        const { data, error } = await supabase.from('centros').select('*').eq('id', q);
+        if (error) throw error;
+        if (data && data.length > 0) matches.push(...(data as CentroRow[]));
+      }
+
+      // Fallback/adicional: buscar por código de centro (insensible a mayúsculas)
+      const { data: codData, error: codError } = await supabase
+        .from('centros')
+        .select('*')
+        .ilike('codigo_centro', q);
+      if (codError) throw codError;
+      if (codData && codData.length > 0) {
+        (codData as CentroRow[]).forEach((c) => {
+          if (!matches.some((m) => m.id === c.id)) matches.push(c);
+        });
+      }
+
+      if (matches.length === 0) {
+        setCentroExistenteInfo({ found: false, centro: null });
+        setError('No encontramos un centro con ese ID. Verifica el ID e inténtalo nuevamente.');
+        return;
+      }
+
+      // Priorizar la coincidencia exacta (por ID o código) sobre similares
+      const found = matches.find((m) =>
+        esUuid
+          ? m.id === q
+          : String(m.codigo_centro || '').toLowerCase() === q.toLowerCase()
+      ) || matches[0];
+
+      setCentroExistenteInfo({
+        found: true,
+        centro: {
+          id: found.id as string,
+          nombre: found.nombre as string,
+          distrito_educativo: found.distrito_educativo as string | null,
+          telefono: found.telefono as string | null,
+          codigo_centro: found.codigo_centro as string | null
+        }
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'No se pudo buscar el centro.';
+      setError(msg);
+      setCentroExistenteInfo({ found: false, centro: null });
+    } finally {
+      setBuscandoCentroExistente(false);
+    }
+  };
+
+  // Tras confirmar el centro existente: crea el perfil como administrador,
+  // lo asocia al centro y crea/actualiza su rol en centro_roles.
+  // Reutiliza el RPC asignar_centro_administrador (SECURITY DEFINER), que
+  // respeta las políticas actuales y evita duplicados (ON CONFLICT).
+  const vincularCentroExistente = async (centroId: string) => {
+    const { data, error } = await supabase.rpc('asignar_centro_administrador', {
+      p_centro_id: centroId,
+      p_nombre: nombre.trim(),
+      p_nombre_docente: nombre.trim()
+    });
+    if (error) throw error;
+    const r = data as { ok?: boolean; message?: string } | null;
+    if (r && r.ok === false) {
+      throw new Error(r.message || 'No se pudo vincular el centro.');
+    }
+  };
+
   const createCentro = async (userId: string, data: CentroFormData) => {
     const { data: centroData, error: centroError } = await supabase
       .from('centros')
@@ -194,7 +301,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     return centroData.id;
   };
 
-  const handleRegistro = async (modo: 'director' | 'codigo' | 'propia' | 'referencia') => {
+  const handleRegistro = async (modo: 'director' | 'codigo' | 'propia' | 'referencia' | 'centro_existente') => {
     setLoading(true);
     setError(null);
     setResendSuccess(null);
@@ -209,6 +316,15 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         }
       }
 
+      // Regla obligatoria: el nombre completo introducido durante el registro
+      // debe guardarse en perfiles.nombre (nunca el correo).
+      const nombreCompleto = (nombre || '').trim();
+      if (!nombreCompleto) {
+        setError('Por favor ingresa tu nombre completo.');
+        setLoading(false);
+        return;
+      }
+
       const redirectUrl = window.location.hostname === "localhost"
         ? "http://localhost:5173"
         : "https://evaluacielo.com";
@@ -219,7 +335,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            nombre_docente: nombre.trim()
+            nombre_docente: nombreCompleto
           }
         }
       });
@@ -230,8 +346,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       // Insertar el perfil inicial
       const { error: profileError } = await supabase.from('perfiles').upsert({
         user_id: authData.user.id,
-        nombre: nombre.trim(),
-        nombre_docente: nombre.trim(),
+        nombre: nombreCompleto,
+        nombre_docente: nombreCompleto,
         avatar_color: '#3b82f6'
       }, { onConflict: 'user_id' });
       if (profileError) console.error('Error profile:', profileError);
@@ -253,6 +369,33 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           nombre: centroForm.nombre,
           distrito_educativo: centroForm.distritoEducativo,
           telefono: centroForm.telefono
+        }));
+      } else if (modo === 'centro_existente') {
+        // El centro ya existe en CIELO: NUNCA se crea uno nuevo. El usuario
+        // debe haber confirmado antes los datos del centro encontrado.
+        const centroId = centroExistenteInfo?.centro?.id;
+        if (!centroId) {
+          setError('No encontramos un centro con ese ID. Verifica el ID e inténtalo nuevamente.');
+          setLoading(false);
+          return;
+        }
+        if (authData.session) {
+          // Correo ya confirmado: vincular de inmediato como administrador
+          await vincularCentroExistente(centroId);
+          setRegisteredWithCentro(true);
+          setModoRegistroFinalizado('existente');
+          setIsSignUp(false);
+          resetRegistro();
+          onAuthSuccess();
+          return;
+        }
+        // Requiere confirmación de correo: guardar la vinculación pendiente.
+        // Al primer inicio de sesión se asigna el perfil como administrador
+        // del centro existente (ver usePendingCentro en App).
+        localStorage.setItem(PENDING_CENTRO_KEY, JSON.stringify({
+          modo: 'existente',
+          centro_id: centroId,
+          nombre: nombreCompleto
         }));
       } else {
         // Modalidades del usuario que NO crea un centro (paso 4).
@@ -568,9 +711,15 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                     <div className="text-center space-y-4 py-2">
                       <div className="p-6 bg-[#689C63]/5 rounded-2xl border border-[#689C63]/15">
                         <Check className="w-10 h-10 text-[#689C63] mx-auto mb-3" />
-                        <h3 className="text-sm font-black text-[#3E3838] mb-1">¡Centro educativo creado!</h3>
+                        <h3 className="text-sm font-black text-[#3E3838] mb-1">
+                          {modoRegistroFinalizado === 'existente'
+                            ? '¡Centro vinculado correctamente!'
+                            : '¡Centro educativo creado!'}
+                        </h3>
                         <p className="text-xs font-bold text-[#3E3838]/60">
-                          Tu cuenta y tu centro se crearon correctamente. Ya puedes ingresar.
+                          {modoRegistroFinalizado === 'existente'
+                            ? 'Tu cuenta quedó como administrador del centro. Ya puedes ingresar.'
+                            : 'Tu cuenta y tu centro se crearon correctamente. Ya puedes ingresar.'}
                         </p>
                       </div>
                       <button
@@ -591,7 +740,9 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         </p>
                         {crearCentro && (
                           <p className="text-xs font-bold text-[#3E3838]/50 mt-2">
-                            Al confirmar tu correo y entrar, tu centro educativo se creará automáticamente y quedarás como administrador.
+                            {modoCentroRegistro === 'existente'
+                              ? 'Al confirmar tu correo y entrar, tu cuenta quedará vinculada al centro seleccionado y serás administrador.'
+                              : 'Al confirmar tu correo y entrar, tu centro educativo se creará automáticamente y quedarás como administrador.'}
                           </p>
                         )}
                       </div>
@@ -672,7 +823,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
                       <button
                         type="button"
-                        onClick={() => { setCrearCentro(true); setRegStep(3); }}
+                        onClick={() => { setCrearCentro(true); setModoCentroRegistro(null); setRegStep(8); }}
                         disabled={loading}
                         className="w-full py-3 bg-[#3E3838] hover:bg-[#3E3838]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
                       >
@@ -763,6 +914,148 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         )}
                       </button>
                     </form>
+                  ) : regStep === 8 ? (
+                    /* PASO 8: Centro educativo — ¿Alguno de sus docentes ya usa CIELO? */
+                    <div className="space-y-4">
+                      <div className="mb-2 text-center">
+                        <h3 className="text-xs font-black text-[#3E3838] uppercase tracking-widest">Centro educativo</h3>
+                        <p className="text-xs font-bold text-[#3E3838]/60 mt-2">
+                          ¿Alguno de sus docentes ya usa CIELO?
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => { setModoCentroRegistro('existente'); setRegStep(9); }}
+                        disabled={loading}
+                        className="w-full py-3 bg-[#3E3838] hover:bg-[#3E3838]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
+                      >
+                        <Check size={14} />
+                        Sí
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => { setModoCentroRegistro('nuevo'); setRegStep(3); }}
+                        disabled={loading}
+                        className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-xs tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase shadow-sm active:scale-[0.98]"
+                      >
+                        No
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setRegStep(2)}
+                        disabled={loading}
+                        className="w-full text-center text-xs font-black text-[#3E3838]/40 hover:text-[#689C63] transition-colors uppercase tracking-widest"
+                      >
+                        <ChevronLeft className="inline w-3 h-3" /> Volver
+                      </button>
+                    </div>
+                  ) : regStep === 9 ? (
+                    /* PASO 9: Sí — introducir el ID del centro existente y confirmarlo */
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => { setModoCentroRegistro(null); setCentroExistenteInfo(null); setRegStep(8); }}
+                            className="text-[#3E3838]/40 hover:text-[#689C63] transition-colors"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <h3 className="text-xs font-black uppercase tracking-widest text-[#3E3838]">ID del centro</h3>
+                        </div>
+                        <p className="text-xs font-bold text-[#3E3838]/60 mt-2">
+                          Ingresa el ID del centro que ya existe en CIELO. No se creará un centro nuevo.
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">ID del centro</label>
+                        <div className="relative">
+                          <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#689C63]" />
+                          <input
+                            type="text" value={centroExistenteBusqueda}
+                            onChange={(e) => { setCentroExistenteBusqueda(e.target.value); setCentroExistenteInfo(null); }}
+                            className={inputClass}
+                            placeholder="Ej. 7f3c2a1...-4b9e-4..."
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={buscarCentroExistente}
+                        disabled={buscandoCentroExistente || loading || !centroExistenteBusqueda.trim()}
+                        className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-xs tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase shadow-sm active:scale-[0.98]"
+                      >
+                        {buscandoCentroExistente ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Search size={14} />
+                        )}
+                        {buscandoCentroExistente ? 'Buscando...' : 'Buscar centro'}
+                      </button>
+
+                      {buscandoCentroExistente && (
+                        <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-xs font-bold text-[#689C63] flex items-center gap-2">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Buscando el centro en CIELO...
+                        </div>
+                      )}
+
+                      {centroExistenteInfo?.found && centroExistenteInfo.centro && (
+                        <div className="rounded-2xl border border-[#EAE4DA] bg-[#EAE4DA]/40 p-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-[#689C63] shrink-0" />
+                            <h4 className="text-xs font-black uppercase tracking-widest text-[#3E3838]">Centro encontrado</h4>
+                          </div>
+                          <div className="space-y-2 text-xs font-bold text-[#3E3838]/80">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]/40">Nombre del centro</p>
+                              <p className="mt-0.5">{centroExistenteInfo.centro.nombre}</p>
+                            </div>
+                            {centroExistenteInfo.centro.distrito_educativo && (
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]/40">Distrito educativo</p>
+                                <p className="mt-0.5">{centroExistenteInfo.centro.distrito_educativo}</p>
+                              </div>
+                            )}
+                            {centroExistenteInfo.centro.telefono && (
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[#3E3838]/40">Teléfono</p>
+                                <p className="mt-0.5">{centroExistenteInfo.centro.telefono}</p>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs font-bold text-[#3E3838]/50">
+                            Confirma que este es tu centro. Tu cuenta quedará como administrador y no se creará un centro nuevo.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleRegistro('centro_existente')}
+                            disabled={loading}
+                            className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
+                          >
+                            {loading ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                Confirmar centro y crear mi cuenta
+                                <ArrowRight size={12} />
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setCentroExistenteInfo(null); }}
+                            className="w-full text-center text-xs font-black text-[#3E3838]/40 hover:text-[#689C63] transition-colors uppercase tracking-widest"
+                          >
+                            Cambiar ID del centro
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   ) : regStep === 4 ? (
                     /* PASO 4: buscador único de centros (No, continuar como usuario) */
                     <div className="animate-fade-in">

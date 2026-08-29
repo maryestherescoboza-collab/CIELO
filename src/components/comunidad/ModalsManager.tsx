@@ -5,6 +5,9 @@ import Rubrica from '../../screens/Rubrica';
 import Cotejo from '../../screens/Cotejo';
 import Planificacion from '../../screens/Planificacion';
 import { supabase } from '../../lib/supabase';
+import { useAppStore } from '../../store/appStore';
+import { getCachedPlantillaById } from '../../cache/plantillaCache';
+import { getValidSecuenciasByIds, saveRawSecuencia } from '../../cache/secuenciaCache';
 import { COMPETENCIAS } from '../RubricaRow';
 import { CieloModal } from '../ui/CieloModal';
 
@@ -103,19 +106,35 @@ export default function ModalsManager({
 
                 let fetched: any = null;
 
+                // Caché/Zustand primero: si la plantilla del recurso ya está
+                // disponible (propia y cacheada, o en estado en memoria), no se
+                // vuelve a consultar Supabase por ella. Se usa `datos` tal cual.
+                let plantillaDatos: any = null;
+                if (recursoId) {
+                    const store = useAppStore.getState();
+                    const userId = store.session?.user?.id;
+                    plantillaDatos = getCachedPlantillaById(userId, recursoId)?.datos ?? null;
+                    if (!plantillaDatos) {
+                        const enEstado = (store.state.plantillas || []).find((pl: any) => pl.id === recursoId);
+                        if (enEstado) plantillaDatos = enEstado.datos;
+                    }
+                }
+
                 if (tipo === 'rubrica') {
                     let descriptors: any[] | null = Array.isArray(snapshot?.descriptores) ? snapshot.descriptores : null;
                     let niveles = snapshot?.niveles;
 
                     if ((!descriptors || descriptors.length === 0) && recursoId) {
-                        const [descRes, plantRes] = await Promise.all([
-                            supabase.from('descriptores_rubrica').select('*').eq('plantilla_id', recursoId),
-                            supabase.from('plantillas').select('*').eq('id', recursoId).maybeSingle()
-                        ]);
+                        const descPromise = supabase.from('descriptores_rubrica').select('*').eq('plantilla_id', recursoId);
+                        let plDatos = plantillaDatos;
+                        if (!plDatos) {
+                            const plantRes = await supabase.from('plantillas').select('*').eq('id', recursoId).maybeSingle();
+                            if (plantRes.error) console.error('[Comunidad] Error al obtener plantilla:', plantRes.error);
+                            plDatos = (plantRes.data as any)?.datos;
+                        }
+                        const descRes = await descPromise;
                         if (descRes.error) console.error('[Comunidad] Error al obtener descriptores_rubrica:', descRes.error);
-                        if (plantRes.error) console.error('[Comunidad] Error al obtener plantilla:', plantRes.error);
                         if (descRes.data) descriptors = descRes.data as any[];
-                        const plDatos = (plantRes.data as any)?.datos;
                         if (!niveles && plDatos?.niveles) niveles = plDatos.niveles;
                     }
 
@@ -129,9 +148,12 @@ export default function ModalsManager({
                     let niveles = snapshot?.niveles;
 
                     if ((!criterios || criterios.length === 0) && recursoId) {
-                        const plantRes = await supabase.from('plantillas').select('*').eq('id', recursoId).maybeSingle();
-                        if (plantRes.error) console.error('[Comunidad] Error al obtener plantilla cotejo:', plantRes.error);
-                        const plDatos = (plantRes.data as any)?.datos;
+                        let plDatos = plantillaDatos;
+                        if (!plDatos) {
+                            const plantRes = await supabase.from('plantillas').select('*').eq('id', recursoId).maybeSingle();
+                            if (plantRes.error) console.error('[Comunidad] Error al obtener plantilla cotejo:', plantRes.error);
+                            plDatos = (plantRes.data as any)?.datos;
+                        }
                         const critIds = Array.isArray(plDatos?.criterios) ? plDatos.criterios.map((c: any) => c?.id) : [];
                         if (critIds.length > 0) {
                             const critRes = await supabase.from('criterios_cotejo').select('*').in('id', critIds);
@@ -149,10 +171,22 @@ export default function ModalsManager({
                 } else if (tipo === 'secuencia') {
                     let datos = snapshot?.contenidoHtml ? snapshot : null;
                     if (!datos && recursoId) {
-                        const seqRes = await supabase.from('secuencias').select('*').eq('id', recursoId).maybeSingle();
-                        if (seqRes.error) console.error('[Comunidad] Error al obtener secuencia:', seqRes.error);
-                        const s = seqRes.data as any;
-                        if (s) datos = { titulo: s.titulo, fechaInicio: s.fecha_inicio, contenidoHtml: s.contenido_html };
+                        // Cache-first: el detalle evita re-consultar por id si la
+                        // secuencia ya está completa en el caché de secuencias.
+                        const sessionUserId = useAppStore.getState().session?.user?.id;
+                        const cacheadas = getValidSecuenciasByIds(sessionUserId, [recursoId]);
+                        if (cacheadas.cacheadas.length > 0) {
+                            const s = cacheadas.cacheadas[0];
+                            datos = { titulo: s.titulo, fechaInicio: s.fechaInicio, contenidoHtml: s.contenidoHtml };
+                        } else {
+                            const seqRes = await supabase.from('secuencias').select('*').eq('id', recursoId).maybeSingle();
+                            if (seqRes.error) console.error('[Comunidad] Error al obtener secuencia:', seqRes.error);
+                            const s = seqRes.data as any;
+                            if (s) {
+                                datos = { titulo: s.titulo, fechaInicio: s.fecha_inicio, contenidoHtml: s.contenido_html };
+                                if (sessionUserId) saveRawSecuencia(sessionUserId, s);
+                            }
+                        }
                     }
                     fetched = datos || snapshot || {};
                 }

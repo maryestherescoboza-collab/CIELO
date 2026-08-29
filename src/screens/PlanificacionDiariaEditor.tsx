@@ -1,14 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Printer, Sparkles, X, Plus } from 'lucide-react';
+import { ArrowLeft, Save, Printer, Sparkles, X, Plus, Paintbrush } from 'lucide-react';
 import type { AppState, Secuencia, Curso } from '../types';
 import { useAppStore } from '../store/appStore';
 import { getGeminiApiKey, saveGeminiApiKey } from '../lib/aiConfig';
+import { getPlanificacionDiariaTemplate } from '../templates/planificacion-diaria';
 import {
     extraerContextoPlanificacion,
     desarrolloSuficiente,
     generarSugerenciasPedagogicas,
-    insertarSugerencia,
+    asignarIdsDeCeldas,
+    celdaRequiereConfirmacion,
+    escribirEnCelda,
     type SugerenciasIA,
     type CategoriaSugerencia
 } from '../lib/aiPlanificacion';
@@ -16,6 +20,7 @@ import {
 interface Props {
     state: AppState;
     onUpdateSecuencia?: (seq: Secuencia) => Promise<void> | void;
+    onAddSecuencia?: (seq: Omit<Secuencia, 'id'>) => Promise<Secuencia | null>;
 }
 
 function getCursoLabel(curso?: Curso) {
@@ -41,7 +46,6 @@ function SeccionSugerencias({ titulo, items, prefijoClave, insertadas, onInserta
                 return (
                     <ItemSugerencia
                         key={clave}
-                        clave={clave}
                         texto={item}
                         insertada={insertadas.has(clave)}
                         onInsertar={() => onInsertar(clave, construir(item))}
@@ -53,7 +57,6 @@ function SeccionSugerencias({ titulo, items, prefijoClave, insertadas, onInserta
 }
 
 interface ItemSugerenciaProps {
-    clave: string;
     texto: string;
     insertada: boolean;
     onInsertar: () => void;
@@ -70,7 +73,7 @@ function ItemSugerencia({ texto, insertada, onInsertar }: ItemSugerenciaProps) {
                     type="button"
                     onClick={onInsertar}
                     className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-(--linen)/50 border border-(--border-soft) text-[9px] font-black uppercase tracking-widest text-(--ink-soft) hover:border-(--primary) hover:text-(--primary) transition-colors"
-                    title="Insertar en el documento"
+                    title="Activa la brocha para aplicar esta sugerencia en la celda que elijas"
                 >
                     <Plus size={11} /> Insertar
                 </button>
@@ -79,8 +82,24 @@ function ItemSugerencia({ texto, insertada, onInsertar }: ItemSugerenciaProps) {
     );
 }
 
-export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: Props) {
+function obtenerCeldaDestino(target: HTMLElement | null): HTMLElement | null {
+    if (!target?.closest) return null;
+    const conId = target.closest<HTMLElement>('[data-field-id]');
+    if (conId instanceof HTMLElement) return conId;
+    const editable = target.closest<HTMLElement>('td.editable, span.editable, [contenteditable="true"]');
+    if (editable instanceof HTMLElement) {
+        const txt = (editable.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (['inicio', 'desarrollo', 'cierre'].includes(txt)) return null;
+        return editable;
+    }
+    return null;
+}
+
+const CURSOR_BROCHA = 'url("/icons/brocha.svg") 8 25, copy';
+
+export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, onAddSecuencia }: Props) {
     const { id } = useParams<{ id: string }>();
+    const esPlantilla = id === 'plantilla';
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [seq, setSeq] = useState<Secuencia | null>(null);
@@ -94,16 +113,115 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
     const [iaCargando, setIaCargando] = useState(false);
     const [iaError, setIaError] = useState<string | null>(null);
     const [sugerencias, setSugerencias] = useState<SugerenciasIA | null>(null);
-    const [numSesiones, setNumSesiones] = useState(0);
-    const [sesionObjetivo, setSesionObjetivo] = useState(0);
     const [insertadas, setInsertadas] = useState<Set<string>>(new Set());
     const [necesitaKey, setNecesitaKey] = useState(false);
     const [apiKeyInput, setApiKeyInput] = useState('');
     const abortRef = useRef<AbortController | null>(null);
+    const badgeTimersRef = useRef<Record<string, number>>({});
+    const [brocha, setBrocha] = useState<{ clave: string; sugerencia: CategoriaSugerencia } | null>(null);
+    const [celdaPendiente, setCeldaPendiente] = useState<{ celda: HTMLElement; clave: string; texto: string } | null>(null);
+    const celdasBrochaRef = useRef<HTMLElement[]>([]);
+    const hoverCellRef = useRef<HTMLElement | null>(null);
+
+    const marcarInsertada = (clave: string) => {
+        setInsertadas(prev => new Set(prev).add(clave));
+        window.clearTimeout(badgeTimersRef.current[clave]);
+        badgeTimersRef.current[clave] = window.setTimeout(() => {
+            setInsertadas(prev => {
+                if (!prev.has(clave)) return prev;
+                const next = new Set(prev);
+                next.delete(clave);
+                return next;
+            });
+        }, 1800);
+    };
+
+    const limpiarEstiloCelda = (el: HTMLElement) => {
+        el.style.outline = '';
+        el.style.background = '';
+        el.style.cursor = '';
+        el.title = '';
+    };
+
+    const finalizarBrocha = useCallback(() => {
+        celdasBrochaRef.current.forEach(limpiarEstiloCelda);
+        celdasBrochaRef.current = [];
+        if (hoverCellRef.current) {
+            limpiarEstiloCelda(hoverCellRef.current);
+            hoverCellRef.current = null;
+        }
+        setCeldaPendiente(null);
+        setBrocha(null);
+    }, []);
+
+    const activarBrocha = (clave: string, sugerencia: CategoriaSugerencia) => {
+        setCeldaPendiente(null);
+        setBrocha({ clave, sugerencia });
+        requestAnimationFrame(() => {
+            const contenedor = document.getElementById('template-editor-container');
+            if (!contenedor) return;
+            celdasBrochaRef.current = Array.from(contenedor.querySelectorAll<HTMLElement>('[data-field-id]'))
+                .filter(el => !((el.dataset.fieldId || '').endsWith('-momento')));
+            celdasBrochaRef.current.forEach(el => {
+                el.style.cursor = CURSOR_BROCHA;
+                el.style.background = 'rgba(59,130,246,0.06)';
+            });
+        });
+    };
+
+    const aplicarBrocha = (celda: HTMLElement, clave: string, texto: string) => {
+        const contenedor = document.getElementById('template-editor-container');
+        escribirEnCelda(celda, texto);
+        if (contenedor) {
+            const htmlActualizado = contenedor.innerHTML;
+            setSeq(prev => (prev ? { ...prev, contenidoHtml: htmlActualizado } : prev));
+        }
+        marcarInsertada(clave);
+        finalizarBrocha();
+    };
+
+    const handleClicPlantilla = (e: ReactMouseEvent<HTMLDivElement>) => {
+        if (!brocha) return;
+        const target = e.target as HTMLElement | null;
+        const celda = obtenerCeldaDestino(target);
+        if (!celda) return;
+        const id = celda.dataset.fieldId || '';
+        if (id.endsWith('-momento')) return;
+        if (celdaRequiereConfirmacion(celda)) {
+            setCeldaPendiente({ celda, clave: brocha.clave, texto: brocha.sugerencia.texto });
+            return;
+        }
+        aplicarBrocha(celda, brocha.clave, brocha.sugerencia.texto);
+    };
+
+    const handleOverPlantilla = (e: ReactMouseEvent<HTMLDivElement>) => {
+        if (!brocha) return;
+        const target = e.target as HTMLElement | null;
+        const celda = target?.closest?.('[data-field-id]') ?? null;
+        if (!(celda instanceof HTMLElement) || (celda.dataset.fieldId || '').endsWith('-momento')) return;
+        if (hoverCellRef.current && hoverCellRef.current !== celda) {
+            limpiarEstiloCelda(hoverCellRef.current);
+        }
+        if (hoverCellRef.current !== celda) {
+            hoverCellRef.current = celda;
+            celda.style.outline = '2px dashed var(--primary)';
+            celda.style.background = 'rgba(59,130,246,0.12)';
+            celda.style.cursor = CURSOR_BROCHA;
+            celda.title = 'Aplicar sugerencia de IA aquí';
+        }
+    };
+
+    const handleLeavePlantilla = () => {
+        if (hoverCellRef.current) {
+            limpiarEstiloCelda(hoverCellRef.current);
+            hoverCellRef.current = null;
+        }
+    };
 
     useEffect(() => () => abortRef.current?.abort(), []);
 
     useEffect(() => {
+        if (esPlantilla) return;
         // If data is loading or empty, wait a bit or check if it exists
         const found = state.secuencias.find(s => s.id === Number(id));
         if (found) {
@@ -118,7 +236,52 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
                 setLoading(false);
             }
         }
-    }, [id, state.secuencias]);
+    }, [id, state.secuencias, esPlantilla]);
+
+    useEffect(() => {
+        if (!esPlantilla) return;
+        if (seq) return;
+
+        const qs = new URLSearchParams(window.location.search);
+        const cursoIdParam = Number(qs.get('cursoId')) || 0;
+        const curso = cursoIdParam > 0 ? state.cursos.find(c => c.id === cursoIdParam) : undefined;
+        const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
+        const centroNombre = qs.get('centro')
+            || state.centros?.find(c => c.id === miPerfil?.centro_id)?.nombre
+            || session?.user?.user_metadata?.centro_nombre || 'Mi Centro';
+        const codigoCentro = qs.get('codigo')
+            || state.centros?.find(c => c.id === miPerfil?.centro_id)?.codigoCentro
+            || session?.user?.user_metadata?.codigo_centro || '';
+        const docenteNombre = qs.get('docente')
+            || miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
+        const fecha = qs.get('fecha') || new Date().toISOString().slice(0, 10);
+        const asignatura = qs.get('asignatura') || curso?.asignatura || '';
+        const grado = qs.get('grado') || curso?.grado || '';
+        const seccion = qs.get('seccion') || curso?.seccion || '';
+        const cursoId = cursoIdParam;
+        const titulo = 'Planificación - ' + (asignatura || 'Clase');
+
+        setLocalTitulo(titulo);
+        setLocalCursoId(cursoId);
+        setSeq({
+            id: 0,
+            titulo,
+            cursoId,
+            fechaInicio: fecha,
+            contenidoHtml: getPlanificacionDiariaTemplate({
+                centro: centroNombre,
+                codigoCentro,
+                docente: docenteNombre,
+                asignatura,
+                grado,
+                seccion,
+                fecha
+            }),
+            estado: 'Pendiente',
+            recursos: []
+        });
+        setLoading(false);
+    }, [esPlantilla, seq, state.cursos, state.perfiles, state.centros, session]);
 
     useEffect(() => {
         const win = window as unknown as {
@@ -134,6 +297,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
                 const clone = document.importNode(tpl.content, true);
                 container.appendChild(clone);
                 win.renumberSessions?.();
+                asignarIdsDeCeldas();
             }
         };
 
@@ -142,6 +306,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
             if (block) {
                 block.remove();
                 win.renumberSessions?.();
+                asignarIdsDeCeldas();
             }
         };
 
@@ -178,6 +343,23 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
         }
     }, [loading, seq]);
 
+    // Identifica cada celda editable (general-*, curricular-*, contenido-*, seccion-N-*)
+    useEffect(() => {
+        if (!loading && seq) {
+            asignarIdsDeCeldas();
+        }
+    }, [loading, seq]);
+
+    // Esc cancela el modo brocha
+    useEffect(() => {
+        if (!brocha) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') finalizarBrocha();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [brocha, finalizarBrocha]);
+
     const handleSave = async () => {
         if (!seq) return;
         const container = document.getElementById('template-editor-container');
@@ -185,6 +367,29 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
 
         setSaving(true);
         const updatedHtml = container.innerHTML;
+
+        if (esPlantilla) {
+            const nueva: Omit<Secuencia, 'id'> = {
+                titulo: localTitulo,
+                cursoId: localCursoId,
+                fechaInicio: seq.fechaInicio,
+                contenidoHtml: updatedHtml,
+                estado: 'Pendiente',
+                recursos: []
+            };
+            let creada: Secuencia | null = null;
+            if (onAddSecuencia) {
+                creada = (await onAddSecuencia(nueva)) || null;
+            }
+            if (creada?.id) {
+                navigate(`/planificacion-diaria/${creada.id}`, { replace: true });
+            }
+            setSaving(false);
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 2500);
+            return;
+        }
+
         const updatedSeq: Secuencia = {
             ...seq,
             titulo: localTitulo,
@@ -227,8 +432,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
         setIaError(null);
         setIaCargando(true);
         setInsertadas(new Set());
-        setNumSesiones(contexto.sesiones.length);
-        setSesionObjetivo(0);
+        finalizarBrocha();
 
         try {
             const resultado = await generarSugerenciasPedagogicas(apiKey, contexto, controller.signal);
@@ -256,13 +460,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
     };
 
     const handleInsertar = (clave: string, sugerencia: CategoriaSugerencia) => {
-        if (insertadas.has(clave)) return;
-        const ok = insertarSugerencia(sesionObjetivo, sugerencia);
-        if (ok) {
-            setInsertadas(prev => new Set(prev).add(clave));
-        } else {
-            setIaError('No se encontró la celda destino en el documento. Verifica que la sesión exista.');
-        }
+        activarBrocha(clave, sugerencia);
     };
 
     if (loading) {
@@ -322,6 +520,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
                             value={localCursoId}
                             onChange={e => setLocalCursoId(Number(e.target.value))}
                         >
+                            <option value={0}>Selecciona un curso</option>
                             {state.cursos.map(c => <option key={c.id} value={c.id}>{getCursoLabel(c)}</option>)}
                         </select>
                     </div>
@@ -361,8 +560,51 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
                         id="template-editor-container"
                         className="prose prose-slate max-w-none prose-sm w-full"
                         dangerouslySetInnerHTML={{ __html: seq.contenidoHtml }}
+                        onClick={handleClicPlantilla}
+                        onMouseOver={handleOverPlantilla}
+                        onMouseLeave={handleLeavePlantilla}
                     />
                 </div>
+
+                {brocha && !celdaPendiente && (
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-2.5 rounded-xl bg-(--primary) text-white shadow-2xl">
+                        <Paintbrush size={15} />
+                        <span className="text-[11px] font-bold uppercase tracking-widest">Brocha activa — haz clic en una celda para insertar</span>
+                        <button
+                            type="button"
+                            onClick={finalizarBrocha}
+                            className="ml-1 text-[10px] font-black uppercase tracking-widest underline hover:opacity-80"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                )}
+
+                {celdaPendiente && (
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] w-[min(92vw,420px)] px-4 py-3 rounded-xl bg-white border border-(--border-soft) shadow-2xl">
+                        <p className="text-[11px] font-bold text-(--ink) leading-relaxed mb-2">
+                            Este campo ya contiene información. ¿Deseas reemplazarla con la sugerencia de IA?
+                        </p>
+                        <div className="flex gap-2 justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setCeldaPendiente(null)}
+                                className="px-3 py-1.5 rounded-lg border border-(--border-soft) text-[10px] font-black uppercase tracking-widest text-(--ink-soft) hover:bg-(--linen)/30"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (celdaPendiente) aplicarBrocha(celdaPendiente.celda, celdaPendiente.clave, celdaPendiente.texto);
+                                }}
+                                className="px-3 py-1.5 rounded-lg bg-(--primary) text-white text-[10px] font-black uppercase tracking-widest hover:opacity-90"
+                            >
+                                Reemplazar
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {saveSuccess && (
                     <div className="fixed bottom-6 right-6 px-4 py-2 bg-emerald-600 text-white rounded-lg shadow-lg text-xs font-bold uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -415,21 +657,6 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
                                 </div>
                             )}
 
-                            {!iaCargando && sugerencias && numSesiones > 1 && (
-                                <div className="flex items-center gap-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-(--ink-soft) shrink-0">Insertar en:</label>
-                                    <select
-                                        value={sesionObjetivo}
-                                        onChange={e => setSesionObjetivo(Number(e.target.value))}
-                                        className="flex-1 px-2 py-1.5 text-xs font-bold border border-(--border-soft) rounded-lg bg-white outline-none focus:border-(--primary) cursor-pointer"
-                                    >
-                                        {Array.from({ length: numSesiones }, (_, i) => (
-                                            <option key={i} value={i}>Sesión {i + 1}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-
                             {iaCargando && (
                                 <div className="flex flex-col items-center justify-center py-12 space-y-3">
                                     <span className="w-8 h-8 border-4 border-(--primary) border-t-transparent rounded-full animate-spin" />
@@ -452,10 +679,10 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia }: 
                                         <div className="space-y-2">
                                             <h4 className="text-[10px] font-black uppercase tracking-widest text-(--ink-soft)">Evaluación</h4>
                                             {sugerencias.evaluacion.tecnica && (
-                                                <ItemSugerencia clave="eva-tec" texto={`Técnica: ${sugerencias.evaluacion.tecnica}`} insertada={insertadas.has('eva-tec')} onInsertar={() => handleInsertar('eva-tec', { tipo: 'tecnica', texto: sugerencias.evaluacion.tecnica })} />
+                                                <ItemSugerencia texto={`Técnica: ${sugerencias.evaluacion.tecnica}`} insertada={insertadas.has('eva-tec')} onInsertar={() => handleInsertar('eva-tec', { tipo: 'tecnica', texto: sugerencias.evaluacion.tecnica })} />
                                             )}
                                             {sugerencias.evaluacion.instrumento && (
-                                                <ItemSugerencia clave="eva-ins" texto={`Instrumento: ${sugerencias.evaluacion.instrumento}`} insertada={insertadas.has('eva-ins')} onInsertar={() => handleInsertar('eva-ins', { tipo: 'instrumento', texto: sugerencias.evaluacion.instrumento })} />
+                                                <ItemSugerencia texto={`Instrumento: ${sugerencias.evaluacion.instrumento}`} insertada={insertadas.has('eva-ins')} onInsertar={() => handleInsertar('eva-ins', { tipo: 'instrumento', texto: sugerencias.evaluacion.instrumento })} />
                                             )}
                                             {sugerencias.evaluacion.sugerencia && (
                                                 <p className="text-[11px] text-(--ink-soft) italic leading-relaxed pl-3 border-l-2 border-(--border-soft)">

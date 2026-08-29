@@ -86,6 +86,7 @@ export interface CalificacionActividad {
 }
 
 export interface RecuperacionBC {
+    id?: number;
     estudianteId: number; cursoId: number;
     bc: 1 | 2 | 3 | 4; puntaje: number | null;
     periodo: string;
@@ -93,6 +94,37 @@ export interface RecuperacionBC {
     asignatura?: string;
     userId?: string;
     fecha?: string;
+}
+
+// Lista de Cotejo de Recuperación: una fila por EVIDENCIA LOGRADA (✓).
+// La AUSENCIA de registro = celda vacía = NO LOGRADO. No existe el
+// estado "no evaluado" ni "X": vacío NO participa como evaluado, pero
+// SÍ cuenta en el denominador (todas las evidencias participan).
+// Los indicadores son fijos (src/constants/recuperacionCotejo.ts).
+// Las COLUMNAS son las actividades reales (actividad_id) que cumplen:
+//   puntaje < 70  Y  la competencia de la actividad == BC a recuperar.
+// Contexto de un BC abierto en la Lista de Cotejo, usado al guardar para
+// garantizar que la cabecera de recuperaciones.puntaje SIEMPRE se reescriba
+// con el resultado_final (incluso si el BC quedó con 0 evidencia marcada).
+export interface ContextoRecuperacion {
+    estudianteId: number;
+    bc: 1 | 2 | 3 | 4;
+    periodo: string;
+}
+
+export interface RecuperacionCotejo {
+    id: number;
+    recuperacionId: number;
+    estudianteId: number;
+    cursoId: number;
+    bc: 1 | 2 | 3 | 4;
+    periodo: string;
+    asignatura: string;
+    indicador: string;
+    actividadId: number;
+    sharedCourseId?: string;
+    userId: string;
+    createdAt?: string;
 }
 
 export interface Secuencia {
@@ -402,6 +434,7 @@ export interface AppState {
     actividades: Actividad[];
     calificaciones: CalificacionActividad[];
     recuperaciones: RecuperacionBC[];
+    recuperacionesCotejo: RecuperacionCotejo[];
     secuencias: Secuencia[];
     eventos: EventoCalendario[];
     calendarioMinerd: EventoCalendario[];

@@ -67,6 +67,7 @@ export const simulatorData: AppState = {
     actividades: actividadesDemo,
     calificaciones: calificacionesDemo,
     recuperaciones: [],
+    recuperacionesCotejo: [],
     secuencias: [],
     eventos: [],
     calendarioMinerd: [],

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
+import { getAvailablePlantillaIds, getValidPlantillaCache } from '../cache/plantillaCache';
+import { getValidSecuenciasByIds, saveRawSecuencia } from '../cache/secuenciaCache';
 import type { Post, UserProfile } from '../types';
 
 export function useCommunityData() {
@@ -40,37 +42,53 @@ export function useCommunityData() {
             // Los recursos compartidos por otros (rúbricas/cotejos en posts)
             // se resuelven con una consulta puntual por ids faltantes; la RLS
             // "plantillas_lectura_comunidad" permite leer exactamente esas filas.
+            // Se consulta primero el caché de plantillas propias: si el recurso
+            // publicado pertenece al propio docente y ya está cacheado (aunque
+            // `globalState.plantillas` aún no se haya poblado), se marca como
+            // disponible y se evita una consulta Supabase redundante.
+            const idsCacheados = getAvailablePlantillaIds(session.user.id,
+                (postsRes.data || [])
+                    .filter((p: any) => (p.tipo === 'rubrica' || p.tipo === 'cotejo') && p.recurso_id)
+                    .map((p: any) => p.recurso_id as number)
+            );
             const missingPlantillaIds = Array.from(new Set(
                 (postsRes.data || [])
-                    .filter((p: any) => (p.tipo === 'rubrica' || p.tipo === 'cotejo') && p.recurso_id && !plantillas.some((pl: any) => pl.id === p.recurso_id))
+                    .filter((p: any) => (p.tipo === 'rubrica' || p.tipo === 'cotejo') && p.recurso_id && !plantillas.some((pl: any) => pl.id === p.recurso_id) && !idsCacheados.has(p.recurso_id))
                     .map((p: any) => p.recurso_id as number)
             ));
-            let plantillasComunidad = plantillas as any[];
+            // Las plantillas propias ya cacheadas (por loadRubricaCotejoData) se
+            // suman al pool de resolución aunque aún no estén en estado.
+            const plantillasCacheadas = getValidPlantillaCache(session.user.id) || [];
+            let plantillasComunidad = [...plantillas, ...plantillasCacheadas] as any[];
             if (missingPlantillaIds.length > 0) {
                 const { data: sharedPlants, error: sharedErr } = await supabase
                     .from('plantillas')
                     .select('*')
                     .in('id', missingPlantillaIds);
                 if (!sharedErr && sharedPlants) {
-                    plantillasComunidad = [...plantillas, ...sharedPlants];
+                    plantillasComunidad = [...plantillas, ...plantillasCacheadas, ...sharedPlants];
                 } else if (sharedErr) {
                     console.warn('[Community] No se pudieron cargar plantillas compartidas:', sharedErr.message);
                 }
             }
 
-            const missingSecuenciaIds = Array.from(new Set(
+            const idsSecuenciasFaltantes = Array.from(new Set(
                 (postsRes.data || [])
                     .filter((p: any) => p.tipo === 'secuencia' && p.recurso_id && !secuencias.some((s: any) => s.id === p.recurso_id))
                     .map((p: any) => p.recurso_id as number)
             ));
-            let secuenciasComunidad = secuencias as any[];
-            if (missingSecuenciaIds.length > 0) {
+            // Cache-first (espejo del flujo de plantillas): las secuencias ya cacheadas
+            // se suman al pool de resolución y se evita consultarlas de nuevo en Supabase.
+            const { cacheadas, faltantes } = getValidSecuenciasByIds(session.user.id, idsSecuenciasFaltantes);
+            let secuenciasComunidad = [...secuencias, ...cacheadas] as any[];
+            if (faltantes.length > 0) {
                 const { data: sharedSecs, error: sharedErr } = await supabase
                     .from('secuencias')
                     .select('*')
-                    .in('id', missingSecuenciaIds);
+                    .in('id', faltantes);
                 if (!sharedErr && sharedSecs) {
-                    secuenciasComunidad = [...secuencias, ...sharedSecs];
+                    secuenciasComunidad = [...secuencias, ...cacheadas, ...sharedSecs];
+                    for (const r of sharedSecs) saveRawSecuencia(session.user.id, r);
                 } else if (sharedErr) {
                     console.warn('[Community] No se pudieron cargar secuencias compartidas:', sharedErr.message);
                 }

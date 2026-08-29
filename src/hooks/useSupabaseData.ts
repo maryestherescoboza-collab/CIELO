@@ -1,8 +1,14 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, Secuencia, EventoCalendario, Docente, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, TareaInstitucional, TareaDocente, Centro } from '../types';
+import type { AppState, Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, Secuencia, EventoCalendario, Docente, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, TareaInstitucional, TareaDocente, Centro } from '../types';
 import { useAppStore } from '../store/appStore';
 import { esRolAdministrador } from '../utils/autorizacion';
+import { getValidCentro, saveCentroCache } from '../cache/centroCache';
+import { savePerfilCacheFromRow } from '../cache/perfilCache';
+import { getValidCursoCache, saveCursoCache } from '../cache/cursoCache';
+import { getValidPlantillaCache, savePlantillaCache } from '../cache/plantillaCache';
+import { PERIODOS_ACADEMICOS, NULL_PERIODO_TOKEN, hasValidAcademicSlice, getValidAcademicSlice, saveAcademicSlice, upsertAcademicRow } from '../cache/academicCache';
+import { saveSecuencias } from '../cache/secuenciaCache';
 
 const parseObservaciones = (val: any): string[] => {
     if (!val) return [];
@@ -128,6 +134,7 @@ const mapEstudiante = (e: any): Estudiante => ({
 });
 
 const mapRecuperacion = (r: any, cursos?: any[]): RecuperacionBC => ({
+    id: r.id as number,
     estudianteId: r.estudiante_id as number,
     cursoId: r.curso_id as number,
     bc: Number(r.bc) as 1 | 2 | 3 | 4,
@@ -137,6 +144,21 @@ const mapRecuperacion = (r: any, cursos?: any[]): RecuperacionBC => ({
     userId: r.user_id as string,
     asignatura: r.asignatura as string,
     fecha: r.created_at as string
+});
+
+const mapRecuperacionCotejo = (r: any): RecuperacionCotejo => ({
+    id: r.id as number,
+    recuperacionId: r.recuperacion_id as number,
+    estudianteId: r.estudiante_id as number,
+    cursoId: r.curso_id as number,
+    bc: Number(r.bc) as 1 | 2 | 3 | 4,
+    periodo: r.periodo as string,
+    asignatura: r.asignatura as string || '',
+    indicador: r.indicador as string,
+    actividadId: r.actividad_id,
+    sharedCourseId: r.shared_course_id as string,
+    userId: r.user_id as string,
+    createdAt: r.created_at as string
 });
 
 const mapRegistroAnecdotico = (ra: any): RegistroAnecdotico => ({
@@ -194,6 +216,10 @@ export const mapRealtimePost = (p: any, perfiles?: UserProfile[], secuencias?: a
 // Generación monotónica de cargas: descarta respuestas de cargas obsoletas
 let fetchDataGeneration = 0;
 
+// DIAG (solo lectura): timestamps de carga por curso, para detectar cargas
+// concurrentes/duplicadas (hipótesis H1). No afecta flujo, estado ni caché.
+const diagCursoInFlight: Record<number, string> = {};
+
 export function useSupabaseData(skipInit = false) {
     const { 
         state, 
@@ -231,9 +257,12 @@ export function useSupabaseData(skipInit = false) {
             return;
         }
         console.log('[DEBUG LOAD] sesión encontrada');
-        
+        const antesFetch = useAppStore.getState().state;
+        console.log(`[DIAG][FETCH] start user=${session.user.id} ts=${new Date().toISOString()} STATE_BEFORE perfiles=${antesFetch.perfiles.length} cursos=${antesFetch.cursos.length} estudiantes=${antesFetch.estudiantes.length} actividades=${antesFetch.actividades.length} calificaciones=${antesFetch.calificaciones.length} grupos=${antesFetch.grupos.length} secuencias=${antesFetch.secuencias.length}`);
+
         if (isFetching.current) {
             console.log('[DEBUG LOAD] RETURN — fetchData ignorado: ya hay una carga en progreso');
+            console.log(`[DIAG][GUARD] fetchData-concurrente-omitido user=${session.user.id} ts=${new Date().toISOString()}`);
             return;
         }
         isFetching.current = true;
@@ -262,18 +291,44 @@ export function useSupabaseData(skipInit = false) {
             const userCentroId = (miPerfil as any).centro_id || null;
             console.log('[DEBUG LOAD] userCentroId:', userCentroId);
 
+            // Poblar/renovar el caché persistente del perfil del usuario autenticado
+            // con los cinco campos cacheados, tomados de la fuente de verdad (Query 1).
+            // Esta consulta NO se omite: es la que resuelve `userCentroId` (aislamiento).
+            savePerfilCacheFromRow(session.user.id, miPerfil as Record<string, unknown>);
+
             console.log('[DEBUG LOAD] consultando mis cursos INICIO');
             const startCursos = performance.now();
-            const misCursosDocenteResult = await supabase.from('curso_docentes').select('curso_id').eq('docente_id', session.user.id).eq('activo', true);
-            const misCursosDocente = misCursosDocenteResult.data;
-            console.log(`[DEBUG LOAD] consultando mis cursos FIN: ${Math.round(performance.now() - startCursos)}ms`, { error: misCursosDocenteResult.error });
-            
-            const misCursosIds = (misCursosDocente || []).map(cd => cd.curso_id);
+
+            // Caché persistente de cursos: si existe una entrada válida para este
+            // usuario en el centro actual, se evita re-consultar `cursos` y
+            // `curso_docentes` y se reconstruye el estado desde el caché.
+            // El refresco silencioso (isSilent) NO usa el caché: comprueba cambios
+            // en Supabase y re-sincroniza Zustand + caché.
+            const cachedCursos = !isSilent ? getValidCursoCache(session.user.id, userCentroId) : null;
+
+            console.log(`[DIAG][CACHECURSOS] ${cachedCursos ? 'hit' : 'miss'} user=${session.user.id} centro=${userCentroId ?? 'sin-centro'} isSilent=${isSilent} cursos=${cachedCursos?.cursos.length ?? 0} ts=${new Date().toISOString()}`);
+
+            let misCursosIds: number[] = [];
+            if (cachedCursos === null) {
+                const misCursosDocenteResult = await supabase.from('curso_docentes').select('curso_id').eq('docente_id', session.user.id).eq('activo', true);
+                const misCursosDocente = misCursosDocenteResult.data;
+                console.log(`[DEBUG LOAD] consultando mis cursos FIN: ${Math.round(performance.now() - startCursos)}ms`, { error: misCursosDocenteResult.error });
+                misCursosIds = (misCursosDocente || []).map(cd => cd.curso_id);
+            }
 
             // 2. Carga Contextual (Paso B)
-            const cursosQuery = misCursosIds.length > 0
-                ? supabase.from('cursos').select('*').or(`user_id.eq.${session.user.id},id.in.(${misCursosIds.join(',')})`)
-                : supabase.from('cursos').select('*').eq('user_id', session.user.id);
+            let cursosQuery: any = null;
+            let cursoDocentesQuery: any = null;
+            if (cachedCursos) {
+                // Caché válida: no consultar cursos ni relaciones.
+                cursosQuery = Promise.resolve({ data: null, error: null });
+                cursoDocentesQuery = Promise.resolve({ data: null, error: null });
+            } else {
+                cursosQuery = misCursosIds.length > 0
+                    ? supabase.from('cursos').select('*').or(`user_id.eq.${session.user.id},id.in.(${misCursosIds.join(',')})`)
+                    : supabase.from('cursos').select('*').eq('user_id', session.user.id);
+                cursoDocentesQuery = supabase.from('curso_docentes').select('*').eq('docente_id', session.user.id).eq('activo', true);
+            }
 
             const suscripcionesQuery = userCentroId
                 ? supabase.from('suscripciones').select('*').or(`user_id.eq.${session.user.id},centro_id.eq.${userCentroId}`)
@@ -283,7 +338,10 @@ export function useSupabaseData(skipInit = false) {
                 ? supabase.from('perfiles').select('*').eq('centro_id', userCentroId)
                 : supabase.from('perfiles').select('*').eq('user_id', session.user.id);
 
-            const centrosQuery = userCentroId
+            // Caché persistente del registro del centro: si existe una entrada válida
+            // para el centro actual, se evita la consulta duplicada a la tabla `centros`.
+            const cachedCentro = getValidCentro(userCentroId);
+            const centrosQuery = (userCentroId && !cachedCentro)
                 ? supabase.from('centros').select('*').eq('id', userCentroId)
                 : null;
 
@@ -293,7 +351,7 @@ export function useSupabaseData(skipInit = false) {
                 timeQuery('perfiles', perfilesQuery),
                 timeQuery('centro_roles', supabase.from('centro_roles').select('*').eq('user_id', session.user.id)),
                 timeQuery('cursos', cursosQuery),
-                timeQuery('curso_docentes', supabase.from('curso_docentes').select('*').eq('docente_id', session.user.id).eq('activo', true)),
+                timeQuery('curso_docentes', cursoDocentesQuery),
                 timeQuery('suscripciones', suscripcionesQuery),
                 timeQuery('historial_colaboradores', supabase.from('historial_colaboradores').select('*').eq('usuario_id', session.user.id)),
                 timeQuery('centros', centrosQuery)
@@ -313,12 +371,17 @@ export function useSupabaseData(skipInit = false) {
             const cursoDocentes = phase1[3].data;
             const suscripciones = phase1[4].data;
             const historialColaboradores = phase1[5].data;
-            const centrosRaw = phase1[6]?.data || [];
 
             const centrosMap = new Map<string, Centro>();
-            if (centrosRaw && Array.isArray(centrosRaw)) {
+            if (cachedCentro) {
+                // Caché válida: el objeto del centro ya está en formato de dominio (Centro).
+                centrosMap.set(cachedCentro.id, cachedCentro);
+            } else {
+                // Sin caché: normalizar el registro recién consultado y guardarlo en caché.
+                const centrosFetched = phase1[6]?.data;
+                const centrosRaw = Array.isArray(centrosFetched) ? centrosFetched : [];
                 centrosRaw.forEach((c: any) => {
-                    centrosMap.set(c.id, {
+                    const mapped: Centro = {
                         id: c.id as string,
                         nombre: c.nombre as string,
                         codigoCentro: c.codigo_centro as string || '',
@@ -333,7 +396,9 @@ export function useSupabaseData(skipInit = false) {
                         updatedAt: c.updated_at as string,
                         estado: (c.estado as Centro['estado']) || 'activo',
                         afiliado: c.afiliado as boolean || false
-                    });
+                    };
+                    centrosMap.set(c.id, mapped);
+                    saveCentroCache(mapped);
                 });
             }
 
@@ -448,42 +513,46 @@ export function useSupabaseData(skipInit = false) {
                     ...prev,
                     perfiles: mappedPerfiles,
                     docentes: mappedDocentes,
-                    cursos: (cursos || []).map((c: Record<string, unknown>): Curso | null => {
-                        const myLink = (cursoDocentes || []).find((cd: any) => cd.curso_id === c.id && String(cd.docente_id) === session.user.id);
-                        const isCreator = String(c.user_id) === session.user.id;
-                        const isCentroAdmin = !!resolvedCentroRolActual &&
-                            resolvedCentroRolActual.rol === 'administrador' &&
-                            !!c.centro_id && c.centro_id === resolvedCentroRolActual.centro_id;
-                        if (isCreator && !isCentroAdmin && userCentroId && c.centro_id && c.centro_id !== userCentroId) return null;
-                        if (!myLink && !isCreator && !isCentroAdmin) return null;
-                        return {
-                            id: c.id as number,
-                            nombre: c.nombre as string,
-                            asignatura: myLink ? (myLink.asignatura as string) : (c.asignatura as string),
-                            grado: c.grado as string,
-                            seccion: c.seccion as string,
-                            periodo: c.periodo as string,
-                            diasSemana: myLink ? (myLink.dias_semana as string[] || []) : [],
-                            color: c.color as string,
-                            isTutorOficial: c.is_tutor_oficial as boolean,
-                            userId: c.user_id as string,
-                            grupoId: c.grupo_id as number,
-                            sharedCourseId: (c.shared_course_id as string) || (c.grupo_id ? `group_${c.grupo_id}` : String(c.id)),
-                            centroId: c.centro_id as string,
-                            configuracionEvaluacion: c.configuracion_evaluacion as Record<string, unknown> || {},
-                            createdAt: c.created_at as string
-                        };
-                    }).filter((x: any): x is Curso => x !== null),
-                    cursoDocentes: (cursoDocentes || []).map((cd: Record<string, unknown>): CursoDocente => ({
-                        id: cd.id as number,
-                        cursoId: cd.curso_id as number,
-                        userId: String(cd.docente_id),
-                        rol: cd.rol as 'tutor' | 'co-docente',
-                        esTutor: cd.es_tutor as boolean,
-                        asignatura: cd.asignatura as string,
-                        diasSemana: cd.dias_semana as string[] || [],
-                        createdAt: cd.created_at as string
-                    })),
+                    cursos: cachedCursos
+                        ? cachedCursos.cursos
+                        : (cursos || []).map((c: Record<string, unknown>): Curso | null => {
+                            const myLink = (cursoDocentes || []).find((cd: any) => cd.curso_id === c.id && String(cd.docente_id) === session.user.id);
+                            const isCreator = String(c.user_id) === session.user.id;
+                            const isCentroAdmin = !!resolvedCentroRolActual &&
+                                resolvedCentroRolActual.rol === 'administrador' &&
+                                !!c.centro_id && c.centro_id === resolvedCentroRolActual.centro_id;
+                            if (isCreator && !isCentroAdmin && userCentroId && c.centro_id && c.centro_id !== userCentroId) return null;
+                            if (!myLink && !isCreator && !isCentroAdmin) return null;
+                            return {
+                                id: c.id as number,
+                                nombre: c.nombre as string,
+                                asignatura: myLink ? (myLink.asignatura as string) : (c.asignatura as string),
+                                grado: c.grado as string,
+                                seccion: c.seccion as string,
+                                periodo: c.periodo as string,
+                                diasSemana: myLink ? (myLink.dias_semana as string[] || []) : [],
+                                color: c.color as string,
+                                isTutorOficial: c.is_tutor_oficial as boolean,
+                                userId: c.user_id as string,
+                                grupoId: c.grupo_id as number,
+                                sharedCourseId: (c.shared_course_id as string) || (c.grupo_id ? `group_${c.grupo_id}` : String(c.id)),
+                                centroId: c.centro_id as string,
+                                configuracionEvaluacion: c.configuracion_evaluacion as Record<string, unknown> || {},
+                                createdAt: c.created_at as string
+                            };
+                        }).filter((x: any): x is Curso => x !== null),
+                    cursoDocentes: cachedCursos
+                        ? cachedCursos.cursoDocentes
+                        : (cursoDocentes || []).map((cd: Record<string, unknown>): CursoDocente => ({
+                            id: cd.id as number,
+                            cursoId: cd.curso_id as number,
+                            userId: String(cd.docente_id),
+                            rol: cd.rol as 'tutor' | 'co-docente',
+                            esTutor: cd.es_tutor as boolean,
+                            asignatura: cd.asignatura as string,
+                            diasSemana: cd.dias_semana as string[] || [],
+                            createdAt: cd.created_at as string
+                        })),
                     suscripcionActual: resolvedSuscripcionActual,
                     centroRolActual: resolvedCentroRolActual,
                     centros: Array.from(centrosMap.values()),
@@ -492,6 +561,18 @@ export function useSupabaseData(skipInit = false) {
                 };
             });
             console.log(`[DEBUG LOAD] Actualizando estado global de Zustand (Zustand setState) FIN: ${Math.round(performance.now() - startZustand)}ms`);
+            const despuesFetch = useAppStore.getState().state;
+            console.log(`[DIAG][FETCH] fin user=${session.user.id} ts=${new Date().toISOString()} STATE_AFTER perfiles=${despuesFetch.perfiles.length} cursos=${despuesFetch.cursos.length} estudiantes=${despuesFetch.estudiantes.length} actividades=${despuesFetch.actividades.length} calificaciones=${despuesFetch.calificaciones.length} grupos=${despuesFetch.grupos.length} secuencias=${despuesFetch.secuencias.length}`);
+
+            // Si fue un MISS (o refresco silencioso), guardar el nuevo conjunto filtrado
+            // de cursos en el caché persistente, tomándolo de la fuente de verdad (Zustand).
+            if (!cachedCursos) {
+                const freshState = useAppStore.getState().state;
+                saveCursoCache(session.user.id, userCentroId, {
+                    cursos: freshState.cursos,
+                    cursoDocentes: freshState.cursoDocentes,
+                });
+            }
         } catch (error) {
             console.error('[DEBUG LOAD] Error fetching data from Supabase:', error);
             console.error('[PLANIFICACION] error', error);
@@ -524,6 +605,19 @@ export function useSupabaseData(skipInit = false) {
             }
             return { ...s, calificaciones: nextList };
         });
+
+        // Paso 7 — write-through de Realtime: actualiza ÚNICAMENTE la slice del
+        // curso+período afectado. Nunca invalida ni sobrescribe otros cursos o
+        // períodos, y no crea slices nuevas (Realtime no constituye completitud).
+        if (eventType === 'DELETE') {
+            if (oldRow?.curso_id != null) {
+                upsertAcademicRow('calificaciones', { estudianteId: oldRow.estudiante_id, actividadId: oldRow.actividad_id } as CalificacionActividad, oldRow.curso_id as number, oldRow.periodo ?? null, true);
+            }
+        } else {
+            const mapped = mapCalificacion(newRow, stateCursos);
+            upsertAcademicRow('calificaciones', mapped, mapped.cursoId, mapped.periodo ?? null, false);
+        }
+        console.log(`[DIAG][REALTIME] calificaciones eventType=${eventType} cursoId=${newRow?.curso_id ?? oldRow?.curso_id} periodo=${newRow?.periodo ?? oldRow?.periodo ?? '??'} actividadId=${newRow?.actividad_id ?? oldRow?.actividad_id} estudianteId=${newRow?.estudiante_id ?? oldRow?.estudiante_id} calificacionesState=${useAppStore.getState().state.calificaciones.length} ts=${new Date().toISOString()}`);
     }, [setState]);
 
     const handleCursoDetalleRealtime = useCallback((payload: any) => {
@@ -567,6 +661,17 @@ export function useSupabaseData(skipInit = false) {
             }
             return { ...s, actividades: nextList };
         });
+
+        // Paso 7 — write-through de Realtime (ver handleCalificacionRealtime).
+        if (eventType === 'DELETE') {
+            if (oldRow?.curso_id != null) {
+                upsertAcademicRow('actividades', { id: oldRow.id } as Actividad, oldRow.curso_id as number, oldRow.periodo ?? null, true);
+            }
+        } else {
+            const mapped = mapActividad(newRow, stateCursos);
+            upsertAcademicRow('actividades', mapped, mapped.cursoId, mapped.periodo ?? null, false);
+        }
+        console.log(`[DIAG][REALTIME] actividades eventType=${eventType} cursoId=${newRow?.curso_id ?? oldRow?.curso_id} periodo=${newRow?.periodo ?? oldRow?.periodo ?? '??'} actividadId=${newRow?.id ?? oldRow?.id} actividadesState=${useAppStore.getState().state.actividades.length} ts=${new Date().toISOString()}`);
     }, [setState]);
 
     const handleEstudiantesRealtime = useCallback((payload: any) => {
@@ -609,6 +714,27 @@ export function useSupabaseData(skipInit = false) {
                 }
             }
             return { ...s, recuperaciones: nextList };
+        });
+    }, [setState]);
+
+    const handleRecuperacionCotejoRealtime = useCallback((payload: any) => {
+        const { eventType, new: newRow, old: oldRow } = payload;
+        setState(s => {
+            let nextList = [...s.recuperacionesCotejo];
+            if (eventType === 'DELETE') {
+                nextList = nextList.filter(r => r.id !== oldRow.id);
+            } else {
+                const mapped = mapRecuperacionCotejo(newRow);
+                const idx = nextList.findIndex(r => r.id === mapped.id);
+                if (idx !== -1) {
+                    if (JSON.stringify(nextList[idx]) !== JSON.stringify(mapped)) {
+                        nextList[idx] = mapped;
+                    }
+                } else {
+                    nextList.push(mapped);
+                }
+            }
+            return { ...s, recuperacionesCotejo: nextList };
         });
     }, [setState]);
 
@@ -701,6 +827,7 @@ export function useSupabaseData(skipInit = false) {
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'actividades', filter: `curso_id=eq.${selectedCursoId}` }, handleActividadesRealtime)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'estudiantes', filter: `curso_id=eq.${selectedCursoId}` }, handleEstudiantesRealtime)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones', filter: `curso_id=eq.${selectedCursoId}` }, handleRecuperacionRealtime)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones_cotejo', filter: `curso_id=eq.${selectedCursoId}` }, handleRecuperacionCotejoRealtime)
                 .subscribe();
                 
             userChannels.push(courseChannel);
@@ -712,12 +839,13 @@ export function useSupabaseData(skipInit = false) {
                 supabase.removeChannel(ch);
             });
         };
-    }, [skipInit, session?.user?.id, selectedCursoId, handleCalificacionRealtime, handleCursoDetalleRealtime, handleActividadesRealtime, handleEstudiantesRealtime, handleRecuperacionRealtime]);
+    }, [skipInit, session?.user?.id, selectedCursoId, handleCalificacionRealtime, handleCursoDetalleRealtime, handleActividadesRealtime, handleEstudiantesRealtime, handleRecuperacionRealtime, handleRecuperacionCotejoRealtime]);
 
     const loadDashboardData = useCallback(async () => {
-        if (!session?.user?.id) return;
-        if (loadedModules.includes('dashboard')) return;
+        if (!session?.user?.id) { console.log(`[DIAG][DASH] guard sin-sesion ts=${new Date().toISOString()}`); return; }
+        if (loadedModules.includes('dashboard')) { console.log(`[DIAG][DASH] guard ya-cargado ts=${new Date().toISOString()}`); return; }
         console.log('[PLANIFICACION] lazy loading Dashboard data');
+        console.log(`[DIAG][DASH] start user=${session.user.id} ts=${new Date().toISOString()}`);
         setLoading(true);
         try {
             const currentProfile = state.perfiles.find(p => p.userId === session.user.id);
@@ -726,6 +854,7 @@ export function useSupabaseData(skipInit = false) {
 
             if (!currentProfile) {
                 console.log('[PLANIFICACION] loadDashboardData: perfiles no disponibles aún, omitiendo carga (sin marcar loaded)');
+                console.log(`[DIAG][GUARD] dashboard-perfiles-no-disponibles user=${session.user.id} ts=${new Date().toISOString()}`);
                 setLoading(false);
                 return;
             }
@@ -802,6 +931,10 @@ export function useSupabaseData(skipInit = false) {
             const tareas = results[7].data || [];
             const tareaAsignaciones = results[8].data || [];
             const calendarioMinerd = results[9].data || [];
+
+            const stAntes = useAppStore.getState().state;
+            console.log(`[DIAG][DASH] SUPABASE_FETCH user=${session.user.id} isCentroAdmin=${isCentroAdmin} cursosParticipa=${cursosParticipaIds.length} estudiantes=${estudiantes.length} actividades=${actividades.length} calificaciones=${calificaciones.length} incidencias=${incidencias.length} grupos=${grupos.length} ts=${new Date().toISOString()}`);
+            console.log(`[DIAG][DASH] STATE_BEFORE estudiantes=${stAntes.estudiantes.length} actividades=${stAntes.actividades.length} calificaciones=${stAntes.calificaciones.length} grupos=${stAntes.grupos.length} ts=${new Date().toISOString()}`);
 
             setState(prev => {
                 const mappedEst = estudiantes.map(e => mapEstudiante(e));
@@ -903,7 +1036,11 @@ export function useSupabaseData(skipInit = false) {
                     grupos: mappedGrupos
                 };
             });
+            const st2 = useAppStore.getState().state;
+            console.log(`[DIAG][DASH] STATE_AFTER estudiantes=${st2.estudiantes.length} actividades=${st2.actividades.length} calificaciones=${st2.calificaciones.length} grupos=${st2.grupos.length} ts=${new Date().toISOString()}`);
             addLoadedModule('dashboard');
+            console.log(`[DIAG][DASH] end ok user=${session.user.id} ts=${new Date().toISOString()}`);
+
         } catch (error) {
             console.error('Error loading Dashboard data:', error);
         } finally {
@@ -912,54 +1049,164 @@ export function useSupabaseData(skipInit = false) {
     }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
 
     const loadCursoData = useCallback(async (cursoId: number) => {
-        if (!session?.user?.id || !cursoId) return;
-        if (loadedCursos.includes(cursoId)) return;
-        console.log(`[PLANIFICACION] lazy loading Curso data for course ${cursoId}`);
+        if (!session?.user?.id || !cursoId) {
+            console.log(`[DIAG][CURSO] guard sin-sesion-o-curso cursoId=${cursoId ?? 'sin-curso'} ts=${new Date().toISOString()}`);
+            return;
+        }
+        const stateCursos = useAppStore.getState().state.cursos;
+        const curso = stateCursos.find(c => c.id === cursoId);
+        const centroId = curso?.centroId ?? null;
+        const userId = session.user.id;
+
+        // DIAG H1: detección de cargas concurrentes del mismo curso (no modifica flujo).
+        const yaEnVuelo = diagCursoInFlight[cursoId];
+        diagCursoInFlight[cursoId] = new Date().toISOString();
+        console.log(`[DIAG][CURSO] start cursoId=${cursoId} userId=${userId} centroId=${centroId ?? 'sin-centro'} sharedCourseId=${curso?.sharedCourseId ?? null} periodoCurso=${curso?.periodo ?? null} estado=${yaEnVuelo ? `CONCURRENTE(duplicado) desde=${yaEnVuelo}` : 'normal'} ts=${new Date().toISOString()}`);
+        const antesCurso = useAppStore.getState().state;
+        console.log(`[DIAG][CURSO] STATE_BEFORE cursoId=${cursoId} actividadesCurso=${antesCurso.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesCurso.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesCurso.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
+
+        // Paso 7 — caché académico en memoria (actividades + calificaciones) por
+        // curso + período. Los períodos son conjuntos independientes para efectos de
+        // carga: estar P1 en caché NUNCA implica P2/P3/P4.
+        // Solo se omite una consulta cuando se puede demostrar que los datos exactos
+        // de ese curso y período ya están completos y pertenecen al contexto actual
+        // (usuario + centro + curso + período). Ante cualquier duda → MISS → consulta.
+        const faltantesCal: string[] = PERIODOS_ACADEMICOS.filter(p => !hasValidAcademicSlice(userId, centroId, cursoId, p));
+        const faltaNullActividades = !hasValidAcademicSlice(userId, centroId, cursoId, NULL_PERIODO_TOKEN);
+        const faltantesAct: string[] = faltaNullActividades ? [...faltantesCal, NULL_PERIODO_TOKEN] : faltantesCal;
+
+        if (loadedCursos.includes(cursoId)) {
+            if (faltantesAct.length === 0 && faltantesCal.length === 0) {
+                console.log(`[PLANIFICACION] Curso ${cursoId} completo en caché académico por período (sin consultas de actividades/calificaciones)`);
+                console.log(`[DIAG][CURSO] skip-cache-completo cursoId=${cursoId} sin-consultas ts=${new Date().toISOString()}`);
+                delete diagCursoInFlight[cursoId];
+                return;
+            }
+            console.log(`[PLANIFICACION] Reconciliación académica del curso ${cursoId} (períodos faltantes: ${faltantesCal.join(',')}${faltaNullActividades ? ' + sin-período' : ''})`);
+            console.log(`[DIAG][CURSO] reconciliacion cursoId=${cursoId} faltantesCal=[${faltantesCal.join(',')}] faltaNullActividades=${faltaNullActividades} ts=${new Date().toISOString()}`);
+        } else {
+            console.log(`[PLANIFICACION] lazy loading Curso data for course ${cursoId}`);
+        }
         setLoading(true);
         try {
-            const stateCursos = useAppStore.getState().state.cursos;
-
-            const results = await Promise.all([
+            const baseQueries: any[] = [
                 supabase.from('estudiantes').select('*').eq('activo', true).eq('curso_id', cursoId),
-                supabase.from('actividades').select('*').eq('activo', true).eq('curso_id', cursoId),
-                supabase.from('calificaciones').select('*').eq('curso_id', cursoId),
-                supabase.from('recuperaciones').select('*').eq('curso_id', cursoId),
-                supabase.from('curso_detalle').select('*').eq('curso_id', cursoId)
-            ]);
+            ];
 
-            const estudiantes = results[0].data || [];
-            const actividades = results[1].data || [];
-            const calificaciones = results[2].data || [];
-            const recuperaciones = results[3].data || [];
-            const cursoDetalle = results[4].data || [];
+            if (faltantesAct.length > 0) {
+                const pNoNull = faltantesAct.filter(p => p !== NULL_PERIODO_TOKEN);
+                let qAct = supabase.from('actividades').select('*').eq('activo', true).eq('curso_id', cursoId);
+                if (faltantesAct.includes(NULL_PERIODO_TOKEN) && pNoNull.length > 0) {
+                    qAct = qAct.or(`periodo.in.(${pNoNull.join(',')}),periodo.is.null`);
+                } else if (faltantesAct.includes(NULL_PERIODO_TOKEN)) {
+                    qAct = qAct.is('periodo', null);
+                } else {
+                    qAct = qAct.in('periodo', pNoNull);
+                }
+                baseQueries.push(qAct);
+            } else {
+                baseQueries.push(Promise.resolve({ data: null, error: null }));
+            }
+
+            if (faltantesCal.length > 0) {
+                baseQueries.push(supabase.from('calificaciones').select('*').eq('curso_id', cursoId).in('periodo', faltantesCal));
+            } else {
+                baseQueries.push(Promise.resolve({ data: null, error: null }));
+            }
+
+            baseQueries.push(
+                supabase.from('recuperaciones').select('*').eq('curso_id', cursoId),
+                supabase.from('curso_detalle').select('*').eq('curso_id', cursoId),
+                supabase.from('recuperaciones_cotejo').select('*').eq('curso_id', cursoId)
+            );
+
+            const results = await Promise.all(baseQueries);
+
+            const estudiantes: any[] = results[0].data || [];
+            const actividades: any[] = results[1].data || [];
+            const calificaciones: any[] = results[2].data || [];
+            const recuperaciones: any[] = results[3].data || [];
+            const cursoDetalle: any[] = results[4].data || [];
+            const recuperacionesCotejo: any[] = results[5].data || [];
+
+            const mappedAct = actividades.map((a: Record<string, unknown>) => mapActividad(a, stateCursos));
+            const mappedCal = calificaciones.map((c: Record<string, unknown>) => mapCalificacion(c, stateCursos));
+
+            console.log(`[DIAG][CURSO] SUPABASE_FETCH cursoId=${cursoId} userId=${userId} centroId=${centroId ?? 'sin-centro'} periodosActConsultados=[${faltantesAct.join(',')}] periodosCalConsultados=[${faltantesCal.join(',')}] estudiantesRecibidos=${estudiantes.length} actividadesRecibidas=${actividades.length} calificacionesRecibidas=${calificaciones.length} ts=${new Date().toISOString()}`);
+            const antesMerge = useAppStore.getState().state;
+            console.log(`[DIAG][CURSO] STATE_BEFORE_MERGE cursoId=${cursoId} actividadesCurso=${antesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
 
             setState(prev => {
-                const mappedEst = estudiantes.map(e => mapEstudiante(e));
-                const mappedAct = actividades.map(a => mapActividad(a, stateCursos));
-                const mappedCal = calificaciones.map(c => mapCalificacion(c, stateCursos));
-                const mappedRec = recuperaciones.map(r => mapRecuperacion(r, stateCursos));
-                const mappedDet = cursoDetalle.map(cd => mapCursoDetalle(cd));
+                const mappedEst = estudiantes.map((e: any) => mapEstudiante(e));
+                const mappedRec = recuperaciones.map((r: any) => mapRecuperacion(r, stateCursos));
+                const mappedDet = cursoDetalle.map((cd: any) => mapCursoDetalle(cd));
+                const mappedRecCotejo = recuperacionesCotejo.map((r: Record<string, unknown>) => mapRecuperacionCotejo(r));
 
                 const mergedEst = [...prev.estudiantes.filter(e => e.cursoId !== cursoId), ...mappedEst];
-                const mergedAct = [...prev.actividades.filter(a => a.cursoId !== cursoId), ...mappedAct];
-                const mergedCal = [...prev.calificaciones.filter(c => c.cursoId !== cursoId), ...mappedCal];
                 const mergedRec = [...prev.recuperaciones.filter(r => r.cursoId !== cursoId), ...mappedRec];
                 const mergedDet = [...prev.cursoDetalle.filter(cd => cd.cursoId !== cursoId), ...mappedDet];
+                const mergedRecCotejo = [...prev.recuperacionesCotejo.filter(r => r.cursoId !== cursoId), ...mappedRecCotejo];
 
-                return {
+                const next: AppState = {
                     ...prev,
                     estudiantes: mergedEst,
-                    actividades: mergedAct,
-                    calificaciones: mergedCal,
                     recuperaciones: mergedRec,
-                    cursoDetalle: mergedDet
+                    cursoDetalle: mergedDet,
+                    recuperacionesCotejo: mergedRecCotejo
                 };
+
+                // Merge por ID dentro de los períodos descargados: NUNCA se reemplaza
+                // el estado completo del curso con una respuesta parcial. Los períodos
+                // no descargados se conservan intactos.
+                if (faltantesAct.length > 0) {
+                    const actSet = new Set(faltantesAct);
+                    next.actividades = [
+                        ...prev.actividades.filter(a => !(a.cursoId === cursoId && (
+                            (a.periodo && actSet.has(a.periodo)) || (!a.periodo && actSet.has(NULL_PERIODO_TOKEN))
+                        ))),
+                        ...mappedAct
+                    ];
+                }
+                if (faltantesCal.length > 0) {
+                    const calSet = new Set(faltantesCal);
+                    next.calificaciones = [
+                        ...prev.calificaciones.filter(c => !(c.cursoId === cursoId && c.periodo && calSet.has(c.periodo))),
+                        ...mappedCal
+                    ];
+                }
+
+                return next;
             });
             addLoadedCurso(cursoId);
+            const despuesMerge = useAppStore.getState().state;
+            console.log(`[DIAG][CURSO] STATE_AFTER_MERGE cursoId=${cursoId} actividadesCurso=${despuesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${despuesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${despuesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
+
+            // Guardar slices por PERÍODO consultado (datos fuente, idénticos a state).
+            for (const p of faltantesAct) {
+                if (p === NULL_PERIODO_TOKEN) {
+                    saveAcademicSlice(userId, centroId, cursoId, NULL_PERIODO_TOKEN, {
+                        actividades: mappedAct.filter(a => !a.periodo),
+                        calificaciones: [],
+                    });
+                    continue;
+                }
+                const actividadesSlice = mappedAct.filter(a => a.periodo === p);
+                // "calificaciones" solo se reescribe si ese período fue consultado ahora;
+                // de lo contrario se conserva la parte ya válida de la slice existente.
+                const calificacionesSlice = faltantesCal.includes(p)
+                    ? mappedCal.filter(c => c.periodo === p)
+                    : (getValidAcademicSlice(userId, centroId, cursoId, p)?.calificaciones ?? []);
+                saveAcademicSlice(userId, centroId, cursoId, p, {
+                    actividades: actividadesSlice,
+                    calificaciones: calificacionesSlice,
+                });
+            }
         } catch (error) {
             console.error(`Error loading Curso data for ${cursoId}:`, error);
         } finally {
             setLoading(false);
+            delete diagCursoInFlight[cursoId];
+            console.log(`[DIAG][CURSO] end cursoId=${cursoId} ts=${new Date().toISOString()}`);
         }
     }, [session, loadedCursos, addLoadedCurso, setState, setLoading, state.perfiles, state.cursoDocentes]);
 
@@ -1022,6 +1269,7 @@ export function useSupabaseData(skipInit = false) {
 
             if (!currentProfile) {
                 console.log('[PLANIFICACION] loadPlanificacionData: perfiles no disponibles aún, omitiendo carga (sin marcar loaded)');
+                console.log(`[DIAG][GUARD] planificacion-perfiles-no-disponibles user=${session.user.id} ts=${new Date().toISOString()}`);
                 setLoading(false);
                 return;
             }
@@ -1054,28 +1302,27 @@ export function useSupabaseData(skipInit = false) {
 
             const { data: secuencias } = await secuenciaQuery;
             
-            setState(prev => {
-                const mappedSecuencias = (secuencias || []).map((s: Record<string, unknown>): Secuencia => ({
-                    id: s.id as number,
-                    titulo: s.titulo as string,
-                    cursoId: s.curso_id as number,
-                    fechaInicio: s.fecha_inicio as string,
-                    contenidoHtml: s.contenido_html as string,
-                    estado: s.estado as 'Pendiente' | 'En progreso' | 'Completada',
-                    archivoUrl: s.archivo_url as string | undefined,
-                    archivoNombre: s.archivo_nombre as string | undefined,
-                    archivoSize: s.archivo_size as number | undefined,
-                    archivoTipo: s.archivo_tipo as string | undefined,
-                    archivoFechaCarga: s.archivo_fecha_carga as string | undefined,
-                    recursos: Array.isArray(s.recursos) ? s.recursos : (typeof s.recursos === 'string' ? (() => { try { return JSON.parse(s.recursos); } catch(e) { return []; } })() : [])
-                }));
+            const mappedSecuencias = (secuencias || []).map((s: Record<string, unknown>): Secuencia => ({
+                id: s.id as number,
+                titulo: s.titulo as string,
+                cursoId: s.curso_id as number,
+                fechaInicio: s.fecha_inicio as string,
+                contenidoHtml: s.contenido_html as string,
+                estado: s.estado as 'Pendiente' | 'En progreso' | 'Completada',
+                archivoUrl: s.archivo_url as string | undefined,
+                archivoNombre: s.archivo_nombre as string | undefined,
+                archivoSize: s.archivo_size as number | undefined,
+                archivoTipo: s.archivo_tipo as string | undefined,
+                archivoFechaCarga: s.archivo_fecha_carga as string | undefined,
+                recursos: Array.isArray(s.recursos) ? s.recursos : (typeof s.recursos === 'string' ? (() => { try { return JSON.parse(s.recursos); } catch(e) { return []; } })() : [])
+            }));
 
-                return {
-                    ...prev,
-                    secuencias: mappedSecuencias
-                };
-            });
+            setState(prev => ({
+                ...prev,
+                secuencias: mappedSecuencias
+            }));
             addLoadedModule('planificacion');
+            saveSecuencias(session.user.id, mappedSecuencias);
         } catch (error) {
             console.error('Error loading Planificacion data:', error);
         } finally {
@@ -1089,22 +1336,35 @@ export function useSupabaseData(skipInit = false) {
         console.log('[PLANIFICACION] lazy loading Evaluacion (Rubricas/Cotejo) data');
         setLoading(true);
         try {
-            const { data: plantillas } = await supabase
-                .from('plantillas')
-                .select('*')
-                .eq('user_id', session.user.id)
-                .eq('archivado', false)
-                .order('created_at', { ascending: false });
+            // Caché persistente de plantillas: si existe una entrada válida para
+            // este usuario, se evita la consulta redundante a la tabla `plantillas`
+            // y se hidrata Zustand desde el caché.
+            const cachedPlantillas = getValidPlantillaCache(session.user.id);
+
+            let rawPlantillas: any[] | null = null;
+            if (cachedPlantillas === null) {
+                const { data } = await supabase
+                    .from('plantillas')
+                    .select('*')
+                    .eq('user_id', session.user.id)
+                    .eq('archivado', false)
+                    .order('created_at', { ascending: false });
+                rawPlantillas = data;
+            }
 
             setState(prev => {
-                const mappedPlantillas = (plantillas || []).map((p): Plantilla => ({
-                    id: p.id,
-                    userId: p.user_id as string,
-                    tipo: p.tipo,
-                    nombre: p.nombre,
-                    datos: p.datos || {},
-                    createdAt: p.created_at
-                }));
+                // En caché válida se reaprovechan las Plantilla ya normalizadas;
+                // en MISS se mapean las filas crudas de Supabase.
+                const mappedPlantillas = cachedPlantillas !== null
+                    ? cachedPlantillas
+                    : (rawPlantillas || []).map((p): Plantilla => ({
+                        id: p.id,
+                        userId: p.user_id as string,
+                        tipo: p.tipo,
+                        nombre: p.nombre,
+                        datos: p.datos || {},
+                        createdAt: p.created_at
+                    }));
 
                 return {
                     ...prev,
@@ -1116,6 +1376,13 @@ export function useSupabaseData(skipInit = false) {
                     plantillas: mappedPlantillas
                 };
             });
+
+            // Si fue un MISS, guardar las plantillas en el caché persistente,
+            // tomándolas de la fuente de verdad (Zustand) tal como se guardan.
+            if (cachedPlantillas === null) {
+                savePlantillaCache(session.user.id, useAppStore.getState().state.plantillas);
+            }
+
             addLoadedModule('evaluacion');
         } catch (error) {
             console.error('Error loading evaluacion data:', error);

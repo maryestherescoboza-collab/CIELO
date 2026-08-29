@@ -2,11 +2,13 @@ import React from 'react';
 import { getAsignaturaNombre } from '../../constants/asignaturas';
 import type { Skill, AppState, Competencia, DescriptorRubrica, CriterioCotejo } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
+import RecuperacionPerfil from './RecuperacionPerfil';
 
 interface PerfilTabProps {
     est: any;
     curso: any;
     periodo: string;
+    setPeriodo: (p: string) => void;
     promedioPeriodo: string;
     rankingPeriodo: string;
     studentHabilidades: Skill[];
@@ -22,6 +24,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
     est,
     curso,
     periodo,
+    setPeriodo,
     promedioPeriodo,
     rankingPeriodo,
     studentHabilidades,
@@ -519,6 +522,19 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Block: Recuperación — informe textual por competencia (solo lectura, por período) */}
+            <div className="mt-10 w-full relative z-10">
+                <RecuperacionPerfil
+                    est={est}
+                    curso={curso}
+                    periodo={periodo}
+                    setPeriodo={setPeriodo}
+                    state={state}
+                    currentAsignatura={currentAsignatura}
+                    isTutor={isTutor}
+                />
             </div>
         </div>
     );

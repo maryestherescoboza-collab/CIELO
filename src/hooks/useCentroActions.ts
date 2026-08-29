@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
 import type { Centro, CodigoAccesoCentro } from '../types';
+import { getValidCentro, saveCentroCache } from '../cache/centroCache';
+import { savePerfilCache } from '../cache/perfilCache';
 
 export interface CentroEditable {
     nombre: string;
@@ -47,7 +49,22 @@ export function useCentroActions() {
         }));
     }, [session, setState]);
 
+    // Mantiene sincronizado el caché persistente del perfil con el estado en memoria.
+    // Se llama SOLO tras una operación confirmada exitosamente en Supabase.
+    const syncPerfilCache = useCallback((userId: string) => {
+        const perfilActual = useAppStore.getState().state.perfiles.find(p => p.userId === userId);
+        savePerfilCache(userId, perfilActual);
+    }, []);
+
     const loadCentro = useCallback(async (centroId: string): Promise<Centro | null> => {
+        // Caché persistente del registro del centro: si existe una entrada válida
+        // para este mismo centroId, reutilizarla sin consultar Supabase.
+        const cached = getValidCentro(centroId);
+        if (cached) {
+            syncCentroEnPerfil(cached);
+            return cached;
+        }
+
         const { data, error } = await supabase
             .from('centros')
             .select('*')
@@ -58,6 +75,7 @@ export function useCentroActions() {
             return null;
         }
         const centro = mapCentro(data);
+        saveCentroCache(centro);
         syncCentroEnPerfil(centro);
         return centro;
     }, [syncCentroEnPerfil]);
@@ -85,6 +103,9 @@ export function useCentroActions() {
             return null;
         }
         const centro = mapCentro(data);
+        // Solo tras confirmación exitosa en Supabase: actualizar caché persistente
+        // y renovar cachedAt / expiresAt (3 meses). Nunca antes.
+        saveCentroCache(centro);
         syncCentroEnPerfil(centro);
         return centro;
     }, [syncCentroEnPerfil]);
@@ -112,6 +133,7 @@ export function useCentroActions() {
             throw new Error(error?.message || 'Error al crear el centro educativo');
         }
         const centro = mapCentro(data);
+        saveCentroCache(centro);
         syncCentroEnPerfil(centro);
         return centro;
     }, [session?.user?.id, syncCentroEnPerfil]);
@@ -137,16 +159,18 @@ export function useCentroActions() {
                 centroResult = await updateCentro(matchedCentro.id, { nombre: matchedCentro.nombre });
                 if (centroResult) {
                     await supabase.from('perfiles').upsert({ user_id: session.user.id, centro_id: centroResult.id });
+                    syncPerfilCache(session.user.id);
                 }
             } else {
                 centroResult = await createCentro({ nombre: normalizedInput });
                 if (centroResult) {
                     await supabase.from('perfiles').upsert({ user_id: session.user.id, centro_id: centroResult.id });
+                    syncPerfilCache(session.user.id);
                 }
             }
             return centroResult;
         }
-    }, [session?.user?.id, updateCentro, createCentro]);
+    }, [session?.user?.id, updateCentro, createCentro, syncPerfilCache]);
 
     const loadCodigosAcceso = useCallback(async (centroId: string): Promise<{ codigos: CodigoAccesoCentro[]; error: string | null }> => {
         const { data, error } = await supabase
@@ -186,7 +210,8 @@ export function useCentroActions() {
     };
 
     const cambiarCentro = useCallback(async (nuevoCentroId: string): Promise<{ ok: boolean; error?: string; message?: string }> => {
-        if (!session?.user?.id) {
+        const userId = session?.user?.id;
+        if (!userId) {
             return { ok: false, error: 'Tu sesión expiró. Cierra sesión y vuelve a entrar.' };
         }
 
@@ -212,13 +237,16 @@ export function useCentroActions() {
         if (r.centro_id) {
             try {
                 await loadCentro(r.centro_id);
+                // Tras confirmar el cambio de centro en Supabase, reflejar el
+                // nuevo centro_id en el caché persistente del perfil.
+                syncPerfilCache(userId);
             } catch (e) {
                 console.error('[useCentroActions] No se pudo precargar el nuevo centro:', e);
             }
         }
 
         return { ok: true, message: r.message || 'Centro educativo actualizado correctamente.' };
-    }, [session?.user?.id, loadCentro]);
+    }, [session?.user?.id, loadCentro, syncPerfilCache]);
 
     return { loadCentro, updateCentro, createCentro, cambiarCentro, updateInstitutoName, loadCodigosAcceso, syncCentroEnPerfil };
 }

@@ -252,24 +252,14 @@ export async function generarSugerenciasPedagogicas(
     return resultado;
 }
 
-// ===================== INSERCIÓN INDIVIDUAL EN EL DOCUMENTO =====================
-
-const escaparRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-function anexarEnCelda(celda: HTMLElement, texto: string): void {
-    const contenidoPrevio = norm(celda.textContent || '');
-    const eraPlaceholder = PLACEHOLDERS_PLANTILLA.some(p =>
-        contenidoPrevio.toLowerCase() === norm(p).toLowerCase()
-    );
-    if (!eraPlaceholder && contenidoPrevio.length > 0) {
-        celda.appendChild(document.createElement('br'));
-    } else if (eraPlaceholder) {
-        celda.textContent = '';
-    }
-    const linea = document.createElement('div');
-    linea.textContent = texto;
-    celda.appendChild(linea);
-}
+// ===================== INSERCIÓN CON BROCHA SOBRE LA PLANTILLA =====================
+// Cada celda editable recibe un `data-field-id` = "seccion-N-campo" (o general-*,
+// curricular-*, contenido-*) mediante `asignarIdsDeCeldas`, montado al cargar y al
+// agregar/quitar sesiones. La brocha aplica la sugerencia sobre la celda EXACTA que el
+// usuario elige con un clic, REEMPLAZANDO el texto guía (o insertando si está vacía),
+// pidiendo confirmación si la celda ya contiene contenido propio. Siempre sobre el MISMO
+// DOM que lee la edición manual y que serializa Guardar: sin estado paralelo, sin
+// Supabase y sin llamadas IA hasta que el usuario pulsa Guardar.
 
 export type CategoriaSugerencia =
     | { tipo: 'recursos'; texto: string }
@@ -279,52 +269,117 @@ export type CategoriaSugerencia =
     | { tipo: 'instrumento'; texto: string }
     | { tipo: 'metacognicion'; texto: string };
 
-export function insertarSugerencia(indiceSesion: number, sugerencia: CategoriaSugerencia): boolean {
-    const contenedor = document.getElementById('template-editor-container');
-    if (!contenedor) return false;
-    const bloques = contenedor.querySelectorAll('.session-block');
-    const bloque = bloques[indiceSesion];
-    if (!bloque) return false;
-
-    switch (sugerencia.tipo) {
-        case 'recursos': {
-            const celda = bloque.querySelector('td[rowspan]');
-            if (!(celda instanceof HTMLElement)) return false;
-            anexarEnCelda(celda, sugerencia.texto);
-            return true;
-        }
-        case 'estrategia':
-            return insertarTrasEtiqueta(bloque, 'Estrategia inclusiva', 'td.label', sugerencia.texto);
-        case 'evidencia':
-            return insertarTrasEtiqueta(bloque, 'Evidencias o productos intermedios', 'td.label', sugerencia.texto);
-        case 'tecnica':
-            return insertarTrasEtiqueta(bloque, 'Técnica', 'td.label-sm', sugerencia.texto);
-        case 'instrumento':
-            return insertarTrasEtiqueta(bloque, 'Instrumento', 'td.label-sm', sugerencia.texto);
-        case 'metacognicion':
-            return insertarTrasEtiqueta(bloque, 'Metacognición', 'td.label', sugerencia.texto);
-        default:
-            return false;
-    }
+export function celdaRequiereConfirmacion(celda: HTMLElement): boolean {
+    const t = norm(celda.textContent || '');
+    if (!t) return false;
+    return !PLACEHOLDERS_PLANTILLA.some(p => t.toLowerCase() === norm(p).toLowerCase());
 }
 
-function insertarTrasEtiqueta(
-    bloque: Element,
-    etiqueta: string,
-    selector: string,
-    texto: string
-): boolean {
-    const patron = new RegExp('^' + escaparRegex(norm(etiqueta)).replace(/:/g, '') , 'i');
-    const celdas = bloque.querySelectorAll(selector);
-    for (let i = 0; i < celdas.length; i++) {
-        const actual = norm(celdas[i].textContent || '').replace(/:$/, '');
-        if (patron.test(actual)) {
-            const vecina = celdas[i].nextElementSibling;
-            if (vecina instanceof HTMLElement) {
-                anexarEnCelda(vecina, texto);
-                return true;
+export function escribirEnCelda(celda: HTMLElement, texto: string): void {
+    celda.textContent = texto;
+}
+
+const coindiceEtiqueta = (td: Element, etiqueta: string): boolean =>
+    norm(td.textContent || '')
+        .replace(/:$/, '')
+        .toLowerCase()
+        .startsWith(norm(etiqueta).replace(/:$/, '').toLowerCase());
+
+export function asignarIdsDeCeldas(): void {
+    const contenedor = document.getElementById('template-editor-container');
+    if (!contenedor) return;
+
+    const asignarSiguiente = (etiqueta: string, id: string, selector = 'td.label') => {
+        const celdas = Array.from(contenedor.querySelectorAll(selector));
+        for (const td of celdas) {
+            if (coindiceEtiqueta(td, etiqueta) && td.nextElementSibling instanceof HTMLElement) {
+                td.nextElementSibling.dataset.fieldId = id;
+                return;
             }
         }
+    };
+
+    // DATOS GENERALES
+    asignarSiguiente('Centro educativo', 'general-centro');
+    asignarSiguiente('Docente', 'general-docente');
+    asignarSiguiente('Fecha', 'general-fecha');
+    asignarSiguiente('Código del centro', 'general-codigo');
+    asignarSiguiente('Cantidad de estudiantes', 'general-estudiantes');
+    asignarSiguiente('Ciclo', 'general-ciclo');
+    asignarSiguiente('Asignatura', 'general-asignatura');
+    asignarSiguiente('Teléfono', 'general-telefono');
+    asignarSiguiente('Grado', 'general-grado');
+    asignarSiguiente('Tiempo', 'general-tiempo');
+    asignarSiguiente('Secuencia', 'general-secuencia');
+    asignarSiguiente('Semana', 'general-semana');
+
+    // CONTENIDOS (Conceptual / Procedimental / Actitudes y valores)
+    const tablaContenidos = Array.from(contenedor.querySelectorAll('table')).find(tabla => {
+        const titulo = tabla.querySelector('td.section-title');
+        return !!titulo && norm(titulo.textContent || '').toUpperCase().includes('CONTENIDOS');
+    });
+    if (tablaContenidos) {
+        tablaContenidos.querySelectorAll('td.label-sm').forEach(encabezado => {
+            const nombre = norm(encabezado.textContent || '').toLowerCase();
+            const id =
+                nombre === 'conceptual' ? 'contenido-conceptual' :
+                nombre === 'procedimental' ? 'contenido-procedimental' :
+                nombre === 'actitudes y valores' ? 'contenido-actitudes' : '';
+            if (!id) return;
+            const filaValores = encabezado.closest('tr')?.nextElementSibling;
+            const celda = encabezado as HTMLTableCellElement;
+            if (!filaValores || celda.cellIndex < 0) return;
+            const valor = filaValores.children[celda.cellIndex] as HTMLElement | undefined;
+            if (valor) valor.dataset.fieldId = id;
+        });
     }
-    return false;
+
+    // ESPECIFICACIÓN CURRICULAR
+    asignarSiguiente('Competencias fundamentales', 'curricular-competencias');
+    asignarSiguiente('Intención pedagógica', 'curricular-intencion');
+    asignarSiguiente('Indicador de logro', 'curricular-indicador');
+
+    // SECCIONES (session-block)
+    const bloques = contenedor.querySelectorAll('.session-block');
+    bloques.forEach((bloque, n) => {
+        if (bloque instanceof HTMLElement) bloque.dataset.seccion = String(n);
+
+        const fecha = bloque.querySelector('.fecha-row > .editable');
+        if (fecha instanceof HTMLElement) fecha.dataset.fieldId = `seccion-${n}-fecha`;
+
+        const recursos = bloque.querySelector('td[rowspan]');
+        if (recursos instanceof HTMLElement) recursos.dataset.fieldId = `seccion-${n}-recursos`;
+
+        bloque.querySelectorAll('table').forEach(tabla => {
+            tabla.querySelectorAll('tr').forEach(fila => {
+                const celdas = Array.from(fila.querySelectorAll('td.editable'));
+                const momento = celdas.find(cd =>
+                    ['inicio', 'desarrollo', 'cierre'].includes(norm(cd.textContent || '').toLowerCase())
+                );
+                if (!momento) return;
+                const idx = celdas.indexOf(momento);
+                const nombre = norm(momento.textContent || '').toLowerCase();
+                (momento as HTMLElement).dataset.fieldId = `seccion-${n}-momento`;
+                const tiempo = celdas[idx + 1];
+                if (tiempo) (tiempo as HTMLElement).dataset.fieldId = `seccion-${n}-tiempo-${nombre}`;
+                const actividades = celdas[idx + 2];
+                if (actividades) (actividades as HTMLElement).dataset.fieldId = `seccion-${n}-${nombre}`;
+            });
+
+            const asignarEtiqueta = (etiqueta: string, selector: string, id: string) => {
+                const celdas = Array.from(tabla.querySelectorAll(selector));
+                for (const td of celdas) {
+                    if (coindiceEtiqueta(td, etiqueta) && td.nextElementSibling instanceof HTMLElement) {
+                        td.nextElementSibling.dataset.fieldId = id;
+                        return;
+                    }
+                }
+            };
+            asignarEtiqueta('Estrategia inclusiva', 'td.label', `seccion-${n}-estrategia`);
+            asignarEtiqueta('Evidencias o productos intermedios', 'td.label', `seccion-${n}-evidencias`);
+            asignarEtiqueta('Técnica', 'td.label-sm', `seccion-${n}-tecnica`);
+            asignarEtiqueta('Instrumento', 'td.label-sm', `seccion-${n}-instrumento`);
+            asignarEtiqueta('Metacognición', 'td.label', `seccion-${n}-metacognicion`);
+        });
+    });
 }

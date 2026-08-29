@@ -36,6 +36,7 @@ export const MOCK_STATE: AppState = {
     actividades: [],
     calificaciones: [],
     recuperaciones: [],
+    recuperacionesCotejo: [],
     secuencias: [],
     incidencias: [],
     eventos: [],
@@ -125,6 +126,7 @@ export const initialState: AppState = {
         { estudianteId: 3, cursoId: 1, bc: 1, puntaje: 68, periodo: 'P1' },
         { estudianteId: 5, cursoId: 2, bc: 1, puntaje: null, periodo: 'P1' },
     ],
+    recuperacionesCotejo: [],
     secuencias: [
         {
             id: 1, titulo: 'Unidad 1: Números y Operaciones', cursoId: 1, fechaInicio: '2026-03-01',

@@ -2,10 +2,12 @@ import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
 import type { 
-    Actividad, CalificacionActividad, RecuperacionBC, Competencia,
+    Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, Competencia,
     NivelPuntaje, CursoDetalleEvaluacion, EvaluacionRubrica, EvaluacionCotejo,
     Plantilla, BCKey, DescriptorRubrica, CriterioCotejo
 } from '../types';
+import { calcularResultadoRecuperacion, puntajeActualBC, actividadesParaRecuperacion, totalEvidenciasPorBC } from '../utils/recuperacion';
+import { clearPlantillaCache } from '../cache/plantillaCache';
 
 export function useEvaluationActions() {
     const state = useAppStore(s => s.state);
@@ -157,6 +159,181 @@ export function useEvaluationActions() {
                 return { ...s, calificaciones: nextCalifs, recuperaciones: nextRecs };
             });
         }
+    }, [session, selectedCursoId, state, setState]);
+
+    // ============================================================
+    // LISTA DE COTEJO DE RECUPERACIÓN — ruta PROPIA y aislada.
+    // Escribe únicamente resultados de recuperación (recuperaciones
+    // como resultado % y recuperaciones_cotejo como evidencias).
+    // NO toca calificaciones normales, actividades, rúbricas, cotejos
+    // ni promedios (academic.ts / boletines.ts permanecen intactos).
+    // ============================================================
+    const saveRecuperacionCotejo = useCallback(async (detalle: RecuperacionCotejo[], cursoIdOverride?: number | null, contextos?: ContextoRecuperacion[]) => {
+        const cursoId = cursoIdOverride ?? selectedCursoId;
+        if (cursoId === null || !session?.user?.id) return;
+
+        // Cada registro presente = celda marcada ✓ = LOGRO.
+        // La ausencia de registro = celda vacía = NO LOGRADO (no se persiste).
+
+        // Reconciliación: eliminar filas que ya no existen (celdas → vacío = NO LOGRADO).
+        const existentes = state.recuperacionesCotejo.filter(r => r.cursoId === cursoId);
+        const clave = (r: RecuperacionCotejo) => `${r.estudianteId}|${r.bc}|${r.indicador}|${r.actividadId}|${r.periodo}`;
+        const clavesNuevas = new Set(detalle.map(clave));
+        const porEliminar = existentes.filter(r => !clavesNuevas.has(clave(r)));
+        if (porEliminar.length > 0) {
+            const { error: delError } = await supabase.from('recuperaciones_cotejo').delete().in('id', porEliminar.map(r => r.id));
+            if (delError) console.error('[RECUPERACION COTEJO] Error eliminando celdas desmarcadas:', delError);
+        }
+
+        // Agrupar por (estudiante, bc) para escribir la cabecera resultado.
+        const grupos = new Map<string, RecuperacionCotejo[]>();
+        detalle.forEach(r => {
+            const k = `${r.estudianteId}|${r.bc}`;
+            const lista = grupos.get(k) || [];
+            lista.push(r);
+            grupos.set(k, lista);
+        });
+
+        // Aseguramos una cabecera por cada BC que esté abierto en la Lista de
+        // Cotejo, aunque haya quedado con 0 ✓ (celdas vacías = NO LOGRADO).
+        // Así el resultado_final de recuperaciones.puntaje SIEMPRE se actualiza
+        // (y corrige) al pulsar "Guardar recuperación", nunca queda residual.
+        const cursoRec = state.cursos.find(c => c.id === cursoId);
+        (contextos || []).forEach(ctx => {
+            const k = `${ctx.estudianteId}|${ctx.bc}`;
+            if (!grupos.has(k)) grupos.set(k, []);
+        });
+
+        const cabeceras: RecuperacionBC[] = [];
+        const filasAGuardar: {
+            recuperacion_id: number;
+            estudiante_id: number;
+            curso_id: number;
+            bc: number;
+            periodo: string;
+            asignatura: string;
+            indicador: string;
+            actividad_id: number;
+            shared_course_id: string;
+            user_id: string;
+        }[] = [];
+        const idsCabecera = new Map<string, number>();
+
+        for (const [k, filasBC] of grupos) {
+            const first = filasBC[0] || {
+                id: 0,
+                recuperacionId: 0,
+                estudianteId: Number(k.split('|')[0]),
+                cursoId,
+                bc: Number(k.split('|')[1]) as 1 | 2 | 3 | 4,
+                periodo: (contextos || []).find(c => `${c.estudianteId}|${c.bc}` === k)?.periodo ?? detalle.find(d => `${d.estudianteId}|${d.bc}` === k)?.periodo ?? '',
+                asignatura: cursoRec?.asignatura || '',
+                indicador: '',
+                actividadId: 0,
+                sharedCourseId: cursoRec?.sharedCourseId || '',
+                userId: session.user.id
+            } as RecuperacionCotejo;
+            // Denominador = TODAS las evidencias: indicadores × actividades
+            // aplicables del estudiante (puntaje < 70 y competencia == BC).
+            const aplicables = actividadesParaRecuperacion(
+                state.actividades,
+                state.calificaciones,
+                first.estudianteId,
+                first.bc as 1 | 2 | 3 | 4,
+                first.periodo,
+                cursoId,
+            );
+            const total = totalEvidenciasPorBC(first.bc as 1 | 2 | 3 | 4, aplicables.length);
+            // Resultado por sumatoria de puntos (no reemplaza la calificación):
+            //   resultado = puntaje_actual + (✓ ÷ total) × (100 − puntaje_actual)
+            // redondeado a entero. El puntaje original NO se modifica.
+            const puntajeActual = puntajeActualBC(
+                state.actividades,
+                state.calificaciones,
+                first.estudianteId,
+                first.bc as 1 | 2 | 3 | 4,
+                first.periodo,
+                cursoId,
+            );
+            const puntaje = calcularResultadoRecuperacion(puntajeActual, filasBC.length, total);
+            // Sin evidencias aplicables (total ≤ 0) no se calcula ni se toca la cabecera.
+            if (total <= 0) continue;
+            const cabecera = {
+                user_id: session.user.id,
+                estudiante_id: first.estudianteId,
+                curso_id: first.cursoId,
+                bc: first.bc,
+                puntaje,
+                periodo: first.periodo,
+                shared_course_id: first.sharedCourseId || String(first.cursoId),
+                asignatura: first.asignatura || ''
+            };
+            const { data: headData, error: headError } = await supabase
+                .from('recuperaciones')
+                .upsert(cabecera, { onConflict: 'estudiante_id,curso_id,bc,periodo,asignatura' })
+                .select('*');
+            if (headError) {
+                console.error('[RECUPERACION COTEJO] Error escribiendo resultado de cabecera:', headError);
+                continue;
+            }
+            const recuperacionId = headData?.[0]?.id ?? 0;
+            idsCabecera.set(k, recuperacionId);
+            cabeceras.push({
+                id: recuperacionId,
+                estudianteId: first.estudianteId,
+                cursoId: first.cursoId,
+                bc: first.bc,
+                puntaje,
+                periodo: first.periodo,
+                sharedCourseId: first.sharedCourseId,
+                asignatura: first.asignatura || '',
+                userId: session.user.id
+            });
+
+            filasBC.forEach(r => {
+                filasAGuardar.push({
+                    recuperacion_id: recuperacionId,
+                    estudiante_id: r.estudianteId,
+                    curso_id: r.cursoId,
+                    bc: r.bc,
+                    periodo: r.periodo,
+                    asignatura: r.asignatura || '',
+                    indicador: r.indicador,
+                    actividad_id: r.actividadId,
+                    shared_course_id: r.sharedCourseId || String(r.cursoId),
+                    user_id: session.user.id
+                });
+            });
+        }
+
+        if (filasAGuardar.length > 0) {
+            const { error } = await supabase.from('recuperaciones_cotejo')
+                .upsert(filasAGuardar, { onConflict: 'recuperacion_id,bc,indicador,actividad_id' });
+            if (error) console.error('[RECUPERACION COTEJO] Error persistiendo evidencias:', error);
+        }
+
+        // Estado local (solo recuperación; calificaciones intactas).
+        setState(s => {
+            const nextRecs = [...s.recuperaciones];
+            cabeceras.forEach(nr => {
+                const idx = nextRecs.findIndex(or => or.estudianteId === nr.estudianteId && or.cursoId === nr.cursoId && or.bc === nr.bc && or.periodo === nr.periodo && or.asignatura === nr.asignatura);
+                if (idx !== -1) nextRecs[idx] = nr; else nextRecs.push(nr);
+            });
+
+            const cotejoActualizado = detalle.map(r => ({
+                ...r,
+                recuperacionId: idsCabecera.get(`${r.estudianteId}|${r.bc}`) ?? r.recuperacionId,
+            } as RecuperacionCotejo));
+
+            return {
+                ...s,
+                recuperaciones: nextRecs,
+                recuperacionesCotejo: [
+                    ...s.recuperacionesCotejo.filter(r => r.cursoId !== cursoId),
+                    ...cotejoActualizado
+                ]
+            };
+        });
     }, [session, selectedCursoId, state, setState]);
 
     const updateNivelesPuntaje = useCallback(async (nps: NivelPuntaje[]) => {
@@ -623,6 +800,8 @@ export function useEvaluationActions() {
             }
             
             setState(s => ({ ...s, plantillas: [newPlantilla, ...s.plantillas] }));
+            // Invalidar el caché de plantillas: se creó una plantilla nueva.
+            clearPlantillaCache(session.user.id);
         }
         return true;
     }, [session, setState]);
@@ -665,6 +844,8 @@ export function useEvaluationActions() {
 
         // Actualización localizada del estado (sin refetch global).
         setState(s => ({ ...s, plantillas: s.plantillas.map(p => p.id === id ? { ...p, ...patch } : p) }));
+        // Invalidar el caché de plantillas: cambió el nombre o los datos de la plantilla.
+        clearPlantillaCache(session.user.id);
         return true;
     }, [session, setState]);
 
@@ -679,6 +860,8 @@ export function useEvaluationActions() {
             return;
         }
         setState(s => ({ ...s, plantillas: s.plantillas.filter(p => p.id !== id) }));
+        // Invalidar el caché de plantillas: la plantilla se archivó.
+        clearPlantillaCache(session.user.id);
     }, [session, setState]);
 
     const updateActividad = useCallback(async (
@@ -754,6 +937,7 @@ export function useEvaluationActions() {
         updateActividad,
         deleteActividad,
         saveCalificaciones,
+        saveRecuperacionCotejo,
         updateNivelesPuntaje,
         updateCursoDetalle,
         saveRubrica,
