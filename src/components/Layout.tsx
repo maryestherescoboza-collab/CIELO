@@ -84,6 +84,7 @@ export default function Layout({
     const [showNotifs, setShowNotifs] = useState(false);
 
     const [showProfile, setShowProfile] = useState(false);
+    const [profileFromComunidad, setProfileFromComunidad] = useState(false);
     const [localBio, setLocalBio] = useState(perfilBio);
     const [editingProfile, setEditingProfile] = useState(false);
     const [activeProfile, setActiveProfile] = useState<{ userId?: string; nombre: string; avatar?: string; materias?: string; descripcion?: string; stats?: { cursos?: string }; isOwn?: boolean } | null>(null);
@@ -99,8 +100,9 @@ export default function Layout({
 
     useEffect(() => {
         const handleShowProfile = (e: CustomEvent) => {
-            const d = (e as CustomEvent).detail as { userId?: string; nombre?: string; avatar?: string; materias?: string; descripcion?: string; stats?: { cursos?: string } };
+            const d = (e as CustomEvent).detail as { userId?: string; nombre?: string; avatar?: string; materias?: string; descripcion?: string; stats?: { cursos?: string }; from?: string };
             const clickedUserId = d?.userId;
+            setProfileFromComunidad(d?.from === 'comunidad');
             
             if (clickedUserId && clickedUserId !== session?.user?.id) {
                 const userProfile = state.perfiles.find(p => p.userId === clickedUserId);
@@ -290,6 +292,7 @@ export default function Layout({
                 setShowProfile={setShowProfile}
                 activeProfile={activeProfile}
                 isOwnProfile={activeProfile?.isOwn === true}
+                hideAccountActions={profileFromComunidad}
                 getAvatarSrc={getAvatarSrc}
                 uploadingAvatar={uploadingAvatar}
                 fileInputRef={fileInputRef}

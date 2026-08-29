@@ -227,5 +227,128 @@ export const CATALOGO_GUIAS: Guide[] = [
         evento: 'change'
       }
     ]
+  },
+  {
+    id: 'crear-actividades-ia',
+    titulo: 'Crear actividades con IA',
+    steps: [
+      {
+        selector: '.app-bottom-nav button:nth-child(1)',
+        texto: 'Haz clic en «Inicio» para ir al panel principal.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-nueva-actividad"]',
+        texto: 'Haz clic en «Nueva Actividad».',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="opcion-importar-ia"]',
+        texto: 'Selecciona «Importar Inteligente desde PDF» para crear tus actividades con la IA.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="sel-curso-ia"]',
+        texto: 'Selecciona el curso en el que se programarán las actividades.',
+        evento: 'change'
+      },
+      {
+        selector: '[data-guide="sel-periodo-ia"]',
+        texto: 'Selecciona el período: P1, P2, P3 o P4.',
+        evento: 'change'
+      },
+      {
+        selector: '[data-guide="archivo-pdf"]',
+        texto: 'Haz clic en el cuadro punteado y selecciona el documento PDF que contiene tus actividades.',
+        evento: 'change'
+      },
+      {
+        selector: '[data-guide="btn-procesar-pdf"]',
+        texto: 'Haz clic en «Procesar PDF». La IA analizará el documento. Si se pide tu API Key de Gemini, ingrésala, haz clic en «Guardar API Key» y el procesamiento continuará automáticamente.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="celda-actividad-ia"]',
+        texto: 'Revisa las actividades detectadas. Marca o desmarca sus casillas para elegir cuáles programar y, si lo deseas, edita los campos directamente en la tabla. Deja al menos una marcada.',
+        evento: 'change'
+      },
+      {
+        selector: '[data-guide="btn-guardar-actividades-ia"]',
+        texto: 'Haz clic en «Guardar (N) Actividades» para programar las actividades seleccionadas en el curso.',
+        evento: 'click'
+      }
+    ]
+  },
+  {
+    id: 'crear-rubrica-ia',
+    titulo: 'Crear rúbrica con IA',
+    steps: [
+      {
+        selector: '.app-bottom-nav button:nth-child(7)',
+        texto: 'Haz clic en «Rúbrica».',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="selector-curso"]',
+        texto: 'Haz clic en el curso para el que quieres crear la rúbrica.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-generar-ia"]',
+        texto: 'Haz clic en «Generar con IA» para abrir el asistente.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-generar-ia-modal"]',
+        texto: 'Haz clic en «Generar». La IA creará los descriptores de las cuatro competencias. Puedes elegir una actividad o escribir indicaciones adicionales si lo deseas. Si se pide tu API Key de Gemini, ingrésala, haz clic en «Guardar API Key» y presiona «Generar» nuevamente.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="celda-rubrica"]',
+        texto: 'Revisa los descriptores generados por la IA. Haz clic en una celda de la rúbrica para editar el descriptor si lo necesitas.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-guardar-plantilla"]',
+        texto: 'Haz clic en «Guardar como Plantilla», escribe el nombre de tu rúbrica y confírmalo.',
+        evento: 'click'
+      }
+    ]
+  },
+  {
+    id: 'crear-cotejo-ia',
+    titulo: 'Crear lista de cotejo con IA',
+    steps: [
+      {
+        selector: '.app-bottom-nav button:nth-child(8)',
+        texto: 'Haz clic en «Cotejo».',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="selector-curso"]',
+        texto: 'Haz clic en el curso para el que quieres crear la lista de cotejo.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-generar-ia"]',
+        texto: 'Haz clic en «Generar con IA» para abrir el asistente.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-generar-ia-modal"]',
+        texto: 'Haz clic en «Generar». La IA creará los criterios de la lista de cotejo. Si se pide tu API Key de Gemini, ingrésala, haz clic en «Guardar API Key» y presiona «Generar» nuevamente.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="criterio-cotejo"]',
+        texto: 'Revisa los criterios generados por la IA. Haz clic sobre un criterio para verlo y, si lo necesitas, edita su descripción.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-guardar-plantilla"]',
+        texto: 'Haz clic en «Guardar como Plantilla», escribe el nombre de tu lista de cotejo y confírmalo.',
+        evento: 'click'
+      }
+    ]
   }
 ];

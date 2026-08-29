@@ -566,6 +566,7 @@ export default function Cotejo({
                                                 </button>
                                             )}
                                             <button
+                                                data-guide="btn-generar-ia"
                                                 onClick={() => setShowGenerarModal(true)}
                                                 className="w-full bg-primary border border-primary/40 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:opacity-90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shadow-sm artisan-pill flex items-center justify-center gap-1.5"
                                                 title="Generar criterios con IA a partir del contexto del curso y la actividad"

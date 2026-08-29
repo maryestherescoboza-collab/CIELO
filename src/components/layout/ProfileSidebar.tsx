@@ -28,6 +28,7 @@ interface ProfileSidebarProps {
     onOpenSuscripcion?: () => void;
     setShowResetModal: (val: boolean) => void;
     onLogout?: () => void;
+    hideAccountActions?: boolean;
     logros?: {
         estudiantesEvaluados: number;
         actividadesAplicadas: number;
@@ -43,6 +44,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     uploadingAvatar, fileInputRef, handleAvatarChange,
     editingProfile, setEditingProfile, localBio, setLocalBio,
     saveBio, bioSaving, onOpenSettings, onOpenSuscripcion, setShowResetModal, onLogout,
+    hideAccountActions = false,
     logros
 }) => {
     if (!showProfile || !activeProfile) return null;
@@ -146,11 +148,12 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                                 Configuración
                             </button>
                         )}
-                        {onOpenSuscripcion && (
+                        {!hideAccountActions && onOpenSuscripcion && (
                             <button onClick={() => { setShowProfile(false); onOpenSuscripcion(); }} className="w-full py-2.5 bg-(--primary) border border-(--border-soft) rounded-(--radius-sm) text-sm font-bold text-white hover:opacity-90 flex items-center justify-center gap-2 transition-all shadow-sm">
                                 Planes y Suscripción
                             </button>
                         )}
+                        {!hideAccountActions && (
                         <button
                             onClick={() => setShowResetModal(true)}
                             className="w-full py-2.5 bg-(--tag-rose-bg) hover:bg-rose-100/50 text-(--tag-rose-text) rounded-(--radius-sm) text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all border border-(--border-soft)"
@@ -160,7 +163,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                             </div>
                             Reiniciar año escolar
                         </button>
-                        {onLogout && (
+                        )}
+                        {!hideAccountActions && onLogout && (
                             <button onClick={() => { if (window.confirm('¿Deseas cerrar sesión?')) onLogout(); }} className="w-full py-2.5 text-(--ink-soft) hover:text-(--ink) text-xs font-black uppercase tracking-widest transition-all">
                                 Cerrar sesión
                             </button>

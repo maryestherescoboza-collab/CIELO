@@ -206,7 +206,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
     e.preventDefault();
     e.stopPropagation();
     window.dispatchEvent(new CustomEvent('show-profile', { 
-      detail: { userId } 
+      detail: { userId, from: 'comunidad' } 
     }));
   };
 

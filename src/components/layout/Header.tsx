@@ -161,7 +161,7 @@ const Header: React.FC<HeaderProps> = ({
                 <div className="relative" ref={tutorialRef}>
                     <button 
                         id="btn-tutorial"
-                        className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/55 hover:border-(--primary) transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill" 
+                        className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/55 hover:border-(--primary) transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill animate-tutorial-pulse" 
                         onClick={() => setShowTutorialMenu(prev => !prev)}
                         aria-label="Ver tutoriales"
                     >
@@ -172,13 +172,16 @@ const Header: React.FC<HeaderProps> = ({
                     {showTutorialMenu && (
                         <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-(--border-soft) shadow-md py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                             {[
+                                { id: 'crear-actividades-ia', label: 'Crear actividades con IA' },
                                 { id: 'crear-curso', label: 'Crear un curso' },
                                 { id: 'crear-actividades-alumnos', label: 'Crear actividades y agregar alumnos' },
                                 { id: 'evaluar-actividad', label: 'Evaluar una actividad' },
                                 { id: 'evaluar-rubrica', label: 'Cómo evaluar con rúbrica' },
-                                { id: 'evaluar-cotejo', label: 'Cómo evaluar con cotejo' },
                                 { id: 'crear-plantilla-rubrica', label: 'Crear una plantilla de rúbrica' },
-                                { id: 'crear-plantilla-cotejo', label: 'Crear una plantilla de lista de cotejo' }
+                                { id: 'evaluar-cotejo', label: 'Cómo evaluar con cotejo' },
+                                { id: 'crear-plantilla-cotejo', label: 'Crear una plantilla de lista de cotejo' },
+                                { id: 'crear-rubrica-ia', label: 'Crear rúbrica con IA' },
+                                { id: 'crear-cotejo-ia', label: 'Crear lista de cotejo con IA' }
                             ].map(item => (
                                 <button
                                     key={item.id}

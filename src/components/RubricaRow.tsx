@@ -130,8 +130,34 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
     isAssociated = false,
     hasSelectedActivity = false,
 }) => {
+    const [editingField, setEditingField] = React.useState<RichFieldKey | null>(null);
+
     function getCellRefKey(descriptorId: string, key: RichFieldKey): string {
         return `${descriptorId}:${String(key)}`;
+    }
+
+    function startCellEditing(descriptorId: string, key: RichFieldKey, clientX: number, clientY: number) {
+        setEditingField(key);
+
+        requestAnimationFrame(() => {
+            const editor = richCellRefs?.current[getCellRefKey(descriptorId, key)];
+            if (!editor) return;
+            editor.focus();
+
+            const caret = document.caretPositionFromPoint
+                ? document.caretPositionFromPoint(clientX, clientY)
+                : null;
+            if (caret && editor.contains(caret.offsetNode)) {
+                const range = document.createRange();
+                range.setStart(caret.offsetNode, caret.offset);
+                range.collapse(true);
+                const selection = window.getSelection();
+                if (selection) {
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            }
+        });
     }
 
     const rowClass = hasSelectedActivity
@@ -191,8 +217,15 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                         style={{ backgroundColor: field.cellBg }}
                         onClick={(e) => {
                             if (readOnly) return;
+                            if (e.detail > 1) return;
                             e.stopPropagation();
                             onSelect(desc.id, field.nivel);
+                        }}
+                        onDoubleClick={(e) => {
+                            if (readOnly) return;
+                            if (!richCellRefs || !setDescriptorField || !syncInlineToolbar || !setActiveFormatCell) return;
+                            e.preventDefault();
+                            startCellEditing(desc.id, field.key, e.clientX, e.clientY);
                         }}
                     >
                         <div className="flex flex-col items-center justify-center h-full min-h-26 gap-2">
@@ -271,11 +304,15 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                         }
                                     }}
                                     data-guide="editor-descriptor"
-                                    contentEditable={!readOnly}
+                                    contentEditable={!readOnly && editingField === field.key}
                                     suppressContentEditableWarning
                                     className={`w-full min-h-17.5 rounded-md border border-transparent px-2 py-1 text-[12px] leading-[1.3] text-center outline-none transition-all ${isSelected ? 'text-[#1E293B]' : 'text-slate-500 group-cell-hover:text-[#1E293B]'}`}
-                                    onMouseDown={(event) => event.stopPropagation()}
-                                    onClick={(event) => event.stopPropagation()}
+                                    onMouseDown={(event) => {
+                                        if (editingField === field.key) event.stopPropagation();
+                                    }}
+                                    onClick={(event) => {
+                                        if (editingField === field.key) event.stopPropagation();
+                                    }}
                                     onInput={(event) => {
                                         setDescriptorField(desc.id, field.key, event.currentTarget.innerHTML);
                                     }}
@@ -291,6 +328,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                                                 );
                                             }
                                         }, 0);
+                                        setEditingField(null);
                                     }}
                                 />
                             )}

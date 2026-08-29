@@ -147,6 +147,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                         </div>
 
                         <button
+                            data-guide="btn-nueva-actividad"
                             className="px-5 rounded-full bg-primary text-[#2E3330] text-xs font-semibold tracking-wider shadow-sm active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 group flex items-center gap-2 artisan-pill"
                             onClick={() => setShowModal(true)}
                         >

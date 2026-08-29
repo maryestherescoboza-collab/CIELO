@@ -558,6 +558,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                         Volver
                     </button>
                     <button 
+                        data-guide="btn-procesar-pdf"
                         className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 ${isMissingContext ? 'opacity-50 cursor-not-allowed' : ''}`} 
                         onClick={handleProcessPdf}
                         disabled={isMissingContext}
@@ -584,6 +585,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                     Volver
                 </button>
                 <button 
+                    data-guide="btn-guardar-actividades-ia"
                     className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 ${selectedCount === 0 || isSaving || !targetCursoId || !targetPeriodo ? 'opacity-50 cursor-not-allowed' : ''}`} 
                     onClick={handleSaveExtracted}
                     disabled={selectedCount === 0 || isSaving || !targetCursoId || !targetPeriodo}
@@ -672,6 +674,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                 </button>
 
                                 <button
+                                    data-guide="opcion-importar-ia"
                                     onClick={() => setFlowMode('pdf')}
                                     className="p-6 rounded-2xl border border-slate-200 hover:border-primary hover:bg-[#EAE4DA]/20 transition-all flex flex-col items-center text-center group"
                                 >
@@ -788,6 +791,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                     <label className="notion-label">Curso destino *</label>
                                     <div className="relative">
                                         <select 
+                                            data-guide="sel-curso-ia"
                                             className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium appearance-none transition-all cursor-pointer"
                                             value={targetCursoId || 0} 
                                             onChange={e => setTargetCursoId(Number(e.target.value))}
@@ -804,6 +808,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                     <label className="notion-label">Período *</label>
                                     <div className="relative">
                                         <select 
+                                            data-guide="sel-periodo-ia"
                                             className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium appearance-none transition-all cursor-pointer"
                                             value={targetPeriodo} 
                                             onChange={e => setTargetPeriodo(e.target.value)}
@@ -822,6 +827,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                 <input 
                                     type="file" 
                                     accept=".pdf" 
+                                    data-guide="archivo-pdf"
                                     onChange={handleFileChange} 
                                     disabled={isProcessing}
                                     className="absolute inset-0 opacity-0 cursor-pointer" 
@@ -918,6 +924,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                                 <td className="p-4 text-center">
                                                     <input 
                                                         type="checkbox"
+                                                        data-guide="celda-actividad-ia"
                                                         className="w-4 h-4 rounded border-slate-350 cursor-pointer accent-primary"
                                                         checked={act.selected}
                                                         onChange={e => updateActivityField(idx, 'selected', e.target.checked)}

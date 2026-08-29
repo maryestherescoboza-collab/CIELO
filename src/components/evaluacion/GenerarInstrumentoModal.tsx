@@ -125,6 +125,7 @@ export default function GenerarInstrumentoModal({
                         Cancelar
                     </button>
                     <button
+                        data-guide="btn-generar-ia-modal"
                         onClick={() => (showApiKeyPrompt ? handleGuardarApiKey() : handleGenerar())}
                         disabled={isLoading || (showApiKeyPrompt && !tempApiKey.trim())}
                         className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 ${(isLoading || (showApiKeyPrompt && !tempApiKey.trim())) ? 'opacity-50 cursor-not-allowed' : ''}`}
