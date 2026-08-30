@@ -172,26 +172,29 @@ const Header: React.FC<HeaderProps> = ({
                     {showTutorialMenu && (
                         <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-(--border-soft) shadow-md py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                             {[
-                                { id: 'crear-actividades-ia', label: 'Crear actividades con IA' },
                                 { id: 'crear-curso', label: 'Crear un curso' },
-                                { id: 'crear-actividades-alumnos', label: 'Crear actividades y agregar alumnos' },
-                                { id: 'evaluar-actividad', label: 'Evaluar una actividad' },
+                                { id: 'crear-actividades-alumnos', label: 'Agregar actividades y alumnos' },
+                                { id: 'evaluar-actividad', label: 'Evaluar una actividad por indicador' },
                                 { id: 'evaluar-rubrica', label: 'Cómo evaluar con rúbrica' },
-                                { id: 'crear-plantilla-rubrica', label: 'Crear una plantilla de rúbrica' },
                                 { id: 'evaluar-cotejo', label: 'Cómo evaluar con cotejo' },
+                                { id: 'crear-plantilla-rubrica', label: 'Crear una plantilla de rúbrica' },
                                 { id: 'crear-plantilla-cotejo', label: 'Crear una plantilla de lista de cotejo' },
+                                { id: 'crear-actividades-ia', label: 'Crear actividades con IA' },
                                 { id: 'crear-rubrica-ia', label: 'Crear rúbrica con IA' },
                                 { id: 'crear-cotejo-ia', label: 'Crear lista de cotejo con IA' }
                             ].map(item => (
                                 <button
                                     key={item.id}
-                                    className="w-full text-left px-4 py-2.5 text-xs font-black text-(--ink-soft) uppercase tracking-[0.08em] hover:bg-(--linen)/50 hover:text-(--primary) transition-all"
+                                    className="w-full flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-(--ink-soft) hover:bg-(--linen) hover:text-(--ink) transition-colors group"
                                     onClick={() => {
                                         setShowTutorialMenu(false);
                                         startGuide(item.id);
                                     }}
                                 >
-                                    {item.label}
+                                    <div className="shrink-0 flex items-center justify-center w-4.5 h-4.5 rounded-full bg-(--warning-soft) text-(--warning) border border-(--warning)/20">
+                                        <span className="text-[10px] font-bold leading-none">?</span>
+                                    </div>
+                                    <span>{item.label}</span>
                                 </button>
                             ))}
                         </div>
