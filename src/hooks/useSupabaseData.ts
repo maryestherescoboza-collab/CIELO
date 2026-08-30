@@ -411,7 +411,7 @@ export function useSupabaseData(skipInit = false) {
 
                 return {
                     userId: p.user_id as string,
-                    nombreDocente: p.nombre_docente as string || p.nombre as string || '',
+                    nombreDocente: p.nombre as string || p.nombre_docente as string || '',
                     bio: p.bio as string || '',
                     avatarUrl: p.avatar_url as string || '',
                     avatarColor: p.avatar_color as string || '',
@@ -432,7 +432,7 @@ export function useSupabaseData(skipInit = false) {
                     : undefined;
                 mappedPerfiles.unshift({
                     userId: miPerfil.user_id as string,
-                    nombreDocente: (miPerfil as any).nombre_docente as string || (miPerfil as any).nombre as string || '',
+                    nombreDocente: (miPerfil as any).nombre as string || (miPerfil as any).nombre_docente as string || '',
                     bio: (miPerfil as any).bio as string || '',
                     avatarUrl: (miPerfil as any).avatar_url as string || '',
                     avatarColor: (miPerfil as any).avatar_color as string || '',
@@ -500,10 +500,10 @@ export function useSupabaseData(skipInit = false) {
 
             setState(prev => {
                 const mappedDocentes = Array.from(new Map<string, Docente>([
-                    ...(perfiles || []).map((p: Record<string, unknown>): [string, Docente] => [p.nombre_docente as string || p.nombre as string, {
+                    ...(perfiles || []).map((p: Record<string, unknown>): [string, Docente] => [p.nombre as string || p.nombre_docente as string, {
                         id: p.user_id as string,
                         userId: p.user_id as string,
-                        nombre: (p.nombre_docente as string || p.nombre as string || ''),
+                        nombre: (p.nombre as string || p.nombre_docente as string || ''),
                         asignatura: Array.isArray(p.asignaturas) ? p.asignaturas[0] : (p.asignatura as string || ''),
                         avatarColor: p.avatar_color as string || '#3b82f6'
                     }])
@@ -512,6 +512,7 @@ export function useSupabaseData(skipInit = false) {
                 return {
                     ...prev,
                     perfiles: mappedPerfiles,
+                    nombreDocente: (currentUserProfile?.nombreDocente || '').trim() || prev.nombreDocente,
                     docentes: mappedDocentes,
                     cursos: cachedCursos
                         ? cachedCursos.cursos

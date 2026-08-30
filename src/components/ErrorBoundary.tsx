@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { attemptChunkRecovery } from '../utils/chunkRecovery';
 
 export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
     constructor(props: { children: React.ReactNode }) {
@@ -9,6 +10,8 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
     static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         console.error("[ErrorBoundary] Error caught:", error, errorInfo);
+        // Recuperación automática controlada ante chunks obsoletos por despliegue.
+        attemptChunkRecovery(error);
     }
     render() {
         if (this.state.hasError) {

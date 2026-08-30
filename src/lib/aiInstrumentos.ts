@@ -25,12 +25,9 @@ export interface ContextoInstrumento {
     notas: string;
 }
 
-const COMPETENCIAS_OFICIALES: Record<BCKey, string> = {
-    BC1: 'Comunicativa',
-    BC2: 'Científica y tecnológica; ambiental y de la salud',
-    BC3: 'Desarrollo personal y espiritual; ética y ciudadana',
-    BC4: 'Pensamiento lógico, creativo y crítico; resolución de problemas',
-};
+import { COMPETENCIAS_LABEL } from '../types';
+
+const COMPETENCIAS_OFICIALES = COMPETENCIAS_LABEL;
 
 const NIVELES_RUBRICAS = [
     { nombre: 'Estratégico', descripcion: 'Nivel de logro más alto (puntaje 100). Lidera procesos, propone soluciones innovadoras y actúa de manera autónoma y creativa.' },

@@ -22,7 +22,8 @@ interface GradeTableProps {
     onUpdateEstudiante: (id: number, est: any) => void;
     onDeleteActividad: (id: number) => void;
     onToggleBc: (actId: number, bc: BCKey) => void;
-    onAddEstudiante: () => void;
+    onAddEstudiante: (nombre?: string, apellido?: string) => void;
+    onDeleteEstudiante?: (id: number) => void;
     onSetRubricTarget: (target: any) => void;
     getGradeClass: (score: number | null) => string;
     BC_COLOR_THEMES: Record<BCKey, { bg: string, text: string, active: string }>;
@@ -46,6 +47,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     onDeleteActividad,
     onToggleBc,
     onAddEstudiante,
+    onDeleteEstudiante,
     onSetRubricTarget,
     getGradeClass,
     BC_COLOR_THEMES,
@@ -75,7 +77,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     return (
         <div className="flex-1 w-full bg-transparent">
             <div className="p-6">
-                <div className="bg-white rounded-[2rem] shadow-sm border border-[rgba(46,51,48,0.08)] overflow-hidden w-full">
+                <div className="bg-white rounded-4xl shadow-sm border border-[rgba(46,51,48,0.08)] overflow-hidden w-full">
                     {/* Header */}
                     <div className="sticky top-0 z-40 bg-[#F8F3ED] text-[#2E3330] border-b border-[rgba(46,51,48,0.08)] grid w-full" style={{ gridTemplateColumns }}>
                         {COLUMNS.map(col => {
@@ -85,7 +87,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                 return (
                                     <div key={col.id} className="sticky left-0 z-50 bg-[#F8F3ED] px-2 py-2 text-left border-r border-[rgba(46,51,48,0.08)] flex items-center justify-between box-border" style={style}>
                                         <span className="text-xs font-black uppercase tracking-[0.2em] italic text-[#2E3330]">Estudiantes</span>
-                                        <button onClick={onAddEstudiante} className="w-4 h-4 flex items-center justify-center hover:bg-[#FDFBF7] rounded-full transition-all text-[#5F665E] hover:text-[#2E3330] border border-transparent hover:border-[rgba(46,51,48,0.08)]"><Plus size={14} /></button>
+                                        <button onClick={() => onAddEstudiante()} className="w-4 h-4 flex items-center justify-center hover:bg-[#FDFBF7] rounded-full transition-all text-[#5F665E] hover:text-[#2E3330] border border-transparent hover:border-[rgba(46,51,48,0.08)]"><Plus size={14} /></button>
                                     </div>
                                 );
                             }
@@ -274,6 +276,21 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             );
                         })}
                     </div>
+                    {estudiantes.length > 0 && onDeleteEstudiante && (
+                        <div className="w-full flex justify-start py-3 px-6">
+                            <button 
+                                onClick={() => {
+                                    if (window.confirm(`¿Seguro que deseas eliminar al último estudiante (${estudiantes[estudiantes.length - 1].displayName})?`)) {
+                                        onDeleteEstudiante(estudiantes[estudiantes.length - 1].id);
+                                    }
+                                }}
+                                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:text-danger hover:border-danger/40 hover:bg-danger/10 transition-all text-xl pb-0.5 shadow-sm"
+                                title="Eliminar último estudiante"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

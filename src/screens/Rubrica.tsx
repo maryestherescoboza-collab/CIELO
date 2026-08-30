@@ -21,6 +21,8 @@ import type {
 import { getAsignaturaNombre } from '../constants/asignaturas';
 import { RubricaRow, COMPETENCIAS, NIVEL_FIELDS, toRichHtml } from '../components/RubricaRow';
 import { CieloPill } from '../components/ui/CieloPill';
+import { useTemplateCapture } from '../hooks/useTemplateCapture';
+import { TemplateCaptureButton } from '../components/TemplateCaptureButton';
 
 interface Props {
     currentCourseRole?: CursoDocente;
@@ -151,6 +153,24 @@ export default function Rubrica({
     const aiSkipNormalizeRef = useRef(false);
 
     const session = useAppStore(s => s.session);
+
+    const tableContainerRef = useRef<HTMLDivElement>(null);
+    const { captureAndUpload, isCapturing } = useTemplateCapture();
+    const [captureFileId, setCaptureFileId] = useState<string | undefined>(undefined);
+
+    const currentCourse = state.cursos.find(c => c.id === selectedCursoId);
+    const asignaturaName = getAsignaturaNombre(currentCourseRole?.asignatura) || currentCourse?.asignatura || 'Asignatura';
+    const courseName = currentCourse?.nombre || 'Curso';
+    const captureFileName = `Rubrica - ${asignaturaName} - ${courseName} - ${new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()).replace(/\//g, '-')}.png`;
+
+    const handleCapture = () => {
+        if (!tableContainerRef.current) return;
+        captureAndUpload(tableContainerRef.current, {
+            fileName: captureFileName,
+            existingFileId: captureFileId,
+            onSuccess: setCaptureFileId
+        });
+    };
 
     async function handlePaste() {
         if (!contextMenu) return;
@@ -970,7 +990,16 @@ export default function Rubrica({
                         </div>
                     )}
 
+                    <div className="w-full flex justify-end">
+                        <TemplateCaptureButton 
+                            isCapturing={isCapturing} 
+                            onClick={handleCapture}
+                            title="Guardar captura de la rúbrica en Google Drive"
+                        />
+                    </div>
+
                     <div
+                        ref={tableContainerRef}
                         className="w-full rounded-[24px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50 overflow-hidden"
                         tabIndex={0}
                         onPaste={handleRubricaPaste}

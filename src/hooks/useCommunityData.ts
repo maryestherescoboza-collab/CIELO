@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
 import { getAvailablePlantillaIds, getValidPlantillaCache } from '../cache/plantillaCache';
 import { getValidSecuenciasByIds, saveRawSecuencia } from '../cache/secuenciaCache';
+import { obtenerNombreVisible, NOMBRE_NEUTRO } from '../utils/nombres';
 import type { Post, UserProfile } from '../types';
 
 export function useCommunityData() {
@@ -25,7 +26,7 @@ export function useCommunityData() {
         try {
             const [postsRes, histRes] = await Promise.all([
                 supabase.from('posts')
-                    .select('*, profiles:perfiles(nombre_docente, avatar_url, bio)')
+                    .select('*, profiles:perfiles(nombre, nombre_docente, avatar_url, bio)')
                     .order('id', { ascending: false })
                     .range(pageNumber * POSTS_PER_PAGE, (pageNumber + 1) * POSTS_PER_PAGE - 1),
                 supabase.from('historial_colaboradores')
@@ -108,7 +109,7 @@ export function useCommunityData() {
 
                 return {
                     id: p.id as number,
-                    autor: prof?.nombre_docente as string || p.autor as string,
+                    autor: obtenerNombreVisible(prof, (p.autor as string) || NOMBRE_NEUTRO),
                     cargo: p.cargo as string,
                     avatarUrl: prof?.avatar_url as string || '',
                     contenido: p.contenido as string,

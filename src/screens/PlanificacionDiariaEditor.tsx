@@ -253,7 +253,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
             || state.centros?.find(c => c.id === miPerfil?.centro_id)?.codigoCentro
             || session?.user?.user_metadata?.codigo_centro || '';
         const docenteNombre = qs.get('docente')
-            || miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
+            || miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente';
         const fecha = qs.get('fecha') || new Date().toISOString().slice(0, 10);
         const asignatura = qs.get('asignatura') || curso?.asignatura || '';
         const grado = qs.get('grado') || curso?.grado || '';
@@ -567,7 +567,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                 </div>
 
                 {brocha && !celdaPendiente && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-2.5 rounded-xl bg-(--primary) text-white shadow-2xl">
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-60 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-(--primary) text-white shadow-2xl">
                         <Paintbrush size={15} />
                         <span className="text-[11px] font-bold uppercase tracking-widest">Brocha activa — haz clic en una celda para insertar</span>
                         <button
@@ -581,7 +581,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                 )}
 
                 {celdaPendiente && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] w-[min(92vw,420px)] px-4 py-3 rounded-xl bg-white border border-(--border-soft) shadow-2xl">
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-60 w-[min(92vw,420px)] px-4 py-3 rounded-xl bg-white border border-(--border-soft) shadow-2xl">
                         <p className="text-[11px] font-bold text-(--ink) leading-relaxed mb-2">
                             Este campo ya contiene información. ¿Deseas reemplazarla con la sugerencia de IA?
                         </p>

@@ -1,3 +1,5 @@
+import { getCompetenciaDisplay } from '../types';
+
 export interface ActividadRecuperar {
   nombre: string;
   competencias: string[];
@@ -76,16 +78,9 @@ export function formatFriendlyDate(dateStr: string): string {
   return `${parseInt(day, 10)} de ${monthNames[month] || ''} de ${year}`;
 }
 
-const BC_DISPLAY: Record<string, string> = {
-  BC1: 'Comunicativa',
-  BC2: 'Pensamiento lógico y resolución de problemas',
-  BC3: 'Científica, tecnológica, medioambiental y de la salud',
-  BC4: 'Ética, ciudadana y desarrollo espiritual'
-};
-
 function formatCompetencias(competencias: string[]): string {
   return competencias
-    .map(c => `▪ ${BC_DISPLAY[c] || c}`)
+    .map(c => `▪ ${getCompetenciaDisplay(c) || c}`)
     .join('<br>');
 }
 

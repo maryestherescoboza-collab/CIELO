@@ -5,6 +5,9 @@ import { getAsignaturaNombre } from '../constants/asignaturas';
 import { CieloPill } from '../components/ui/CieloPill';
 import GenerarInstrumentoModal from '../components/evaluacion/GenerarInstrumentoModal';
 import { useAppStore } from '../store/appStore';
+import { useRef } from 'react';
+import { useTemplateCapture } from '../hooks/useTemplateCapture';
+import { TemplateCaptureButton } from '../components/TemplateCaptureButton';
 
 interface Props {
     state?: AppState;
@@ -63,6 +66,24 @@ export default function Cotejo({
 
     const session = useAppStore(s => s.session);
     const { loadRubricaCotejoData, loadCursoData } = useSupabaseData(true);
+
+    const tableContainerRef = useRef<HTMLDivElement>(null);
+    const { captureAndUpload, isCapturing } = useTemplateCapture();
+    const [captureFileId, setCaptureFileId] = useState<string | undefined>(undefined);
+
+    const currentCourse = state?.cursos?.find(c => c.id === selectedCursoId);
+    const asignaturaName = getAsignaturaNombre(currentCourse?.asignatura) || currentCourse?.asignatura || 'Asignatura';
+    const courseName = currentCourse?.nombre || 'Curso';
+    const captureFileName = `Cotejo - ${asignaturaName} - ${courseName} - ${new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()).replace(/\//g, '-')}.png`;
+
+    const handleCapture = () => {
+        if (!tableContainerRef.current) return;
+        captureAndUpload(tableContainerRef.current, {
+            fileName: captureFileName,
+            existingFileId: captureFileId,
+            onSuccess: setCaptureFileId
+        });
+    };
 
     useEffect(() => {
         if (!readOnly) {
@@ -755,7 +776,18 @@ export default function Cotejo({
                         </div>
                     )}
 
-                    <div className="w-full rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-sm overflow-hidden">
+                    <div className="w-full flex justify-end">
+                        <TemplateCaptureButton 
+                            isCapturing={isCapturing} 
+                            onClick={handleCapture}
+                            title="Guardar captura del cotejo en Google Drive"
+                        />
+                    </div>
+
+                    <div 
+                        ref={tableContainerRef}
+                        className="w-full rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-sm overflow-hidden"
+                    >
                         <table
                             onContextMenu={(e) => {
                                 if (readOnly) return;
@@ -795,6 +827,7 @@ export default function Cotejo({
                                     <tr>
                                         <td colSpan={localNiveles.length + 1} className="py-20 text-center">
                                             <button
+                                                data-guide="btn-agregar-criterio"
                                                 onClick={() => {
                                                     if (readOnly) return;
                                                     const id = Math.min(0, ...localCriterios.map(c => c.id)) - 1;
@@ -821,6 +854,7 @@ export default function Cotejo({
                                                 ) : (
                                                     <div className="flex items-center gap-2 relative w-full">
                                                         <button
+                                                            data-guide="btn-agregar-criterio"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleInsertRowAfter(crit.id);

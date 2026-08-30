@@ -209,7 +209,8 @@ export default function CursoDetalle(props: Props) {
                 onUpdateEstudiante={(id, est) => props.onUpdateEstudiante?.(id, est)}
                 onDeleteActividad={(actId) => props.onDeleteActividad?.(actId)}
                 onToggleBc={onToggleBc}
-                onAddEstudiante={() => props.onAddEstudiante?.(cursoId, 'Nuevo', 'Estudiante')}
+                onAddEstudiante={(nombre = 'Nuevo', apellido = 'Estudiante') => props.onAddEstudiante?.(cursoId, nombre, apellido)}
+                onDeleteEstudiante={(id) => props.onDeleteEstudiante?.(id)}
                 onSetRubricTarget={setRubricTarget}
                 getGradeClass={getGradeClass}
                 BC_COLOR_THEMES={BC_COLOR_THEMES}

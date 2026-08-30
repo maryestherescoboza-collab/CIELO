@@ -7,6 +7,7 @@ import {
     isDriveConnected,
     getDriveUserEmail,
     getCIELOFolderId,
+    getCapturasFolderId,
     uploadToDrive,
     deleteFileFromDrive,
     fetchFileThumbnailLink,
@@ -74,10 +75,16 @@ export function useGoogleDrive() {
         return getCIELOFolderId(token);
     }, []);
 
-    const uploadImage = useCallback(async (blob: Blob, fileName: string, folderId: string) => {
+    const ensureCapturasFolder = useCallback(async (): Promise<string> => {
         const token = getStoredToken();
         if (!token) throw new Error('Google Drive no está conectado. Conéctalo primero.');
-        return uploadToDrive(blob, fileName, folderId, token);
+        return getCapturasFolderId(token);
+    }, []);
+
+    const uploadImage = useCallback(async (blob: Blob, fileName: string, folderId: string, existingFileId?: string) => {
+        const token = getStoredToken();
+        if (!token) throw new Error('Google Drive no está conectado. Conéctalo primero.');
+        return uploadToDrive(blob, fileName, folderId, token, existingFileId);
     }, []);
 
     const deleteFile = useCallback(async (fileId: string) => {
@@ -99,6 +106,7 @@ export function useGoogleDrive() {
         connect,
         disconnect,
         ensureCIELOFolder,
+        ensureCapturasFolder,
         uploadImage,
         deleteFile,
         fetchDriveThumbnail,

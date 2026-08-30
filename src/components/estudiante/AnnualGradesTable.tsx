@@ -1,5 +1,6 @@
 import React from 'react';
 import { ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
+import { getCompetenciaDisplay } from '../../types';
 
 interface AnnualGradesTableProps {
     allSubjects: any[];
@@ -34,10 +35,10 @@ const AnnualGradesTable: React.FC<AnnualGradesTableProps> = ({
                         <th colSpan={2} className="bg-[#2E3330] text-white border-[rgba(46,51,48,0.08)]">SITUACIÓN FINAL</th>
                     </tr>
                     <tr className="bg-(--background) text-[#2E3330] font-black uppercase text-xs tracking-wider">
-                        <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC1">Comunicativa</th>
-                        <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC2">Pensamiento lógico, creativo y crítico; resolución de problemas</th>
-                        <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC3">Científica y tecnológica; ambiental y de la salud</th>
-                        <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC4">Desarrollo personal y espiritual; ética y ciudadana</th>
+                        <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC1">{getCompetenciaDisplay('BC1')}</th>
+                        <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC2">{getCompetenciaDisplay('BC2')}</th>
+                        <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC3">{getCompetenciaDisplay('BC3')}</th>
+                        <th colSpan={4} className="border-x border-[rgba(46,51,48,0.08)] py-2 normal-case" title="BC4">{getCompetenciaDisplay('BC4')}</th>
                         <th rowSpan={2} className="bg-white text-primary border-x border-[rgba(46,51,48,0.08)]">A</th>
                         <th rowSpan={2} className="bg-white text-danger border-r border-[rgba(46,51,48,0.08)]">R</th>
                     </tr>

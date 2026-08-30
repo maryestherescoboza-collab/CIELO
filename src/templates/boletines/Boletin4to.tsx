@@ -3,6 +3,7 @@ import type { BoletinTemplateProps } from './types';
 import { ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
 import { obtenerCentroDelCurso } from '../../utils/aislamiento';
 import { getBoletinHeaderImage } from '../../utils/colorimetriaBoletines';
+import { getCompetenciaDisplay } from '../../types';
 
 export default function Boletin4to({ curso, estudiantes, docenteNombre, studentGrades, state }: BoletinTemplateProps) {
     // Datos institucionales reales: BOLETÍN → CURSO → curso.centroId → CENTRO.
@@ -294,10 +295,10 @@ export default function Boletin4to({ curso, estudiantes, docenteNombre, studentG
                             <thead>
                               <tr>
                                 <th colSpan={2} className="compfund">COMPETENCIAS<br />FUNDAMENTALES</th>
-                                <th colSpan={4}>Comunicativa</th>
-                                <th colSpan={4}>Pensamiento Lógico, Creativo y Crítico / Resolución de Problemas</th>
-                                <th colSpan={4}>Científica y Tecnológica / Ambiental y de la Salud</th>
-                                <th colSpan={4}>Ética y Ciudadana / Desarrollo Personal y Espiritual</th>
+                                <th colSpan={4}>{getCompetenciaDisplay('BC1')}</th>
+                                <th colSpan={4}>{getCompetenciaDisplay('BC2')}</th>
+                                <th colSpan={4}>{getCompetenciaDisplay('BC3')}</th>
+                                <th colSpan={4}>{getCompetenciaDisplay('BC4')}</th>
                                 <th colSpan={4}>PROMEDIO GRUPO DE COMPETENCIAS ESPECÍFICAS</th>
                                 <th rowSpan={2} className="vert">CALIFICACIÓN FINAL DEL ÁREA</th>
                                 <th colSpan={3}>CALIFICACIÓN COMPLETIVA</th>

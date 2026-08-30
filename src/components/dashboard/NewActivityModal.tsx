@@ -239,9 +239,9 @@ Para cada actividad, debes identificar:
    NO busques las etiquetas internas "BC1", "BC2", "BC3" ni "BC4". Estos códigos normalmente no aparecen en el documento.
    Busca directamente expresiones o variantes comunes relacionadas con estas 4 competencias:
    - Comunicativa (BC1) -> Variantes: Comunicación, Competencia comunicativa, Comunicación oral, Habilidades comunicativas.
-   - Científica y tecnológica; ambiental y de la salud (BC2) -> Variantes: Científica, Tecnológica, Competencia ambiental, Cuidado del ambiente y la salud.
-   - Desarrollo personal y espiritual; ética y ciudadana (BC3) -> Variantes: Desarrollo personal, Espiritual, Ética, Ciudadana, Ciudadanía.
-   - Pensamiento lógico, creativo y crítico; resolución de problemas (BC4) -> Variantes: Pensamiento lógico, Pensamiento creativo, Pensamiento crítico, Resolución de problemas.
+   - Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas (BC2) -> Variantes: Pensamiento lógico, Pensamiento creativo, Pensamiento crítico, Resolución de problemas.
+   - Científica y Tecnológica; y Ambiental y de la Salud (BC3) -> Variantes: Científica, Tecnológica, Competencia ambiental, Cuidado del ambiente y la salud.
+   - Ética y Ciudadana; y Desarrollo Personal y Espiritual (BC4) -> Variantes: Desarrollo personal, Espiritual, Ética, Ciudadana, Ciudadanía.
    Si encuentras explícitamente alguna de estas referencias (el nombre o sus variantes contextuales asociadas a la actividad), mapea a su código interno correspondiente y devuelve un arreglo de objetos con el "codigo" (ej. "BC1") y su "nombre" oficial estricto. Si no encuentras referencias a competencias de forma explícita, devuelve un arreglo vacío [].
 3. "indicador_logro": Construye un único indicador de logro pedagógicamente coherente a partir de la actividad.
    Debe combinar: VERBO DE ACCIÓN + CONTENIDO ESPECÍFICO + CONDICIÓN DE ÉXITO.
@@ -752,7 +752,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                                     w-64 p-3 rounded-xl text-left
                                                     bg-slate-900 text-white shadow-2xl
                                                     opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                                                    transition-all duration-200 pointer-events-none z-[9999]
+                                                    transition-all duration-200 pointer-events-none z-9999
                                                 ">
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{id}</span>
                                                     <p className="text-xs font-bold mt-0.5 leading-snug">{label}</p>
@@ -944,9 +944,9 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                                             act.competencias.map(bc => {
                                                                 const bcNames: Record<string, string> = {
                                                                     'BC1': 'Comunicativa',
-                                                                    'BC2': 'Científica y tecnológica; ambiental y de la salud',
-                                                                    'BC3': 'Desarrollo personal y espiritual; ética y ciudadana',
-                                                                    'BC4': 'Pensamiento lógico, creativo y crítico; resolución de problemas'
+                                                                    'BC2': 'Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas',
+                                                                    'BC3': 'Científica y Tecnológica; y Ambiental y de la Salud',
+                                                                    'BC4': 'Ética y Ciudadana; y Desarrollo Personal y Espiritual'
                                                                 };
                                                                 return (
                                                                     <span

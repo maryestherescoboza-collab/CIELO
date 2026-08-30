@@ -1,7 +1,7 @@
 export interface GuideStep {
   selector: string;
   texto: string;
-  evento: 'click' | 'change';
+  evento: 'click' | 'change' | 'dblclick';
 }
 
 export interface Guide {
@@ -29,7 +29,7 @@ export const CATALOGO_GUIAS: Guide[] = [
   },
   {
     id: 'crear-actividades-alumnos',
-    titulo: 'Crear actividades y agregar alumnos',
+    titulo: 'Agregar actividades y alumnos',
     steps: [
       {
         selector: '#nav-cursos',
@@ -65,7 +65,7 @@ export const CATALOGO_GUIAS: Guide[] = [
   },
   {
     id: 'evaluar-actividad',
-    titulo: 'Evaluar una actividad',
+    titulo: 'Evaluar una actividad por indicador',
     steps: [
       {
         selector: '#nav-cursos',
@@ -91,6 +91,58 @@ export const CATALOGO_GUIAS: Guide[] = [
         selector: '[data-guide="celda-evaluacion"]',
         texto: 'Haz clic sobre las celdas vacías de la actividad para registrar la evaluación.',
         evento: 'click'
+      }
+    ]
+  },
+  {
+    id: 'como-crear-plantilla-rubrica',
+    titulo: 'Cómo crear una plantilla de rúbrica',
+    steps: [
+      {
+        selector: '.app-bottom-nav button:nth-child(7)',
+        texto: 'Haz clic en «Rúbrica».',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="editor-descriptor"]',
+        texto: 'Completa los niveles y descriptores: haz clic dentro de una celda de la rúbrica y escribe el descriptor.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-guardar-plantilla"]',
+        texto: 'Haz clic en «Guardar como Plantilla», escribe el nombre de la plantilla en la ventana que aparece y confírmalo.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="selector-plantilla"]',
+        texto: 'Tu plantilla quedó guardada. Haz clic aquí y selecciona su nombre en la lista para comprobarlo.',
+        evento: 'change'
+      }
+    ]
+  },
+  {
+    id: 'como-crear-plantilla-cotejo',
+    titulo: 'Cómo crear una plantilla de lista de cotejo',
+    steps: [
+      {
+        selector: '.app-bottom-nav button:nth-child(8)',
+        texto: 'Haz clic en «Cotejo».',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="criterio-cotejo"]',
+        texto: 'Completa los criterios: haz clic en una fila, escribe la descripción del indicador y haz clic fuera para continuar.',
+        evento: 'change'
+      },
+      {
+        selector: '[data-guide="btn-guardar-plantilla"]',
+        texto: 'Haz clic en «Guardar como Plantilla», escribe el nombre de la plantilla en la ventana que aparece y confírmalo.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="selector-plantilla"]',
+        texto: 'Tu plantilla quedó guardada. Haz clic aquí y selecciona su nombre en la lista para comprobarlo.',
+        evento: 'change'
       }
     ]
   },
@@ -187,8 +239,8 @@ export const CATALOGO_GUIAS: Guide[] = [
       },
       {
         selector: '[data-guide="editor-descriptor"]',
-        texto: 'Completa los niveles y descriptores: haz clic dentro de una celda de la rúbrica y escribe el descriptor.',
-        evento: 'click'
+        texto: 'Completa los niveles y descriptores: haz doble clic dentro de una celda de la rúbrica para comenzar a escribir el descriptor.',
+        evento: 'dblclick'
       },
       {
         selector: '[data-guide="btn-guardar-plantilla"]',
@@ -212,25 +264,25 @@ export const CATALOGO_GUIAS: Guide[] = [
         evento: 'click'
       },
       {
+        selector: '[data-guide="btn-agregar-criterio"]',
+        texto: 'Haz clic en «+» dentro de la tabla para agregar un nuevo indicador.',
+        evento: 'click'
+      },
+      {
         selector: '[data-guide="criterio-cotejo"]',
-        texto: 'Completa los criterios: haz clic en una fila, escribe la descripción del indicador y haz clic fuera para continuar.',
-        evento: 'change'
+        texto: 'Escribe aquí la descripción del indicador.',
+        evento: 'click'
       },
       {
         selector: '[data-guide="btn-guardar-plantilla"]',
         texto: 'Haz clic en «Guardar como Plantilla», escribe el nombre de la plantilla en la ventana que aparece y confírmalo.',
         evento: 'click'
-      },
-      {
-        selector: '[data-guide="selector-plantilla"]',
-        texto: 'Tu plantilla quedó guardada. Haz clic aquí y selecciona su nombre en la lista para comprobarlo.',
-        evento: 'change'
       }
     ]
   },
   {
     id: 'crear-actividades-ia',
-    titulo: 'Crear actividades con IA',
+    titulo: 'Agregar actividades con IA',
     steps: [
       {
         selector: '.app-bottom-nav button:nth-child(1)',

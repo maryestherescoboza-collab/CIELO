@@ -1,4 +1,5 @@
 import type { BCKey } from '../types';
+import { getCompetenciaDisplay } from '../types';
 
 // ============================================================
 // LISTA DE COTEJO DE RECUPERACIÓN — DEFINICIÓN DEL INSTRUMENTO
@@ -31,11 +32,11 @@ export const INDICADORES_RECUPERACION: Record<1 | 2 | 3 | 4, string[]> = {
     ],
 };
 
-// Títulos de bloque definidos para la Lista de Cotejo (no modifican
+// Títulos de bloque definidos para la Lista de Cotejo (ahora usa
 // COMPETENCIAS_LABEL de la app).
 export const TITULOS_RECUPERACION: Record<BCKey, string> = {
-    BC1: 'Comunicativa',
-    BC2: 'Científica y tecnológica; ambiental y de la salud',
-    BC3: 'Desarrollo personal y espiritual; ética y ciudadana',
-    BC4: 'Pensamiento lógico, creativo y crítico; resolución de problemas',
+    BC1: getCompetenciaDisplay('BC1'),
+    BC2: getCompetenciaDisplay('BC2'),
+    BC3: getCompetenciaDisplay('BC3'),
+    BC4: getCompetenciaDisplay('BC4'),
 };

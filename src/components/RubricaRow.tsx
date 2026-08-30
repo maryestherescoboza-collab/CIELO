@@ -211,7 +211,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                     <td
                         key={field.key}
                         data-guide="celda-rubrica"
-                        className={`w-[17.5%] p-2 align-middle text-center transition-all border-r border-(--border-soft) last:border-r-0 ${readOnly ? 'cursor-default' : 'cursor-pointer'} relative group-cell 
+                        className={`w-[17.5%] p-2 align-middle text-center transition-all border-r border-(--border-soft) last:border-r-0 ${readOnly ? 'cursor-default' : 'cursor-pointer'} relative group-cell group/cell 
                             ${isSelected ? 'after:absolute after:inset-0 after:border-2 after:border-(--ink)' : ''}
                             ${isActive ? 'ring-2 ring-inset ring-(--primary) shadow-inner z-10' : ''}`}
                         style={{ backgroundColor: field.cellBg }}
@@ -229,6 +229,13 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                         }}
                     >
                         <div className="flex flex-col items-center justify-center h-full min-h-26 gap-2">
+                            {!readOnly && editingField !== field.key && (
+                                <div className="absolute top-1.5 left-1/2 -translate-x-1/2 opacity-0 group-hover/cell:opacity-100 transition-opacity duration-300 pointer-events-none z-10 flex items-center justify-center">
+                                    <span className="text-[9px] uppercase tracking-wider font-bold bg-(--linen)/95 text-(--ink-soft) px-2 py-0.5 rounded-full border border-(--border-soft) shadow-sm whitespace-nowrap">
+                                        Doble clic para editar
+                                    </span>
+                                </div>
+                            )}
                             {!readOnly && isFormattingCell && applyInlineFormat && (
                                 <div className="absolute top-1 right-1 z-20 flex items-center gap-1 rounded-md border border-(--border-soft) bg-white px-1.5 py-1 shadow-sm">
                                     <button

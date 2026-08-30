@@ -4,6 +4,7 @@ const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 const CIELO_FOLDER = 'CIELO';
 const REGISTRO_FOLDER = 'Registro anecdótico';
+const CAPTURAS_FOLDER = 'Capturas de plantillas';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
@@ -81,6 +82,11 @@ async function getRootFolderId(token: string): Promise<string> {
 export async function getCIELOFolderId(token: string): Promise<string> {
     const rootId = await getRootFolderId(token);
     return ensureChildFolder(token, rootId, REGISTRO_FOLDER);
+}
+
+export async function getCapturasFolderId(token: string): Promise<string> {
+    const rootId = await getRootFolderId(token);
+    return ensureChildFolder(token, rootId, CAPTURAS_FOLDER);
 }
 
 export function requestGoogleAccessToken(): Promise<string> {
@@ -166,17 +172,20 @@ export async function uploadToDrive(
     blob: Blob,
     fileName: string,
     folderId: string,
-    token: string
+    token: string,
+    existingFileId?: string
 ): Promise<{ fileId: string; thumbnailLink: string }> {
-    const metadata = { name: fileName, parents: [folderId] };
+    const metadata = existingFileId ? {} : { name: fileName, parents: [folderId] };
+    const method = existingFileId ? 'PATCH' : 'POST';
+    const url = existingFileId 
+        ? `${UPLOAD_API}/files/${existingFileId}?uploadType=multipart&fields=id,thumbnailLink`
+        : `${UPLOAD_API}/files?uploadType=multipart&fields=id,thumbnailLink`;
+
     const form = new FormData();
     form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     form.append('file', blob);
 
-    const res = await fetch(
-        `${UPLOAD_API}/files?uploadType=multipart&fields=id,thumbnailLink`,
-        { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form }
-    );
+    const res = await fetch(url, { method, headers: { Authorization: `Bearer ${token}` }, body: form });
 
     if (!res.ok) {
         const errBody = await res.text();

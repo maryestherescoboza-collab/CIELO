@@ -3,8 +3,7 @@ import { supabase } from '../lib/supabase';
 
 import { usePresence } from './usePresence';
 import type { AppState } from '../types';
-
-const DOCENTE_DEFAULT = 'Elena M.';
+import { obtenerNombreVisible, NOMBRE_NEUTRO } from '../utils/nombres';
 
 interface Params {
     state: AppState;
@@ -26,14 +25,14 @@ export function useAppInitialization({ state, session }: Params) {
         }
     }, [session]);
 
-    const DOCENTE = useMemo(() => 
-        state.nombreDocente || session?.user?.email?.split('@')[0] || DOCENTE_DEFAULT, 
-        [state.nombreDocente, session]
-    );
-
     const currentUserProfile = useMemo(
         () => state.perfiles.find(p => p.userId === session?.user?.id),
         [state.perfiles, session]
+    );
+
+    const DOCENTE = useMemo(
+        () => obtenerNombreVisible(currentUserProfile, state.nombreDocente || NOMBRE_NEUTRO),
+        [currentUserProfile, state.nombreDocente]
     );
 
     const [onlineSince] = useState(() => new Date().toISOString());

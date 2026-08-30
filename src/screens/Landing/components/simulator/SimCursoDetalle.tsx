@@ -164,7 +164,8 @@ export default function CursoDetalle() {
                 onUpdateEstudiante={(id, est) => (undefined as any)?. onUpdateEstudiante?.(id, est)}
                 onDeleteActividad={(actId) => (undefined as any)?. onDeleteActividad?.(actId)}
                 onToggleBc={onToggleBc}
-                onAddEstudiante={() => (undefined as any)?. onAddEstudiante?.(cursoId, 'Nuevo', 'Estudiante')}
+                onAddEstudiante={(nombre = 'Nuevo', apellido = 'Estudiante') => (undefined as any)?. onAddEstudiante?.(cursoId, nombre, apellido)}
+                onDeleteEstudiante={(id) => (undefined as any)?. onDeleteEstudiante?.(id)}
                 onSetRubricTarget={setRubricTarget}
                 getGradeClass={getGradeClass}
                 BC_COLOR_THEMES={BC_COLOR_THEMES}

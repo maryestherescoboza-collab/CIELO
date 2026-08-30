@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { Screen } from '../types';
 import { useAppStore } from '../store/appStore';
+import { obtenerNombreVisible, NOMBRE_NEUTRO } from '../utils/nombres';
 
 import Header from './layout/Header';
 import BottomNav from './layout/BottomNav';
@@ -77,7 +78,7 @@ export default function Layout({
     const onNavigate = useCallback((s: Screen) => navigate(s === 'inicio' ? '/' : `/${s}`), [navigate]);
 
     const currentUserProfile = useMemo(() => state.perfiles.find(p => p.userId === session?.user?.id), [state.perfiles, session]);
-    const docenteNombre = useMemo(() => state.nombreDocente || currentUserProfile?.nombreDocente || session?.user?.email?.split('@')[0] || 'Docente', [state.nombreDocente, currentUserProfile, session]);
+    const docenteNombre = useMemo(() => obtenerNombreVisible(currentUserProfile, state.nombreDocente || NOMBRE_NEUTRO), [currentUserProfile, state.nombreDocente]);
     const perfilBio = state.perfilBio || currentUserProfile?.bio || '';
     const perfilAvatarUrl = state.perfilAvatarUrl || currentUserProfile?.avatarUrl || '';
     

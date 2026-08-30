@@ -23,7 +23,8 @@ interface GradeTableProps {
     onUpdateEstudiante: (id: number, est: any) => void;
     onDeleteActividad: (id: number) => void;
     onToggleBc: (actId: number, bc: BCKey) => void;
-    onAddEstudiante: () => void;
+    onAddEstudiante: (nombre?: string, apellido?: string) => void;
+    onDeleteEstudiante?: (id: number) => void;
     onSetRubricTarget: (target: any) => void;
     getGradeClass: (score: number | null) => string;
     BC_COLOR_THEMES: Record<BCKey, { bg: string, text: string, active: string }>;
@@ -47,6 +48,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     onDeleteActividad,
     onToggleBc,
     onAddEstudiante,
+    onDeleteEstudiante,
     onSetRubricTarget,
     getGradeClass,
     BC_COLOR_THEMES,
@@ -96,7 +98,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                 return (
                                     <div key={col.id} className="sticky left-0 z-50 bg-(--background) px-6 py-5 text-left border-r border-(--border-soft) flex items-center justify-between box-border" style={style}>
                                         <span className="text-sm font-black uppercase tracking-[0.2em] italic text-[#2E3330]">Estudiantes</span>
-                                        <button data-guide="btn-agregar-estudiante" onClick={onAddEstudiante} className="w-8 h-8 flex items-center justify-center hover:bg-base-creme rounded-full transition-all text-[#5F665E] hover:text-[#2E3330] border border-transparent hover:border-(--border-soft)"><Plus size={18} /></button>
+                                        <button data-guide="btn-agregar-estudiante" onClick={() => onAddEstudiante()} className="w-8 h-8 flex items-center justify-center hover:bg-base-creme rounded-full transition-all text-[#5F665E] hover:text-[#2E3330] border border-transparent hover:border-(--border-soft)"><Plus size={18} /></button>
                                     </div>
                                 );
                             }
@@ -207,6 +209,28 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                             <input 
                                                                 data-guide="celda-estudiante"
                                                                 defaultValue={est.displayName}
+                                                                onPaste={(e) => {
+                                                                    const text = e.clipboardData.getData('text');
+                                                                    if (!text.includes('\n') && !text.includes('\t')) return;
+                                                                    
+                                                                    e.preventDefault();
+                                                                    const rows = text.split(/\r?\n/).map(r => r.trim()).filter(r => r);
+                                                                    
+                                                                    rows.forEach((row, i) => {
+                                                                        const cleanRow = row.split('\t')[0].trim();
+                                                                        if (!cleanRow) return;
+                                                                        const parts = cleanRow.split(' ');
+                                                                        const nombre = parts[0] || '';
+                                                                        const apellido = parts.slice(1).join(' ') || '';
+                                                                        
+                                                                        if (i === 0) {
+                                                                            onUpdateEstudiante(est.id, { nombre, apellido });
+                                                                            e.currentTarget.value = `${nombre} ${apellido}`.trim();
+                                                                        } else {
+                                                                            onAddEstudiante(nombre, apellido);
+                                                                        }
+                                                                    });
+                                                                }}
                                                                 onBlur={(e) => {
                                                                     const val = e.target.value.trim();
                                                                     if (val && val !== est.displayName) {
@@ -298,6 +322,21 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             );
                         })}
                     </div>
+                    {estudiantes.length > 0 && onDeleteEstudiante && (
+                        <div className="w-full flex justify-start py-3 px-6">
+                            <button 
+                                onClick={() => {
+                                    if (window.confirm(`¿Seguro que deseas eliminar al último estudiante (${estudiantes[estudiantes.length - 1].displayName})?`)) {
+                                        onDeleteEstudiante(estudiantes[estudiantes.length - 1].id);
+                                    }
+                                }}
+                                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:text-danger hover:border-danger/40 hover:bg-danger/10 transition-all text-xl pb-0.5 shadow-sm"
+                                title="Eliminar último estudiante"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

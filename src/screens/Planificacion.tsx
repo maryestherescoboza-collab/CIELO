@@ -991,7 +991,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                                 const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
                                                 const centroNombre = session?.user?.user_metadata?.centro_nombre || 'Mi Centro';
                                                 const codigoCentro = session?.user?.user_metadata?.codigo_centro || '';
-                                                const docenteNombre = session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
+                                                const docenteNombre = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente';
                                                 const htmlContent = getPlanificacionDiariaTemplate({
                                                     centro: centroNombre,
                                                     codigoCentro,
@@ -1058,7 +1058,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                                const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
                                                const centroNombre = state.centros?.find(c => c.id === miPerfil?.centro_id)?.nombre || session?.user?.user_metadata?.centro_nombre || 'Mi Centro';
                                                const codigoCentro = state.centros?.find(c => c.id === miPerfil?.centro_id)?.codigoCentro || session?.user?.user_metadata?.codigo_centro || '';
-                                               const docenteNombre = miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
+                                               const docenteNombre = miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente';
 
                                                const periodo = PERIODOS_RECUPERACION[periodoRecuperacion];
 
@@ -1168,7 +1168,7 @@ onClick={() => {
                                        const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
                                        const centroNombre = state.centros?.find(c => c.id === miPerfil?.centro_id)?.nombre || session?.user?.user_metadata?.centro_nombre || 'Mi Centro';
                                        const codigoCentro = state.centros?.find(c => c.id === miPerfil?.centro_id)?.codigoCentro || session?.user?.user_metadata?.codigo_centro || '';
-                                       const docenteNombre = miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.email || 'Docente';
+                                       const docenteNombre = miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente';
                                        const params = new URLSearchParams();
                                        if (form.cursoId) params.set('cursoId', String(form.cursoId));
                                        if (form.fechaInicio) params.set('fecha', form.fechaInicio);

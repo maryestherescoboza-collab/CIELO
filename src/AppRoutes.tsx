@@ -6,23 +6,24 @@ import type {
   AppState,
   Secuencia
 } from './types';
+import { lazyLoad } from './utils/lazyLoad';
 
-const Inicio = React.lazy(() => import('./screens/Inicio'));
-const Dashboard = React.lazy(() => import('./screens/Dashboard'));
-const Cursos = React.lazy(() => import('./screens/Cursos'));
-const CursoDetalle = React.lazy(() => import('./screens/CursoDetalle'));
-const Incidencias = React.lazy(() => import('./screens/Incidencias'));
-const Planificacion = React.lazy(() => import('./screens/Planificacion'));
-const PlanificacionDiariaEditor = React.lazy(() => import('./screens/PlanificacionDiariaEditor'));
-const Comunidad = React.lazy(() => import('./screens/Comunidad'));
-const Rubrica = React.lazy(() => import('./screens/Rubrica'));
-const Cotejo = React.lazy(() => import('./screens/Cotejo'));
-const Estudiante = React.lazy(() => import('./screens/Estudiante'));
-const CalificacionesAnuales = React.lazy(() => import('./screens/CalificacionesAnuales'));
-const ProfileSettings = React.lazy(() => import('./screens/ProfileSettings'));
-const ResetPassword = React.lazy(() => import('./screens/ResetPassword'));
-const PrintBoletines = React.lazy(() => import('./screens/PrintBoletines'));
-const Suscripcion = React.lazy(() => import('./screens/Suscripcion'));
+const Inicio = lazyLoad(() => import('./screens/Inicio'));
+const Dashboard = lazyLoad(() => import('./screens/Dashboard'));
+const Cursos = lazyLoad(() => import('./screens/Cursos'));
+const CursoDetalle = lazyLoad(() => import('./screens/CursoDetalle'));
+const Incidencias = lazyLoad(() => import('./screens/Incidencias'));
+const Planificacion = lazyLoad(() => import('./screens/Planificacion'));
+const PlanificacionDiariaEditor = lazyLoad(() => import('./screens/PlanificacionDiariaEditor'));
+const Comunidad = lazyLoad(() => import('./screens/Comunidad'));
+const Rubrica = lazyLoad(() => import('./screens/Rubrica'));
+const Cotejo = lazyLoad(() => import('./screens/Cotejo'));
+const Estudiante = lazyLoad(() => import('./screens/Estudiante'));
+const CalificacionesAnuales = lazyLoad(() => import('./screens/CalificacionesAnuales'));
+const ProfileSettings = lazyLoad(() => import('./screens/ProfileSettings'));
+const ResetPassword = lazyLoad(() => import('./screens/ResetPassword'));
+const PrintBoletines = lazyLoad(() => import('./screens/PrintBoletines'));
+const Suscripcion = lazyLoad(() => import('./screens/Suscripcion'));
 import LoadingMessage from './components/LoadingMessage';
 import { BookOpen } from 'lucide-react';
 import { esRolAdministrador } from './utils/autorizacion';

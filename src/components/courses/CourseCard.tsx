@@ -41,6 +41,7 @@ export function CourseCard({
     const myLink = state.cursoDocentes?.find(cd => cd.cursoId === curso.id && cd.userId === currentUserId);
     const esTutorDelCurso = isTutor || !!myLink?.esTutor;
     const [avisoBoletines, setAvisoBoletines] = useState(false);
+    const [confirmHide, setConfirmHide] = useState(false);
     const displayAsignatura = myLink ? myLink.asignatura : curso.asignatura;
     const displayDiasSemana = myLink ? myLink.diasSemana : (curso.diasSemana || []);
 
@@ -63,7 +64,7 @@ export function CourseCard({
                     </div>
                     <button
                         className="opacity-0 group-hover:opacity-100 p-2 rounded-xl text-slate-300 hover:text-(--danger) hover:bg-(--tag-rose-bg) transition-all duration-200 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--danger)/50"
-                        onClick={(e) => { e.stopPropagation(); onHide(curso.id); }}
+                        onClick={(e) => { e.stopPropagation(); setConfirmHide(true); }}
                         title="Ocultar curso"
                     >
                         <EyeOff size={15} />
@@ -242,6 +243,38 @@ export function CourseCard({
                 >
                     Entendido
                 </button>
+            </CieloModal>
+
+            <CieloModal
+                isOpen={confirmHide}
+                onClose={() => setConfirmHide(false)}
+                maxWidth="sm"
+                title="¿Ocultar este curso?"
+            >
+                <p className="text-sm text-(--ink-soft) leading-relaxed mb-6">
+                    El curso dejará de mostrarse en tu lista de cursos activos. No podrás recuperar los avances realizados.
+                </p>
+                <div className="flex gap-3 w-full">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmHide(false);
+                        }}
+                        className="flex-1 py-2.5 bg-(--linen) text-(--ink-soft) rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmHide(false);
+                            onHide(curso.id);
+                        }}
+                        className="flex-1 py-2.5 bg-[#EF4444] text-white rounded-xl shadow-sm text-xs font-bold uppercase tracking-widest outline-none focus-visible:ring-2 focus-visible:ring-[#EF4444]/50 hover:opacity-90 active:scale-[0.98] transition-all"
+                    >
+                        Aceptar
+                    </button>
+                </div>
             </CieloModal>
         </div>
     );

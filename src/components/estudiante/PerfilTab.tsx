@@ -391,10 +391,10 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
 
                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 pt-4 justify-items-center">
                             {[
-                                { id: 'BC1', label: 'BC1 — Comunicativa', score: computedBCs.BC1 },
-                                { id: 'BC2', label: 'BC2 — Científica y Tecnológica', score: computedBCs.BC2 },
-                                { id: 'BC3', label: 'BC3 — Desarrollo Personal y Social', score: computedBCs.BC3 },
-                                { id: 'BC4', label: 'BC4 — Pensamiento Lógico, Creativo y Crítico', score: computedBCs.BC4 }
+                                { id: 'BC1', label: `BC1 — ${getCompetenciaDisplay('BC1')}`, score: computedBCs.BC1 },
+                                { id: 'BC2', label: `BC2 — ${getCompetenciaDisplay('BC2')}`, score: computedBCs.BC2 },
+                                { id: 'BC3', label: `BC3 — ${getCompetenciaDisplay('BC3')}`, score: computedBCs.BC3 },
+                                { id: 'BC4', label: `BC4 — ${getCompetenciaDisplay('BC4')}`, score: computedBCs.BC4 }
                             ].map((comp) => (
                                 <div key={comp.id} className="flex flex-col items-center text-center space-y-3.5 max-w-32.5">
                                     {renderCircularProgress(comp.score, comp.id)}
