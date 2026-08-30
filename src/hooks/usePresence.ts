@@ -86,5 +86,26 @@ export function usePresence(
         };
     }, [currentUserId]);
 
+    // Re-track if the payload changes (e.g. user profile loads after connection)
+    useEffect(() => {
+        if (!channelRef.current || !currentUserId) return;
+        
+        channelRef.current.track({
+            userId: currentUserId,
+            nombre: userPayload?.nombre || 'Docente',
+            avatarUrl: userPayload?.avatarUrl,
+            asignatura: userPayload?.asignatura,
+            onlineSince: userPayload?.onlineSince || new Date().toISOString(),
+        } as TrackPayload).catch(() => {
+            // Ignore if channel is not fully joined yet
+        });
+    }, [
+        currentUserId, 
+        userPayload?.nombre, 
+        userPayload?.avatarUrl, 
+        userPayload?.asignatura, 
+        userPayload?.onlineSince
+    ]);
+
     return { onlineUsers, count: onlineUsers.length };
 }

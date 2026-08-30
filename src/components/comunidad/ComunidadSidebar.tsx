@@ -7,6 +7,7 @@ import { ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
 interface Props {
     topColaboradores: UserProfile[];
     onlineUsers: PresenceUser[];
+    perfiles?: UserProfile[];
     onViewProfile: (e: React.MouseEvent, userId?: string) => void;
     filter: string;
     onSetFilter: (filter: string) => void;
@@ -15,7 +16,7 @@ interface Props {
 const getModuleActivity = () => 'activo ahora';
 
 export default function ComunidadSidebar({ 
-    topColaboradores, onlineUsers, onViewProfile,
+    topColaboradores, onlineUsers, perfiles, onViewProfile,
     filter, onSetFilter
 }: Props) {
     return (
@@ -94,27 +95,32 @@ export default function ComunidadSidebar({
 
                 <div className="space-y-4">
                     {onlineUsers.length > 0 ? (
-                        onlineUsers.map((user) => (
-                            <div 
-                                key={user.userId} 
-                                className="flex items-center gap-3 group cursor-pointer hover:opacity-90 transition-opacity"
-                                onClick={(e) => onViewProfile(e, user.userId)}
-                            >
-                                <div className="relative shrink-0">
-                                    <div className="w-9 h-9 rounded-full overflow-hidden border border-[rgba(46,51,48,0.08)] shadow-sm">
-                                        <UserAvatar src={user.avatarUrl} name={user.nombre} className="w-full h-full" />
-                                    </div>
-                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary border-2 border-white rounded-full"></span>
-                                </div>
+                        onlineUsers.map((user) => {
+                            const realProfile = perfiles?.find(p => p.userId === user.userId);
+                            const finalName = realProfile?.nombreDocente || user.nombre;
 
-                                <div className="flex flex-col min-w-0">
-                                    <span className="text-xs font-bold text-[#2E3330] truncate leading-tight mb-0.5">{user.nombre}</span>
-                                    <span className="text-xs font-black uppercase tracking-widest text-[#5F665E] italic truncate">
-                                        {getModuleActivity()}
-                                    </span>
+                            return (
+                                <div 
+                                    key={user.userId} 
+                                    className="flex items-center gap-3 group cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={(e) => onViewProfile(e, user.userId)}
+                                >
+                                    <div className="relative shrink-0">
+                                        <div className="w-9 h-9 rounded-full overflow-hidden border border-[rgba(46,51,48,0.08)] shadow-sm">
+                                            <UserAvatar src={user.avatarUrl || realProfile?.avatarUrl} name={finalName} className="w-full h-full" />
+                                        </div>
+                                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary border-2 border-white rounded-full"></span>
+                                    </div>
+
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-xs font-bold text-[#2E3330] truncate leading-tight mb-0.5">{finalName}</span>
+                                        <span className="text-xs font-black uppercase tracking-widest text-[#5F665E] italic truncate">
+                                            {getModuleActivity()}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <div className="text-center py-2">
                             <p className="text-xs text-slate-300 font-bold uppercase tracking-widest">sin actividad</p>

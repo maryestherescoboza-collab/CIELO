@@ -68,7 +68,7 @@ export default function Cotejo({
     const { loadRubricaCotejoData, loadCursoData } = useSupabaseData(true);
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
-    const { captureAndUpload, isCapturing } = useTemplateCapture();
+    const { startCapture, captureOverlay, isCapturing } = useTemplateCapture();
     const [captureFileId, setCaptureFileId] = useState<string | undefined>(undefined);
 
     const currentCourse = state?.cursos?.find(c => c.id === selectedCursoId);
@@ -77,8 +77,7 @@ export default function Cotejo({
     const captureFileName = `Cotejo - ${asignaturaName} - ${courseName} - ${new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()).replace(/\//g, '-')}.png`;
 
     const handleCapture = () => {
-        if (!tableContainerRef.current) return;
-        captureAndUpload(tableContainerRef.current, {
+        startCapture({
             fileName: captureFileName,
             existingFileId: captureFileId,
             onSuccess: setCaptureFileId
@@ -1004,6 +1003,7 @@ export default function Cotejo({
                 asignatura={state?.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session?.user?.id)?.asignatura ?? null}
                 onAplicarCotejo={aplicarCotejoIA}
             />
+            {captureOverlay}
         </div>
     );
 }

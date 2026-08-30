@@ -155,7 +155,7 @@ export default function Rubrica({
     const session = useAppStore(s => s.session);
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
-    const { captureAndUpload, isCapturing } = useTemplateCapture();
+    const { startCapture, captureOverlay, isCapturing } = useTemplateCapture();
     const [captureFileId, setCaptureFileId] = useState<string | undefined>(undefined);
 
     const currentCourse = state.cursos.find(c => c.id === selectedCursoId);
@@ -164,8 +164,7 @@ export default function Rubrica({
     const captureFileName = `Rubrica - ${asignaturaName} - ${courseName} - ${new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()).replace(/\//g, '-')}.png`;
 
     const handleCapture = () => {
-        if (!tableContainerRef.current) return;
-        captureAndUpload(tableContainerRef.current, {
+        startCapture({
             fileName: captureFileName,
             existingFileId: captureFileId,
             onSuccess: setCaptureFileId
@@ -1165,6 +1164,7 @@ export default function Rubrica({
                 asignatura={storeState.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session?.user?.id)?.asignatura ?? null}
                 onAplicarRubrica={aplicarRubricaIA}
             />
+            {captureOverlay}
         </div>
     );
 }

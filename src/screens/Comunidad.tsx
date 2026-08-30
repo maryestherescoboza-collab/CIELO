@@ -66,6 +66,7 @@ export default function Comunidad({
                         <ComunidadSidebar
                             topColaboradores={topColaboradores}
                             onlineUsers={onlineUsers}
+                            perfiles={activePerfiles}
                             onViewProfile={onViewProfile}
                             filter={filter}
                             onSetFilter={setFilter}
