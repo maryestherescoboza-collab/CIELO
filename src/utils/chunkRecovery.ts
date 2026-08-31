@@ -87,16 +87,22 @@ export function attemptChunkRecovery(error: unknown): boolean {
     return true;
 }
 
-/**
- * Registra los listener globales de ventana. Debe invocarse una sola vez antes
- * de renderizar la aplicación. Detecta la caída de CUALQUIER import dinámico,
- * actual o futuro, sin necesidad de lógica por módulo.
- */
 export function setupChunkRecovery(): void {
     if (typeof window === 'undefined' || listenersRegistered) return;
     listenersRegistered = true;
 
     cleanupRecoveryParam();
+
+    // Limpiar la bandera de recuperación después de un tiempo prudencial
+    // para indicar que la aplicación cargó correctamente y permitir futuras
+    // recuperaciones en la misma sesión sin caer en loops inmediatos.
+    setTimeout(() => {
+        try {
+            sessionStorage.removeItem(RECOVERY_STORAGE_KEY);
+        } catch {
+            // Ignorar errores de storage
+        }
+    }, 5000);
 
     const handleWindowError = (event: ErrorEvent): void => {
         attemptChunkRecovery(event.error ?? event.message);
