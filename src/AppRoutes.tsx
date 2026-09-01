@@ -24,6 +24,9 @@ const ProfileSettings = lazyLoad(() => import('./screens/ProfileSettings'));
 const ResetPassword = lazyLoad(() => import('./screens/ResetPassword'));
 const PrintBoletines = lazyLoad(() => import('./screens/PrintBoletines'));
 const Suscripcion = lazyLoad(() => import('./screens/Suscripcion'));
+import { PORTAL_FAMILIA_ENABLED } from './config/features';
+
+const PortalApp = lazyLoad(() => import('./screens/Portal/PortalApp'));
 import LoadingMessage from './components/LoadingMessage';
 import { BookOpen } from 'lucide-react';
 import { esRolAdministrador } from './utils/autorizacion';
@@ -383,6 +386,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       } />
       <Route path="/suscripcion" element={<Suscripcion />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      {PORTAL_FAMILIA_ENABLED && <Route path="/portal/:token/*" element={<PortalApp />} />}
       <Route path="*" element={
         <div className="p-8 text-center bg-amber-50 border border-amber-200 rounded-3xl text-amber-800">
           <p className="font-bold">La pantalla a la que intentas acceder no existe.</p> 

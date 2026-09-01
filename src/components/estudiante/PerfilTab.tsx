@@ -3,6 +3,9 @@ import { getAsignaturaNombre } from '../../constants/asignaturas';
 import type { Skill, AppState, Competencia, DescriptorRubrica, CriterioCotejo } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
 import RecuperacionPerfil from './RecuperacionPerfil';
+import { supabase } from '../../lib/supabase';
+import { QRCodeSVG } from 'qrcode.react';
+import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
 
 interface PerfilTabProps {
     est: any;
@@ -35,6 +38,62 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
     isTutor = false,
     currentUserId
 }) => {
+    const [qrVisible, setQrVisible] = React.useState(false);
+    const [qrToken, setQrToken] = React.useState<string | null>(null);
+    const [isGeneratingQr, setIsGeneratingQr] = React.useState(false);
+    const qrTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    React.useEffect(() => {
+        return () => {
+            if (qrTimerRef.current) clearTimeout(qrTimerRef.current);
+        };
+    }, []);
+
+    const handleGenerateQR = async () => {
+        if (!PORTAL_FAMILIA_ENABLED) return;
+        
+        if (qrTimerRef.current) {
+            clearTimeout(qrTimerRef.current);
+        }
+
+        if (!qrToken) {
+            setIsGeneratingQr(true);
+            try {
+                const { data: existingData, error: fetchError } = await supabase
+                    .from('portal_accesos')
+                    .select('access_token')
+                    .eq('estudiante_id', est.id)
+                    .single();
+
+                if (existingData && existingData.access_token) {
+                    setQrToken(existingData.access_token);
+                } else if (fetchError && fetchError.code === 'PGRST116') {
+                    const cursoReal = curso || state.cursos.find(c => c.id === est.curso_id || c.id === est.cursoId);
+                    const centroId = cursoReal?.centro_id || state.centros?.[0]?.id;
+                    const { data: newAccess } = await supabase
+                        .from('portal_accesos')
+                        .insert({
+                            estudiante_id: est.id,
+                            centro_id: centroId
+                        })
+                        .select('access_token')
+                        .single();
+                        
+                    if (newAccess) setQrToken(newAccess.access_token);
+                }
+            } catch (err) {
+                console.error("Error generating QR:", err);
+            } finally {
+                setIsGeneratingQr(false);
+            }
+        }
+
+        setQrVisible(true);
+        qrTimerRef.current = setTimeout(() => {
+            setQrVisible(false);
+        }, 5000);
+    };
+
     // Helper to get descriptors dynamically based on evaluation type
     const getDescriptorTexts = (studentId: number, actividadId: number): string[] => {
         const evalDetalle = state.cursoDetalle.find(
@@ -310,15 +369,35 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                         </h2>
                         
                         <div className="relative inline-block">
-                            <div className="avatar-circle w-40 h-40 rounded-full border-3 border-(--navy) flex items-center justify-center text-[60px] font-black text-(--navy) shadow-sm">
-                                {est.nombre ? est.nombre[0].toUpperCase() : '?'}
+                            <div className="avatar-circle w-40 h-40 rounded-full border-3 border-(--navy) flex items-center justify-center text-[60px] font-black text-(--navy) shadow-sm overflow-hidden bg-white">
+                                {qrVisible && qrToken ? (
+                                    <div className="w-full h-full p-2 bg-white flex items-center justify-center animate-in fade-in zoom-in duration-200">
+                                        <QRCodeSVG value={`${window.location.origin}/portal/${qrToken}`} size={140} className="w-full h-full" />
+                                    </div>
+                                ) : (
+                                    <div className="animate-in fade-in duration-200">
+                                        {est.nombre ? est.nombre[0].toUpperCase() : '?'}
+                                    </div>
+                                )}
                             </div>
-                            {parseFloat(promedioPeriodo) < 70 && (
+                            {parseFloat(promedioPeriodo) < 70 && !qrVisible && (
                                 <div className="absolute top-1 -right-4 border-[3px] border-double border-(--navy) px-2 py-0.5 rounded text-(--navy) font-black text-[10px] uppercase rotate-15">
                                     Riesgo
                                 </div>
                             )}
                         </div>
+
+                        {PORTAL_FAMILIA_ENABLED && (
+                            <div className="mt-3 flex justify-center">
+                                <button
+                                    onClick={handleGenerateQR}
+                                    disabled={isGeneratingQr}
+                                    className="px-4 py-1.5 bg-(--navy) hover:bg-(--navy-dark) text-white text-[11px] font-bold tracking-widest uppercase rounded-full shadow-sm transition-all disabled:opacity-50"
+                                >
+                                    {isGeneratingQr ? 'Generando...' : 'Generar QR'}
+                                </button>
+                            </div>
+                        )}
 
                         <div className="mt-4">
                             <h3 className="text-xl font-extrabold tracking-wide text-(--navy-dark) uppercase leading-tight">

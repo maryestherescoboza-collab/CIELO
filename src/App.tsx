@@ -1,5 +1,5 @@
 import { useMemo, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import './index.css';
 import Layout from './components/Layout';
 import Auth from './screens/Auth';
@@ -24,6 +24,7 @@ import { useEvaluationActions } from './hooks/useEvaluationActions';
 import { useNotificationActions } from './hooks/useNotificationActions';
 import { useIncidenciaActions } from './hooks/useIncidenciaActions';
 import { useSecuenciaActions } from './hooks/useSecuenciaActions';
+import PortalApp from './screens/Portal/PortalApp';
 import { usePostActions } from './hooks/usePostActions';
 import { useTareaActions } from './hooks/useTareaActions';
 import { useCentroActions } from './hooks/useCentroActions';
@@ -34,6 +35,7 @@ import { usePendingCentro } from './hooks/usePendingCentro';
 import { usePendingVinculo } from './hooks/usePendingVinculo';
 import { useShallow } from 'zustand/react/shallow';
 import { analizarRolAcceso } from './utils/autorizacion';
+import { PORTAL_FAMILIA_ENABLED } from './config/features';
 
 export default function App() {
   useSupabaseAuth();
@@ -151,6 +153,13 @@ export default function App() {
     }
     if (pathname === '/reset-password') {
       return <ResetPassword />;
+    }
+    if (PORTAL_FAMILIA_ENABLED && pathname.startsWith('/portal/')) {
+      return (
+        <Routes>
+          <Route path="/portal/:token/*" element={<PortalApp />} />
+        </Routes>
+      );
     }
     return <Auth onAuthSuccess={() => actions.refresh()} />;
   }

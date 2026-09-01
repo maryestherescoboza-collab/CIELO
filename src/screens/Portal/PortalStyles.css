@@ -1,0 +1,644 @@
+/* PortalStyles.css */
+.portal-root {
+  --ink: #181815;
+  --cream: #fdf6e9;
+  --coral: #ff6b5b;
+  --purple: #9b8afb;
+  --teal: #2dd4bf;
+  --yellow: #ffcf3f;
+  --pink: #ff9ec9;
+  --mint: #c6f2c0;
+  --blue: #7ec8f2;
+  --coral-soft: #ffe1db;
+  --purple-soft: #e8e3fd;
+  --teal-soft: #d3f3ee;
+  --yellow-soft: #fff2c9;
+  --pink-soft: #ffe4ef;
+  --mint-soft: #e2f6dd;
+  --blue-soft: #e0f1fc;
+  --border: 3px solid var(--ink);
+  --shadow: 5px 5px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+
+  background: var(--cream);
+  background-image: radial-gradient(circle, #00000010 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 26px;
+  font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+.portal-root * {
+  box-sizing: border-box;
+}
+
+.portal-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* ===== TOP NAV ===== */
+.portal-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 12px 20px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.portal-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: -0.5px;
+}
+.portal-logo .logo-badge {
+  width: 34px; height: 34px;
+  background: var(--coral-soft);
+  border: var(--border);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.portal-navtabs {
+  display: flex;
+  gap: 6px;
+  background: var(--cream);
+  border: var(--border);
+  border-radius: 999px;
+  padding: 4px;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.portal-navtabs .ntab {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  color: #555;
+  transition: all 0.2s ease;
+}
+.portal-navtabs .ntab:hover {
+  background: rgba(0,0,0,0.05);
+}
+.portal-navtabs .ntab.active {
+  background: var(--yellow-soft);
+  border: 2px solid var(--ink);
+  color: var(--ink);
+}
+.portal-nav-avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--purple-soft);
+  border: var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+/* ===== GENERIC CARD ===== */
+.portal-card {
+  background: #fff;
+  border: var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+  margin-bottom: 22px;
+}
+.portal-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.portal-section-head .dot {
+  width: 12px; height: 12px;
+  background: var(--coral);
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  transform: rotate(45deg);
+}
+.portal-section-head h2 {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+/* ===== PASSPORT PROFILE HERO ===== */
+.passport {
+  position: relative;
+  background: #f3ecd9;
+  border: var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  padding: 28px 30px 26px 30px;
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+.passport-watermark {
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  font-size: 90px;
+  font-weight: 900;
+  color: #00000008;
+  letter-spacing: -2px;
+  pointer-events: none;
+  user-select: none;
+}
+.passport-topbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.passport-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #7a7562;
+}
+.passport-print {
+  background: var(--yellow-soft);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-weight: 900;
+  font-size: 11px;
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.1s;
+}
+.passport-print:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+/* -- stamps zone -- */
+.stamps-zone {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-bottom: 18px;
+}
+.stamp {
+  color: #1f6f63;
+  flex-shrink: 0;
+}
+.stamp-rect {
+  border: 2.5px solid #1f6f63;
+  padding: 8px 14px;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  background: transparent;
+  text-transform: uppercase;
+  position: relative;
+}
+.stamp-rect::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px dashed #1f6f63;
+  pointer-events: none;
+}
+.stamp-oval {
+  border: 2.5px solid #1f6f63;
+  border-radius: 50%;
+  padding: 14px 10px;
+  font-weight: 800;
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+  width: 110px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-8deg);
+}
+.stamp-banner {
+  border: 2.5px solid #1f6f63;
+  padding: 8px 16px;
+  font-weight: 900;
+  font-size: 13px;
+  text-transform: uppercase;
+  clip-path: polygon(6% 0, 100% 0, 94% 100%, 0% 100%);
+}
+.stamp-triangle-badge {
+  width: 100px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 10.5px;
+  text-transform: uppercase;
+}
+.stamp-triangle-badge .tri {
+  width: 0; height: 0;
+  border-left: 36px solid transparent;
+  border-right: 36px solid transparent;
+  border-bottom: 60px solid transparent;
+  position: relative;
+  margin: 0 auto 4px auto;
+}
+.stamp-triangle-badge .tri::before {
+  content: "";
+  position: absolute;
+  left: -36px; top: 0;
+  width: 0; height: 0;
+  border-left: 36px solid transparent;
+  border-right: 36px solid transparent;
+  border-bottom: 60px solid transparent;
+  border-bottom-color: transparent;
+  outline: 2.5px solid #1f6f63;
+}
+
+/* -- divider crease -- */
+.passport-crease {
+  border-top: 2px dashed #b9ae8f;
+  margin: 0 -30px 22px -30px;
+  position: relative;
+}
+
+/* -- bottom page: photo + pills -- */
+.passport-title {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin-bottom: 18px;
+  color: var(--ink);
+  margin-top: 0;
+}
+.passport-body {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.passport-photo {
+  width: 130px;
+  flex-shrink: 0;
+}
+.photo-frame {
+  width: 130px;
+  height: 130px;
+  border-radius: 14px;
+  background: var(--yellow-soft);
+  border: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: 900;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.photo-name {
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+.photo-role {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #666;
+}
+
+.passport-fields { flex: 1; min-width: 220px; }
+.field-label {
+  display: inline-block;
+  background: #1f6f63;
+  color: #fff;
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.attr-checks {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 20px;
+  margin-bottom: 18px;
+}
+.attr-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.achk {
+  width: 18px; height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.achk.on { background: var(--mint-soft); }
+.field-value-line {
+  border-bottom: 2px dashed #999;
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  font-style: italic;
+}
+.passport-data-row {
+  display: flex;
+  gap: 22px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.pdr-item {
+  display: flex;
+  flex-direction: column;
+}
+.pdr-value {
+  font-size: 26px;
+  font-weight: 900;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+}
+.pdr-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ===== COMPETENCIAS (anillos) ===== */
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.comp-card {
+  border: var(--border);
+  border-radius: 16px;
+  padding: 18px 12px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.ring {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.ring-inner {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 19px;
+  color: var(--ink);
+}
+.comp-card .cc-label { font-size: 11.5px; font-weight: 800; line-height: 1.3; }
+
+/* ===== EVIDENCIAS ===== */
+.evi-list { display: flex; flex-direction: column; gap: 14px; }
+.evi-card {
+  border: var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  padding: 16px 18px;
+}
+.evi-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.evi-title { font-size: 15px; font-weight: 900; margin: 0; }
+.evi-date { font-size: 11px; font-weight: 700; color: #555; margin-top: 2px; }
+.evi-score {
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-weight: 900;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.evi-score.alto { background: var(--mint-soft); }
+.evi-score.medio { background: var(--yellow-soft); }
+.evi-score.bajo { background: var(--coral-soft); }
+.evi-comp {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.evi-comp .pipe { color: #aaa; margin: 0 4px; }
+.evi-desc {
+  font-size: 12.5px;
+  color: #555;
+  font-style: italic;
+}
+.check-list { display: flex; flex-direction: column; gap: 5px; }
+.check-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12.5px;
+}
+.check-box {
+  width: 16px; height: 16px;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  margin-top: 1px;
+}
+.check-box.yes { background: var(--mint-soft); }
+.check-box.no { background: #fff; color: #fff; }
+.check-label-group { margin-bottom: 6px; }
+.check-label-group .glabel { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; color: #333; }
+
+/* ===== BITACORA ===== */
+.bitacora-entry {
+  border: var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  background: var(--pink-soft);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.bitacora-entry .be-date { font-size: 11px; font-weight: 800; }
+.bitacora-entry .be-quote { font-size: 13.5px; font-weight: 700; font-style: italic; margin-top: 4px; }
+.tag-pill {
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 10.5px;
+  font-weight: 900;
+}
+
+/* ===== RECUPERACION ===== */
+.period-tabs {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--cream);
+  border: var(--border);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 18px;
+}
+.period-tabs .ptab {
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.period-tabs .ptab:hover {
+  background: rgba(0,0,0,0.05);
+}
+.period-tabs .ptab.active {
+  background: var(--blue-soft);
+  border: 2px solid var(--ink);
+}
+.rec-card {
+  border: var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.rec-card:last-child { margin-bottom: 0; }
+.rec-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rec-title { font-size: 14px; font-weight: 900; }
+.rec-result {
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-weight: 900;
+  font-size: 12px;
+  background: var(--yellow-soft);
+}
+.rec-item {
+  font-size: 12.5px;
+  color: #444;
+  margin-bottom: 5px;
+  display: flex;
+  gap: 8px;
+}
+.rec-item::before {
+  content: "▸";
+  font-weight: 900;
+  color: var(--purple);
+  flex-shrink: 0;
+}
+.rec-item .fraction {
+  font-weight: 900;
+  color: var(--ink);
+}
+
+@media(max-width: 720px) {
+  .comp-grid { grid-template-columns: 1fr 1fr; }
+  .passport-body { flex-direction: column; }
+}
+
+@media(max-width: 480px) {
+  .portal-root { padding: 12px; }
+
+  .portal-navbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .portal-logo { justify-content: space-between; }
+  .portal-navtabs { width: 100%; }
+  .portal-nav-avatar { display: none; }
+
+  .portal-card { padding: 16px; border-radius: 14px; margin-bottom: 16px; }
+  .portal-section-head h2 { font-size: 14px; }
+
+  .passport { padding: 18px 16px 20px 16px; border-radius: 16px; }
+  .passport-watermark { font-size: 52px; top: 0; right: 0; }
+  .passport-title { font-size: 18px; margin-bottom: 14px; }
+
+  .stamps-zone { gap: 10px 12px; }
+  .stamp-rect { font-size: 13px; padding: 6px 10px; }
+  .stamp-oval { width: 90px; height: 60px; font-size: 11px; }
+  .stamp-banner { font-size: 11.5px; padding: 7px 12px; }
+
+  .passport-body { gap: 16px; }
+  .passport-photo { align-self: center; text-align: center; }
+
+  .passport-data-row { gap: 16px; }
+  .pdr-value { font-size: 22px; }
+
+  .comp-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .comp-card { padding: 14px 8px; }
+  .ring { width: 88px; height: 88px; }
+  .ring-inner { width: 60px; height: 60px; font-size: 16px; }
+  .comp-card .cc-label { font-size: 10.5px; }
+
+  .evi-card { padding: 14px; }
+  .evi-title { font-size: 14px; }
+  .evi-comp { font-size: 11px; }
+
+  .rec-card { padding: 14px; }
+  .rec-title { font-size: 13px; }
+
+  .bitacora-entry { flex-direction: column; align-items: flex-start; }
+}

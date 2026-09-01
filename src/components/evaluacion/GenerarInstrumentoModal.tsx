@@ -35,7 +35,7 @@ export default function GenerarInstrumentoModal({
     const session = useAppStore(s => s.session);
     const userId = session?.user?.id;
 
-    const [actividadId, setActividadId] = useState<number | ''>('');
+    const [selectedActivities, setSelectedActivities] = useState<number[]>([]);
     const [notas, setNotas] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export default function GenerarInstrumentoModal({
 
     useEffect(() => {
         if (isOpen) {
-            setActividadId('');
+            setSelectedActivities([]);
             setNotas('');
             setIsLoading(false);
             setErrorMsg(null);
@@ -69,9 +69,9 @@ export default function GenerarInstrumentoModal({
             return;
         }
 
-        const actividad = actividades.find(a => a.id === Number(actividadId)) || null;
-        if (!actividad && !asignatura && !notas.trim()) {
-            setErrorMsg('Selecciona una actividad o escribe indicaciones para la IA.');
+        let actividadesSeleccionadas = actividades.filter(a => selectedActivities.includes(a.id));
+        if (actividadesSeleccionadas.length === 0) {
+            setErrorMsg(`Debes seleccionar al menos una actividad para generar la ${tituloTipo.toLowerCase()}.`);
             return;
         }
 
@@ -79,14 +79,23 @@ export default function GenerarInstrumentoModal({
         setErrorMsg(null);
 
         try {
+            const actividadBase = actividadesSeleccionadas.length > 0 ? actividadesSeleccionadas[0] : null;
+            
             const contexto: ContextoInstrumento = {
                 asignatura: asignatura || '',
                 cursoNombre,
-                periodo: actividad?.periodo || null,
-                actividadNombre: actividad?.nombre || null,
-                indicadorLogro: actividad?.indicador || null,
-                bcAsignados: actividad?.bcAsignados || null,
+                periodo: actividadBase?.periodo || null,
+                actividadNombre: tipo === 'cotejo' ? actividadBase?.nombre || null : null,
+                indicadorLogro: tipo === 'cotejo' ? actividadBase?.indicador || null : null,
+                bcAsignados: tipo === 'cotejo' ? actividadBase?.bcAsignados || null : null,
                 notas,
+                actividadesSeleccionadas: actividadesSeleccionadas.length > 0 
+                    ? actividadesSeleccionadas.map(a => ({
+                        nombre: a.nombre,
+                        indicador: a.indicador || null,
+                        bcAsignados: a.bcAsignados || null
+                    }))
+                    : undefined
             };
 
             if (tipo === 'rubrica') {
@@ -199,19 +208,51 @@ export default function GenerarInstrumentoModal({
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="notion-label">Actividad (opcional)</label>
-                        <select
-                            className="w-full h-11 bg-base-creme border border-slate-350 rounded-xl px-4 text-sm font-medium text-[#2E3330] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm"
-                            value={actividadId}
-                            onChange={e => setActividadId(Number(e.target.value) || '')}
-                        >
-                            <option value="">Sin actividad específica...</option>
-                            {actividades.map(a => (
-                                <option key={a.id} value={a.id}>
-                                    {a.nombre} ({a.periodo})
-                                </option>
-                            ))}
-                        </select>
+                        <div className="flex items-center justify-between">
+                            <label className="notion-label">Actividad</label>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">
+                                Seleccionadas: {selectedActivities.length}/5
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                            Selecciona de 1 a 5 actividades. La IA analizará los indicadores de todas ellas para crear una {tituloTipo.toLowerCase()} más completa y coherente.
+                        </p>
+                        <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar mt-2">
+                            {actividades.map(a => {
+                                const isSelected = selectedActivities.includes(a.id);
+                                const isDisabled = !isSelected && selectedActivities.length >= 5;
+                                return (
+                                    <button
+                                        key={a.id}
+                                        onClick={() => {
+                                            if (isSelected) {
+                                                setSelectedActivities(prev => prev.filter(id => id !== a.id));
+                                            } else if (!isDisabled) {
+                                                setSelectedActivities(prev => [...prev, a.id]);
+                                            }
+                                        }}
+                                        disabled={isDisabled}
+                                        className={`text-left w-full px-3 py-2 rounded-xl border text-xs font-medium transition-all flex items-center justify-between gap-3 ${
+                                            isSelected 
+                                                ? 'bg-primary/10 border-primary text-[#2E3330] shadow-sm shadow-primary/5'
+                                                : isDisabled
+                                                    ? 'bg-slate-50 border-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
+                                                    : 'bg-white border-slate-200 text-slate-600 hover:border-primary/50 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <div className="flex flex-col overflow-hidden">
+                                            <span className="font-bold truncate">{a.nombre}</span>
+                                            <span className="text-[10px] opacity-70 truncate">{a.indicador || 'Sin indicador'}</span>
+                                        </div>
+                                        <div className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                            isSelected ? 'border-primary bg-primary text-white' : 'border-slate-300'
+                                        }`}>
+                                            {isSelected && <Sparkles size={10} />}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     <div className="space-y-1.5">

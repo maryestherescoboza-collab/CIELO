@@ -8,6 +8,7 @@ import { UserAvatar } from '../components/ui/UserAvatar';
 import { supabase } from '../lib/supabase';
 import { getGeminiApiKey, saveGeminiApiKey, removeGeminiApiKey, maskApiKey } from '../lib/aiConfig';
 import { useAppStore } from '../store/appStore';
+import { PORTAL_FAMILIA_ENABLED } from '../config/features';
 import type { Session } from '@supabase/supabase-js';
 // ── Types ──
 interface ProfileSettingsProps {
@@ -136,8 +137,9 @@ export default function ProfileSettings({
           
           <div ref={contentRef} className="flex-1 overflow-y-auto px-6 py-8 custom-scrollbar">
              <div className="max-w-2xl mx-auto space-y-8">
-               {activeSection === 'perfil' && (
+                 {activeSection === 'perfil' && (
                   <InformacionGeneralTab 
+                    userId={session?.user?.id || ''}
                     docenteNombre={docenteNombre} 
                     userEmail={session?.user?.email || ''} 
                     bio={extractedBio}
@@ -300,15 +302,52 @@ function Header({ activeSection, onClose }: { activeSection: SectionId; onClose:
 // ── Subcomponents: Tabs ──
 
 interface InformacionGeneralTabProps {
+  userId: string;
   docenteNombre: string;
   userEmail: string;
   bio: string;
   onSave: (nombreDocente: string, bio: string) => Promise<void>;
 }
 
-function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSave }: InformacionGeneralTabProps) {
+function InformacionGeneralTab({ userId, docenteNombre, userEmail, bio: initialBio, onSave }: InformacionGeneralTabProps) {
   const [nombreDocente, setNombreDocente] = useState(docenteNombre || '');
   const [bio, setBio] = useState(initialBio || '');
+
+  // Portal Familia Config State
+  const [portalConfig, setPortalConfig] = useState({
+    portal_activo: false,
+    mostrar_puntajes: true,
+    mostrar_evidencias: true,
+    mostrar_recursos: true,
+    mostrar_incidencias: false,
+    mostrar_recuperacion: true
+  });
+  const [loadingConfig, setLoadingConfig] = useState(false);
+
+  useEffect(() => {
+    if (PORTAL_FAMILIA_ENABLED && userId) {
+      const fetchConfig = async () => {
+        setLoadingConfig(true);
+        const { data, error } = await supabase
+          .from('portal_configuraciones')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (!error && data) {
+          setPortalConfig({
+            portal_activo: data.portal_activo,
+            mostrar_puntajes: data.mostrar_puntajes,
+            mostrar_evidencias: data.mostrar_evidencias,
+            mostrar_recursos: data.mostrar_recursos,
+            mostrar_incidencias: data.mostrar_incidencias,
+            mostrar_recuperacion: data.mostrar_recuperacion
+          });
+        }
+        setLoadingConfig(false);
+      };
+      fetchConfig();
+    }
+  }, [userId]);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -324,6 +363,19 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
     setSaving(true);
     try {
       await onSave(nombreDocente, bio);
+      
+      // Save Portal Config if enabled
+      if (PORTAL_FAMILIA_ENABLED && userId) {
+        const { error: confError } = await supabase
+          .from('portal_configuraciones')
+          .upsert({
+            user_id: userId,
+            ...portalConfig,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+        if (confError) throw confError;
+      }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
@@ -378,6 +430,93 @@ function InformacionGeneralTab({ docenteNombre, userEmail, bio: initialBio, onSa
           placeholder="Escribe tu trayectoria, metodologías o intereses..."
         />
       </div>
+
+      {PORTAL_FAMILIA_ENABLED && (
+        <div className="pt-6 mt-6 border-t border-(--border-soft)">
+          <div className="mb-4">
+            <h4 className="text-sm font-black uppercase tracking-widest text-(--ink)">Portal Familia / Estudiante</h4>
+            <p className="text-xs text-(--ink-soft) mt-1">Configura qué información está disponible en el portal cuando publiques resultados de tus asignaturas.</p>
+          </div>
+          
+          {loadingConfig ? (
+            <div className="flex items-center gap-2 text-xs text-(--ink-soft) animate-pulse">
+              <Loader2 size={14} className="animate-spin" /> Cargando configuración...
+            </div>
+          ) : (
+            <div className="space-y-3 bg-(--background) border border-(--border-soft) rounded-xl p-5">
+              
+              <label className="flex items-center justify-between gap-4 cursor-pointer pb-3 mb-3 border-b border-(--border-soft)">
+                <div>
+                  <div className="text-sm font-bold text-(--ink)">Portal Activo</div>
+                  <div className="text-xs text-(--ink-soft)">Habilita el acceso general al portal. Si está apagado, el portal estará inactivo sin importar el resto de ajustes.</div>
+                </div>
+                <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                  <input type="checkbox" name="portal_activo" className="peer sr-only" checked={portalConfig.portal_activo} onChange={(e) => setPortalConfig(p => ({ ...p, portal_activo: e.target.checked }))}/>
+                  <div className="w-11 h-6 bg-(--border-soft) rounded-full peer peer-checked:bg-(--primary) transition-colors cursor-pointer relative after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                </div>
+              </label>
+
+              <div className={`space-y-4 transition-opacity ${!portalConfig.portal_activo ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <div className="text-sm font-bold text-(--ink)">Mostrar resultados de puntaje</div>
+                    <div className="text-xs text-(--ink-soft)">Permite que se vean las calificaciones y promedios publicados.</div>
+                  </div>
+                  <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                    <input type="checkbox" className="peer sr-only" checked={portalConfig.mostrar_puntajes} onChange={(e) => setPortalConfig(p => ({ ...p, mostrar_puntajes: e.target.checked }))}/>
+                    <div className="w-11 h-6 bg-(--border-soft) rounded-full peer peer-checked:bg-(--herb-garden) transition-colors cursor-pointer relative after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                  </div>
+                </label>
+
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <div className="text-sm font-bold text-(--ink)">Mostrar evidencias de aprendizaje</div>
+                    <div className="text-xs text-(--ink-soft)">Muestra el desglose de las rúbricas y listas de cotejo.</div>
+                  </div>
+                  <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                    <input type="checkbox" className="peer sr-only" checked={portalConfig.mostrar_evidencias} onChange={(e) => setPortalConfig(p => ({ ...p, mostrar_evidencias: e.target.checked }))}/>
+                    <div className="w-11 h-6 bg-(--border-soft) rounded-full peer peer-checked:bg-(--herb-garden) transition-colors cursor-pointer relative after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                  </div>
+                </label>
+
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <div className="text-sm font-bold text-(--ink)">Mostrar recuperación</div>
+                    <div className="text-xs text-(--ink-soft)">Muestra el informe de recuperación académica si está disponible.</div>
+                  </div>
+                  <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                    <input type="checkbox" className="peer sr-only" checked={portalConfig.mostrar_recuperacion} onChange={(e) => setPortalConfig(p => ({ ...p, mostrar_recuperacion: e.target.checked }))}/>
+                    <div className="w-11 h-6 bg-(--border-soft) rounded-full peer peer-checked:bg-(--herb-garden) transition-colors cursor-pointer relative after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                  </div>
+                </label>
+
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <div className="text-sm font-bold text-(--ink)">Mostrar recursos compartidos</div>
+                    <div className="text-xs text-(--ink-soft)">Hace visibles los documentos, enlaces y PDFs de las actividades.</div>
+                  </div>
+                  <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                    <input type="checkbox" className="peer sr-only" checked={portalConfig.mostrar_recursos} onChange={(e) => setPortalConfig(p => ({ ...p, mostrar_recursos: e.target.checked }))}/>
+                    <div className="w-11 h-6 bg-(--border-soft) rounded-full peer peer-checked:bg-(--herb-garden) transition-colors cursor-pointer relative after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                  </div>
+                </label>
+
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <div className="text-sm font-bold text-(--ink)">Mostrar incidencias académicas</div>
+                    <div className="text-xs text-(--ink-soft)">Permite visualizar únicamente las incidencias clasificadas como "Rendimiento académico".</div>
+                  </div>
+                  <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                    <input type="checkbox" className="peer sr-only" checked={portalConfig.mostrar_incidencias} onChange={(e) => setPortalConfig(p => ({ ...p, mostrar_incidencias: e.target.checked }))}/>
+                    <div className="w-11 h-6 bg-(--border-soft) rounded-full peer peer-checked:bg-(--herb-garden) transition-colors cursor-pointer relative after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-end pt-4">
         <button

@@ -23,6 +23,7 @@ export interface ContextoInstrumento {
     indicadorLogro: string | null;
     bcAsignados: string[] | null;
     notas: string;
+    actividadesSeleccionadas?: { nombre: string; indicador: string | null; bcAsignados: string[] | null }[];
 }
 
 import { COMPETENCIAS_LABEL } from '../types';
@@ -95,10 +96,21 @@ function construirContexto(ctx: ContextoInstrumento): string {
         `- Curso: ${ctx.cursoNombre || 'No especificado'}`
     ];
     if (ctx.periodo) lineas.push(`- Período: ${ctx.periodo}`);
-    if (ctx.actividadNombre) lineas.push(`- Actividad a evaluar: "${ctx.actividadNombre}"`);
-    if (ctx.indicadorLogro) lineas.push(`- Indicador de logro de la actividad: "${ctx.indicadorLogro}"`);
-    if (ctx.bcAsignados && ctx.bcAsignados.length > 0) {
-        lineas.push(`- Competencias oficialmente asignadas a esta actividad: ${ctx.bcAsignados.join(', ')}`);
+    if (ctx.actividadesSeleccionadas && ctx.actividadesSeleccionadas.length > 0) {
+        lineas.push(`- Actividades seleccionadas como fuente:`);
+        ctx.actividadesSeleccionadas.forEach((act, idx) => {
+            lineas.push(`  * Actividad ${idx + 1}: "${act.nombre}"`);
+            if (act.indicador) lineas.push(`    - Indicador de logro: "${act.indicador}"`);
+            if (act.bcAsignados && act.bcAsignados.length > 0) {
+                lineas.push(`    - Competencias asociadas: ${act.bcAsignados.join(', ')}`);
+            }
+        });
+    } else {
+        if (ctx.actividadNombre) lineas.push(`- Actividad a evaluar: "${ctx.actividadNombre}"`);
+        if (ctx.indicadorLogro) lineas.push(`- Indicador de logro de la actividad: "${ctx.indicadorLogro}"`);
+        if (ctx.bcAsignados && ctx.bcAsignados.length > 0) {
+            lineas.push(`- Competencias oficialmente asignadas a esta actividad: ${ctx.bcAsignados.join(', ')}`);
+        }
     }
     if (ctx.notas.trim()) lineas.push(`- Indicaciones adicionales del docente: "${ctx.notas.trim()}"`);
     return lineas.join('\n');
