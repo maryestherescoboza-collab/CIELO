@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, EyeOff, Target } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import GradeCell from './GradeCell';
+import ActivityViewTab from './workspace/ActivityViewTab';
 import type { BCKey, Actividad } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
 
@@ -29,6 +30,8 @@ interface GradeTableProps {
     getGradeClass: (score: number | null) => string;
     BC_COLOR_THEMES: Record<BCKey, { bg: string, text: string, active: string }>;
     BC_ICONS: Record<BCKey, React.ReactNode>;
+    openActivityId?: number | null;
+    onOpenActivityView?: (actId: number) => void;
 }
 
 const GradeTable: React.FC<GradeTableProps> = ({
@@ -52,7 +55,9 @@ const GradeTable: React.FC<GradeTableProps> = ({
     onSetRubricTarget,
     getGradeClass,
     BC_COLOR_THEMES,
-    BC_ICONS
+    BC_ICONS,
+    openActivityId = null,
+    onOpenActivityView
 }) => {
     void onAddActividad;
     const parentRef = React.useRef<HTMLDivElement>(null);
@@ -106,6 +111,13 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                 const act = col.act;
                                 return (
                                     <div key={col.id} className="px-2 py-4 border-r border-(--border-soft) relative group flex flex-col items-center justify-center box-border" style={style}>
+                                        {onOpenActivityView && (
+                                            <ActivityViewTab
+                                                activityId={act.id}
+                                                isOpen={openActivityId === act.id}
+                                                onOpen={() => onOpenActivityView(act.id)}
+                                            />
+                                        )}
                                         <div className="flex flex-col items-center gap-3 w-full">
                                             <div className="flex items-center gap-2 w-full justify-center px-1">
                                                 <button onClick={() => onDeleteActividad(act.id)} title="Desactivar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-attention rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><EyeOff size={12} /></button>

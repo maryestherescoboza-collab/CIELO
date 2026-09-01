@@ -7,6 +7,7 @@ import GradeTable from '../components/curso-detalle/GradeTable';
 import RecuperacionCotejoModal from '../components/curso-detalle/RecuperacionCotejoModal';
 import VincularDocentesModal from '../components/curso-detalle/VincularDocentesModal';
 import AgregarActividadModal from '../components/curso-detalle/AgregarActividadModal';
+import ActivityWorkspace from '../components/curso-detalle/workspace/ActivityWorkspace';
 import type { BCKey, Curso, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, CursoDocente, Estudiante } from '../types';
 import { BC_ICONS, BC_COLOR_THEMES } from '../constants/competencias';
 import { getGradeClass } from '../utils/academic';
@@ -25,6 +26,8 @@ interface Props {
     onAddActividad?: (a: Omit<Actividad, 'id'>) => Promise<any>;
     onUpdateActividad?: (id: number, a: Partial<Actividad>) => Promise<any>;
     onDeleteActividad?: (id: number) => Promise<any>;
+    onAddSecuencia?: (s: Omit<import('../types').Secuencia, 'id'>) => Promise<import('../types').Secuencia | null>;
+    onUpdateSecuencia?: (s: import('../types').Secuencia) => Promise<void>;
     onSaveCalificaciones?: (califs: CalificacionActividad[], recs: RecuperacionBC[], cursoId: number) => Promise<any>;
     onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, contextos?: ContextoRecuperacion[]) => Promise<void>;
     onToggleDocenteCurso?: (cId: number, tUid: string, r: 'tutor'|'co-docente', a: string) => void;
@@ -93,6 +96,7 @@ export default function CursoDetalle(props: Props) {
 
     const [showVincular, setShowVincular] = useState(false);
     const [showAgregarActividad, setShowAgregarActividad] = useState(false);
+    const [visibleActivityId, setVisibleActivityId] = useState<number | null>(null);
 
     const onSave = async () => {
         setIsSaving(true);
@@ -215,7 +219,25 @@ export default function CursoDetalle(props: Props) {
                 getGradeClass={getGradeClass}
                 BC_COLOR_THEMES={BC_COLOR_THEMES}
                 BC_ICONS={BC_ICONS}
+                openActivityId={visibleActivityId}
+                onOpenActivityView={setVisibleActivityId}
             />
+
+            {visibleActivityId !== null && (() => {
+                const selectedAct = actividades.find(a => a.id === visibleActivityId);
+                if (!selectedAct) return null;
+                return (
+                    <ActivityWorkspace
+                        key={selectedAct.id}
+                        activity={selectedAct}
+                        onClose={() => setVisibleActivityId(null)}
+                        onUpdateActividad={(id, patch) => props.onUpdateActividad?.(id, patch)}
+                        onAddSecuencia={props.onAddSecuencia}
+                        onUpdateSecuencia={props.onUpdateSecuencia}
+                        onToggleBc={onToggleBc}
+                    />
+                );
+            })()}
 
             <RecuperacionCotejoModal 
                 targetEst={targetEst}

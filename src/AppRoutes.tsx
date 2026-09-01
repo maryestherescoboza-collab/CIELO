@@ -248,6 +248,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         onAddActividad={addActividad}
         onUpdateActividad={updateActividad}
         onDeleteActividad={deleteActividad}
+        onAddSecuencia={addSecuencia}
+        onUpdateSecuencia={updateSecuencia}
         onSaveCalificaciones={saveCalificaciones}
         onSaveRecuperacionCotejo={saveRecuperacionCotejo}
         onToggleDocenteCurso={(cId, tUid, r, a) => toggleDocenteCurso(cId, tUid, r, a, sendNotification, syncDelete)}
