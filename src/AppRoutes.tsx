@@ -24,6 +24,8 @@ const ProfileSettings = lazyLoad(() => import('./screens/ProfileSettings'));
 const ResetPassword = lazyLoad(() => import('./screens/ResetPassword'));
 const PrintBoletines = lazyLoad(() => import('./screens/PrintBoletines'));
 const Suscripcion = lazyLoad(() => import('./screens/Suscripcion'));
+const SuscripcionPaypalRetorno = lazyLoad(() => import('./screens/SuscripcionPaypalRetorno'));
+const SuscripcionPaypalCancelada = lazyLoad(() => import('./screens/SuscripcionPaypalCancelada'));
 import { PORTAL_FAMILIA_ENABLED } from './config/features';
 
 const PortalApp = lazyLoad(() => import('./screens/Portal/PortalApp'));
@@ -387,6 +389,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
             />
       } />
       <Route path="/suscripcion" element={<Suscripcion />} />
+      <Route path="/suscripcion/paypal/retorno" element={<SuscripcionPaypalRetorno />} />
+      <Route path="/suscripcion/paypal/cancelada" element={<SuscripcionPaypalCancelada />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       {PORTAL_FAMILIA_ENABLED && <Route path="/portal/:token/*" element={<PortalApp />} />}
       <Route path="*" element={
