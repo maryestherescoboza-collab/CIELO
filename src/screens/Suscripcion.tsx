@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { usePremiumAccess } from '../hooks/usePremiumAccess';
 import { Loader2 } from 'lucide-react';
@@ -11,6 +11,12 @@ export default function Suscripcion() {
   const navigate = useNavigate();
   const { hasPremium, suscripcionActual } = usePremiumAccess();
   const [loadingPlan, setLoadingPlan] = useState<'docente_mensual' | 'docente_anual' | null>(null);
+
+  useEffect(() => {
+    if ((suscripcionActual as any)?.provider === 'manual' && suscripcionActual?.estado === 'activa') {
+      navigate('/inicio', { replace: true });
+    }
+  }, [suscripcionActual, navigate]);
 
   const PayPalSubscriptionButton = ({ planType }: { planType: 'mensual' | 'anual' }) => {
     return (
