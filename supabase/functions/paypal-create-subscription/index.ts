@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
       throw new Error("Error interno al preparar la suscripción");
     }
 
-    return new Response(JSON.stringify({ approval_url: approveLink.href }), {
+    return new Response(JSON.stringify({ approval_url: approveLink.href, subscriptionId }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

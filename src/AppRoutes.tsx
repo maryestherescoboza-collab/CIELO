@@ -26,6 +26,7 @@ const PrintBoletines = lazyLoad(() => import('./screens/PrintBoletines'));
 const Suscripcion = lazyLoad(() => import('./screens/Suscripcion'));
 const SuscripcionPaypalRetorno = lazyLoad(() => import('./screens/SuscripcionPaypalRetorno'));
 const SuscripcionPaypalCancelada = lazyLoad(() => import('./screens/SuscripcionPaypalCancelada'));
+const SuscripcionInstitucional = lazyLoad(() => import('./screens/SuscripcionInstitucional'));
 import { PORTAL_FAMILIA_ENABLED } from './config/features';
 
 const PortalApp = lazyLoad(() => import('./screens/Portal/PortalApp'));
@@ -33,6 +34,7 @@ import LoadingMessage from './components/LoadingMessage';
 import { BookOpen } from 'lucide-react';
 import { esRolAdministrador } from './utils/autorizacion';
 import { useSupabaseData } from './hooks/useSupabaseData';
+import PremiumGuard from './components/PremiumGuard';
 
 const CourseDetailRouteWrapper: React.FC<{
   setSelectedCursoId: (id: number | null) => void;
@@ -205,7 +207,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   const handleNavigate = (s: Screen, extra?: NavExtra) => {
     if (extra?.cursoId !== undefined) setSelectedCursoId(extra.cursoId as number);
     if (extra?.estudianteId !== undefined) setSelectedEstudianteId(extra.estudianteId as number);
-    navigate(s === 'inicio' ? '/' : `/${s}`);
+    navigate(s === 'inicio' ? '/inicio' : `/${s}`);
   };
 
   const handleViewProfile = (e: React.MouseEvent, userId?: string) => {
@@ -266,8 +268,9 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       </div>
     }>
       <Routes>
-      <Route path="/" element={<Inicio onAddActividad={addActividad} docenteNombre={docenteNombre} onUpdateInstituto={updateInstitutoName} currentCourseRole={currentCourseRole} />} />
-      <Route path="/dashboard" element={<Dashboard docenteNombre={docenteNombre} />} />
+      <Route path="/inicio" element={<Inicio onAddActividad={addActividad} docenteNombre={docenteNombre} onUpdateInstituto={updateInstitutoName} currentCourseRole={currentCourseRole} />} />
+      <Route element={<PremiumGuard />}>
+        <Route path="/dashboard" element={<Dashboard docenteNombre={docenteNombre} />} />
       <Route path="/cursos" element={
         <Cursos 
           onAddCurso={addCurso} 
@@ -388,7 +391,9 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
               centroNombre={currentUserProfile?.centro?.nombre}
             />
       } />
+      </Route>
       <Route path="/suscripcion" element={<Suscripcion />} />
+      <Route path="/suscripcion/institucional" element={<SuscripcionInstitucional />} />
       <Route path="/suscripcion/paypal/retorno" element={<SuscripcionPaypalRetorno />} />
       <Route path="/suscripcion/paypal/cancelada" element={<SuscripcionPaypalCancelada />} />
       <Route path="/reset-password" element={<ResetPassword />} />
@@ -396,7 +401,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="*" element={
         <div className="p-8 text-center bg-amber-50 border border-amber-200 rounded-3xl text-amber-800">
           <p className="font-bold">La pantalla a la que intentas acceder no existe.</p> 
-          <button onClick={() => navigate('/')} className="mt-4 text-amber-600 font-bold underline">Volver al inicio</button>
+          <button onClick={() => navigate('/inicio')} className="mt-4 text-amber-600 font-bold underline">Volver al inicio</button>
         </div>
       } />
       </Routes>

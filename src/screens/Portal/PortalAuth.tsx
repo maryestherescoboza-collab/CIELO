@@ -21,7 +21,7 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
 
   useEffect(() => {
     if (!PORTAL_FAMILIA_ENABLED) {
-      navigate('/');
+      navigate('/inicio');
       return;
     }
 

@@ -36,7 +36,7 @@ const ConfirmarCorreo = () => {
                 
                 // Redirigir al dashboard tras 3 segundos
                 setTimeout(() => {
-                    navigate('/');
+                    navigate('/inicio');
                 }, 3000);
                 
             } catch (error: any) {
@@ -92,7 +92,7 @@ const ConfirmarCorreo = () => {
 
                 {status !== 'loading' && (
                     <button
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate(status === 'success' ? '/inicio' : '/login')}
                         className="w-full py-3 px-4 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-colors shadow-sm"
                     >
                         {status === 'success' ? 'Ir al inicio' : 'Volver al inicio de sesión'}

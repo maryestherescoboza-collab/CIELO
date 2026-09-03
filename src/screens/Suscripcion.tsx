@@ -1,29 +1,70 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { usePremiumAccess } from '../hooks/usePremiumAccess';
-import { Loader2, CreditCard } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { CieloPill } from '../components/ui/CieloPill';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { PayPalCardForm } from '../components/ui/PayPalCardForm';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 export default function Suscripcion() {
   const navigate = useNavigate();
-  const { hasPremium, isDirector, suscripcionActual } = usePremiumAccess();
-  const [docentes, setDocentes] = useState<number>(25);
-  const [loadingPlan, setLoadingPlan] = useState<'docente_mensual' | 'docente_anual' | 'institucion' | null>(null);
-  const [showCardForm, setShowCardForm] = useState<'mensual' | 'anual' | null>(null);
+  const { hasPremium, suscripcionActual } = usePremiumAccess();
+  const [loadingPlan, setLoadingPlan] = useState<'docente_mensual' | 'docente_anual' | null>(null);
 
-  const handleSubscribe = async (plan: 'docente_mensual' | 'docente_anual' | 'institucion') => {
+  const PayPalSubscriptionButton = ({ planType }: { planType: 'mensual' | 'anual' }) => {
+    return (
+      <PayPalScriptProvider options={{ 
+        clientId: "Af-mNy8fqCu4n5dP2W3m2LJ55jeeuUzp7Dfzq9SLtVXpBookh4wYuG7hrCtefhv2EQheWLCRLW6f6iv-", 
+        vault: true, 
+        intent: "subscription" 
+      }}>
+        <PayPalButtons 
+          style={{ layout: "vertical", color: "silver", shape: "rect", label: "subscribe" }}
+          createSubscription={async () => {
+            const { data: userData } = await supabase.auth.getUser();
+            const userId = userData.user?.id;
+            
+            if (!userId) {
+              throw new Error("Usuario no autenticado");
+            }
+
+            const { data, error } = await supabase.functions.invoke('paypal-create-subscription', {
+              body: { plan_type: planType }
+            });
+
+            if (error) {
+              console.error("Supabase edge function error:", error);
+              throw error;
+            }
+
+            if (data?.error) {
+              throw new Error(data.error);
+            }
+
+            if (!data?.subscriptionId) {
+              throw new Error('No se recibió el ID de suscripción de PayPal');
+            }
+
+            return data.subscriptionId;
+          }}
+          onApprove={async (data) => {
+            if (data.subscriptionID) {
+              navigate(`/suscripcion/paypal/retorno?subscription_id=${data.subscriptionID}`);
+            }
+          }}
+          onError={(err) => {
+            console.error("PayPal button error:", err);
+            alert("Error al procesar el pago. Por favor intenta nuevamente.");
+          }}
+        />
+      </PayPalScriptProvider>
+    );
+  };
+
+  const handleSubscribe = async (plan: 'docente_mensual' | 'docente_anual') => {
     setLoadingPlan(plan);
     try {
-      if (plan === 'institucion') {
-        // Tilopay Legacy fallback
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        alert(`Redirigiendo a pasarela de pago Tilopay para el plan ${plan.toUpperCase()}...`);
-        return;
-      }
-      
       // Nueva integración PayPal
       const planType = plan === 'docente_mensual' ? 'mensual' : 'anual';
       const { data, error } = await supabase.functions.invoke('paypal-create-subscription', {
@@ -83,21 +124,7 @@ export default function Suscripcion() {
     ]
   };
 
-  const planInst = {
-    name: 'Institución Educativa',
-    price: '5',
-    subtitle: 'El mismo CIELO, con un precio preferencial para centros educativos.',
-    secondary: 'Diseñado para instituciones que buscan unificar criterios de evaluación, optimizar el trabajo docente y disponer de una visión integral del proceso educativo.',
-    features: [
-      'Todas las funcionalidades del plan docente.',
-      'Acceso para todos los docentes de la institución.',
-      'Tarifa reducida por volumen.',
-      'Gestión centralizada de usuarios.'
-    ]
-  };
 
-  const mensual = docentes > 0 ? docentes * 5 : 0;
-  const anual = mensual * 12;
 
   return (
     <div className="min-h-screen bg-(--background) pt-5 pb-16 px-4 md:px-8">
@@ -141,7 +168,7 @@ export default function Suscripcion() {
             <div className="mt-4 flex gap-3">
               <CieloPill 
                 as="button"
-                onClick={() => handleSubscribe(suscripcionActual.tipo === 'institucional' ? 'institucion' : 'docente_mensual')}
+                onClick={() => handleSubscribe('docente_mensual')}
                 disabled={loadingPlan !== null}
                 variant={loadingPlan !== null ? 'disabled' : 'primary'}
                 className="px-4 bg-(--primary) hover:opacity-90 text-white gap-2 shadow-sm cursor-pointer"
@@ -153,7 +180,7 @@ export default function Suscripcion() {
         </div>
       ) : null}
 
-      <div className="w-full max-w-5xl mx-auto relative z-10">
+      <div className="w-full max-w-4xl mx-auto relative z-10">
         {/* Header Section */}
         <div className="text-center mb-6 max-w-2xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-light text-(--ink) tracking-tight mb-2">
@@ -166,7 +193,7 @@ export default function Suscripcion() {
 
         {/* Blueprint Grid Container */}
         <div className="border border-dashed border-(--border-soft) bg-white rounded-lg overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
-          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-dashed divide-(--border-soft)">
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-dashed divide-(--border-soft)">
 
             {/* Column 1: Plan Docente */}
             <motion.div
@@ -188,8 +215,11 @@ export default function Suscripcion() {
                   <div className="text-4xl font-light text-(--ink) tracking-tight">
                     {planDocente.price} <span className="text-lg font-normal text-(--ink-soft)">USD</span>
                   </div>
-                  <div className="text-xs text-(--ink-soft) uppercase tracking-wider mt-0.5">
+                  <div className="text-xs text-(--ink-soft) uppercase tracking-wider mt-0.5 mb-1">
                     por mes
+                  </div>
+                  <div className="text-xs font-semibold text-[#689C63] uppercase tracking-wider">
+                    ≈ RD$348 / mes
                   </div>
                 </div>
               </div>
@@ -217,35 +247,9 @@ export default function Suscripcion() {
                   <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-(--linen) border border-(--border-soft) text-(--primary) shadow-sm">
                     Plan Actual
                   </CieloPill>
-                ) : showCardForm === 'mensual' ? (
-                  <PayPalCardForm 
-                    planType="mensual" 
-                    onSuccess={(subId) => navigate(`/suscripcion/paypal/retorno?subscription_id=${subId}`)} 
-                    onError={(err) => alert('Error al procesar la tarjeta: ' + err.message)} 
-                    onCancel={() => setShowCardForm(null)}
-                  />
                 ) : (
-                  <div className="space-y-3">
-                    <CieloPill 
-                      as="button"
-                      onClick={() => handleSubscribe('docente_mensual')}
-                      disabled={loadingPlan !== null || hasPremium}
-                      variant={(loadingPlan !== null || hasPremium) ? 'disabled' : 'ghost'}
-                      className="w-full px-4 bg-[#FFC439] hover:bg-[#F4BB33] text-black border-none gap-2 flex justify-center shadow-sm h-10 cursor-pointer font-semibold"
-                    >
-                      {loadingPlan === 'docente_mensual' ? <Loader2 size={16} className="animate-spin" /> : 'Pagar con PayPal'}
-                    </CieloPill>
-
-                    <CieloPill 
-                      as="button"
-                      onClick={() => setShowCardForm('mensual')}
-                      disabled={loadingPlan !== null || hasPremium}
-                      variant={(loadingPlan !== null || hasPremium) ? 'disabled' : 'ghost'}
-                      className="w-full px-4 bg-white border border-dashed border-(--border-soft) text-(--ink) hover:bg-(--linen)/10 hover:border-(--primary) gap-2 flex justify-center shadow-sm h-10 cursor-pointer"
-                    >
-                      <CreditCard size={16} />
-                      Pagar con tarjeta
-                    </CieloPill>
+                  <div className="space-y-3 relative z-0">
+                    <PayPalSubscriptionButton planType="mensual" />
                   </div>
                 )}
               </div>
@@ -271,8 +275,12 @@ export default function Suscripcion() {
                   <div className="text-4xl font-light text-(--ink) tracking-tight">
                     {planAnual.price} <span className="text-lg font-normal text-(--ink-soft)">USD</span>
                   </div>
-                  <div className="text-xs text-(--ink-soft) uppercase tracking-wider mt-0.5">
+                  <div className="text-xs text-(--ink-soft) uppercase tracking-wider mt-0.5 mb-1">
                     por mes (facturado anualmente)
+                  </div>
+                  <div className="text-xs font-semibold text-[#689C63] uppercase tracking-wider flex flex-col gap-0.5">
+                    <span>≈ RD$261 / mes</span>
+                    <span className="opacity-80">≈ RD$3,132 / año</span>
                   </div>
                 </div>
               </div>
@@ -300,130 +308,14 @@ export default function Suscripcion() {
                   <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-(--linen) border border-(--border-soft) text-(--primary) shadow-sm">
                     Plan Actual
                   </CieloPill>
-                ) : showCardForm === 'anual' ? (
-                  <PayPalCardForm 
-                    planType="anual" 
-                    onSuccess={(subId) => navigate(`/suscripcion/paypal/retorno?subscription_id=${subId}`)} 
-                    onError={(err) => alert('Error al procesar la tarjeta: ' + err.message)} 
-                    onCancel={() => setShowCardForm(null)}
-                  />
                 ) : (
-                  <div className="space-y-3">
-                    <CieloPill 
-                      as="button"
-                      onClick={() => handleSubscribe('docente_anual')}
-                      disabled={loadingPlan !== null || hasPremium}
-                      variant={(loadingPlan !== null || hasPremium) ? 'disabled' : 'ghost'}
-                      className="w-full px-4 bg-[#FFC439] hover:bg-[#F4BB33] text-black border-none gap-2 flex justify-center shadow-sm h-10 cursor-pointer font-semibold"
-                    >
-                      {loadingPlan === 'docente_anual' ? <Loader2 size={16} className="animate-spin" /> : 'Pagar con PayPal'}
-                    </CieloPill>
-
-                    <CieloPill 
-                      as="button"
-                      onClick={() => setShowCardForm('anual')}
-                      disabled={loadingPlan !== null || hasPremium}
-                      variant={(loadingPlan !== null || hasPremium) ? 'disabled' : 'ghost'}
-                      className="w-full px-4 bg-white border border-dashed border-(--border-soft) text-(--ink) hover:bg-(--linen)/10 hover:border-(--primary) gap-2 flex justify-center shadow-sm h-10 cursor-pointer"
-                    >
-                      <CreditCard size={16} />
-                      Pagar con tarjeta
-                    </CieloPill>
+                  <div className="space-y-3 relative z-0">
+                    <PayPalSubscriptionButton planType="anual" />
                   </div>
                 )}
               </div>
             </motion.div>
 
-            {/* Column 3: Plan Institución */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 100 }}
-              className="flex flex-col justify-between h-full"
-            >
-              {/* Top part: Header & Price */}
-              <div className="p-6 md:p-8 border-b border-dashed border-(--border-soft)">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-(--primary) mb-1">
-                  {planInst.name}
-                </h3>
-                <p className="text-xs text-(--ink-soft) mb-4 leading-normal">
-                  {planInst.subtitle}
-                </p>
-                <div className="flex flex-col">
-                  <div className="text-4xl font-light text-(--ink) tracking-tight">
-                    {planInst.price} <span className="text-lg font-normal text-(--ink-soft)">USD</span>
-                  </div>
-                  <div className="text-xs text-(--ink-soft) uppercase tracking-wider mt-0.5">
-                    por docente al mes
-                  </div>
-                </div>
-              </div>
-
-              {/* Middle part: Features */}
-              <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-(--border-soft) bg-(--linen)/5">
-                {planInst.features.map(feat => (
-                  <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-(--linen) border border-(--border-soft) text-(--primary) flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
-                      ✓
-                    </span>
-                    <span className="text-xs text-(--ink) leading-tight">
-                      {feat}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bottom part: Calculator, Secondary & Button */}
-              <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-                <div className="border border-dashed border-(--border-soft) bg-(--background) rounded p-3 mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-(--ink-soft)">Número de docentes</span>
-                    <input
-                      type="number"
-                      min="1"
-                      value={docentes || ''}
-                      onChange={(e) => setDocentes(parseInt(e.target.value) || 0)}
-                      className="w-14 px-1.5 py-0.5 bg-white border border-dashed border-(--border-soft) rounded text-right text-xs font-semibold text-(--ink) focus:outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-(--border-soft)/50">
-                    <div>
-                      <span className="text-xs text-(--ink-soft) uppercase tracking-wider block">Mensual</span>
-                      <span className="text-xs font-semibold text-(--ink)">${mensual} <span className="text-xs font-normal text-(--ink-soft)">USD</span></span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs text-(--ink-soft) uppercase tracking-wider block">Anual</span>
-                      <span className="text-xs font-semibold text-(--ink)">${anual} <span className="text-xs font-normal text-(--ink-soft)">USD</span></span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-xs text-(--ink-soft) italic leading-relaxed mb-4">
-                  {planInst.secondary}
-                </p>
-
-                {hasPremium && suscripcionActual?.tipo === 'institucional' ? (
-                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-(--linen) border border-(--border-soft) text-(--primary) shadow-sm">
-                    Plan Actual
-                  </CieloPill>
-                ) : isDirector ? (
-                  <CieloPill 
-                    as="button"
-                    onClick={() => handleSubscribe('institucion')}
-                    disabled={loadingPlan !== null}
-                    variant={loadingPlan !== null ? 'disabled' : 'ghost'}
-                    className="w-full px-4 bg-white border border-dashed border-(--border-soft) text-(--ink) hover:bg-(--linen)/10 hover:border-(--primary) gap-2 flex justify-center shadow-sm h-10 cursor-pointer"
-                  >
-                    {loadingPlan === 'institucion' ? <Loader2 size={16} className="animate-spin" /> : 'Pagar Institucional'}
-                  </CieloPill>
-                ) : (
-                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-slate-50 border border-dashed border-slate-200 text-slate-400 shadow-sm">
-                    Solo para Directores
-                  </CieloPill>
-                )}
-              </div>
-            </motion.div>
           </div>
         </div>
       </div>

@@ -86,7 +86,7 @@ export default function SuscripcionPaypalRetorno() {
               Tu pago ha sido procesado correctamente y ya tienes acceso a todas las funcionalidades premium de CIELO.
             </p>
             <button 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/inicio')}
               className="px-6 py-2 bg-(--primary) text-white font-semibold rounded-lg hover:opacity-90 cursor-pointer"
             >
               Ir a mi cuenta
@@ -102,7 +102,7 @@ export default function SuscripcionPaypalRetorno() {
               PayPal puede tardar unos minutos adicionales en enviarnos la confirmación. Puedes continuar usando CIELO y revisaremos automáticamente el estado de tu suscripción en segundo plano.
             </p>
             <button 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/inicio')}
               className="px-6 py-2 bg-(--ink) text-white font-semibold rounded-lg hover:opacity-90 cursor-pointer"
             >
               Ir al inicio

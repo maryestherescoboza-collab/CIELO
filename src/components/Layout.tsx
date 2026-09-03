@@ -252,11 +252,15 @@ export default function Layout({
         return result;
     }, [state.cursos, state.calificaciones, state.cursoDetalle, state.actividades, activeProfile?.userId]);
 
+    const hideNavigation = location.pathname.startsWith('/suscripcion');
+
     return (
         <div className="app-shell">
-            <Header 
-                darkMode={darkMode}
-                setDarkMode={setDarkMode}
+            {!hideNavigation && (
+                <>
+                    <Header 
+                        darkMode={darkMode}
+                        setDarkMode={setDarkMode}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 searchResults={searchResults}
@@ -266,15 +270,17 @@ export default function Layout({
                 docenteNombre={docenteNombre}
                 avatarUrl={localAvatarUrl}
                 onOpenSettings={onOpenSettings}
-            />
+                    />
 
-            <NotificationDropdown 
-                showNotifs={showNotifs}
-                notificaciones={state.notificaciones}
+                    <NotificationDropdown 
+                        showNotifs={showNotifs}
+                        notificaciones={state.notificaciones}
 
-                onMarkNotifyRead={onMarkNotifyRead}
-                onCompleteTarea={onCompleteTarea}
-            />
+                        onMarkNotifyRead={onMarkNotifyRead}
+                        onCompleteTarea={onCompleteTarea}
+                    />
+                </>
+            )}
 
             <main className="app-main">
                 {children}
@@ -283,10 +289,12 @@ export default function Layout({
                 </footer>
             </main>
 
-            <BottomNav 
-                currentScreen={currentScreen}
-                onNavigate={onNavigate}
-            />
+            {!hideNavigation && (
+                <>
+                    <BottomNav 
+                        currentScreen={currentScreen}
+                        onNavigate={onNavigate}
+                    />
 
             <ProfileSidebar 
                 showProfile={showProfile}
@@ -311,14 +319,16 @@ export default function Layout({
                 logros={logrosPedagogicos}
             />
 
-            <ResetModal 
-                showResetModal={showResetModal}
-                setShowResetModal={setShowResetModal}
-                confirmKeyword={confirmKeyword}
-                setConfirmKeyword={setConfirmKeyword}
-                onResetSchoolYear={onResetSchoolYear}
-                setShowProfile={setShowProfile}
-            />
+                    <ResetModal 
+                        showResetModal={showResetModal}
+                        setShowResetModal={setShowResetModal}
+                        confirmKeyword={confirmKeyword}
+                        setConfirmKeyword={setConfirmKeyword}
+                        onResetSchoolYear={onResetSchoolYear}
+                        setShowProfile={setShowProfile}
+                    />
+                </>
+            )}
         </div>
     );
 }

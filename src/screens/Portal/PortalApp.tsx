@@ -14,7 +14,7 @@ export default function PortalApp() {
 
   useEffect(() => {
     if (!PORTAL_FAMILIA_ENABLED) {
-      navigate('/');
+      navigate('/inicio');
       return;
     }
 

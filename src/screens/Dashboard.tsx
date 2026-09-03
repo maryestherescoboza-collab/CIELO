@@ -401,7 +401,7 @@ export default function Dashboard({ docenteNombre }: Props) {
             <CieloPill
                 as="button"
                 variant="neutral"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/inicio')}
                 className="h-10 px-6 border-(--border-soft) shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 gap-1.5"
             >
                 ← Inicio

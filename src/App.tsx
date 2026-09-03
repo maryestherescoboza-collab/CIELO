@@ -7,6 +7,8 @@ import ResetPassword from './screens/ResetPassword';
 import AppRoutes from './AppRoutes';
 import Landing from './screens/Landing';
 import ConfirmarCorreo from './screens/ConfirmarCorreo';
+import Terminos from './screens/legal/Terminos';
+import Privacidad from './screens/legal/Privacidad';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import NotificationsOverlay from './components/NotificationsOverlay';
 import InvitationModal from './components/courses/InvitationModal';
@@ -126,7 +128,7 @@ export default function App() {
   // Redirigir a inicio si el usuario está autenticado y sigue en /login o /auth
   useEffect(() => {
     if (session && authInitialized && (pathname === '/login' || pathname === '/auth')) {
-      navigate('/', { replace: true });
+      navigate('/inicio', { replace: true });
     }
   }, [session, authInitialized, pathname, navigate]);
 
@@ -147,10 +149,19 @@ export default function App() {
     return <ConfirmarCorreo />;
   }
 
+  if (pathname === '/') {
+    return <Landing />;
+  }
+
+  if (pathname === '/terminos') {
+    return <Terminos />;
+  }
+
+  if (pathname === '/privacidad') {
+    return <Privacidad />;
+  }
+
   if (!session) {
-    if (pathname === '/') {
-      return <Landing />;
-    }
     if (pathname === '/reset-password') {
       return <ResetPassword />;
     }

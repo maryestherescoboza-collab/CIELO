@@ -415,6 +415,7 @@ export function useSupabaseData(skipInit = false) {
                     bio: p.bio as string || '',
                     avatarUrl: p.avatar_url as string || '',
                     avatarColor: p.avatar_color as string || '',
+                    createdAt: p.created_at as string,
                     asignatura: Array.isArray(p.asignaturas) ? p.asignaturas[0] : (p.asignatura as string || ''),
                     institucion: resolvedCentro?.nombre || '',
                     instituto: resolvedCentro?.nombre || '',

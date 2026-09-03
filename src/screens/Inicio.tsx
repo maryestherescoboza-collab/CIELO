@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { Actividad } from '../types';
 import { useAppStore } from '../store/appStore';
 import { 
@@ -15,6 +16,7 @@ import { NewActivityModal } from '../components/dashboard/NewActivityModal';
 import { useDashboardData } from '../hooks/useDashboardData';
 
 import { useSupabaseData } from '../hooks/useSupabaseData';
+import { usePremiumAccess } from '../hooks/usePremiumAccess';
 
 interface Props {
     onAddActividad: (a: Omit<Actividad, 'id'>) => Promise<any>;
@@ -26,6 +28,7 @@ interface Props {
 export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstituto, currentCourseRole }: Props) {
     const state = useAppStore(s => s.state);
     const session = useAppStore(s => s.session);
+    const { hasTrial, trialDaysLeft, suscripcionActual } = usePremiumAccess();
     const { loadDashboardData } = useSupabaseData(true);
     const [selectedCourseId, setSelectedCourseId] = useState<number | 'all'>('all');
     const [showModal, setShowModal] = useState(false);
@@ -36,6 +39,18 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
     const [isLoading, setIsLoading] = useState(true);
     const [isSelectOpen, setIsSelectOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [showTrialWelcome, setShowTrialWelcome] = useState(() => {
+        return location.state?.freeTrial === true;
+    });
+
+    useEffect(() => {
+        if (location.state?.freeTrial) {
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location, navigate]);
 
     useEffect(() => {
         loadDashboardData();
@@ -79,8 +94,15 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                 {/* Refined Welcome Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
-                        <h1 className="text-2xl font-black text-[#2E3330] tracking-tight mb-2 font-notion-title">
-                            Saludos, <span className="text-primary">{docenteNombre.split(' ')[0]}</span>
+                        <h1 className="text-2xl font-black text-[#2E3330] tracking-tight mb-2 font-notion-title flex items-center gap-3">
+                            <span>Saludos, <span className="text-primary">{docenteNombre.split(' ')[0]}</span></span>
+                            {hasTrial && !suscripcionActual?.estado && (
+                                <span className="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-md uppercase tracking-wider">
+                                    {trialDaysLeft > 0 
+                                        ? `Prueba gratuita · ${trialDaysLeft} días restantes` 
+                                        : 'Tu prueba gratuita termina hoy'}
+                                </span>
+                            )}
                         </h1>
                         <div className="flex items-center gap-4">
                             <div className={`flex items-center gap-2 bg-[#EAE4DA]/60 px-3 py-1.5 rounded-full border border-slate-200 transition-all ${currentCourseRole?.rol !== 'co-docente' ? 'group cursor-pointer hover:border-slate-350' : 'cursor-default'}`}>
@@ -218,6 +240,30 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                 <div className="fixed bottom-24 right-6 bg-slate-900 text-white px-6 py-4 rounded-[24px] shadow-2xl flex items-center gap-4 z-60 animate-in slide-in-from-right-8 duration-500 border border-white/10">
                     <TC_Echo size={20} className="text-emerald-400" />
                     <span className="text-xs font-black uppercase tracking-widest">Actividad Vinculada</span>
+                </div>
+            )}
+
+            {showTrialWelcome && (
+                <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[24px] p-8 max-w-sm w-full shadow-2xl relative overflow-hidden text-center animate-in zoom-in-95 duration-300">
+                        <div className="w-16 h-16 bg-[#689C63]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <span className="text-[#689C63] text-2xl font-black">15</span>
+                        </div>
+                        <h3 className="text-xl font-black text-[#2E3330] mb-2 tracking-tight">¡Bienvenido a CIELO!</h3>
+                        <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                            Tienes <strong>15 días de acceso completo</strong> a todas las funciones premium.
+                            <br /><br />
+                            <span className="text-xs bg-slate-100 px-3 py-1.5 rounded-md font-semibold text-slate-600 uppercase tracking-widest">
+                                Sin tarjeta de crédito
+                            </span>
+                        </p>
+                        <button 
+                            onClick={() => setShowTrialWelcome(false)}
+                            className="w-full py-3.5 bg-[#2E3330] hover:bg-black text-white rounded-xl font-bold text-sm tracking-wide transition-all shadow-md hover:shadow-xl active:scale-[0.98]"
+                        >
+                            Comenzar ahora
+                        </button>
+                    </div>
                 </div>
             )}
 

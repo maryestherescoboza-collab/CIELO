@@ -90,7 +90,7 @@ export default function ResetPassword() {
       await supabase.auth.signOut();
       
       setTimeout(() => {
-        navigate('/');
+        navigate('/login');
       }, 5000);
     } catch (err: any) {
       console.error("[ResetPassword.tsx] Error en handleSubmit (restablecimiento de contraseña):", err);
@@ -139,7 +139,7 @@ export default function ResetPassword() {
                 <p className="text-xs text-(--ink-soft) leading-relaxed">{tokenError}</p>
               </div>
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/login')}
                 className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs tracking-[0.2em] shadow-xl shadow-emerald-900/10 transition-all active:scale-[0.98] uppercase flex items-center justify-center gap-2"
               >
                 <ArrowLeft size={12} />
@@ -158,7 +158,7 @@ export default function ResetPassword() {
                 </p>
               </div>
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/login')}
                 className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs tracking-[0.2em] shadow-xl shadow-emerald-900/10 transition-all active:scale-[0.98] uppercase"
               >
                 Ir a Iniciar Sesión ahora
@@ -258,7 +258,7 @@ export default function ResetPassword() {
 
               <button
                 type="button"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/login')}
                 className="w-full text-center text-xs font-black text-(--ink-soft) opacity-40 hover:opacity-100 hover:text-emerald-600 transition-all uppercase tracking-widest pt-2"
               >
                 Cancelar y regresar

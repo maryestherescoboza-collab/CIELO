@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Mail, Lock, Loader2, User, ArrowRight, Building2, ChevronLeft, Check, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
+import { ConsentimientoLegal } from '../components/legal/ConsentimientoLegal';
 
 interface AuthProps {
   onAuthSuccess: () => void;
@@ -32,12 +34,14 @@ interface CentroExistenteInfo {
 }
 
 const Auth = ({ onAuthSuccess }: AuthProps) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nombre, setNombre] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [consentimientoAceptado, setConsentimientoAceptado] = useState(false);
 
   // Registro (flujo único)
   const [regStep, setRegStep] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9>(1);
@@ -308,6 +312,12 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setNeedsEmailConfirmation(false);
 
     try {
+      if (!consentimientoAceptado) {
+        setError('Debes aceptar los Términos y Condiciones y el Aviso de Privacidad antes de continuar.');
+        setLoading(false);
+        return;
+      }
+
       if (modo === 'director' || modo === 'referencia') {
         if (!centroForm.telefono.trim()) {
           setError('El teléfono del centro educativo es obligatorio.');
@@ -352,6 +362,13 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       }, { onConflict: 'user_id' });
       if (profileError) console.error('Error profile:', profileError);
 
+      const { error: consentError } = await supabase.from('consentimientos').insert({
+        user_id: authData.user.id,
+        terminos_version: '1.0',
+        privacidad_version: '1.0'
+      });
+      if (consentError) console.error('Error consent:', consentError);
+
       if (modo === 'director') {
         if (authData.session) {
           // El correo ya está confirmado: crear el centro de inmediato
@@ -360,6 +377,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           setIsSignUp(false);
           resetRegistro();
           onAuthSuccess();
+          navigate('/suscripcion/institucional');
           return;
         }
         // Requiere confirmación de correo: guardar los datos pendientes.
@@ -387,6 +405,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           setIsSignUp(false);
           resetRegistro();
           onAuthSuccess();
+          navigate('/suscripcion/institucional');
           return;
         }
         // Requiere confirmación de correo: guardar la vinculación pendiente.
@@ -408,6 +427,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           setIsSignUp(false);
           resetRegistro();
           onAuthSuccess();
+          navigate('/inicio', { state: { freeTrial: true } });
           return;
         }
         localStorage.setItem(PENDING_VINCULO_KEY, JSON.stringify({
@@ -724,7 +744,12 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => { setIsSignUp(false); resetRegistro(); onAuthSuccess(); }}
+                        onClick={() => { 
+                          setIsSignUp(false); 
+                          resetRegistro(); 
+                          onAuthSuccess(); 
+                          navigate('/suscripcion/institucional');
+                        }}
                         className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] uppercase"
                       >
                         Ir a mi panel
@@ -900,6 +925,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         </div>
                       </div>
 
+                      <ConsentimientoLegal variant="compact" checked={consentimientoAceptado} onChange={setConsentimientoAceptado} />
+
                       <button
                         disabled={loading || centroForm.nombre.trim().length < 3 || centroForm.telefono.trim().length < 8}
                         className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase"
@@ -1031,6 +1058,9 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                           <p className="text-xs font-bold text-[#3E3838]/50">
                             Confirma que este es tu centro. Tu cuenta quedará como administrador y no se creará un centro nuevo.
                           </p>
+
+                          <ConsentimientoLegal variant="compact" checked={consentimientoAceptado} onChange={setConsentimientoAceptado} />
+
                           <button
                             type="button"
                             onClick={() => handleRegistro('centro_existente')}
@@ -1162,6 +1192,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         </div>
                       )}
 
+                      <ConsentimientoLegal variant="compact" checked={consentimientoAceptado} onChange={setConsentimientoAceptado} />
+
                       <button
                         type="button"
                         onClick={() => handleRegistro('codigo')}
@@ -1193,6 +1225,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         <Building2 className="w-4 h-4 text-[#689C63] shrink-0" />
                         <span className="text-xs font-bold text-[#3E3838]">{centroSelNombre}</span>
                       </div>
+
+                      <ConsentimientoLegal variant="compact" checked={consentimientoAceptado} onChange={setConsentimientoAceptado} />
 
                       <button
                         type="button"
@@ -1250,6 +1284,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                           placeholder="Ej. 809-555-5555"
                         />
                       </div>
+
+                      <ConsentimientoLegal variant="compact" checked={consentimientoAceptado} onChange={setConsentimientoAceptado} />
 
                       <button
                         type="button"

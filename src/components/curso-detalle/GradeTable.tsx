@@ -62,6 +62,19 @@ const GradeTable: React.FC<GradeTableProps> = ({
     void onAddActividad;
     const parentRef = React.useRef<HTMLDivElement>(null);
 
+    // [VISUAL] Número de actividades que evalúan cada competencia. Se usa solo
+    // para mostrar el aporte relativo (100 / n) de cada actividad por competencia.
+    const bcActivityCounts: Record<BCKey, number> = React.useMemo(() => {
+        const counts: Record<BCKey, number> = { BC1: 0, BC2: 0, BC3: 0, BC4: 0 };
+        actividades.forEach(act => {
+            const selected = bcSel[act.id] ?? new Set(act.bcAsignados);
+            (['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).forEach(bc => {
+                if (selected.has(bc)) counts[bc] += 1;
+            });
+        });
+        return counts;
+    }, [actividades, bcSel]);
+
     const rowVirtualizer = useVirtualizer({
         count: estudiantes.length,
         getScrollElement: () => parentRef.current,
@@ -158,6 +171,19 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                         </button>
                                                     );
                                                  })}
+                                            </div>
+                                            <div className="flex justify-center gap-1">
+                                                {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
+                                                    const participa = ((bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc)) && (bcActivityCounts[bc] > 0);
+                                                    const aporte = participa ? 100 / bcActivityCounts[bc] : 0;
+                                                    const txt = aporte % 1 === 0 ? String(aporte) : aporte.toFixed(2);
+                                                    return (
+                                                        <span key={bc} className="w-7 flex items-baseline justify-center gap-0.5 leading-none">
+                                                            <span className={`text-[11px] font-black ${participa ? 'text-[#2E3330]' : 'text-[#5F665E]/35'}`}>{txt}</span>
+                                                            <span className="text-[7px] font-semibold text-[#5F665E]/45">pts</span>
+                                                        </span>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </div>

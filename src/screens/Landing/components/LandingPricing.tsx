@@ -88,8 +88,11 @@ export function LandingPricing() {
                   <div className="text-4xl font-light text-zinc-900 tracking-tight">
                     {planDocente.price} <span className="text-lg font-normal text-zinc-400">USD</span>
                   </div>
-                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5">
+                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5 mb-1">
                     por mes
+                  </div>
+                  <div className="text-xs font-semibold text-[#689C63] uppercase tracking-wider">
+                    ≈ RD$348 / mes
                   </div>
                 </div>
               </div>
@@ -139,8 +142,11 @@ export function LandingPricing() {
                   <div className="text-4xl font-light text-zinc-900 tracking-tight">
                     {planInst.price} <span className="text-lg font-normal text-zinc-400">USD</span>
                   </div>
-                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5">
+                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5 mb-1">
                     por docente al mes
+                  </div>
+                  <div className="text-xs font-semibold text-[#689C63] uppercase tracking-wider">
+                    ≈ RD$290 / docente / mes
                   </div>
                 </div>
               </div>
@@ -179,10 +185,12 @@ export function LandingPricing() {
                     <div>
                       <span className="text-xs text-zinc-400 uppercase tracking-wider block">Mensual</span>
                       <span className="text-xs font-semibold text-zinc-700">${mensual} <span className="text-xs font-normal text-zinc-400">USD</span></span>
+                      <span className="text-[10px] font-semibold text-[#689C63] uppercase tracking-wider block mt-0.5">≈ RD${(mensual * 58).toLocaleString()}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-xs text-zinc-400 uppercase tracking-wider block">Anual</span>
                       <span className="text-xs font-semibold text-zinc-700">${anual} <span className="text-xs font-normal text-zinc-400">USD</span></span>
+                      <span className="text-[10px] font-semibold text-[#689C63] uppercase tracking-wider block mt-0.5">≈ RD${(anual * 58).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>

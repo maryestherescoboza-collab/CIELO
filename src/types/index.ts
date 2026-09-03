@@ -294,6 +294,7 @@ export interface UserProfile {
     nombreDocente: string;
     bio: string;
     avatarUrl: string;
+    createdAt?: string;
     asignatura: string;
     asignaturas?: string[];
     lastSeen?: string;
