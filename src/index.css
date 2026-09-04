@@ -176,6 +176,7 @@
   --animate-scale-up: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Custom Z-Index tokens for architecture compliance */
+  --z-index-100: 100;
   --z-index-120: 120;
   --z-index-130: 130;
   --z-index-9999: 9999;

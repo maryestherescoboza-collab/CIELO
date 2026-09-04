@@ -19,8 +19,8 @@ interface CursoDetalleHeaderProps {
     // removed props
     showRecoveryOnly: boolean;
     setShowRecoveryOnly: (val: boolean) => void;
-    isPointMode: boolean;
-    setIsPointMode: (val: boolean) => void;
+    evalMode: 'pincel' | 'numerico' | 'libre';
+    setEvalMode: (val: 'pincel' | 'numerico' | 'libre') => void;
     activePaintColor: number;
     setActivePaintColor: (val: number) => void;
     onShowVincular: () => void;
@@ -39,8 +39,8 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     onSave,
     showRecoveryOnly,
     setShowRecoveryOnly,
-    isPointMode,
-    setIsPointMode,
+    evalMode,
+    setEvalMode,
     activePaintColor,
     setActivePaintColor,
     onShowVincular,
@@ -124,8 +124,8 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             {showRecoveryOnly ? 'VER TODOS' : 'VER RIESGO'}
                         </button>
                         <button
-                            onClick={() => setIsPointMode(!isPointMode)}
-                            className={`flex items-center gap-1 px-1.5 py-0.5 min-h-5 leading-none rounded-full text-xs font-bold uppercase tracking-[0.08em] transition-all border ${isPointMode ? 'bg-[#E8F0F8] text-[#1A1D1B] border-[#537BAC]/30' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
+                            onClick={() => setEvalMode(evalMode === 'pincel' ? 'numerico' : 'pincel')}
+                            className={`flex items-center gap-1 px-1.5 py-0.5 min-h-5 leading-none rounded-full text-xs font-bold uppercase tracking-[0.08em] transition-all border ${evalMode === 'pincel' ? 'bg-[#E8F0F8] text-[#1A1D1B] border-[#537BAC]/30' : 'bg-white text-[#5F665E] border-[rgba(46,51,48,0.08)] hover:bg-[#F8F3ED] hover:text-[#2E3330]'}`}
                         >
                             MODO PINCEL
                         </button>

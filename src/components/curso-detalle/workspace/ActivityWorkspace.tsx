@@ -4,9 +4,11 @@ import type { WorkWindowPosition } from './FloatingWorkWindow';
 import WorkspaceDatos from './WorkspaceDatos';
 import WorkspaceCompetencias from './WorkspaceCompetencias';
 import WorkspaceRecursos from './WorkspaceRecursos';
+import WorkspaceProductoFinal from './WorkspaceProductoFinal';
 import type { Actividad, BCKey, Secuencia } from '../../../types';
+import { PRODUCTO_FINAL_NAME } from '../../../constants/productoFinal';
 
-export type ActivityWindowId = 'datos' | 'competencias' | 'recursos';
+export type ActivityWindowId = 'datos' | 'competencias' | 'recursos' | 'producto-final';
 
 export interface ActivityWorkspaceProps {
     activity: Actividad;
@@ -21,6 +23,7 @@ const WINDOW_WIDTHS: Record<ActivityWindowId, number> = {
     datos: 320,
     competencias: 344,
     recursos: 304,
+    'producto-final': 420,
 };
 
 // Capa "escritorio" de la actividad seleccionada. No es un modal: no oscurece ni
@@ -36,6 +39,8 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
     onUpdateSecuencia,
     onToggleBc,
 }) => {
+    const isProductoFinal = activity.nombre === PRODUCTO_FINAL_NAME;
+
     const initialPositions = useMemo<Record<ActivityWindowId, WorkWindowPosition>>(() => {
         const vw = window.innerWidth;
         const vh = window.innerHeight;
@@ -44,6 +49,7 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
             datos: { x: clamp(Math.max(6, (vw - 344) / 2 - 26), WINDOW_WIDTHS.datos), y: Math.max(6, Math.min(72, vh - 130)) },
             competencias: { x: clamp(Math.max(6, (vw - 344) / 2 + 6), WINDOW_WIDTHS.competencias), y: Math.max(6, Math.min(150, vh - 170)) },
             recursos: { x: clamp(Math.max(6, (vw - 304) / 2 + 38), WINDOW_WIDTHS.recursos), y: Math.max(6, Math.min(228, vh - 210)) },
+            'producto-final': { x: clamp(Math.max(6, (vw - 420) / 2), WINDOW_WIDTHS['producto-final']), y: Math.max(6, Math.min(280, vh - 260)) },
         };
     }, []);
 
@@ -53,11 +59,13 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
         datos: true,
         competencias: true,
         recursos: true,
+        'producto-final': isProductoFinal,
     });
     const [zMap, setZMap] = useState<Record<ActivityWindowId, number>>({
         datos: 30,
         competencias: 22,
         recursos: 14,
+        'producto-final': isProductoFinal ? 26 : 0,
     });
 
     const bringToFront = useCallback((id: ActivityWindowId) => {
@@ -108,10 +116,13 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
     // (Curso Detalle queda exactamente como antes). Cerrar nunca borra ni cambia
     // la actividad: solo retira la interfaz flotante.
     useEffect(() => {
-        if (!openWins.datos && !openWins.competencias && !openWins.recursos) {
+        const relevantWins = isProductoFinal
+            ? [openWins.datos, openWins.competencias, openWins.recursos, openWins['producto-final']]
+            : [openWins.datos, openWins.competencias, openWins.recursos];
+        if (relevantWins.every(w => !w)) {
             onClose();
         }
-    }, [openWins, onClose]);
+    }, [openWins, onClose, isProductoFinal]);
 
     return (
         <div className="ws-layer fixed inset-0 z-[55] pointer-events-none" data-guide="actividad-workspace">
@@ -164,6 +175,19 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
                     onUpdateActividad={onUpdateActividad}
                     onAddSecuencia={onAddSecuencia}
                     onUpdateSecuencia={onUpdateSecuencia}
+                />
+            )}
+
+            {isProductoFinal && openWins['producto-final'] && (
+                <WorkspaceProductoFinal
+                    activity={activity}
+                    position={positions['producto-final']}
+                    zIndex={zMap['producto-final']}
+                    onStartDrag={startDrag}
+                    onWindowFocus={(id) => bringToFront(id as ActivityWindowId)}
+                    onClose={() => closeWindow('producto-final')}
+                    onUpdateActividad={onUpdateActividad}
+                    bcSel={undefined}
                 />
             )}
         </div>

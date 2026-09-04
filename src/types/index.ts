@@ -1,6 +1,6 @@
 export type Screen =
     | 'inicio' | 'dashboard' | 'cursos' | 'curso-detalle'
-    | 'incidencias' | 'planificacion' | 'comunidad'
+    | 'incidencias' | 'planificacion' | 'plan-de-clases' | 'comunidad'
     | 'rubrica' | 'cotejo' | 'estudiante' | 'calificaciones-anuales' | 'ajustes';
 
 export type NavExtra = {
@@ -63,6 +63,7 @@ export interface Actividad {
     bcAsignados: Competencia[];
     secuenciaId?: number;
     isRec?: boolean;
+    isProductoFinal?: boolean;
     userId?: string;
     asignatura?: string;
     sharedCourseId?: string;

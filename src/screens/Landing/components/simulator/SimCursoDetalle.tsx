@@ -29,8 +29,8 @@ export default function CursoDetalle() {
         setSelectedPeriodo,
         buscar,
         setBuscar,
-        isPointMode,
-        setIsPointMode,
+        evalMode,
+        setEvalMode,
         showRecoveryOnly,
         setShowRecoveryOnly,
         activePaintColor,
@@ -124,7 +124,7 @@ export default function CursoDetalle() {
     if (!curso) return null;
 
     return (
-        <div className="relative w-full h-full flex flex-col bg-slate-50 overflow-hidden" onMouseDown={() => isPointMode && setIsDragging(true)}>
+        <div className="relative w-full h-full flex flex-col bg-slate-50 overflow-hidden" onMouseDown={() => evalMode === 'pincel' && setIsDragging(true)}>
             <CursoDetalleHeader 
                 curso={curso}
                 buscar={buscar}
@@ -134,8 +134,8 @@ export default function CursoDetalle() {
                 onSave={onSave}
                 showRecoveryOnly={showRecoveryOnly}
                 setShowRecoveryOnly={setShowRecoveryOnly}
-                isPointMode={isPointMode}
-                setIsPointMode={setIsPointMode}
+                evalMode={evalMode}
+                setEvalMode={setEvalMode}
                 activePaintColor={activePaintColor}
                 setActivePaintColor={setActivePaintColor}
                 onShowVincular={() => setShowVincular(true)}
@@ -150,7 +150,7 @@ export default function CursoDetalle() {
                 estudiantes={enhancedEstudiantes}
                 bcSel={bcSel}
                 isDragging={isDragging}
-                isPointMode={isPointMode}
+                evalMode={evalMode}
                 activePaintColor={activePaintColor}
                 focusedCell={focusedCell}
                 gradeAnimations={gradeAnimations}

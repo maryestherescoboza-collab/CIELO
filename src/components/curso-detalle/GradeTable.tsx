@@ -5,6 +5,7 @@ import GradeCell from './GradeCell';
 import ActivityViewTab from './workspace/ActivityViewTab';
 import type { BCKey, Actividad } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
+import { PRODUCTO_FINAL_NAME } from '../../constants/productoFinal';
 
 
 
@@ -13,7 +14,7 @@ interface GradeTableProps {
     estudiantes: any[];
     bcSel: Record<number, Set<BCKey>>;
     isDragging: boolean;
-    isPointMode: boolean;
+    evalMode: string;
     activePaintColor: number;
     focusedCell: { estId: number, actId: number } | null;
     gradeAnimations: any[];
@@ -39,7 +40,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     estudiantes,
     bcSel,
     isDragging,
-    isPointMode,
+    evalMode,
     activePaintColor,
     focusedCell,
     gradeAnimations,
@@ -122,6 +123,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             }
                             if (col.type === 'actividad') {
                                 const act = col.act;
+                                const isProductoFinal = act.nombre === PRODUCTO_FINAL_NAME;
                                 return (
                                     <div key={col.id} className="px-2 py-4 border-r border-(--border-soft) relative group flex flex-col items-center justify-center box-border" style={style}>
                                         {onOpenActivityView && (
@@ -133,7 +135,9 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                         )}
                                         <div className="flex flex-col items-center gap-3 w-full">
                                             <div className="flex items-center gap-2 w-full justify-center px-1">
-                                                <button onClick={() => onDeleteActividad(act.id)} title="Desactivar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-attention rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><EyeOff size={12} /></button>
+                                                {!isProductoFinal && (
+                                                    <button onClick={() => onDeleteActividad(act.id)} title="Desactivar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-attention rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><EyeOff size={12} /></button>
+                                                )}
                                                 <input 
                                                     data-guide="celda-actividad"
                                                     defaultValue={act.nombre.replace(/^Actividad\s+/i, 'ACTIV. ')}
@@ -304,7 +308,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                     actId={act.id}
                                                     score={est.calificaciones?.[act.id] ?? null}
                                                     isRecoveryAct={act.nombre === 'Recuperación'}
-                                                    isPointMode={isPointMode}
+                                                    evalMode={evalMode}
                                                     isDragging={isDragging}
                                                     isFocused={focusedCell?.estId === est.id && focusedCell?.actId === act.id}
                                                     activePaintColor={activePaintColor}

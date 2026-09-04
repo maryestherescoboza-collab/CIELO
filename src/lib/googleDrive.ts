@@ -5,6 +5,7 @@ const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const CIELO_FOLDER = 'CIELO';
 const REGISTRO_FOLDER = 'Registro anecdótico';
 const CAPTURAS_FOLDER = 'Capturas de plantillas';
+const NOTAS_FOLDER = 'Notas de clase';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
@@ -87,6 +88,11 @@ export async function getCIELOFolderId(token: string): Promise<string> {
 export async function getCapturasFolderId(token: string): Promise<string> {
     const rootId = await getRootFolderId(token);
     return ensureChildFolder(token, rootId, CAPTURAS_FOLDER);
+}
+
+export async function getNotasFolderId(token: string): Promise<string> {
+    const rootId = await getRootFolderId(token);
+    return ensureChildFolder(token, rootId, NOTAS_FOLDER);
 }
 
 export function requestGoogleAccessToken(): Promise<string> {

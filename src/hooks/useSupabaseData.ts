@@ -517,22 +517,22 @@ export function useSupabaseData(skipInit = false) {
                     docentes: mappedDocentes,
                     cursos: cachedCursos
                         ? cachedCursos.cursos
-                        : (cursos || []).map((c: Record<string, unknown>): Curso | null => {
-                            const myLink = (cursoDocentes || []).find((cd: any) => cd.curso_id === c.id && String(cd.docente_id) === session.user.id);
+                        : (cursos || []).flatMap((c: Record<string, unknown>): Curso[] => {
+                            const myLinks = (cursoDocentes || []).filter((cd: any) => cd.curso_id === c.id && String(cd.docente_id) === session.user.id);
                             const isCreator = String(c.user_id) === session.user.id;
                             const isCentroAdmin = !!resolvedCentroRolActual &&
                                 resolvedCentroRolActual.rol === 'administrador' &&
                                 !!c.centro_id && c.centro_id === resolvedCentroRolActual.centro_id;
-                            if (isCreator && !isCentroAdmin && userCentroId && c.centro_id && c.centro_id !== userCentroId) return null;
-                            if (!myLink && !isCreator && !isCentroAdmin) return null;
-                            return {
+
+                            if (isCreator && !isCentroAdmin && userCentroId && c.centro_id && c.centro_id !== userCentroId) return [];
+                            if (myLinks.length === 0 && !isCreator && !isCentroAdmin) return [];
+
+                            const baseCurso = {
                                 id: c.id as number,
                                 nombre: c.nombre as string,
-                                asignatura: myLink ? (myLink.asignatura as string) : (c.asignatura as string),
                                 grado: c.grado as string,
                                 seccion: c.seccion as string,
                                 periodo: c.periodo as string,
-                                diasSemana: myLink ? (myLink.dias_semana as string[] || []) : [],
                                 color: c.color as string,
                                 isTutorOficial: c.is_tutor_oficial as boolean,
                                 userId: c.user_id as string,
@@ -542,7 +542,21 @@ export function useSupabaseData(skipInit = false) {
                                 configuracionEvaluacion: c.configuracion_evaluacion as Record<string, unknown> || {},
                                 createdAt: c.created_at as string
                             };
-                        }).filter((x: any): x is Curso => x !== null),
+
+                            if (myLinks.length > 0) {
+                                return myLinks.map((myLink: any) => ({
+                                    ...baseCurso,
+                                    asignatura: myLink.asignatura as string,
+                                    diasSemana: myLink.dias_semana as string[] || []
+                                }));
+                            } else {
+                                return [{
+                                    ...baseCurso,
+                                    asignatura: c.asignatura as string,
+                                    diasSemana: []
+                                }];
+                            }
+                        }),
                     cursoDocentes: cachedCursos
                         ? cachedCursos.cursoDocentes
                         : (cursoDocentes || []).map((cd: Record<string, unknown>): CursoDocente => ({

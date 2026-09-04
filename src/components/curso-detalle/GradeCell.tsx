@@ -6,7 +6,7 @@ interface GradeCellProps {
     actId: number;
     score: number | null;
     isRecoveryAct: boolean;
-    isPointMode: boolean;
+    evalMode: string;
     isDragging: boolean;
     isFocused: boolean;
     activePaintColor: number;
@@ -21,7 +21,7 @@ interface GradeCellProps {
 const GradeCell: React.FC<GradeCellProps> = ({
     score,
     isRecoveryAct,
-    isPointMode,
+    evalMode,
     isDragging,
     isFocused,
     activePaintColor,
@@ -39,12 +39,14 @@ const GradeCell: React.FC<GradeCellProps> = ({
             style={style}
             onMouseEnter={() => {
                 onInteraction('hover');
-                if (isDragging && !isRecoveryAct) onSetGrade(activePaintColor);
+                if (isDragging && !isRecoveryAct && (evalMode === 'pincel' || evalMode === 'numerico')) onSetGrade(activePaintColor);
             }}
             onMouseDown={() => {
                 if (isRecoveryAct) return;
                 onInteraction('click');
-                onSetGrade(score === activePaintColor ? null : activePaintColor);
+                if (evalMode === 'pincel' || evalMode === 'numerico') {
+                    onSetGrade(score === activePaintColor ? null : activePaintColor);
+                }
             }}
         >
             <div className="flex items-center justify-center min-h-12 h-full relative overflow-visible">
@@ -98,8 +100,32 @@ const GradeCell: React.FC<GradeCellProps> = ({
                             <div className="w-3 h-3 rounded-full border-2 bg-[rgba(46,51,48,0.08)] border-transparent" />
                         </div>
                     )
-                ) : isPointMode ? (
+                ) : evalMode === 'pincel' ? (
                     <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === null ? 'w-2 h-2 bg-[rgba(46,51,48,0.08)]' : score === 100 ? 'w-6 h-6 bg-primary' : score === 85 ? 'w-6 h-6 bg-attention' : score === 70 ? 'w-6 h-6 bg-danger' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : score >= 100 ? 'w-6 h-6 bg-primary' : score >= 85 ? 'w-6 h-6 bg-attention' : score >= 70 ? 'w-6 h-6 bg-danger' : 'w-5 h-5 bg-[#2E3330]'}`} />
+                ) : evalMode === 'libre' ? (
+                    <input
+                        type="text"
+                        inputMode="decimal"
+                        defaultValue={score ?? ''}
+                        onBlur={(e) => {
+                            const raw = e.target.value.trim();
+                            if (raw === '') {
+                                onSetGrade(null);
+                                return;
+                            }
+                            const num = Number(raw);
+                            if (!isNaN(num)) {
+                                onSetGrade(Math.min(100, Math.max(0, num)));
+                            } else {
+                                e.target.value = score !== null ? String(score) : '';
+                            }
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                        }}
+                        className={`w-full h-full text-center text-base font-semibold bg-transparent border-none outline-none rounded transition-all focus:ring-2 focus:ring-primary/30 ${getGradeClass(score)}`}
+                        placeholder="-"
+                    />
                 ) : (
                     <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)}`}>
                         {score ?? '-'}

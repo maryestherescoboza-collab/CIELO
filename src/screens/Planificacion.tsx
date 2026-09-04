@@ -384,21 +384,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
     return (
         <div className="flex flex-col lg:flex-row flex-1 h-full overflow-hidden bg-(--background)">
             <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 scroll-smooth scrollbar-hide">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div>
-                        <h1 className="text-2xl font-black text-(--ink) tracking-tight mb-2 font-notion-title">
-                            Secuencias Didácticas
-                        </h1>
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 bg-(--linen) px-3 py-1 rounded-full border border-(--border-soft)">
-                                <span className="text-xs font-bold text-(--ink) uppercase tracking-wider">
-                                    Pedagogía y Secuencias
-                                </span>
-                            </div>
-                            <div className="h-1.5 w-1.5 rounded-full bg-(--border-soft)"></div>
-                            <span className="text-xs font-bold text-(--ink-soft) uppercase tracking-wider">Material Docente</span>
-                        </div>
-                    </div>
+                <div className="flex flex-col md:flex-row md:items-center justify-end gap-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
                     <div className="flex flex-col items-stretch sm:items-center gap-3 sm:flex-row">
                         <div className="relative group">
@@ -426,7 +412,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                             className="px-6 gap-2.5 shrink-0 h-9"
                         >
                             <Plus size={16} strokeWidth={3} className="transition-transform duration-700 hover:rotate-180" />
-                            <span>Nueva secuencia</span>
+                            <span>Nueva plantilla</span>
                         </CieloPill>
                     </div>
                 </div>

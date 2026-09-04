@@ -18,11 +18,11 @@ onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, cont
     const curso = state.cursos.find(c => c.id === cursoId);
     const { selectedPeriodo, setSelectedPeriodo } = useAppStore();
     const [buscar, setBuscar] = useState('');
-    const [isPointMode, setIsPointMode] = useState(true);
+    const [evalMode, setEvalMode] = useState<'pincel' | 'numerico' | 'libre'>('pincel');
 
     // Al entrar al componente o cambiar de curso, el modo pincel debe estar activado por defecto e inicializar período
     useEffect(() => {
-        setIsPointMode(true);
+        setEvalMode('pincel');
         if (curso?.periodo) {
             setSelectedPeriodo(curso.periodo);
         }
@@ -305,8 +305,8 @@ onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, cont
         setSelectedPeriodo,
         buscar,
         setBuscar,
-        isPointMode,
-        setIsPointMode,
+        evalMode,
+        setEvalMode,
         showRecoveryOnly,
         setShowRecoveryOnly,
         activePaintColor,

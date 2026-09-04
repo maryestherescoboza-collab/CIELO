@@ -11,7 +11,7 @@ interface GradeTableProps {
     estudiantes: any[];
     bcSel: Record<number, Set<BCKey>>;
     isDragging: boolean;
-    isPointMode: boolean;
+    evalMode: 'pincel' | 'numerico' | 'libre';
     activePaintColor: number;
     focusedCell: { estId: number, actId: number } | null;
     gradeAnimations: any[];
@@ -35,7 +35,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     estudiantes,
     bcSel,
     isDragging,
-    isPointMode,
+    evalMode,
     activePaintColor,
     focusedCell,
     gradeAnimations,
@@ -220,7 +220,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                     actId={act.id}
                                                     score={est.calificaciones?.[act.id] ?? null}
                                                     isRecoveryAct={act.nombre === 'Recuperación'}
-                                                    isPointMode={isPointMode}
+                                                    isPointMode={evalMode === 'pincel'}
                                                     isDragging={isDragging}
                                                     isFocused={focusedCell?.estId === est.id && focusedCell?.actId === act.id}
                                                     activePaintColor={activePaintColor}

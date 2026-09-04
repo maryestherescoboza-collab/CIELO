@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, BookOpen, TrendingUp, AlertTriangle, Calendar, Users, ClipboardList, SquareCheck, User, X, HelpCircle } from 'lucide-react';
+import { Home, BookOpen, TrendingUp, AlertTriangle, NotebookPen, Users, ClipboardList, SquareCheck, User, X, HelpCircle } from 'lucide-react';
 import type { Screen } from '../../types';
 
 const SUPPORT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfhlDqJnUXMrxOtz8mkE5NWmMz6E33JgwCyd13dLao2_nDtyA/viewform?usp=preview';
@@ -14,7 +14,7 @@ const NAV_ITEMS: { label: string; screen: Screen; icon: React.ReactNode; isClose
     { label: 'Dashboard', screen: 'dashboard', icon: <TrendingUp size={18} /> },
     { label: 'Cursos', screen: 'cursos', icon: <BookOpen size={18} /> },
     { label: 'Incidencias', screen: 'incidencias', icon: <AlertTriangle size={18} /> },
-    { label: 'Planificación', screen: 'planificacion', icon: <Calendar size={18} /> },
+    { label: 'Plan clases', screen: 'plan-de-clases', icon: <NotebookPen size={18} /> },
     { label: 'Comunidad', screen: 'comunidad', icon: <Users size={18} /> },
     { label: 'Rúbrica', screen: 'rubrica', icon: <ClipboardList size={18} /> },
     { label: 'Cotejo', screen: 'cotejo', icon: <SquareCheck size={18} /> },

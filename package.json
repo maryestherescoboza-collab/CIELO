@@ -13,6 +13,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@editorjs/checklist": "^1.6.0",
+    "@editorjs/delimiter": "^1.4.2",
+    "@editorjs/editorjs": "^2.31.6",
+    "@editorjs/embed": "^2.8.0",
+    "@editorjs/header": "^2.8.9",
+    "@editorjs/image": "^2.10.3",
+    "@editorjs/link": "^2.6.2",
+    "@editorjs/nested-list": "^1.4.3",
+    "@editorjs/paragraph": "^2.11.7",
+    "@editorjs/quote": "^2.7.6",
+    "@editorjs/table": "^2.4.6",
     "@paypal/react-paypal-js": "^10.4.0",
     "@supabase/mcp-server-supabase": "^0.8.1",
     "@supabase/ssr": "^0.10.2",

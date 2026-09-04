@@ -411,3 +411,151 @@
 }
 .ws-btn-ghost:hover { background: rgba(38, 38, 38, 0.06); }
 .ws-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Tabla Producto Final ─────────────────────────────────────────────── */
+.ws-pf-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.ws-pf-header {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 6px 0;
+  border-bottom: 2px solid var(--ws-ink);
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ws-muted);
+}
+.ws-pf-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(38, 38, 38, 0.12);
+  position: relative;
+}
+.ws-pf-row:last-child { border-bottom: none; }
+.ws-pf-col {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ws-ink);
+}
+.ws-pf-col-competencia {
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+  position: relative;
+}
+.ws-pf-col-puntos {
+  width: 48px;
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--ws-muted);
+  padding-top: 1px;
+}
+.ws-pf-col-producto {
+  flex: 1;
+  min-width: 0;
+  padding-left: 8px;
+}
+.ws-pf-bc-name {
+  font-weight: 700;
+  font-size: 10.5px;
+  line-height: 1.3;
+  display: block;
+}
+.ws-pf-sug-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ws-muted);
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 8px;
+  color: var(--ws-muted);
+  cursor: pointer;
+  margin-top: 2px;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.ws-pf-sug-toggle:hover {
+  border-color: var(--ws-ink);
+  color: var(--ws-ink);
+}
+.ws-pf-sugerencias {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  background: var(--ws-paper);
+  border: 2px solid var(--ws-ink);
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 var(--ws-ink);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 240px;
+  max-width: 300px;
+  margin-top: 4px;
+}
+.ws-pf-sug-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ws-ink);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.ws-pf-sug-item:hover {
+  background: rgba(38, 38, 38, 0.06);
+}
+.ws-pf-producto-input {
+  width: 100%;
+  background: rgba(255, 253, 248, 0.6);
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  padding: 4px 7px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--ws-ink);
+  resize: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.ws-pf-producto-input:focus {
+  outline: none;
+  border-color: rgba(38, 38, 38, 0.3);
+  background: #fff;
+}
+.ws-pf-empty {
+  border: 1.5px dashed rgba(38, 38, 38, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--ws-muted);
+  text-align: center;
+}

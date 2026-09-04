@@ -20,7 +20,12 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
+    /* Note: Editor.js (dependencia del módulo "Plan de clases") declara
+       `enum` en sus archivos .d.ts, lo que entra en conflicto con
+       `erasableSyntaxOnly: true`. Se relaja este restrictor de sintaxis
+       decorativa; NO debilita el type-check del código propio (no usamos
+       enums/namespaces). */
+    "erasableSyntaxOnly": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },

@@ -1,0 +1,398 @@
+/* ─────────────────────────────────────────────────────────────
+   CIELO · Plan de clases · Capa visual sobre Editor.js
+   Estiliza bloques, toolbox, inline toolbar, popups y recursos
+   para que pertenezcan a la identidad visual de CIELO.
+   ───────────────────────────────────────────────────────────── */
+
+/* Fondos y superficies del editor */
+.cielo-editorjs {
+  --ce-ink: #2E3330;
+  --ce-ink-soft: #6b736c;
+  --ce-border: rgba(46, 51, 48, 0.12);
+  --ce-surface: #ffffff;
+  --ce-accent: #689C63;
+  --ce-accent-soft: rgba(104, 156, 99, 0.12);
+  --ce-radius: 14px;
+}
+
+/* Columnas: estructura editorial del texto */
+.cielo-editorjs .codex-editor {
+  color: var(--ce-ink);
+}
+
+.cielo-editorjs .codex-editor__redactor {
+  padding-bottom: 20vh;
+}
+
+/* Toolbox: botón "+" */
+.cielo-editorjs .ce-toolbox {
+  color: var(--ce-ink);
+}
+
+.cielo-editorjs .ce-toolbox__button {
+  color: var(--ce-ink);
+  background: transparent;
+}
+
+.cielo-editorjs .ce-toolbox__button:hover {
+  color: var(--ce-accent);
+}
+
+/* Toolbox popup (menú de bloques) */
+.cielo-editorjs .ce-popover {
+  border-radius: var(--ce-radius);
+  border: 1px solid var(--ce-border);
+  box-shadow: 0 12px 32px rgba(46, 51, 48, 0.10);
+  background: var(--ce-surface);
+  overflow: hidden;
+}
+
+.cielo-editorjs .ce-popover__item {
+  border-radius: 10px;
+  margin: 2px 6px;
+  padding: 8px 10px;
+  color: var(--ce-ink);
+  transition: background 0.15s ease;
+}
+
+.cielo-editorjs .ce-popover__item:hover,
+.cielo-editorjs .ce-popover__item--focused {
+  background: var(--ce-accent-soft);
+}
+
+.cielo-editorjs .ce-popover__item-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cielo-editorjs .ce-popover__item-icon {
+  background: var(--ce-accent-soft);
+  color: var(--ce-accent);
+  border-radius: 8px;
+}
+
+/* Botón burger (bloque seleccionado) */
+.cielo-editorjs .ce-block__settings {
+  color: var(--ce-accent);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.cielo-editorjs .ce-block__settings:hover {
+  color: var(--ce-accent);
+  transform: translateX(2px);
+}
+
+/* Plano "drag" de bloque */
+.cielo-editorjs .ce-drag {
+  color: var(--ce-ink-soft);
+}
+
+/* Inline toolbar */
+.cielo-editorjs .ce-inline-toolbar {
+  border-radius: 12px;
+  border: 1px solid var(--ce-border);
+  box-shadow: 0 8px 24px rgba(46, 51, 48, 0.10);
+  background: var(--ce-surface);
+}
+
+.cielo-editorjs .ce-inline-toolbar .ce-inline-tool {
+  color: var(--ce-ink);
+}
+
+.cielo-editorjs .ce-inline-toolbar .ce-inline-tool:hover,
+.cielo-editorjs .ce-inline-toolbar .ce-inline-tool--active {
+  background: var(--ce-accent-soft);
+  color: var(--ce-accent);
+}
+
+.cielo-editorjs .ce-inline-toolbar__dropdown,
+.cielo-editorjs .ce-conversion-toolbar {
+  background: var(--ce-surface);
+  border: 1px solid var(--ce-border);
+  border-radius: 10px;
+  color: var(--ce-ink);
+}
+
+.cielo-editorjs .ce-conversion-tool__icon {
+  background: var(--ce-accent-soft);
+  color: var(--ce-accent);
+}
+
+/* Tooltip de Editor.js */
+.cielo-editorjs .ce-toolbar__settings-btn,
+.cielo-editorjs .ce-popover-item__icon {
+  color: var(--ce-ink);
+}
+
+.codex-editor .link-tool__input,
+.ce-block .link-tool__input {
+  border-radius: var(--ce-radius);
+  border-color: var(--ce-border);
+  background: var(--ce-surface);
+}
+
+/* Tooltip nativo (codex-tooltip) */
+.codex-tooltip {
+  border-radius: 10px;
+  background: var(--ce-ink);
+  color: #ffffff !important;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+/* ── Bloques de texto ─────────────────────────────────────── */
+
+/* Párrafo */
+.cielo-editorjs .ce-paragraph {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ce-ink);
+  padding: 6px 0;
+}
+
+.cielo-editorjs .ce-paragraph[data-placeholder]::before {
+  color: var(--ce-ink-soft);
+  opacity: 0.7;
+}
+
+/* Encabezados */
+.cielo-editorjs h1.ce-header,
+.cielo-editorjs h2.ce-header,
+.cielo-editorjs h3.ce-header,
+.cielo-editorjs h4.ce-header,
+.cielo-editorjs h5.ce-header,
+.cielo-editorjs h6.ce-header {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  color: var(--ce-ink);
+  letter-spacing: -0.02em;
+  margin: 0.4em 0 0.2em;
+  font-weight: 700;
+}
+
+.cielo-editorjs h2.ce-header {
+  font-size: 24px;
+}
+
+.cielo-editorjs h3.ce-header {
+  font-size: 19px;
+}
+
+/* Listas (nested list) */
+.cielo-editorjs .cdx-nested-list {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ce-ink);
+}
+
+.cielo-editorjs .cdx-nested-list__item-content {
+  color: var(--ce-ink);
+}
+
+.cielo-editorjs .cdx-nested-list--ordered > .cdx-nested-list__item::before {
+  color: var(--ce-accent);
+  font-weight: 600;
+}
+
+.cielo-editorjs .cdx-nested-list--unordered > .cdx-nested-list__item::before {
+  background: var(--ce-accent);
+}
+
+/* Checklist */
+.cielo-editorjs .cdx-checklist__item-checkbox {
+  background: #ffffff;
+  border: 1.5px solid var(--ce-border);
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.cielo-editorjs .cdx-checklist__item--checked .cdx-checklist__item-checkbox {
+  background: var(--ce-accent);
+  border-color: var(--ce-accent);
+}
+
+.cielo-editorjs .cdx-checklist__item--checked .cdx-checklist__item-text {
+  color: var(--ce-ink-soft);
+  text-decoration: line-through;
+  text-decoration-color: rgba(104, 156, 99, 0.5);
+}
+
+/* Quote */
+.cielo-editorjs .cdx-quote {
+  position: relative;
+  border-left: 3px solid var(--ce-accent);
+  background: transparent;
+  border-radius: 0;
+  margin: 16px 0;
+  padding: 2px 0 2px 18px;
+}
+
+/* Quitar el aspecto de input/caja a los textos de la cita */
+.cielo-editorjs .cdx-quote .cdx-input.cdx-quote__text,
+.cielo-editorjs .cdx-quote .cdx-input.cdx-quote__caption {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.cielo-editorjs .cdx-quote__text {
+  color: var(--ce-ink);
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.6;
+  min-height: auto;
+}
+
+.cielo-editorjs .cdx-quote__caption {
+  color: var(--ce-ink-soft);
+  font-size: 13.5px;
+  margin-top: 4px !important;
+}
+
+/* Delimiter */
+.cielo-editorjs .ce-delimiter::before {
+  background: var(--ce-border);
+}
+
+/* Imagen */
+.cielo-editorjs .image-tool {
+  border-radius: var(--ce-radius);
+}
+
+.cielo-editorjs .image-tool__image {
+  border-radius: var(--ce-radius);
+  overflow: hidden;
+}
+
+.cielo-editorjs .image-tool__caption {
+  color: var(--ce-ink-soft);
+}
+
+.cielo-editorjs .image-tool--empty .image-tool__input {
+  border: 1.5px dashed var(--ce-border);
+  border-radius: var(--ce-radius);
+  color: var(--ce-ink-soft);
+}
+
+/* Tabla */
+.cielo-editorjs .tc-wrap {
+  border-radius: var(--ce-radius);
+  border-color: var(--ce-border);
+}
+
+.cielo-editorjs .tc-table {
+  border-radius: var(--ce-radius);
+}
+
+.cielo-editorjs .tc-cell {
+  border-color: var(--ce-border);
+  color: var(--ce-ink);
+}
+
+.cielo-editorjs .tc-add-column,
+.cielo-editorjs .tc-add-row {
+  color: var(--ce-accent);
+}
+
+/* ── Recursos: verificación de enlaces y embebidos ───────────── */
+
+/* Estado de enlace ya generado */
+.cielo-editorjs .link-tool {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 4px 0 !important;
+  margin: 0 !important;
+}
+
+.cielo-editorjs .link-tool .link-tool__content {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.cielo-editorjs .link-tool__content::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  background-color: #2563eb; 
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>') center/contain no-repeat;
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>') center/contain no-repeat;
+}
+
+.cielo-editorjs .link-tool__title {
+  color: #2563eb !important;
+  font-weight: 500;
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(37, 99, 235, 0.3);
+  transition: text-decoration-color 0.2s ease;
+  cursor: pointer;
+}
+
+.cielo-editorjs .link-tool__title:hover {
+  text-decoration-color: #2563eb;
+}
+
+.cielo-editorjs .link-tool__description,
+.cielo-editorjs .link-tool__anchor,
+.cielo-editorjs .link-tool__image {
+  display: none !important;
+}
+
+.cielo-editorjs .embed-tool {
+  border-radius: var(--ce-radius);
+  overflow: hidden;
+}
+
+.cielo-editorjs .embed-tool .embed-tool__caption {
+  color: var(--ce-ink-soft);
+}
+
+/* Inputs genéricos de tools y Estado de edición de Link */
+.cielo-editorjs .cdx-input {
+  border-radius: 10px;
+  border: 1px solid var(--ce-border);
+  background: var(--ce-surface);
+  color: var(--ce-ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cielo-editorjs .cdx-input:focus {
+  border-color: var(--ce-accent);
+  box-shadow: 0 0 0 4px rgba(104, 156, 99, 0.12);
+}
+
+/* Estado de edición del Link (cuando pide ingresar URL) */
+.cielo-editorjs .link-tool .cdx-input,
+.cielo-editorjs .link-tool__input {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 4px 0 !important;
+  margin: 0 !important;
+  font-size: 15px;
+  color: #2563eb;
+  border-bottom: 1px dashed rgba(37, 99, 235, 0.3) !important;
+  border-radius: 0 !important;
+}
+
+.cielo-editorjs .link-tool .cdx-input:focus,
+.cielo-editorjs .link-tool__input:focus {
+  border-bottom: 1px solid #2563eb !important;
+}
+
+.cielo-editorjs .link-tool .cdx-input::placeholder,
+.cielo-editorjs .link-tool__input::placeholder {
+  color: rgba(37, 99, 235, 0.5);
+  font-weight: normal;
+}
+

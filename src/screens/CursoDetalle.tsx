@@ -10,6 +10,7 @@ import AgregarActividadModal from '../components/curso-detalle/AgregarActividadM
 import ActivityWorkspace from '../components/curso-detalle/workspace/ActivityWorkspace';
 import type { BCKey, Curso, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, CursoDocente, Estudiante } from '../types';
 import { BC_ICONS, BC_COLOR_THEMES } from '../constants/competencias';
+import { PRODUCTO_FINAL_NAME } from '../constants/productoFinal';
 import { getGradeClass } from '../utils/academic';
 import { getAsignaturaNombre } from '../constants/asignaturas';
 
@@ -49,7 +50,16 @@ export default function CursoDetalle(props: Props) {
     }, [cursoId, loadCursoData]);
 
     const currentUserId = props.currentUserId || store.session?.user?.id || '';
-    const currentCourseRole = props.currentCourseRole || state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoId && cd.userId === currentUserId);
+
+    // Leer el parámetro asignatura de la URL para identificar el contexto correcto
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlAsignatura = searchParams.get('asignatura');
+
+    const currentCourseRole = props.currentCourseRole || state.cursoDocentes.find((cd: CursoDocente) => 
+        cd.cursoId === cursoId && 
+        cd.userId === currentUserId &&
+        (!urlAsignatura || cd.asignatura === urlAsignatura)
+    ) || state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoId && cd.userId === currentUserId);
 
     const {
         curso,
@@ -57,8 +67,8 @@ export default function CursoDetalle(props: Props) {
         setSelectedPeriodo,
         buscar,
         setBuscar,
-        isPointMode,
-        setIsPointMode,
+        evalMode,
+        setEvalMode,
         showRecoveryOnly,
         setShowRecoveryOnly,
         activePaintColor,
@@ -97,6 +107,33 @@ export default function CursoDetalle(props: Props) {
     const [showVincular, setShowVincular] = useState(false);
     const [showAgregarActividad, setShowAgregarActividad] = useState(false);
     const [visibleActivityId, setVisibleActivityId] = useState<number | null>(null);
+
+    // Auto-crear Producto Final si no existe para este curso+asignatura+periodo
+    useEffect(() => {
+        if (!curso || !currentUserId || !selectedPeriodo) return;
+        
+        const exists = state.actividades.some(a => 
+            a.cursoId === cursoId && 
+            a.nombre === PRODUCTO_FINAL_NAME && 
+            a.periodo === selectedPeriodo &&
+            (!a.asignatura || a.asignatura === myAsignatura) &&
+            (a.userId === currentUserId || !a.userId)
+        );
+        
+        if (!exists && props.onAddActividad) {
+            props.onAddActividad({
+                nombre: PRODUCTO_FINAL_NAME,
+                cursoId,
+                sharedCourseId,
+                periodo: selectedPeriodo,
+                asignatura: myAsignatura,
+                bcAsignados: [],
+                userId: currentUserId,
+                fecha: new Date().toISOString().split('T')[0],
+                isProductoFinal: true
+            });
+        }
+    }, [curso, cursoId, currentUserId, selectedPeriodo, state.actividades, props.onAddActividad, myAsignatura, sharedCourseId]);
 
     const onSave = async () => {
         setIsSaving(true);
@@ -169,7 +206,7 @@ export default function CursoDetalle(props: Props) {
     if (!curso) return null;
 
     return (
-        <div className={`fixed inset-0 z-50 flex flex-col bg-(--background) transition-all duration-500 ${isFullScreen ? 'm-0' : 'm-4 rounded-(--radius-lg) overflow-hidden shadow-md border border-(--border-soft)'}`} onMouseDown={() => isPointMode && setIsDragging(true)}>
+        <div className={`fixed inset-0 z-50 flex flex-col bg-(--background) transition-all duration-500 ${isFullScreen ? 'm-0' : 'm-4 rounded-(--radius-lg) overflow-hidden shadow-md border border-(--border-soft)'}`} onMouseDown={() => evalMode === 'pincel' && setIsDragging(true)}>
             <CursoDetalleHeader 
                 curso={curso}
                 buscar={buscar}
@@ -182,8 +219,8 @@ export default function CursoDetalle(props: Props) {
                 onBack={() => navigate('/cursos')}
                 showRecoveryOnly={showRecoveryOnly}
                 setShowRecoveryOnly={setShowRecoveryOnly}
-                isPointMode={isPointMode}
-                setIsPointMode={setIsPointMode}
+                evalMode={evalMode}
+                setEvalMode={setEvalMode}
                 activePaintColor={activePaintColor}
                 setActivePaintColor={setActivePaintColor}
                 onShowVincular={() => setShowVincular(true)}
@@ -199,7 +236,7 @@ export default function CursoDetalle(props: Props) {
                 estudiantes={enhancedEstudiantes}
                 bcSel={bcSel}
                 isDragging={isDragging}
-                isPointMode={isPointMode}
+                evalMode={evalMode}
                 activePaintColor={activePaintColor}
                 focusedCell={focusedCell}
                 gradeAnimations={gradeAnimations}

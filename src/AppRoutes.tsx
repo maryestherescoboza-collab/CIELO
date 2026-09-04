@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { Routes, Route, useNavigate, useParams, Navigate } from 'react-router-dom';
 import type { 
   Actividad, Screen, NavExtra, 
   CalificacionActividad,
@@ -15,6 +15,9 @@ const CursoDetalle = lazyLoad(() => import('./screens/CursoDetalle'));
 const Incidencias = lazyLoad(() => import('./screens/Incidencias'));
 const Planificacion = lazyLoad(() => import('./screens/Planificacion'));
 const PlanificacionDiariaEditor = lazyLoad(() => import('./screens/PlanificacionDiariaEditor'));
+const PlanClasesIndex = lazyLoad(() => import('./screens/PlanClases/PlanClasesIndex'));
+const PlanClasesLayout = lazyLoad(() => import('./components/plan-clases/PlanClasesLayout'));
+const SecuenciasIndex = lazyLoad(() => import('./screens/PlanClases/SecuenciasIndex'));
 const Comunidad = lazyLoad(() => import('./screens/Comunidad'));
 const Rubrica = lazyLoad(() => import('./screens/Rubrica'));
 const Cotejo = lazyLoad(() => import('./screens/Cotejo'));
@@ -286,9 +289,28 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/curso-detalle/:id" element={<CourseDetailRouteWrapper setSelectedCursoId={setSelectedCursoId} renderCourseDetail={renderCourseDetail} />} />
       <Route path="/print-boletines/:cursoId" element={<PrintBoletines state={state} docenteNombre={docenteNombre} />} />
       <Route path="/incidencias" element={<Incidencias state={state} onAddIncidencia={addIncidencia} onDeleteIncidencia={deleteIncidencia} />} />
-      <Route path="/planificacion" element={<Planificacion onAddSecuencia={addSecuencia} onUpdateSecuencia={updateSecuencia} onDeleteSecuencia={deleteSecuencia} />} />
-      <Route path="/planificacion-diaria/plantilla" element={<PlanificacionDiariaEditor state={state} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
-      <Route path="/planificacion-diaria/:id" element={<PlanificacionDiariaExistenteWrapper state={state} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
+      <Route element={<PlanClasesLayout />}>
+        <Route path="/planificacion" element={<Planificacion onAddSecuencia={addSecuencia} onUpdateSecuencia={updateSecuencia} onDeleteSecuencia={deleteSecuencia} />} />
+        <Route path="/planificacion-diaria/plantilla" element={<PlanificacionDiariaEditor state={state} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
+        <Route path="/planificacion-diaria/:id" element={<PlanificacionDiariaExistenteWrapper state={state} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
+        
+        <Route path="/plan-de-clases">
+          <Route index element={<Navigate to="secuencias" replace />} />
+          <Route path="mis-notas" element={<PlanClasesIndex />} />
+          <Route path="secuencias" element={<SecuenciasIndex />} />
+          <Route path="secuencias/:secuenciaId/notas" element={<PlanClasesIndex 
+              userName={docenteNombre}
+              userAvatarColor={currentUserProfile?.avatarColor}
+              currentUser={session?.user || null}
+          />} />
+          <Route path="secuencias/:secuenciaId/notas/:notaId/editar" element={<PlanClasesIndex 
+              userName={docenteNombre}
+              userAvatarColor={currentUserProfile?.avatarColor}
+              currentUser={session?.user || null}
+          />} />
+          <Route path="nota-nueva" element={<Navigate to="mis-notas" replace />} />
+        </Route>
+      </Route>
       <Route path="/comunidad" element={
         <Comunidad
           onAddPost={addPost}

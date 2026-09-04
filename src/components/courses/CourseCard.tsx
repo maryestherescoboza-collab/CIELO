@@ -218,7 +218,7 @@ export function CourseCard({
                 <button
                     data-guide="btn-abrir-registro-academico"
                     className="w-full flex items-center justify-between px-6 py-4.5 bg-white text-xs font-bold text-(--ink) uppercase tracking-[0.15em] transition-all duration-200 hover:bg-(--linen)/50 outline-none focus-visible:bg-(--linen)"
-                    onClick={() => onSelect(curso.id, `/curso-detalle/${curso.id}`)}>
+                    onClick={() => onSelect(curso.id, `/curso-detalle/${curso.id}?asignatura=${encodeURIComponent(curso.asignatura)}`)}>
                     <span className="flex items-center gap-2">
                         <Search size={13} className="text-(--ink-soft)" />
                         Abrir Registro Académico

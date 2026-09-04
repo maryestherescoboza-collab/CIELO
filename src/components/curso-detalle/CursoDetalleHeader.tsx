@@ -25,8 +25,8 @@ interface CursoDetalleHeaderProps {
     onBack: () => void;
     showRecoveryOnly: boolean;
     setShowRecoveryOnly: (val: boolean) => void;
-    isPointMode: boolean;
-    setIsPointMode: (val: boolean) => void;
+    evalMode: 'pincel' | 'numerico' | 'libre';
+    setEvalMode: (val: 'pincel' | 'numerico' | 'libre') => void;
     activePaintColor: number;
     setActivePaintColor: (val: number) => void;
     onShowVincular: () => void;
@@ -49,8 +49,8 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     onBack,
     showRecoveryOnly,
     setShowRecoveryOnly,
-    isPointMode,
-    setIsPointMode,
+    evalMode,
+    setEvalMode,
     activePaintColor,
     setActivePaintColor,
     onShowVincular,
@@ -153,36 +153,72 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         >
                             {showRecoveryOnly ? 'VER TODOS' : 'VER RIESGO'}
                         </CieloPill>
-                        <CieloPill
-                            as="button"
-                            variant={isPointMode ? 'primary' : 'ghost'}
-                            onClick={() => setIsPointMode(!isPointMode)}
-                            className={`gap-2 px-4.5 min-h-9 transition-all border ${isPointMode ? 'bg-[#E8F0F8] text-[#1A1D1B] border-[#537BAC]/30 font-bold' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
-                        >
-                            MODO PINCEL
-                        </CieloPill>
+                        <div className="flex items-center bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]" role="radiogroup" aria-label="Modo de evaluación">
+                            <button
+                                type="button"
+                                role="radio"
+                                aria-checked={evalMode === 'pincel'}
+                                aria-label="Modo Pincel"
+                                title="Modo Pincel"
+                                onClick={() => setEvalMode('pincel')}
+                                className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'pincel' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
+                            >
+                                <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'pincel' ? 'bg-white' : 'bg-transparent'}`} />
+                            </button>
+                            <div className="w-4 h-px bg-[rgba(46,51,48,0.2)] shrink-0" />
+                            <button
+                                type="button"
+                                role="radio"
+                                aria-checked={evalMode === 'numerico'}
+                                aria-label="Modo Numérico"
+                                title="Modo Numérico"
+                                onClick={() => setEvalMode('numerico')}
+                                className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'numerico' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
+                            >
+                                <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'numerico' ? 'bg-white' : 'bg-transparent'}`} />
+                            </button>
+                            <div className="w-4 h-px bg-[rgba(46,51,48,0.2)] shrink-0" />
+                            <button
+                                type="button"
+                                role="radio"
+                                aria-checked={evalMode === 'libre'}
+                                aria-label="Valor libre"
+                                title="Valor libre"
+                                onClick={() => setEvalMode('libre')}
+                                className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'libre' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
+                            >
+                                <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'libre' ? 'bg-white' : 'bg-transparent'}`} />
+                            </button>
+                        </div>
                     </div>
 
+                    {(evalMode === 'pincel' || evalMode === 'numerico') && (
                     <div className="flex items-center gap-1.5 bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
                         {[100, 85, 70, 55].map(val => {
                             const isActive = activePaintColor === val;
                             let colorClasses = '';
-                            if (val === 100) {
-                                colorClasses = isActive
-                                    ? 'bg-primary text-white border-2 border-transparent'
-                                     : 'bg-primary/10 text-primary border border-transparent hover:bg-primary/20';
-                            } else if (val === 85) {
-                                colorClasses = isActive
-                                    ? 'bg-attention text-white border-2 border-transparent'
-                                    : 'bg-attention/10 text-attention border border-transparent hover:bg-attention/20';
-                            } else if (val === 70) {
-                                colorClasses = isActive
-                                    ? 'bg-danger text-white border-2 border-transparent'
-                                    : 'bg-danger/10 text-danger border border-transparent hover:bg-danger/20';
+                            if (evalMode === 'pincel') {
+                                if (val === 100) {
+                                    colorClasses = isActive
+                                        ? 'bg-primary text-white border-2 border-transparent'
+                                         : 'bg-primary/10 text-primary border border-transparent hover:bg-primary/20';
+                                } else if (val === 85) {
+                                    colorClasses = isActive
+                                        ? 'bg-attention text-white border-2 border-transparent'
+                                        : 'bg-attention/10 text-attention border border-transparent hover:bg-attention/20';
+                                } else if (val === 70) {
+                                    colorClasses = isActive
+                                        ? 'bg-danger text-white border-2 border-transparent'
+                                        : 'bg-danger/10 text-danger border border-transparent hover:bg-danger/20';
+                                } else {
+                                    colorClasses = isActive
+                                        ? 'bg-[#2E3330] text-white border-2 border-transparent'
+                                        : 'bg-white text-[#5F665E] border border-(--border-soft) hover:bg-base-creme hover:text-[#2E3330]';
+                                }
                             } else {
                                 colorClasses = isActive
                                     ? 'bg-[#2E3330] text-white border-2 border-transparent'
-                                    : 'bg-white text-[#5F665E] border border-(--border-soft) hover:bg-base-creme hover:text-[#2E3330]';
+                                    : 'bg-white text-[#5F665E] border border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]';
                             }
 
                             const tooltips: Record<number, { title: string; desc: string }> = {
@@ -214,6 +250,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             );
                         })}
                     </div>
+                    )}
 
                     {isTutor && (
                         <div className="flex items-center gap-3">

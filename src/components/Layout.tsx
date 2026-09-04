@@ -74,7 +74,7 @@ export default function Layout({
         };
     }, [searchQuery, state.estudiantes, state.cursos, state.actividades]);
 
-    const currentScreen = (location.pathname === '/' ? 'inicio' : location.pathname.substring(1)) as Screen;
+    const currentScreen = (location.pathname === '/' ? 'inicio' : location.pathname.substring(1).split('/')[0]) as Screen;
     const onNavigate = useCallback((s: Screen) => navigate(s === 'inicio' ? '/' : `/${s}`), [navigate]);
 
     const currentUserProfile = useMemo(() => state.perfiles.find(p => p.userId === session?.user?.id), [state.perfiles, session]);
