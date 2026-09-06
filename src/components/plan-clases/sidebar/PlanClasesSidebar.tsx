@@ -70,7 +70,7 @@ export default function PlanClasesSidebar() {
         <div className="flex flex-col gap-3">
           {/* Mis notas */}
           <SidebarSection
-            title="Mis notas"
+            title="Mis fichas"
             icon={StickyNote}
             count={totalNotas}
             color="orange"

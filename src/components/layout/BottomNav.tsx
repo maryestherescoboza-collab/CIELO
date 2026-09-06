@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, BookOpen, TrendingUp, AlertTriangle, NotebookPen, Users, ClipboardList, SquareCheck, User, X, HelpCircle } from 'lucide-react';
+import { Home, BookOpen, TrendingUp, AlertTriangle, NotebookPen, Users, ClipboardList, SquareCheck, Stamp, User, X, HelpCircle } from 'lucide-react';
 import type { Screen } from '../../types';
 
 const SUPPORT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfhlDqJnUXMrxOtz8mkE5NWmMz6E33JgwCyd13dLao2_nDtyA/viewform?usp=preview';
@@ -18,6 +18,7 @@ const NAV_ITEMS: { label: string; screen: Screen; icon: React.ReactNode; isClose
     { label: 'Comunidad', screen: 'comunidad', icon: <Users size={18} /> },
     { label: 'Rúbrica', screen: 'rubrica', icon: <ClipboardList size={18} /> },
     { label: 'Cotejo', screen: 'cotejo', icon: <SquareCheck size={18} /> },
+    { label: 'Sellos', screen: 'sellos', icon: <Stamp size={18} /> },
     { label: 'Estudiante', screen: 'estudiante', icon: <User size={18} /> },
     { label: 'Cerrar', screen: 'inicio', icon: <X size={18} />, isClose: true },
 ];
@@ -40,6 +41,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                         key={item.label} 
                         id={item.screen === 'cursos' ? 'nav-cursos' : undefined}
                         onClick={() => onNavigate(item.screen)} 
+                        aria-label={item.label}
+                        title={item.label}
                         className={`flex flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 ${btnBg} hover:bg-(--linen)/40`}
                         style={{ minWidth: '72px', height: '40px' }}
                     >

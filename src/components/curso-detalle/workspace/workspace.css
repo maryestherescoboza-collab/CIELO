@@ -7,7 +7,8 @@
    sistema visual global de CIELO.
    ───────────────────────────────────────────────────────────────────────── */
 
-.ws-layer {
+.ws-layer,
+.ws-folder-exterior {
   --ws-ink: #262626;
   --ws-paper: #FFFDF8;
   --ws-desk: #F1E7D6;
@@ -58,6 +59,259 @@
 }
 .ws-activity-tag .ws-close {
   font-size: 13px;
+}
+
+/* Carpeta del espacio de trabajo: herramienta NATIVA del workspace, hermana de
+   las ventanas (nunca dentro de "Datos de la actividad"). Se ubica en la esquina
+   superior izquierda del workspace, sin tarjeta/ventana/panel alrededor: solo un
+   icono de carpeta grande, con contenedor transparente. Al hacer clic despliega
+   el navegador de secuencias hacia abajo (buscador + lista). Cerrar solo oculta
+   el contenido; las secuencias permanecen disponibles al reabrir. */
+.ws-folder-exterior {
+  position: absolute;
+  top: 64px;
+  left: 18px;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  pointer-events: auto;
+}
+.ws-folder-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--ws-ink);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.ws-folder-btn:hover,
+.ws-folder-btn-open {
+  background: rgba(38, 38, 38, 0.08);
+}
+.ws-folder-btn:active {
+  transform: scale(0.94);
+}
+.ws-folder-pop {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 10px);
+  width: 300px;
+  max-height: min(360px, calc(100vh - 140px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 2px solid var(--ws-ink);
+  border-radius: var(--ws-radius);
+  background: var(--ws-paper);
+  box-shadow: 6px 6px 0 var(--ws-ink);
+  overflow: hidden;
+}
+.ws-folder-search {
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1.5px solid rgba(38, 38, 38, 0.16);
+  border-radius: 9px;
+  background: var(--ws-paper);
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ws-ink);
+  outline: none;
+}
+.ws-folder-search:focus {
+  border-color: rgba(38, 38, 38, 0.45);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(38, 38, 38, 0.06);
+}
+.ws-folder-search::placeholder {
+  font-weight: 500;
+  color: var(--ws-muted);
+}
+.ws-folder-list {
+  flex: 1 1 auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ws-folder-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  padding: 6px 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ws-ink);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background 0.1s ease;
+}
+.ws-folder-item:hover,
+.ws-folder-item:focus-visible {
+  background: var(--ws-yellow);
+  outline: none;
+}
+.ws-folder-empty {
+  list-style: none;
+  margin: 0;
+  padding: 6px 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--ws-muted);
+}
+
+/* Panel de secciones de la secuencia seleccionada (dentro de la carpeta) */
+.ws-folder-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ws-folder-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.ws-folder-sec-title {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--ws-ink);
+}
+.ws-folder-cambiar {
+  flex: 0 0 auto;
+  border: 1.5px solid var(--ws-ink);
+  border-radius: 999px;
+  background: transparent;
+  padding: 2px 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ws-ink);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.ws-folder-cambiar:hover {
+  background: var(--ws-yellow);
+}
+.ws-folder-sec-sel {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ws-coral);
+}
+.ws-folder-sec-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1.5px solid rgba(38, 38, 38, 0.14);
+  padding-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ws-folder-sec-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  padding: 6px 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ws-ink);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.ws-folder-sec-item:hover,
+.ws-folder-sec-item:focus-visible {
+  background: var(--ws-yellow);
+  outline: none;
+}
+.ws-folder-sec-item.on {
+  background: var(--ws-mint);
+  font-weight: 800;
+}
+.ws-folder-sec-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ws-blue);
+  flex: 0 0 auto;
+}
+.ws-folder-sec-item.on .ws-folder-sec-dot {
+  background: var(--ws-ink);
+}
+
+/* Vista del plan de clase seleccionado: elemento real del workspace, fuera de
+   las ventanas y del panel de la carpeta. Renderiza el .session-block completo
+   con su HTML original (tablas y celdas contenteditable incluidas). */
+.ws-section-view {
+  position: absolute;
+  left: 84px;
+  top: 64px;
+  z-index: 44;
+  width: min(640px, calc(100vw - 140px));
+  max-height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+}
+.ws-section-view-tag {
+  align-self: flex-start;
+  max-width: 100%;
+  background: var(--ws-paper);
+  border: 2.5px solid var(--ws-ink);
+  border-radius: 999px;
+  box-shadow: 3px 3px 0 var(--ws-ink);
+  padding: 4px 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ws-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-section-view-prose {
+  overflow: auto;
+  background: var(--ws-paper);
+  border: 2.5px solid var(--ws-ink);
+  border-radius: var(--ws-radius);
+  box-shadow: 5px 5px 0 var(--ws-ink);
+  padding: 16px;
+  font-family: 'Inter', sans-serif;
+  color: var(--ws-ink);
 }
 
 /* ── Ventana genérica (equivalente a .win / .bar) ─────────────────────── */
@@ -169,6 +423,7 @@
 .ws-dot-yellow { background: var(--ws-yellow); }
 .ws-dot-blue { background: var(--ws-blue); }
 .ws-dot-coral { background: var(--ws-coral); }
+.ws-dot-mint { background: var(--ws-mint); }
 
 .ws-field-input {
   width: 100%;
@@ -192,6 +447,9 @@
   width: 100%;
   max-width: 180px;
   text-align: left;
+  cursor: pointer;
+}
+.ws-select-input {
   cursor: pointer;
 }
 .ws-empty {
@@ -558,4 +816,120 @@
   line-height: 1.5;
   color: var(--ws-muted);
   text-align: center;
+}
+
+/* ── Tarjetas de vínculo de la actividad (secuencia · ficha) ─────────────── */
+.ws-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  border: 1.5px solid rgba(38, 38, 38, 0.14);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 12px 13px;
+  box-shadow: 0 1px 2px rgba(38, 38, 38, 0.04);
+}
+.ws-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ws-card-kicker {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(38, 38, 38, 0.5);
+}
+.ws-card-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ws-ink);
+}
+.ws-card-title-empty {
+  color: rgba(38, 38, 38, 0.35);
+  font-weight: 500;
+  font-style: italic;
+}
+.ws-card-select {
+  width: 100%;
+  border: 1.5px solid rgba(38, 38, 38, 0.16);
+  border-radius: 9px;
+  background: rgba(255, 253, 248, 0.7);
+  padding: 6px 9px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ws-ink);
+  cursor: pointer;
+}
+.ws-card-select:focus {
+  outline: none;
+  border-color: rgba(38, 38, 38, 0.4);
+  background: #fff;
+}
+
+/* Tarjeta "nota" de la ficha: vista previa de una ficha de planificación */
+.ws-note-card {
+  border-color: rgba(127, 193, 224, 0.4);
+  background: linear-gradient(180deg, #ffffff 0%, rgba(127, 193, 224, 0.06) 100%);
+  box-shadow: 0 2px 6px rgba(38, 38, 38, 0.05);
+}
+/* Contenido de la ventana "Ficha": sin bordes de tarjeta, solo disposición */
+.ws-note-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.ws-note-title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--ws-ink);
+}
+.ws-note-title-empty {
+  font-weight: 600;
+  color: rgba(38, 38, 38, 0.4);
+}
+.ws-note-divider {
+  border-top: 1px dashed rgba(38, 38, 38, 0.18);
+}
+.ws-note-excerpt {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  line-height: 1.55;
+  color: rgba(38, 38, 38, 0.68);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ws-note-empty {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-style: italic;
+  line-height: 1.55;
+  color: rgba(38, 38, 38, 0.42);
+}
+.ws-note-action-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.ws-note-action-label {
+  flex-shrink: 0;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(38, 38, 38, 0.5);
+}
+.ws-note-action {
+  flex: 1;
+  min-width: 0;
 }

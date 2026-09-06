@@ -1,6 +1,10 @@
--- MIGRACIÓN: Agregar columna 'is_producto_final' a la tabla 'public.actividades'
--- Identifica la actividad especial "Producto Final" que se auto-crea por curso+asignatura+periodo.
--- Nullable: las actividades existentes no se modifican (queda FALSE por defecto).
+-- Migración: Garantizar un único Producto Final por curso + período + asignatura
+-- Previene duplicados concurrentes en la creación del Producto Final
 
-ALTER TABLE public.actividades
-ADD COLUMN IF NOT EXISTS is_producto_final BOOLEAN DEFAULT FALSE;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unico_producto_final
+ON actividades (
+    curso_id,
+    periodo,
+    COALESCE(asignatura, '')
+)
+WHERE is_producto_final = true;

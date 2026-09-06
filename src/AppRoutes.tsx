@@ -21,6 +21,7 @@ const SecuenciasIndex = lazyLoad(() => import('./screens/PlanClases/SecuenciasIn
 const Comunidad = lazyLoad(() => import('./screens/Comunidad'));
 const Rubrica = lazyLoad(() => import('./screens/Rubrica'));
 const Cotejo = lazyLoad(() => import('./screens/Cotejo'));
+const Sellos = lazyLoad(() => import('./screens/Sellos'));
 const Estudiante = lazyLoad(() => import('./screens/Estudiante'));
 const CalificacionesAnuales = lazyLoad(() => import('./screens/CalificacionesAnuales'));
 const ProfileSettings = lazyLoad(() => import('./screens/ProfileSettings'));
@@ -342,6 +343,13 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           onSavePlantilla={savePlantilla}
           onUpdatePlantilla={updatePlantilla}
           onDeletePlantilla={deletePlantilla}
+        />
+      } />
+      <Route path="/sellos" element={
+        <Sellos
+          state={state}
+          userId={session?.user?.id}
+          onSaveCalificaciones={saveCalificaciones}
         />
       } />
       <Route path="/estudiante" element={

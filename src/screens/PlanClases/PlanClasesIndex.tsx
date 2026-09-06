@@ -7,6 +7,9 @@ import {
 import { usePlanClasesStore } from '../../store/planClasesStore';
 import { useAppStore } from '../../store/appStore';
 import NuevaNotaClase from './NuevaNotaClase';
+import { ModalSugerirFichaIA } from '../../components/plan-clases/ModalSugerirFichaIA';
+import { Sparkles } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 const NOTA_COLORES = [
   '#FBF0E1',
@@ -49,6 +52,8 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
   // Estado local que controla qué nota está abierta en el panel derecho.
   const [notaSeleccionadaId, setNotaSeleccionadaId] = useState<string | null>(urlNotaId || null);
 
+  const [modalSugerirOpen, setModalSugerirOpen] = useState(false);
+
   // Sincronizar URL con estado inicial
   useEffect(() => {
     if (urlNotaId && urlNotaId !== notaSeleccionadaId) {
@@ -64,7 +69,7 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
 
   const handleCreateNota = async () => {
     if (!secuenciaId || !session?.user?.id) return;
-    const titulo = prompt('Título de la nueva nota:');
+    const titulo = prompt('Título de la nueva ficha:');
     if (!titulo || !titulo.trim()) return;
 
     setIsCreating(true);
@@ -73,6 +78,29 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
     
     if (newNota) {
       navigate(`/plan-de-clases/secuencias/${secuenciaId}/notas/${newNota.id}/editar`);
+    }
+  };
+
+  const handleCreateNotaSugerida = async (contenido: any) => {
+    if (!secuenciaId || !session?.user?.id) return;
+    setIsCreating(true);
+    
+    // Primero crear la ficha para obtener un ID válido
+    const newNota = await createNota(secuenciaId, session.user.id, 'Ficha sugerida por IA');
+    
+    if (newNota) {
+      // Modificar el JSON directamente en Supabase para que cuando NotaEditor cargue tenga el contenido generado por IA
+      const { error } = await supabase
+        .from('pc_notas')
+        .update({ contenido_json: contenido })
+        .eq('id', newNota.id);
+        
+      if (error) console.error("Error updating nota json", error);
+
+      setIsCreating(false);
+      navigate(`/plan-de-clases/secuencias/${secuenciaId}/notas/${newNota.id}/editar`);
+    } else {
+      setIsCreating(false);
     }
   };
 
@@ -123,7 +151,7 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
               </div>
             )}
             <h1 className={`font-bold text-[#2E3330] tracking-tight ${notaSeleccionadaId ? 'text-[24px]' : 'text-[28px] md:text-[32px]'}`}>
-              {secuenciaId ? 'Notas de la secuencia' : 'Mis notas'}
+              {secuenciaId ? 'Fichas de la secuencia para estudiantes' : 'Mis fichas'}
             </h1>
           </div>
           
@@ -133,7 +161,7 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
               <Search size={15} className="text-[#2E3330]/40 shrink-0" />
               <input 
                 type="text"
-                placeholder="Buscar nota..."
+                placeholder="Buscar ficha..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="bg-transparent outline-none w-full placeholder:text-[#2E3330]/40"
@@ -141,22 +169,34 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
               {!notaSeleccionadaId && <span className="px-1.5 py-0.5 bg-[#2E3330]/5 rounded text-xs text-[#2E3330]/60 font-bold border border-[#2E3330]/10">⌘K</span>}
             </div>
             {secuenciaId && (
-              <button 
-                onClick={handleCreateNota}
-                disabled={isCreating}
-                className={`inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-[#689C63] text-white font-bold text-[13px] hover:bg-[#5a8a55] transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${notaSeleccionadaId ? 'rounded-xl' : 'rounded-full px-5 text-[14px]'}`}
-                title="Nueva nota"
-              >
-                {isCreating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                {!notaSeleccionadaId && <span>Nueva nota</span>}
-              </button>
+              <div className="flex items-center gap-2">
+                {!notaSeleccionadaId && (
+                  <button
+                    onClick={() => setModalSugerirOpen(true)}
+                    className="inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-white border border-[#689C63] text-[#689C63] font-bold text-[13px] hover:bg-[#689C63]/5 transition-all active:scale-95 shadow-sm rounded-full"
+                    title="Sugerir ficha con IA"
+                  >
+                    <Sparkles size={16} />
+                    <span>Sugerir ficha con IA</span>
+                  </button>
+                )}
+                <button 
+                  onClick={handleCreateNota}
+                  disabled={isCreating}
+                  className={`inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-[#689C63] text-white font-bold text-[13px] hover:bg-[#5a8a55] transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${notaSeleccionadaId ? 'rounded-xl' : 'rounded-full px-5 text-[14px]'}`}
+                  title="Nueva ficha"
+                >
+                  {isCreating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                  {!notaSeleccionadaId && <span>Nueva ficha</span>}
+                </button>
+              </div>
             )}
           </div>
         </div>
 
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-xl text-xs font-bold border border-red-200 mt-4">
-            Error al cargar notas: {error}
+            Error al cargar fichas: {error}
           </div>
         )}
 
@@ -168,7 +208,7 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
                 <h2 className="text-[15px] font-bold text-[#2E3330]">Tablero</h2>
                 {!loadingNotas && (
                   <span className="px-2.5 py-0.5 rounded-full bg-[#2E3330]/5 text-[#2E3330]/70 text-[12px] font-bold">
-                    {notas.length} notas en esta secuencia
+                    {notas.length} fichas en esta secuencia
                   </span>
                 )}
               </div>
@@ -176,7 +216,7 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
                 <button className="px-3 py-1 rounded-full bg-[#689C63]/10 text-[#689C63] text-[12px] font-bold">Todas ({notas.length})</button>
                 <div className="h-4 w-px bg-[#2E3330]/10 mx-1 hidden sm:block"></div>
                 <button className="p-1.5 rounded-full text-[#689C63] bg-[#2E3330]/5 hover:bg-[#2E3330]/10 transition-colors" title="Vista Masonry"><LayoutDashboard size={18} /></button>
-                <button className="p-1.5 rounded-full text-[#2E3330]/70 hover:text-[#2E3330] transition-colors" title="Filtrar notas"><Filter size={18} /></button>
+                <button className="p-1.5 rounded-full text-[#2E3330]/70 hover:text-[#2E3330] transition-colors" title="Filtrar fichas"><Filter size={18} /></button>
               </div>
             </div>
           )}
@@ -190,15 +230,15 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
               <div className="w-14 h-14 rounded-full bg-[#689C63]/10 flex items-center justify-center text-[#689C63] mb-4">
                 <FileText size={24} />
               </div>
-              <h3 className="text-base font-bold text-[#2E3330] mb-2">Aún no hay notas</h3>
+              <h3 className="text-base font-bold text-[#2E3330] mb-2">Aún no hay fichas</h3>
               <p className="text-[13px] text-[#2E3330]/60 max-w-62.5 mb-6">
-                Comienza agregando tu primera nota para diseñar la clase.
+                Comienza agregando tu primera ficha para diseñar la clase.
               </p>
               <button 
                 onClick={handleCreateNota}
                 className="px-5 py-2.5 rounded-full bg-[#2E3330]/5 text-[#2E3330] font-bold text-[13px] hover:bg-[#2E3330]/10 transition-colors"
               >
-                Crear primera nota
+                Crear primera ficha
               </button>
             </div>
           ) : (
@@ -219,11 +259,11 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
                   >
                     <div className="flex items-start justify-between gap-2 mb-2.5">
                       <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-bold ${isActive ? 'bg-[#689C63]/10 text-[#689C63]' : 'bg-[#B8CADC]/30 text-[#3e6088]'}`}>
-                        Nota de clase
+                        Ficha de clase
                       </span>
                       {!notaSeleccionadaId && (
                         <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                          <button aria-label="Fijar nota" className="text-[#2E3330]/50 hover:text-[#689C63] p-0.5 rounded transition-colors" title="Fijar">
+                          <button aria-label="Fijar ficha" className="text-[#2E3330]/50 hover:text-[#689C63] p-0.5 rounded transition-colors" title="Fijar">
                             <Pin size={16} />
                           </button>
                           <button aria-label="Opciones" className="text-[#2E3330]/50 hover:text-[#2E3330] p-0.5 rounded transition-colors">
@@ -268,6 +308,11 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
         </section>
       )}
       
+      <ModalSugerirFichaIA 
+        isOpen={modalSugerirOpen} 
+        onClose={() => setModalSugerirOpen(false)} 
+        onSuccess={handleCreateNotaSugerida} 
+      />
     </div>
   );
 }

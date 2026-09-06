@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <circle cx="60" cy="60" r="56" fill="#FDF3E7"/>
+  <circle cx="60" cy="60" r="52" fill="none" stroke="#B45309" stroke-width="4"/>
+  <circle cx="60" cy="60" r="44" fill="none" stroke="#B45309" stroke-width="2" stroke-dasharray="6 5" opacity="0.5"/>
+  <path d="M85 78 L64 92 L64 58 Z" fill="#B45309"/>
+  <text x="60" y="55" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="800" fill="#92400E" text-anchor="middle" dominant-baseline="middle">65</text>
+  <text x="60" y="30" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" letter-spacing="2" fill="#B45309" text-anchor="middle">POR LOGRAR</text>
+</svg>

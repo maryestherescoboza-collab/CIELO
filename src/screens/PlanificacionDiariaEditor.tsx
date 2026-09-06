@@ -19,7 +19,7 @@ import {
 
 interface Props {
     state: AppState;
-    onUpdateSecuencia?: (seq: Secuencia) => Promise<void> | void;
+    onUpdateSecuencia?: (seq: Secuencia) => Promise<{ success: boolean; error?: any } | void> | void;
     onAddSecuencia?: (seq: Omit<Secuencia, 'id'>) => Promise<Secuencia | null>;
 }
 
@@ -116,6 +116,8 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
     const [insertadas, setInsertadas] = useState<Set<string>>(new Set());
     const [necesitaKey, setNecesitaKey] = useState(false);
     const [apiKeyInput, setApiKeyInput] = useState('');
+    const [modalContextoOpen, setModalContextoOpen] = useState(false);
+    const [contextoInput, setContextoInput] = useState('');
     const abortRef = useRef<AbortController | null>(null);
     const badgeTimersRef = useRef<Record<string, number>>({});
     const [brocha, setBrocha] = useState<{ clave: string; sugerencia: CategoriaSugerencia } | null>(null);
@@ -317,7 +319,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
             blocks.forEach((block, i) => {
                 const title = block.querySelector('.session-title');
                 if (title) {
-                    title.textContent = 'Desarrollo de la clase' + (blocks.length > 1 ? ' — Sesión ' + (i + 1) : '');
+                    title.textContent = 'Plan de clase' + (blocks.length > 1 ? ' — Sección ' + (i + 1) : '');
                 }
             });
         };
@@ -398,7 +400,12 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
         };
 
         if (onUpdateSecuencia) {
-            await onUpdateSecuencia(updatedSeq);
+            const result = await onUpdateSecuencia(updatedSeq);
+            if (result && result.success === false) {
+                setSaving(false);
+                alert(`Error al guardar en base de datos. Los cambios se mantienen en pantalla.\n\nDetalle técnico:\n${result.error?.message || JSON.stringify(result.error) || 'Error desconocido'}`);
+                return;
+            }
         }
         setSeq(updatedSeq);
         setSaving(false);
@@ -406,8 +413,19 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
         setTimeout(() => setSaveSuccess(false), 2500);
     };
 
-    const handleGenerarSugerencias = async () => {
+    const handleClickSugerir = () => {
+        const userId = session?.user?.id;
+        if (!userId) { setIaError('Sesión de usuario no válida.'); return; }
+        const apiKey = getGeminiApiKey(userId);
+        if (!apiKey) { setNecesitaKey(true); setPanelIA(true); return; }
+        
+        setContextoInput('');
+        setModalContextoOpen(true);
+    };
+
+    const handleGenerarSugerencias = async (textoContextoAdicional?: string) => {
         if (!seq || iaCargando) return;
+        setModalContextoOpen(false);
         const contenedor = document.getElementById('template-editor-container');
         if (!contenedor) return;
 
@@ -418,9 +436,9 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
         if (!apiKey) { setNecesitaKey(true); setPanelIA(true); return; }
 
         const contexto = extraerContextoPlanificacion(contenedor);
-        if (!desarrolloSuficiente(contexto)) {
+        if (!textoContextoAdicional && !desarrolloSuficiente(contexto)) {
             setPanelIA(true);
-            setIaError('Escribe primero el desarrollo de tu clase (inicio, desarrollo o cierre) para que la IA pueda analizarlo.');
+            setIaError('Escribe primero el desarrollo de tu clase o proporciona un contexto para que la IA pueda analizarlo.');
             return;
         }
 
@@ -435,7 +453,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
         finalizarBrocha();
 
         try {
-            const resultado = await generarSugerenciasPedagogicas(apiKey, contexto, controller.signal);
+            const resultado = await generarSugerenciasPedagogicas(apiKey, contexto, textoContextoAdicional, controller.signal);
             setSugerencias(resultado);
         } catch (err: unknown) {
             if ((err as Error)?.name !== 'AbortError') {
@@ -528,7 +546,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
-                            onClick={handleGenerarSugerencias}
+                            onClick={handleClickSugerir}
                             disabled={iaCargando}
                             className={`h-9 px-4 rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm transition-all outline-none flex items-center gap-1.5 disabled:opacity-50 ${iaCargando ? 'bg-(--linen)/40 border border-(--border-soft) text-(--ink-soft)' : 'bg-white border border-(--primary)/40 text-(--primary) hover:bg-(--linen)/30 active:scale-95'}`}
                         >
@@ -612,6 +630,39 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                     </div>
                 )}
 
+                {/* Modal Contexto IA */}
+                {modalContextoOpen && (
+                    <div className="fixed inset-0 z-110 bg-black/40 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in fade-in zoom-in-95 duration-200">
+                            <h3 className="text-[15px] font-black uppercase tracking-widest text-(--ink) mb-2">Contexto de la actividad</h3>
+                            <p className="text-[12px] text-(--ink-soft) mb-5">
+                                Cuéntale a la IA qué actividad estás desarrollando o qué quieres trabajar. Mientras más contexto proporciones, más específicas serán las sugerencias.
+                            </p>
+                            <textarea
+                                value={contextoInput}
+                                onChange={e => setContextoInput(e.target.value)}
+                                placeholder="Ej: Los estudiantes resolverán un problema de proporcionalidad utilizando situaciones de la vida cotidiana..."
+                                className="w-full h-32 px-4 py-3 text-[13px] border border-(--border-soft) rounded-xl outline-none focus:border-(--primary) resize-none mb-6 text-(--ink) bg-(--linen)/10"
+                                autoFocus
+                            />
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    onClick={() => setModalContextoOpen(false)}
+                                    className="px-5 py-2.5 rounded-xl border border-(--border-soft) text-[11px] font-black uppercase tracking-widest text-(--ink-soft) hover:bg-(--linen)/30 transition-colors cursor-pointer"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={() => handleGenerarSugerencias(contextoInput.trim())}
+                                    className="px-5 py-2.5 rounded-xl bg-(--primary) text-white text-[11px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
+                                >
+                                    Continuar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {panelIA && (
                     <aside className="print:hidden fixed right-0 top-0 bottom-0 w-full sm:w-100 z-50 bg-white border-l border-(--border-soft) shadow-2xl flex flex-col">
                         <div className="px-5 py-4 border-b border-(--border-soft) flex items-center justify-between shrink-0">
@@ -666,6 +717,15 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
 
                             {!iaCargando && sugerencias && (
                                 <>
+                                    {sugerencias.inicio && sugerencias.inicio.length > 0 && (
+                                        <SeccionSugerencias titulo="Inicio sugerido" items={sugerencias.inicio} prefijoClave="ini" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'inicio', texto: t })} />
+                                    )}
+                                    {sugerencias.desarrollo && sugerencias.desarrollo.length > 0 && (
+                                        <SeccionSugerencias titulo="Desarrollo sugerido" items={sugerencias.desarrollo} prefijoClave="des" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'desarrollo', texto: t })} />
+                                    )}
+                                    {sugerencias.cierre && sugerencias.cierre.length > 0 && (
+                                        <SeccionSugerencias titulo="Cierre sugerido" items={sugerencias.cierre} prefijoClave="cie" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'cierre', texto: t })} />
+                                    )}
                                     {sugerencias.recursos.length > 0 && (
                                         <SeccionSugerencias titulo="Recursos sugeridos" items={sugerencias.recursos} prefijoClave="rec" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'recursos', texto: t })} />
                                     )}

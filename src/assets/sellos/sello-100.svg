@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <circle cx="60" cy="60" r="56" fill="#E9F6EE"/>
+  <circle cx="60" cy="60" r="52" fill="none" stroke="#1E7A46" stroke-width="4"/>
+  <circle cx="60" cy="60" r="44" fill="none" stroke="#1E7A46" stroke-width="2" stroke-dasharray="6 5" opacity="0.55"/>
+  <path d="M47 71 L57 81 L76 57" fill="none" stroke="#1E7A46" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="60" y="45" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" fill="#166534" text-anchor="middle" dominant-baseline="middle">100</text>
+  <text x="60" y="95" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" letter-spacing="2" fill="#1E7A46" text-anchor="middle">EXCELENTE</text>
+</svg>

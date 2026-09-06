@@ -107,9 +107,9 @@ const GradeTable: React.FC<GradeTableProps> = ({
     return (
         <div ref={parentRef} className="flex-1 overflow-auto bg-transparent">
             <div className="min-w-max p-6">
-                <div className="bg-white rounded-4xl shadow-sm border border-(--border-soft) overflow-hidden min-w-max w-max">
+                <div className="bg-white rounded-4xl shadow-sm border border-(--border-soft) min-w-max w-max">
                     {/* Header */}
-                    <div className="sticky top-0 z-40 bg-(--background) text-[#2E3330] border-b border-(--border-soft) flex min-w-max w-max">
+                    <div className="sticky top-0 z-40 bg-(--background) text-[#2E3330] border-b border-(--border-soft) flex min-w-max w-max rounded-t-4xl">
                         {COLUMNS.map(col => {
                             const style: React.CSSProperties = { width: col.width, minWidth: col.width, maxWidth: col.width, flexShrink: 0 };
                             

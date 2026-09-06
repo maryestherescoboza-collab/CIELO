@@ -60,7 +60,7 @@ export function CompartirModal({
 
   return (
     <div
-      className="fixed inset-0 z-[130] flex items-start justify-center sm:items-center p-4"
+      className="fixed inset-0 z-130 flex items-start justify-center sm:items-center p-4"
       style={{ background: 'rgba(23, 26, 24, 0.4)', backdropFilter: 'blur(2px)' }}
       onClick={onCerrar}
     >
@@ -75,8 +75,8 @@ export function CompartirModal({
               <Users size={16} />
             </div>
             <div>
-              <h3 className="text-[15px] font-bold text-(--ink) leading-tight">Compartir nota</h3>
-              <p className="text-[12px] text-(--ink-soft)">Invita a colaborar en esta nota de clase</p>
+              <h3 className="text-[15px] font-bold text-(--ink) leading-tight">Compartir ficha</h3>
+              <p className="text-[12px] text-(--ink-soft)">Invita a colaborar en esta ficha de clase</p>
             </div>
           </div>
           <button onClick={onCerrar} className="p-1.5 rounded-lg text-(--ink-soft) hover:bg-(--paper-soft) hover:text-(--ink)">
@@ -123,7 +123,7 @@ export function CompartirModal({
               ))}
             </div>
             <p className="mt-1.5 text-[12px] text-(--ink-soft)">
-              {PERMISO_DETALLE[permiso]} · El invitado recibirá acceso a esta nota.
+              {PERMISO_DETALLE[permiso]} · El invitado recibirá acceso a esta ficha.
             </p>
           </div>
 

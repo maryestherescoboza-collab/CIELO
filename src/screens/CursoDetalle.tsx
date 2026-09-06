@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/appStore';
 import { useCursoDetalleData } from '../hooks/useCursoDetalleData';
@@ -108,6 +108,10 @@ export default function CursoDetalle(props: Props) {
     const [showAgregarActividad, setShowAgregarActividad] = useState(false);
     const [visibleActivityId, setVisibleActivityId] = useState<number | null>(null);
 
+    // Candado para evitar creación concurrente por React Strict Mode o doble petición del usuario.
+    // Combinación de curso, período y asignatura para bloquear de forma específica.
+    const creatingPFRef = useRef<string | null>(null);
+
     // Auto-crear Producto Final si no existe para este curso+asignatura+periodo
     useEffect(() => {
         if (!curso || !currentUserId || !selectedPeriodo) return;
@@ -120,8 +124,14 @@ export default function CursoDetalle(props: Props) {
             (a.userId === currentUserId || !a.userId)
         );
         
-        if (!exists && props.onAddActividad) {
-            props.onAddActividad({
+        const pfKey = `${cursoId}-${selectedPeriodo}-${myAsignatura}`;
+
+        if (!exists && props.onAddActividad && creatingPFRef.current !== pfKey) {
+            creatingPFRef.current = pfKey;
+            
+            // onAddActividad devuelve una promesa. Capturamos errores de restricción UNIQUE silenciosamente
+            // porque el objetivo es asegurar un máximo de 1 registro.
+            Promise.resolve(props.onAddActividad({
                 nombre: PRODUCTO_FINAL_NAME,
                 cursoId,
                 sharedCourseId,
@@ -131,6 +141,20 @@ export default function CursoDetalle(props: Props) {
                 userId: currentUserId,
                 fecha: new Date().toISOString().split('T')[0],
                 isProductoFinal: true
+            })).catch((err) => {
+                const isUniqueViolation = err?.code === '23505' || 
+                                          err?.message?.includes('duplicate key') || 
+                                          err?.message?.includes('unique constraint');
+                if (isUniqueViolation) {
+                    // Silenciamos SOLO conflictos de unicidad (si la base de datos ya lo creó concurrentemente).
+                    console.log('[CursoDetalle] Producto Final ya existe (conflicto de unicidad capturado).');
+                } else {
+                    // Re-lanzar cualquier otro error para que siga el flujo normal de manejo de errores
+                    throw err;
+                }
+            }).finally(() => {
+                // Liberar el candado tras unos milisegundos por seguridad extra
+                setTimeout(() => { creatingPFRef.current = null; }, 1000);
             });
         }
     }, [curso, cursoId, currentUserId, selectedPeriodo, state.actividades, props.onAddActividad, myAsignatura, sharedCourseId]);

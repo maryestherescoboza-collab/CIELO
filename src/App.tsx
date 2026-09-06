@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import './index.css';
 import Layout from './components/Layout';
@@ -82,6 +82,18 @@ export default function App() {
   usePendingCentro(session, () => actions.refresh());
   usePendingVinculo(session, () => actions.refresh());
 
+  const bootstrappedRef = useRef(false);
+  useEffect(() => {
+    if (!session || !authInitialized || loading) return;
+    if (state.perfiles.length > 0) {
+      bootstrappedRef.current = false;
+      return;
+    }
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
+    actions.refresh();
+  }, [session, authInitialized, loading, state.perfiles.length, actions.refresh]);
+
   const currentCourseRole = useMemo(() => {
     if (!selectedCursoId || !session?.user?.id) return null;
     const linked = state.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session.user.id);
@@ -140,6 +152,12 @@ export default function App() {
   );
 
   if (session && loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-(--paper)">
+      <img src={logo} alt="Logo" className="app-logo w-44 h-44 mb-8 animate-pulse" />
+      <LoadingMessage />
+    </div>
+  );
+  if (session && authInitialized && !loading && state.perfiles.length === 0) return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-(--paper)">
       <img src={logo} alt="Logo" className="app-logo w-44 h-44 mb-8 animate-pulse" />
       <LoadingMessage />

@@ -70,8 +70,8 @@ export function useSecuenciaActions() {
         return null;
     }, [session, setState, setGenericToast]);
 
-    const updateSecuencia = useCallback(async (sec: Secuencia) => {
-        if (!session?.user?.id) return;
+    const updateSecuencia = useCallback(async (sec: Secuencia): Promise<{ success: boolean; error?: any }> => {
+        if (!session?.user?.id) return { success: false, error: new Error("No session") };
         setState(s => ({ ...s, secuencias: s.secuencias.map(x => x.id === sec.id ? sec : x) }));
         saveSecuencia(session.user.id, sec);
         const { error } = await supabase.from('secuencias').upsert({
@@ -84,7 +84,11 @@ export function useSecuenciaActions() {
             user_id: session.user.id,
             recursos: sec.recursos || []
         });
-        if (error) console.error("Error updating secuencia:", error);
+        if (error) {
+            console.error("Error updating secuencia:", error);
+            return { success: false, error };
+        }
+        return { success: true };
     }, [session, setState]);
 
     const deleteSecuencia = useCallback(async (id: number) => {

@@ -165,7 +165,7 @@ export default function NuevaNotaClase({
             className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-semibold text-[#2E3330]/60 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors"
           >
             <ArrowLeft size={16} />
-            <span className="hidden sm:inline">Volver a notas</span>
+            <span className="hidden sm:inline">Volver a fichas</span>
           </button>
           <span className="hidden md:inline text-[13px] font-bold text-[#2E3330] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#689C63]/20">
             Plan de clases
@@ -233,7 +233,7 @@ export default function NuevaNotaClase({
           <input
             value={titulo}
             onChange={handleTituloChange}
-            placeholder="Título de la nota"
+            placeholder="Título de la ficha"
             autoFocus
             className="w-full mt-8 bg-transparent outline-none font-bold tracking-tight"
             style={{

@@ -11,6 +11,9 @@ export interface SugerenciaEvaluacion {
 }
 
 export interface SugerenciasIA {
+    inicio: string[];
+    desarrollo: string[];
+    cierre: string[];
     recursos: string[];
     estrategiaInclusiva: string[];
     evidencias: string[];
@@ -150,30 +153,34 @@ export function desarrolloSuficiente(ctx: ContextoPlanificacion): boolean {
     return norm(texto).length >= 50;
 }
 
-function construirPrompt(ctx: ContextoPlanificacion): string {
-    return `Actúa como asistente pedagógico para docentes de República Dominicana. Analiza EXCLUSIVAMENTE la siguiente planificación de clase ya escrita por el docente y sugiere mejoras puntuales. No inventes información que no esté disponible; trabaja con lo proporcionado.
+function construirPrompt(ctx: ContextoPlanificacion, contextoAdicional?: string): string {
+    const textoContextoAdicional = contextoAdicional 
+        ? `\nCONTEXTO ADICIONAL DE LA ACTIVIDAD (Prioridad Alta):\n"${contextoAdicional}"\nOrienta tus sugerencias específicamente a desarrollar y mejorar esta actividad propuesta.\n` 
+        : '';
 
+    return `Actúa como asistente pedagógico para docentes de República Dominicana. Analiza EXCLUSIVAMENTE la siguiente planificación de clase ya escrita por el docente y el contexto de la actividad, y sugiere mejoras puntuales. No inventes información que no esté disponible; trabaja con lo proporcionado.
+${textoContextoAdicional}
 PLANIFICACIÓN DEL DOCENTE (fuente principal):
 ${JSON.stringify(ctx, null, 2)}
 
 Genera sugerencias organizadas en estas categorías:
 
-1. RECURSOS: materiales didácticos, recursos visuales, herramientas digitales, organizadores, textos o materiales manipulativos que complementen lo que REALMENTE ocurre en la clase. No recomiendes recursos genéricos sin relación con la planificación.
+1. INICIO: actividades cortas para despertar el interés, conectar con saberes previos o introducir el contexto de la actividad propuesta.
+2. DESARROLLO: pasos específicos, dinámicas o instrucciones para llevar a cabo la actividad principal descrita, asegurando la comprensión y participación.
+3. CIERRE: actividades de síntesis, puesta en común o cierre formal de la actividad principal.
+4. RECURSOS: materiales didácticos, recursos visuales, herramientas digitales, organizadores, textos o materiales manipulativos que complementen lo que REALMENTE ocurre en la clase. No recomiendes recursos genéricos sin relación con la planificación.
+5. ESTRATEGIA INCLUSIVA: UNA estrategia concreta para facilitar acceso al contenido, participación, comprensión o expresión del aprendizaje, aplicable SIN asumir diagnósticos ni condiciones personales (ej.: instrucciones orales y visuales, ejemplos resueltos previos, roles definidos en grupos, andamiaje progresivo). No entregues una lista genérica de adaptaciones: máximo 2 elementos específicos para ESTA clase.
+6. EVIDENCIAS DEL APRENDIZAJE: qué evidencias observables pueden producirse DURANTE el desarrollo, antes del producto final (procedimiento escrito, borrador, esquema, tabla, mapa conceptual, explicación oral, resolución parcial, registro). Indica qué permite observar cada evidencia sobre el aprendizaje.
+7. EVALUACIÓN: combina pedagógicamente una TÉCNICA (observación, análisis de desempeño, interrogatorio, análisis de producciones) con un INSTRUMENTO (lista de cotejo, rúbrica, escala de valoración, registro anecdótico, guía de observación) coherentes con la actividad descrita. No recomiendes instrumentos innecesariamente complejos. Si la planificación ya menciona técnica/instrumento, evalúa su coherencia y sugiere mejora SOLO si aporta valor real; si ya es adecuado, confírmalo en "sugerencia".
+8. METACOGNICIÓN: una o dos preguntas o acciones breves directamente relacionadas con la actividad realizada. Evita preguntas genéricas como únicamente "¿Qué aprendiste hoy?".
 
-2. ESTRATEGIA INCLUSIVA: UNA estrategia concreta para facilitar acceso al contenido, participación, comprensión o expresión del aprendizaje, aplicable SIN asumir diagnósticos ni condiciones personales (ej.: instrucciones orales y visuales, ejemplos resueltos previos, roles definidos en grupos, andamiaje progresivo). No entregues una lista genérica de adaptaciones: máximo 2 elementos específicos para ESTA clase.
-
-3. EVIDENCIAS DEL APRENDIZAJE: qué evidencias observables pueden producirse DURANTE el desarrollo, antes del producto final (procedimiento escrito, borrador, esquema, tabla, mapa conceptual, explicación oral, resolución parcial, registro). Indica qué permite observar cada evidencia sobre el aprendizaje.
-
-4. EVALUACIÓN: combina pedagógicamente una TÉCNICA (observación, análisis de desempeño, interrogatorio, análisis de producciones) con un INSTRUMENTO (lista de cotejo, rúbrica, escala de valoración, registro anecdótico, guía de observación) coherentes con la actividad descrita. No recomiendes instrumentos innecesariamente complejos. Si la planificación ya menciona técnica/instrumento, evalúa su coherencia y sugiere mejora SOLO si aporta valor real; si ya es adecuado, confírmalo en "sugerencia".
-
-5. METACOGNICIÓN: una o dos preguntas o acciones breves directamente relacionadas con la actividad realizada. Evita preguntas genéricas como únicamente "¿Qué aprendiste hoy?".
-
-Prioriza sugerencias que mejoren la coherencia: ACTIVIDAD -> EVIDENCIA -> EVALUACION -> REFLEXION. Cada elemento debe ser concreto, breve y utilizable tal cual. Sin explicaciones teóricas extensas.`;
+Prioriza sugerencias que mejoren la coherencia: INICIO -> DESARROLLO -> CIERRE -> EVIDENCIA -> EVALUACION -> REFLEXION. Cada elemento debe ser concreto, breve y utilizable tal cual. Sin explicaciones teóricas extensas.`;
 }
 
 export async function generarSugerenciasPedagogicas(
     apiKey: string,
     contexto: ContextoPlanificacion,
+    textoContextoAdicional?: string,
     signal?: AbortSignal
 ): Promise<SugerenciasIA> {
     const response = await fetch(buildGeminiEndpoint(apiKey), {
@@ -181,12 +188,15 @@ export async function generarSugerenciasPedagogicas(
         headers: { 'Content-Type': 'application/json' },
         signal,
         body: JSON.stringify({
-            contents: [{ parts: [{ text: construirPrompt(contexto) }] }],
+            contents: [{ parts: [{ text: construirPrompt(contexto, textoContextoAdicional) }] }],
             generationConfig: {
                 responseMimeType: 'application/json',
                 responseSchema: {
                     type: 'OBJECT',
                     properties: {
+                        inicio: { type: 'ARRAY', items: { type: 'STRING' } },
+                        desarrollo: { type: 'ARRAY', items: { type: 'STRING' } },
+                        cierre: { type: 'ARRAY', items: { type: 'STRING' } },
                         recursos: { type: 'ARRAY', items: { type: 'STRING' } },
                         estrategiaInclusiva: { type: 'ARRAY', items: { type: 'STRING' } },
                         evidencias: { type: 'ARRAY', items: { type: 'STRING' } },
@@ -201,7 +211,7 @@ export async function generarSugerenciasPedagogicas(
                         },
                         metacognicion: { type: 'ARRAY', items: { type: 'STRING' } }
                     },
-                    required: ['recursos', 'estrategiaInclusiva', 'evidencias', 'evaluacion', 'metacognicion']
+                    required: ['inicio', 'desarrollo', 'cierre', 'recursos', 'estrategiaInclusiva', 'evidencias', 'evaluacion', 'metacognicion']
                 }
             }
         })
@@ -233,6 +243,9 @@ export async function generarSugerenciasPedagogicas(
         Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string' && norm(x).length > 0) : [];
 
     const resultado: SugerenciasIA = {
+        inicio: limpiar(data.inicio),
+        desarrollo: limpiar(data.desarrollo),
+        cierre: limpiar(data.cierre),
         recursos: limpiar(data.recursos),
         estrategiaInclusiva: limpiar(data.estrategiaInclusiva),
         evidencias: limpiar(data.evidencias),
@@ -262,6 +275,9 @@ export async function generarSugerenciasPedagogicas(
 // Supabase y sin llamadas IA hasta que el usuario pulsa Guardar.
 
 export type CategoriaSugerencia =
+    | { tipo: 'inicio'; texto: string }
+    | { tipo: 'desarrollo'; texto: string }
+    | { tipo: 'cierre'; texto: string }
     | { tipo: 'recursos'; texto: string }
     | { tipo: 'estrategia'; texto: string }
     | { tipo: 'evidencia'; texto: string }

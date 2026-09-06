@@ -1,7 +1,7 @@
 export type Screen =
     | 'inicio' | 'dashboard' | 'cursos' | 'curso-detalle'
     | 'incidencias' | 'planificacion' | 'plan-de-clases' | 'comunidad'
-    | 'rubrica' | 'cotejo' | 'estudiante' | 'calificaciones-anuales' | 'ajustes';
+    | 'rubrica' | 'cotejo' | 'sellos' | 'estudiante' | 'calificaciones-anuales' | 'ajustes';
 
 export type NavExtra = {
     cursoId?: number;
@@ -62,6 +62,7 @@ export interface Actividad {
     fecha: string; periodo: string;
     bcAsignados: Competencia[];
     secuenciaId?: number;
+    planFichaId?: string;
     isRec?: boolean;
     isProductoFinal?: boolean;
     userId?: string;

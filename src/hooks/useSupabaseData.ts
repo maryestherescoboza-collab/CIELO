@@ -75,6 +75,7 @@ const mapActividad = (a: any, cursos?: any[]): Actividad => ({
         ? a.bc_asignados as BCKey[]
         : ['BC1'] as BCKey[],
     secuenciaId: a.secuencia_id as number,
+    planFichaId: a.plan_ficha_id as string | undefined,
     isRec: a.is_rec as boolean,
     userId: a.user_id as string,
     asignatura: a.asignatura as string,

@@ -50,6 +50,11 @@ onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, cont
     const [isDirtyCotejo, setIsDirtyCotejo] = useState(false);
     const [isSavingCotejo, setIsSavingCotejo] = useState(false);
 
+    // Ref de guardia: protege el estado LOCAL general contra recargas
+    // mientras hay cambios sin guardar (evita que el valor de Pincel/Numérico desaparezca).
+    const dirtyRef = useRef(false);
+    dirtyRef.current = isDirty;
+
     // Ref de guardia: protege el estado LOCAL de cotejo contra recargas/realtime
     // mientras hay cambios sin guardar (evita que el ✓ desaparezca tras el clic).
     const dirtyCotejoRef = useRef(false);
@@ -59,8 +64,12 @@ onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, cont
 
     useEffect(() => {
         const currentActs = state.actividades.filter(a => a.id && a.cursoId === cursoId && (!a.asignatura || a.asignatura === myAsignatura) && (a.userId === currentUserId || !a.userId));
-        setLocalCalifs(state.calificaciones.filter(c => c.cursoId === cursoId && (!c.asignatura || c.asignatura === myAsignatura)));
-        setLocalRecs(state.recuperaciones.filter(r => r.cursoId === cursoId && (!r.asignatura || r.asignatura === myAsignatura)));
+        
+        if (!dirtyRef.current) {
+            setLocalCalifs(state.calificaciones.filter(c => c.cursoId === cursoId && (!c.asignatura || c.asignatura === myAsignatura)));
+            setLocalRecs(state.recuperaciones.filter(r => r.cursoId === cursoId && (!r.asignatura || r.asignatura === myAsignatura)));
+        }
+
         // Cotejo: cargar los ✓ perseguidos SOLO si no hay ediciones locales sin guardar.
         // Sin esta guardia, cualquier recarga (realtime/autosave) borra el ✓ recién marcado.
         if (!dirtyCotejoRef.current) {

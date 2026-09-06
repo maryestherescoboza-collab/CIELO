@@ -258,7 +258,7 @@ export default function SecuenciasIndex() {
             </div>
             <h3 className="text-lg font-bold text-[#2E3330] mb-2">Aún no tienes secuencias</h3>
             <p className="text-[14px] text-[#2E3330]/60 max-w-sm mb-6">
-              Las secuencias te ayudan a agrupar tus notas de clase por unidades temáticas o competencias.
+              Las secuencias te ayudan a agrupar tus fichas de clase por unidades temáticas o competencias.
             </p>
             <button 
               onClick={handleCreate}
