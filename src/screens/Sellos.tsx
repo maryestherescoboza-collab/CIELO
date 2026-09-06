@@ -475,7 +475,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
     }
 
     return (
-        <div className="min-h-screen flex items-start justify-center p-3 sm:p-6 text-[#1E2322] font-sans bg-canvas-pattern">
+        <div translate="no" className="min-h-screen flex items-start justify-center p-3 sm:p-6 text-[#1E2322] font-sans bg-canvas-pattern">
             <main className="w-full max-w-105 bg-white overflow-hidden flex flex-col relative rounded-3xl border border-gray-200 shadow-2xl mx-auto">
                 <div className="px-5 pt-6 pb-6 overflow-y-auto min-h-125">
                     {paso !== 'captura' && paso !== 'final' && (
