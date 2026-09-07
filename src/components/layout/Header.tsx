@@ -53,94 +53,96 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
             </div>
 
-            <div className="flex-1 mx-4 max-w-md hidden lg:flex items-center gap-2 px-4.5 min-h-9 bg-white border border-(--border-soft) rounded-full hover:border-(--primary) transition-colors relative artisan-pill">
-                <Search size={14} className="text-(--ink-soft)" />
-                <input
-                    type="text"
-                    className="bg-transparent border-none outline-none text-xs font-bold text-(--ink) placeholder:text-(--ink-soft) w-full"
-                    placeholder="Buscar estudiante, curso, actividad..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                />
+            <div className="hidden lg:flex flex-1 mx-4 max-w-md">
+                <div className="flex-1 w-full flex items-center gap-2 px-4.5 min-h-9 bg-white border border-(--border-soft) rounded-full hover:border-(--primary) transition-colors relative artisan-pill">
+                    <Search size={14} className="text-(--ink-soft)" />
+                    <input
+                        type="text"
+                        className="bg-transparent border-none outline-none text-xs font-bold text-(--ink) placeholder:text-(--ink-soft) w-full"
+                        placeholder="Buscar estudiante, curso, actividad..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                    />
 
-                {searchResults && (
-                    <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-md border border-(--border-soft) z-50 p-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                        {searchResults.estudiantes.length > 0 && (
-                            <div className="p-2">
-                                <p className="text-xs font-black uppercase text-(--ink-soft) tracking-widest mb-1 px-1">Estudiantes</p>
-                                <div className="space-y-1">
-                                    {searchResults.estudiantes.map((e) => (
-                                        <button 
-                                            key={e.id} 
-                                            onClick={() => onSelectSearchResult('estudiante', e.id)}
-                                            className="w-full flex items-center gap-2.5 p-2 hover:bg-(--linen)/50 rounded-xl transition-all group"
-                                        >
-                                            <div className="w-7 h-7 rounded-full bg-(--linen) flex items-center justify-center text-xs font-black text-(--ink-soft) border border-(--border-soft)">
-                                                {e.nombre[0]}
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="text-xs font-bold text-(--ink) group-hover:text-(--primary)">{e.nombre} {e.apellido}</p>
-                                                <p className="text-xs font-medium text-(--ink-soft)">Ver Expediente</p>
-                                            </div>
-                                        </button>
-                                    ))}
+                    {searchResults && (
+                        <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-md border border-(--border-soft) z-50 p-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                            {searchResults.estudiantes.length > 0 && (
+                                <div className="p-2">
+                                    <p className="text-xs font-black uppercase text-(--ink-soft) tracking-widest mb-1 px-1">Estudiantes</p>
+                                    <div className="space-y-1">
+                                        {searchResults.estudiantes.map((e) => (
+                                            <button 
+                                                key={e.id} 
+                                                onClick={() => onSelectSearchResult('estudiante', e.id)}
+                                                className="w-full flex items-center gap-2.5 p-2 hover:bg-(--linen)/50 rounded-xl transition-all group"
+                                            >
+                                                <div className="w-7 h-7 rounded-full bg-(--linen) flex items-center justify-center text-xs font-black text-(--ink-soft) border border-(--border-soft)">
+                                                    {e.nombre[0]}
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-xs font-bold text-(--ink) group-hover:text-(--primary)">{e.nombre} {e.apellido}</p>
+                                                    <p className="text-xs font-medium text-(--ink-soft)">Ver Expediente</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {searchResults.cursos.length > 0 && (
-                            <div className="p-2 border-t border-(--border-soft)">
-                                <p className="text-xs font-black uppercase text-(--ink-soft) tracking-widest mb-1 px-1">Cursos</p>
-                                <div className="space-y-1">
-                                    {searchResults.cursos.map((c) => (
-                                        <button 
-                                            key={c.id} 
-                                            onClick={() => onSelectSearchResult('curso', c.id)}
-                                            className="w-full flex items-center gap-2.5 p-2 hover:bg-(--linen)/50 rounded-xl transition-all group"
-                                        >
-                                            <div className="w-7 h-7 rounded-lg bg-(--linen) flex items-center justify-center text-(--primary) border border-(--border-soft)">
-                                                <Search size={12} />
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="text-xs font-bold text-(--ink) group-hover:text-(--primary)">{c.nombre}</p>
-                                                <p className="text-xs font-medium text-(--ink-soft) uppercase tracking-tighter">{c.asignatura}</p>
-                                            </div>
-                                        </button>
-                                    ))}
+                            {searchResults.cursos.length > 0 && (
+                                <div className="p-2 border-t border-(--border-soft)">
+                                    <p className="text-xs font-black uppercase text-(--ink-soft) tracking-widest mb-1 px-1">Cursos</p>
+                                    <div className="space-y-1">
+                                        {searchResults.cursos.map((c) => (
+                                            <button 
+                                                key={c.id} 
+                                                onClick={() => onSelectSearchResult('curso', c.id)}
+                                                className="w-full flex items-center gap-2.5 p-2 hover:bg-(--linen)/50 rounded-xl transition-all group"
+                                            >
+                                                <div className="w-7 h-7 rounded-lg bg-(--linen) flex items-center justify-center text-(--primary) border border-(--border-soft)">
+                                                    <Search size={12} />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-xs font-bold text-(--ink) group-hover:text-(--primary)">{c.nombre}</p>
+                                                    <p className="text-xs font-medium text-(--ink-soft) uppercase tracking-tighter">{c.asignatura}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {searchResults.actividades.length > 0 && (
-                            <div className="p-2 border-t border-(--border-soft)">
-                                <p className="text-xs font-black uppercase text-(--ink-soft) tracking-widest mb-1 px-1">Evaluaciones</p>
-                                <div className="space-y-1">
-                                    {searchResults.actividades.map((a) => (
-                                        <button 
-                                            key={a.id} 
-                                            onClick={() => onSelectSearchResult('actividad', a.id)}
-                                            className="w-full flex items-center gap-2.5 p-2 hover:bg-(--linen)/50 rounded-xl transition-all group"
-                                        >
-                                            <div className="w-7 h-7 rounded-lg bg-(--linen) flex items-center justify-center text-(--attention) border border-(--border-soft)">
-                                                <Bell size={12} />
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="text-xs font-bold text-(--ink) group-hover:text-(--primary)">{a.nombre}</p>
-                                                <p className="text-xs font-medium text-(--ink-soft)">{a.fecha}</p>
-                                            </div>
-                                        </button>
-                                    ))}
+                            {searchResults.actividades.length > 0 && (
+                                <div className="p-2 border-t border-(--border-soft)">
+                                    <p className="text-xs font-black uppercase text-(--ink-soft) tracking-widest mb-1 px-1">Evaluaciones</p>
+                                    <div className="space-y-1">
+                                        {searchResults.actividades.map((a) => (
+                                            <button 
+                                                key={a.id} 
+                                                onClick={() => onSelectSearchResult('actividad', a.id)}
+                                                className="w-full flex items-center gap-2.5 p-2 hover:bg-(--linen)/50 rounded-xl transition-all group"
+                                            >
+                                                <div className="w-7 h-7 rounded-lg bg-(--linen) flex items-center justify-center text-(--attention) border border-(--border-soft)">
+                                                    <Bell size={12} />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-xs font-bold text-(--ink) group-hover:text-(--primary)">{a.nombre}</p>
+                                                    <p className="text-xs font-medium text-(--ink-soft)">{a.fecha}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {searchResults.estudiantes.length === 0 && searchResults.cursos.length === 0 && searchResults.actividades.length === 0 && (
-                            <div className="p-6 text-center text-(--ink-soft)">
-                                <p className="text-xs font-bold">No se encontraron resultados</p>
-                            </div>
-                        )}
-                    </div>
-                )}
+                            {searchResults.estudiantes.length === 0 && searchResults.cursos.length === 0 && searchResults.actividades.length === 0 && (
+                                <div className="p-6 text-center text-(--ink-soft)">
+                                    <p className="text-xs font-bold">No se encontraron resultados</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -151,7 +153,7 @@ const Header: React.FC<HeaderProps> = ({
                     aria-label="Ver pendientes"
                 >
                     <Bell size={14} className="shrink-0" />
-                    <span className="hidden sm:inline shrink-0">Alertas</span>
+                    <span className="hidden lg:inline shrink-0">Alertas</span>
                     {hasUnread && (
                         <span className="absolute top-1.5 right-2 w-2 h-2 bg-(--warning) rounded-full border border-white"></span>
                     )}
@@ -203,12 +205,14 @@ const Header: React.FC<HeaderProps> = ({
 
                 <div className="h-6 w-px bg-(--border-soft) mx-1 hidden lg:block"></div>
 
-                <div className="hidden lg:flex items-center gap-2 cursor-pointer group px-4.5 py-2 min-h-9 rounded-full border border-transparent bg-(--linen) transition-all artisan-pill shrink-0" onClick={onOpenSettings}>
-                    <div className="text-right">
-                        <p className="text-xs font-black text-(--ink-soft) uppercase tracking-widest m-0 leading-none">Perfil Docente</p>
-                        <p className="text-xs font-black text-(--ink) m-0 leading-tight">{docenteNombre}</p>
+                <div className="hidden lg:block shrink-0">
+                    <div className="flex items-center gap-2 cursor-pointer group px-4.5 py-2 min-h-9 rounded-full border border-transparent bg-(--linen) transition-all artisan-pill" onClick={onOpenSettings}>
+                        <div className="text-right">
+                            <p className="text-xs font-black text-(--ink-soft) uppercase tracking-widest m-0 leading-none">Perfil Docente</p>
+                            <p className="text-xs font-black text-(--ink) m-0 leading-tight">{docenteNombre}</p>
+                        </div>
+                        <UserAvatar src={avatarUrl} name={docenteNombre} className="w-6 h-6 shrink-0" />
                     </div>
-                    <UserAvatar src={avatarUrl} name={docenteNombre} className="w-6 h-6 shrink-0" />
                 </div>
             </div>
         </header>

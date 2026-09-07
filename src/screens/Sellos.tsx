@@ -139,7 +139,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                         <li key={c.id}>
                             <button
                                 onClick={() => { setCursoId(c.id); setPeriodo(null); setActividadId(null); setIndice(0); setPaso('periodo'); }}
-                                className="w-full flex items-center gap-3 text-left rounded-[20px] border-[1.75px] border-[#1C2220] bg-[#FEFDF9] p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-sketch active:scale-[0.98] group"
+                                className="w-full flex items-center gap-3 text-left rounded-[20px] border-[1.75px] border-[#1C2220] bg-[#FEFDF9] p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-sketch active:scale-[0.98] group"
                             >
                                 <span
                                     className="w-12 h-12 shrink-0 rounded-full border-2 border-[#1C2220] flex items-center justify-center text-sm font-black shadow-sm group-hover:scale-105 transition-transform"
@@ -173,7 +173,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                             <button
                                 key={p}
                                 onClick={() => { setPeriodo(p); setActividadId(null); setIndice(0); setPaso('actividad'); }}
-                                className="flex flex-col items-start gap-1 rounded-[20px] border-[1.75px] border-[#1C2220] bg-[#FEFDF9] p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-sketch active:scale-[0.98]"
+                                className="flex flex-col items-start gap-1 rounded-[20px] border-[1.75px] border-[#1C2220] bg-[#FEFDF9] p-4 sm:p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-sketch active:scale-[0.98]"
                             >
                                 <span className="text-2xl font-black text-[#147347]">{p}</span>
                                 <span className="text-[11px] font-bold text-gray-500">{n} actividad{n === 1 ? '' : 'es'}</span>
@@ -203,7 +203,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                             <li key={a.id}>
                                 <button
                                     onClick={() => { setActividadId(a.id); setIndice(0); setPaso('captura'); }}
-                                    className="w-full flex items-center gap-3 text-left rounded-[20px] border-[1.75px] border-[#1C2220] bg-[#FEFDF9] p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-sketch active:scale-[0.98]"
+                                    className="w-full flex items-center gap-3 text-left rounded-[20px] border-[1.75px] border-[#1C2220] bg-[#FEFDF9] p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-sketch active:scale-[0.98]"
                                 >
                                     <span className="flex-1 min-w-0">
                                         <span className="block font-extrabold text-[#1C2220] truncate text-[14px]">{a.nombre}</span>
@@ -267,7 +267,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                             <span className="tracking-wide uppercase text-[11px] text-gray-500 group-hover:text-gray-900">Actividades</span>
                         </button>
                     </div>
-                    <div className="bg-[#EFF3F0] rounded-2xl border-[1.75px] border-[#1C2220] p-3.5 shadow-sketch-sm">
+                    <div className="bg-[#EFF3F0] rounded-2xl border-[1.75px] border-[#1C2220] p-3 sm:p-3.5 shadow-sketch-sm">
                         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500 font-medium">
                             <span>{curso.grado}</span>
                             <span>•</span>
@@ -285,7 +285,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                 {/* Student Active Card */}
                 <section className="relative pt-1 mb-5">
                     <div className="absolute inset-0 bg-[#E8F2EA] rounded-[26px] translate-x-1.5 translate-y-2 border border-[#1C2220]/20 pointer-events-none"></div>
-                    <div id="student-container" className="relative rounded-[26px] border-[3px] border-[#1C2220] bg-[#FEFDF9] p-5 shadow-sketch transition-all duration-300">
+                    <div id="student-container" className="relative rounded-[26px] border-[3px] border-[#1C2220] bg-[#FEFDF9] p-4 sm:p-5 shadow-sketch transition-all duration-300">
                         <div className="flex flex-col items-center text-center space-y-2">
                             <div className="relative">
                                 <div 
@@ -329,7 +329,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                     <div className="flex items-center justify-between px-1">
                         <span className="text-[11px] font-extrabold uppercase tracking-widest text-gray-500">Catálogo de Sellos</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
                         {SELLOS_INFO.map(s => {
                             const activo = califActual?.puntaje === s.valor;
                             
@@ -347,7 +347,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                                     className={`stamp-card group flex flex-col items-center justify-center transition-all duration-200 hover:-translate-y-1 active:scale-95 text-center ${activo ? 'scale-105' : ''} ${guardando ? 'opacity-50' : ''}`}
                                 >
                                     <div 
-                                        className={`w-15 h-15 sm:w-16 sm:h-16 rounded-full border-2 border-dashed flex flex-col items-center justify-center relative p-1 shadow-sketch-sm group-hover:scale-105 transition-transform`}
+                                        className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-dashed flex flex-col items-center justify-center relative p-1 shadow-sketch-sm group-hover:scale-105 transition-transform`}
                                         style={{ borderColor: s.color, backgroundColor: s.circleBg }}
                                     >
                                         <div 
@@ -475,9 +475,9 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
     }
 
     return (
-        <div translate="no" className="min-h-screen flex items-start justify-center p-3 sm:p-6 text-[#1E2322] font-sans bg-canvas-pattern">
-            <main className="w-full max-w-105 bg-white overflow-hidden flex flex-col relative rounded-3xl border border-gray-200 shadow-2xl mx-auto">
-                <div className="px-5 pt-6 pb-6 overflow-y-auto min-h-125">
+        <div translate="no" className="h-[calc(100dvh-130px)] lg:h-auto lg:min-h-screen flex items-start justify-center p-1.5 sm:p-4 lg:p-6 text-[#1E2322] font-sans bg-canvas-pattern overflow-hidden lg:overflow-visible">
+            <main className="w-full h-full lg:h-auto max-w-100 sm:max-w-120 lg:max-w-105 bg-white overflow-hidden flex flex-col relative rounded-2xl sm:rounded-[24px] lg:rounded-3xl border border-gray-200/70 lg:border-gray-200 shadow-xl lg:shadow-2xl mx-auto mt-1 sm:mt-2 lg:mt-0">
+                <div className="px-3.5 sm:px-5 lg:px-5 pt-4 sm:pt-5 lg:pt-6 pb-4 sm:pb-5 lg:pb-6 overflow-y-auto flex-1 lg:min-h-125 w-full">
                     {paso !== 'captura' && paso !== 'final' && (
                         <div className="mb-6">
                             <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">

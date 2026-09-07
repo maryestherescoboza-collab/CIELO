@@ -861,6 +861,10 @@ export function useSupabaseData(skipInit = false) {
     const loadDashboardData = useCallback(async () => {
         if (!session?.user?.id) { console.log(`[DIAG][DASH] guard sin-sesion ts=${new Date().toISOString()}`); return; }
         if (loadedModules.includes('dashboard')) { console.log(`[DIAG][DASH] guard ya-cargado ts=${new Date().toISOString()}`); return; }
+        if (!loadedModules.includes('core')) {
+            console.log('[DIAG][DASH] omitiendo loadDashboardData porque core no está cargado');
+            return;
+        }
         console.log('[PLANIFICACION] lazy loading Dashboard data');
         console.log(`[DIAG][DASH] start user=${session.user.id} ts=${new Date().toISOString()}`);
         setLoading(true);
@@ -923,13 +927,22 @@ export function useSupabaseData(skipInit = false) {
                 `user_id.eq.${session.user.id}` +
                 (misSharedCourseIds.length > 0 ? `,shared_course_id.in.(${misSharedCourseIds.join(',')})` : '');
 
+            let incidenciasQuery = supabase.from('incidencias').select('*').eq('activo', true);
+            if (isCentroAdmin && currentProfile?.centro_id) {
+                // Centro Panel → Incidencias: el administrador visualiza las incidencias
+                // cuyo centro_id coincide con el suyo (todas las incidencias del centro).
+                incidenciasQuery = incidenciasQuery.eq('centro_id', currentProfile.centro_id);
+            } else {
+                incidenciasQuery = incidenciasQuery.or(incidenciaOrFilter);
+            }
+
             console.log(`[PLANIFICACION] Dashboard queries (isCentroAdmin: ${isCentroAdmin}, cursos: ${cursosParticipaIds.length})`);
 
             const results = await Promise.all([
                 supabase.from('estudiantes').select('*').eq('activo', true).in('curso_id', cursosParticipaIds.length > 0 ? cursosParticipaIds : [-1]),
                 userFilter(activeQuery('actividades')),
                 userOrTutorFilter(activeQuery('calificaciones')),
-                supabase.from('incidencias').select('*').eq('activo', true).or(incidenciaOrFilter),
+                incidenciasQuery,
                 supabase.from('eventos').select('*'),
                 supabase.from('notificaciones').select('*').eq('user_id', session.user.id).eq('leida', false).order('created_at', { ascending: false }),
                 supabase.from('grupos').select('*'),
@@ -967,7 +980,8 @@ export function useSupabaseData(skipInit = false) {
                     fecha: i.fecha as string,
                     gravedad: i.gravedad as 'leve' | 'moderada' | 'grave',
                     userId: i.user_id as string,
-                    sharedCourseId: (i.shared_course_id as string) || ''
+                    sharedCourseId: (i.shared_course_id as string) || '',
+                    centroId: (i.centro_id as string) || ''
                 }));
 
                 const mappedEventos = (eventos || []).map((ev: Record<string, unknown>): EventoCalendario => ({
@@ -1057,7 +1071,6 @@ export function useSupabaseData(skipInit = false) {
             console.log(`[DIAG][DASH] STATE_AFTER estudiantes=${st2.estudiantes.length} actividades=${st2.actividades.length} calificaciones=${st2.calificaciones.length} grupos=${st2.grupos.length} ts=${new Date().toISOString()}`);
             addLoadedModule('dashboard');
             console.log(`[DIAG][DASH] end ok user=${session.user.id} ts=${new Date().toISOString()}`);
-
         } catch (error) {
             console.error('Error loading Dashboard data:', error);
         } finally {

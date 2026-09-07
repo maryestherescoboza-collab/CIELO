@@ -154,41 +154,56 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             {showRecoveryOnly ? 'VER TODOS' : 'VER RIESGO'}
                         </CieloPill>
                         <div className="flex items-center bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]" role="radiogroup" aria-label="Modo de evaluación">
-                            <button
-                                type="button"
-                                role="radio"
-                                aria-checked={evalMode === 'pincel'}
-                                aria-label="Modo Pincel"
-                                title="Modo Pincel"
-                                onClick={() => setEvalMode('pincel')}
-                                className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'pincel' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
-                            >
-                                <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'pincel' ? 'bg-white' : 'bg-transparent'}`} />
-                            </button>
+                            <div className="relative flex items-center justify-center">
+                                {evalMode === 'pincel' && (
+                                    <span className="absolute -top-5 text-[9px] font-bold text-[#2E3330] whitespace-nowrap">Modo pincel</span>
+                                )}
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={evalMode === 'pincel'}
+                                    aria-label="Modo Pincel"
+                                    title="Modo Pincel"
+                                    onClick={() => setEvalMode('pincel')}
+                                    className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'pincel' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
+                                >
+                                    <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'pincel' ? 'bg-white' : 'bg-transparent'}`} />
+                                </button>
+                            </div>
                             <div className="w-4 h-px bg-[rgba(46,51,48,0.2)] shrink-0" />
-                            <button
-                                type="button"
-                                role="radio"
-                                aria-checked={evalMode === 'numerico'}
-                                aria-label="Modo Numérico"
-                                title="Modo Numérico"
-                                onClick={() => setEvalMode('numerico')}
-                                className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'numerico' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
-                            >
-                                <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'numerico' ? 'bg-white' : 'bg-transparent'}`} />
-                            </button>
+                            <div className="relative flex items-center justify-center">
+                                {evalMode === 'numerico' && (
+                                    <span className="absolute -top-5 text-[9px] font-bold text-[#2E3330] whitespace-nowrap">Numérico</span>
+                                )}
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={evalMode === 'numerico'}
+                                    aria-label="Modo Numérico"
+                                    title="Modo Numérico"
+                                    onClick={() => setEvalMode('numerico')}
+                                    className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'numerico' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
+                                >
+                                    <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'numerico' ? 'bg-white' : 'bg-transparent'}`} />
+                                </button>
+                            </div>
                             <div className="w-4 h-px bg-[rgba(46,51,48,0.2)] shrink-0" />
-                            <button
-                                type="button"
-                                role="radio"
-                                aria-checked={evalMode === 'libre'}
-                                aria-label="Valor libre"
-                                title="Valor libre"
-                                onClick={() => setEvalMode('libre')}
-                                className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'libre' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
-                            >
-                                <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'libre' ? 'bg-white' : 'bg-transparent'}`} />
-                            </button>
+                            <div className="relative flex items-center justify-center">
+                                {evalMode === 'libre' && (
+                                    <span className="absolute -top-5 text-[9px] font-bold text-[#2E3330] whitespace-nowrap">Valor libre</span>
+                                )}
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={evalMode === 'libre'}
+                                    aria-label="Valor libre"
+                                    title="Valor libre"
+                                    onClick={() => setEvalMode('libre')}
+                                    className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'libre' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
+                                >
+                                    <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'libre' ? 'bg-white' : 'bg-transparent'}`} />
+                                </button>
+                            </div>
                         </div>
                     </div>
 

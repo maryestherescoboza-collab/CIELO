@@ -23,8 +23,10 @@ export default function CentroIncidencias({ centroId, centroNombre, centroDistri
     }, [state.cursos, centroId]);
 
     const incidenciasCentro = useMemo(() =>
-        (state.incidencias || []).filter(i => centroSharedIds.has(i.sharedCourseId || '')),
-        [state.incidencias, centroSharedIds]
+        (state.incidencias || []).filter(i =>
+            i.centroId === centroId || centroSharedIds.has(i.sharedCourseId || '')
+        ),
+        [state.incidencias, centroSharedIds, centroId]
     );
 
     const [buscarDocente, setBuscarDocente] = useState('');
@@ -112,7 +114,7 @@ export default function CentroIncidencias({ centroId, centroNombre, centroDistri
 
                 <div className="mt-3.5 grid grid-cols-1 xl:grid-cols-2 gap-4">
                     {incidenciasFiltradas.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-[#E6E1D8] bg-white/60 px-5 py-10 text-center">
+                        <div className="rounded-2xl border border-dashed border-[#E6E1D8] bg-white/60 px-5 py-10 text-center col-span-full">
                             <p className="text-[13px] text-[#6B7280]">No se encontraron incidencias</p>
                         </div>
                     ) : (

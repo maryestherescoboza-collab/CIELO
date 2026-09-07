@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { AppState, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, BCKey, CursoDocente } from '../types';
 import { calculateStudentPeriodBC } from '../utils/academic';
 import { perteneceAlContextoDelCurso, esEstudianteDelCurso } from '../utils/aislamiento';
+import { PRODUCTO_FINAL_NAME } from '../constants/productoFinal';
 
 import { useAppStore } from '../store/appStore';
 
@@ -126,8 +127,23 @@ onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, cont
             const isMine = a.userId === currentUserId || !a.userId;
             return (isMyAct || isSharedAct) && matchesPeriod && isMine;
         });
-        console.log(`[DIAG][SCREEN] CursoDetalle cursoId=${cursoId} userId=${currentUserId ?? 'sin-usuario'} sharedCourseId=${sharedCourseId} periodo=${selectedPeriodo} actividadesConsumidas=${res.length} globalActividades=${state.actividades.length} localCalifs=${localCalifs.length} localRecs=${localRecs.length} ts=${new Date().toISOString()}`);
-        return res;
+        
+        const sorted = [...res].sort((a, b) => {
+            const isAProductoFinal = a.isProductoFinal || a.nombre === PRODUCTO_FINAL_NAME;
+            const isBProductoFinal = b.isProductoFinal || b.nombre === PRODUCTO_FINAL_NAME;
+            
+            if (isAProductoFinal && !isBProductoFinal) return 1;
+            if (!isAProductoFinal && isBProductoFinal) return -1;
+            
+            const timeA = new Date(a.fecha).getTime();
+            const timeB = new Date(b.fecha).getTime();
+            if (timeA !== timeB) return timeA - timeB;
+            
+            return a.id - b.id;
+        });
+
+        console.log(`[DIAG][SCREEN] CursoDetalle cursoId=${cursoId} userId=${currentUserId ?? 'sin-usuario'} sharedCourseId=${sharedCourseId} periodo=${selectedPeriodo} actividadesConsumidas=${sorted.length} globalActividades=${state.actividades.length} localCalifs=${localCalifs.length} localRecs=${localRecs.length} ts=${new Date().toISOString()}`);
+        return sorted;
     }, [state.actividades, state.cursos, cursoId, curso, centroContexto, selectedPeriodo, currentUserId]);
 
     const enhancedEstudiantes = useMemo(() => {

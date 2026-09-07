@@ -162,6 +162,7 @@ export interface Incidencia {
     gravedad: 'leve' | 'moderada' | 'grave';
     sharedCourseId?: string;
     userId?: string;
+    centroId?: string;
 }
 
 export type PrioridadEvento = 'CRITICA' | 'ALTA' | 'MEDIA' | 'BAJA';

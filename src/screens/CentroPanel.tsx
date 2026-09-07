@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Building2, AlertTriangle, LogOut } from 'lucide-react';
+import { Building2, AlertTriangle, LogOut, Settings, ClipboardList, FileText, type LucideIcon } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { useCentroActions } from '../hooks/useCentroActions';
 import { useSupabaseData } from '../hooks/useSupabaseData';
@@ -14,6 +14,13 @@ import CentroConfiguracion from '../components/centro/CentroConfiguracion';
 import { CieloPill } from '../components/ui/CieloPill';
 
 export type SeccionCentro = 'centro' | 'tareas' | 'boletines' | 'incidencias';
+
+const NAV_SECCIONES: { id: SeccionCentro; label: string; icon: LucideIcon }[] = [
+    { id: 'centro', label: 'Configuración', icon: Settings },
+    { id: 'tareas', label: 'Tareas', icon: ClipboardList },
+    { id: 'boletines', label: 'Boletines', icon: FileText },
+    { id: 'incidencias', label: 'Incidencias', icon: AlertTriangle },
+];
 
 
 interface Props {
@@ -139,8 +146,6 @@ export default function CentroPanel({ onLogout }: Props) {
                             <span className="text-[9px] font-bold text-slate-500 bg-white border border-slate-200/50 px-1.5 py-0.5 rounded-full select-none capitalize tracking-normal leading-none shrink-0">Beta</span>
                         </h1>
                         <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] font-bold text-(--ink-soft) uppercase tracking-[0.15em] mt-1">
-                            <span>ID: {centro.id}</span>
-                            <span className="hidden sm:inline text-(--border-soft) font-light">|</span>
                             <span>Panel de Dirección</span>
                             <span className="hidden sm:inline text-(--border-soft) font-light">|</span>
                             <span>Periodo {anioEscolar}</span>
@@ -155,27 +160,40 @@ export default function CentroPanel({ onLogout }: Props) {
                 </div>
             </header>
 
-            <div className="flex-1 flex flex-col w-full max-w-7xl mx-auto">
-                {/* ── Navegación Horizontal ─────────────────────────────── */}
-                <nav className="w-full px-6 py-3 flex gap-6 border-b border-(--border-soft) bg-white sticky top-0 z-30 overflow-x-auto scrollbar-hide">
-                    {['centro', 'tareas', 'boletines', 'incidencias'].map((seccion) => (
-                        <button 
-                            key={seccion}
-                            onClick={() => setActiveSection(seccion as SeccionCentro)}
-                            className={`text-[12px] font-black uppercase tracking-widest pb-1 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
-                                activeSection === seccion 
-                                    ? 'text-(--ink) border-(--ink)' 
-                                    : 'text-(--ink-soft) border-transparent hover:text-(--ink)'
-                            }`}
-                        >
-                            {seccion === 'centro' ? 'Configuración' : seccion}
-                        </button>
-                    ))}
-                </nav>
+            <div className="flex-1 flex flex-col md:flex-row w-full max-w-7xl mx-auto md:gap-3">
+                {/* ── Barra Lateral Izquierda ─────────────────────────── */}
+                <aside className="w-full md:w-60 lg:w-64 shrink-0 md:self-start md:sticky md:top-20 z-20 px-4 pt-4 md:px-0 md:pt-4 lg:pt-5">
+                    <nav
+                        className="flex md:flex-col gap-1.5 md:gap-2 p-2 md:p-3 overflow-x-auto md:overflow-visible scrollbar-hide bg-white md:bg-white md:border md:border-(--border-soft) md:rounded-2xl md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_rgba(0,0,0,0.05)]"
+                        aria-label="Menú de Centro Panel"
+                    >
+                        {NAV_SECCIONES.map(seccion => {
+                            const Icon = seccion.icon;
+                            const isActive = activeSection === seccion.id;
+                            return (
+                                <button
+                                    key={seccion.id}
+                                    onClick={() => setActiveSection(seccion.id)}
+                                    aria-label={seccion.label}
+                                    title={seccion.label}
+                                    aria-current={isActive ? 'page' : undefined}
+className={`inline-flex items-center justify-start gap-2.5 shrink-0 rounded-xl border px-4 py-2.5 text-[12px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                                    isActive
+                                        ? 'bg-(--linen) border-transparent text-(--ink)'
+                                        : 'bg-transparent border-transparent text-(--ink-soft) hover:bg-(--linen)/50 hover:text-(--ink)'
+                                }`}
+                                >
+                                    <Icon size={18} className="shrink-0" />
+                                    <span className="whitespace-nowrap">{seccion.label}</span>
+                                </button>
+                            );
+                        })}
+                    </nav>
+                </aside>
 
                 {/* ── Contenido Principal ─────────────────────────────── */}
-                <main className="flex-1 min-w-0 p-4 lg:p-8 bg-(--background) relative z-10">
-                    <div className="max-w-5xl mx-auto h-full flex flex-col pb-16">
+                <main className="flex-1 min-w-0 p-4 lg:p-6 bg-(--background) relative z-10">
+                    <div className="max-w-6xl mx-auto h-full flex flex-col pb-8">
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
                             {activeSection === 'centro' && (
                                 <CentroConfiguracion
