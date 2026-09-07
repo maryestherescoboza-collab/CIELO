@@ -43,7 +43,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                         onClick={() => onNavigate(item.screen)} 
                         aria-label={item.label}
                         title={item.label}
-                        className={`flex flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 ${btnBg} hover:bg-(--linen)/40`}
+                        className={`flex shrink-0 flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 ${btnBg} hover:bg-(--linen)/40`}
                         style={{ minWidth: '72px', height: '40px' }}
                     >
                         <div className={isActive ? 'text-white' : 'text-(--ink)'}>
@@ -55,12 +55,12 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
             })}
 
                     {/* Acceso global a Soporte (navegación externa, al final de la barra) */}
-                    <div className="mx-1 h-8 w-px bg-(--border-soft)" aria-hidden="true" />
+                    <div className="mx-1 h-8 w-px bg-(--border-soft) shrink-0" aria-hidden="true" />
                     <a
                         href={SUPPORT_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 bg-transparent text-(--ink) hover:bg-(--linen)/40"
+                        className="flex shrink-0 flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 bg-transparent text-(--ink) hover:bg-(--linen)/40"
                         style={{ minWidth: '72px', height: '40px' }}
                         aria-label="Soporte - Formulario oficial de CIELO"
                     >

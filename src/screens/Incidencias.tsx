@@ -182,7 +182,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
 
                 <main className="flex flex-col gap-6 items-start w-full">
                     {/* HORIZONTAL FORM BANNER */}
-                    <div className="w-full flex flex-col xl:flex-row gap-6 bg-white rounded-(--radius-lg) p-6 shadow-sm border border-(--border-soft) items-start xl:items-stretch animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+                    <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:flex xl:flex-row gap-6 bg-white rounded-(--radius-lg) p-4 md:p-6 shadow-sm border border-(--border-soft) items-start xl:items-stretch animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
                         {/* Section 1: Estudiantes Vinculados */}
                         <section className="flex flex-col gap-2 flex-1 xl:max-w-62.5 relative">
                             <h2 className="text-xs font-black uppercase tracking-[0.15em] text-(--ink-soft) flex items-center gap-1">
@@ -325,7 +325,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                          </section>
 
                         {/* Final Action Button */}
-                        <div className="flex items-center xl:items-end justify-center w-full xl:w-auto h-full mt-4 xl:mt-0 xl:ml-auto">
+                        <div className="flex items-center xl:items-end justify-center w-full xl:w-auto h-full mt-4 xl:mt-0 xl:ml-auto md:col-span-2 xl:col-span-1">
                             <div className="flex flex-col items-center gap-2 w-full xl:w-auto">
                                 <button
                                     onClick={handleSubmit}
@@ -446,7 +446,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                                                     onDeleteIncidencia(incidencia.id);
                                                                 }
                                                             }}
-                                                            className="text-(--ink-soft) hover:text-(--danger) transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-white border border-transparent hover:border-red-200 cursor-pointer"
+                                                            className="text-(--ink-soft) hover:text-(--danger) transition-colors lg:opacity-0 lg:group-hover:opacity-100 p-2 lg:p-1 rounded-full hover:bg-white border border-transparent hover:border-red-200 cursor-pointer"
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>

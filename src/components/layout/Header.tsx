@@ -44,16 +44,16 @@ const Header: React.FC<HeaderProps> = ({
         };
     }, []);
     return (
-        <header className="flex items-center justify-between px-4 py-2 bg-white border-b border-(--border-soft) sticky top-0 z-40 transition-all">
+        <header className="flex items-center justify-between px-4 pb-2 pt-[calc(8px+env(safe-area-inset-top))] bg-white border-b border-(--border-soft) sticky top-0 z-40 transition-all">
             <div className="flex items-center">
-                <img src={logo} alt="CIELO Logo" className="h-10 w-auto object-contain" />
-                <div className="hidden sm:flex items-center gap-1.5 ml-2">
+                <img src={logo} alt="CIELO Logo" className="h-10 w-auto object-contain shrink-0" />
+                <div className="hidden lg:flex items-center gap-1.5 ml-2">
                     <p className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Portafolio Docente</p>
                     <span className="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200/50 px-1.5 py-0.5 rounded-full select-none capitalize tracking-normal leading-none">Beta</span>
                 </div>
             </div>
 
-            <div className="flex-1 mx-4 max-w-md hidden md:flex items-center gap-2 px-4.5 min-h-9 bg-white border border-(--border-soft) rounded-full hover:border-(--primary) transition-colors relative artisan-pill">
+            <div className="flex-1 mx-4 max-w-md hidden lg:flex items-center gap-2 px-4.5 min-h-9 bg-white border border-(--border-soft) rounded-full hover:border-(--primary) transition-colors relative artisan-pill">
                 <Search size={14} className="text-(--ink-soft)" />
                 <input
                     type="text"
@@ -146,22 +146,22 @@ const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-2">
                 <PresentationToggle checked={isPresenting} onChange={() => { void togglePresentation(); }} />
                 <button 
-                    className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/55 hover:border-(--primary) transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill" 
+                    className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/55 hover:border-(--primary) transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill shrink-0" 
                     onClick={() => setShowNotifs(prev => !prev)} 
                     aria-label="Ver pendientes"
                 >
-                    <Bell size={14} />
-                    <span className="hidden sm:inline">Alertas</span>
+                    <Bell size={14} className="shrink-0" />
+                    <span className="hidden sm:inline shrink-0">Alertas</span>
                     {hasUnread && (
                         <span className="absolute top-1.5 right-2 w-2 h-2 bg-(--warning) rounded-full border border-white"></span>
                     )}
                 </button>
 
                 {/* Tutorial Button & Dropdown */}
-                <div className="relative" ref={tutorialRef}>
+                <div className="relative hidden lg:block" ref={tutorialRef}>
                     <button 
                         id="btn-tutorial"
-                        className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/55 hover:border-(--primary) transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill animate-tutorial-pulse" 
+                        className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/55 hover:border-(--primary) transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill animate-tutorial-pulse shrink-0" 
                         onClick={() => setShowTutorialMenu(prev => !prev)}
                         aria-label="Ver tutoriales"
                     >
@@ -201,14 +201,14 @@ const Header: React.FC<HeaderProps> = ({
                     )}
                 </div>
 
-                <div className="h-6 w-px bg-(--border-soft) mx-1 hidden sm:block"></div>
+                <div className="h-6 w-px bg-(--border-soft) mx-1 hidden lg:block"></div>
 
-                <div className="flex items-center gap-2 cursor-pointer group px-4.5 py-2 min-h-9 rounded-full border border-transparent bg-(--linen) transition-all artisan-pill" onClick={onOpenSettings}>
-                    <div className="text-right hidden sm:block">
+                <div className="hidden lg:flex items-center gap-2 cursor-pointer group px-4.5 py-2 min-h-9 rounded-full border border-transparent bg-(--linen) transition-all artisan-pill shrink-0" onClick={onOpenSettings}>
+                    <div className="text-right">
                         <p className="text-xs font-black text-(--ink-soft) uppercase tracking-widest m-0 leading-none">Perfil Docente</p>
                         <p className="text-xs font-black text-(--ink) m-0 leading-tight">{docenteNombre}</p>
                     </div>
-                    <UserAvatar src={avatarUrl} name={docenteNombre} className="w-6 h-6" />
+                    <UserAvatar src={avatarUrl} name={docenteNombre} className="w-6 h-6 shrink-0" />
                 </div>
             </div>
         </header>
