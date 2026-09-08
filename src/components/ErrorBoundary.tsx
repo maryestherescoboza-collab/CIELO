@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { attemptChunkRecovery, isChunkLoadError } from '../utils/chunkRecovery';
 
 export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null, isChunkError: boolean, recovering: boolean }> {
@@ -69,19 +69,16 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
 
             // Fallback genérico para otros errores de React
             return (
-                <div className="flex flex-col items-center justify-center p-12 text-center bg-rose-50 rounded-3xl border-2 border-dashed border-rose-200">
-                    <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mb-4 text-rose-600">
-                        <AlertTriangle size={32} />
-                    </div>
-                    <h2 className="text-xl font-bold text-rose-800">Ups, algo salió mal</h2>
-                    <p className="text-rose-600 max-w-md mt-2">Ha ocurrido un error inesperado al renderizar este módulo.</p>
-                    {this.state.error && (
-                        <div className="mt-4 p-3 bg-rose-100 text-rose-800 text-xs text-left w-full max-w-lg rounded-xl overflow-auto font-mono">
-                            {this.state.error.message}
-                        </div>
-                    )}
-                    <button onClick={() => window.location.reload()} className="mt-6 px-6 py-2 bg-rose-600 text-white rounded-xl font-bold hover:scale-105 transition-transform">
-                        Recargar Aplicación
+                <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl border border-(--border-unificado) shadow-sm w-full h-full min-h-75">
+                    <h2 className="text-xl font-semibold text-(--ink) mb-3 tracking-tight">Algo salió mal</h2>
+                    <p className="text-(--ink-soft) max-w-md mb-8 leading-relaxed">
+                        Ocurrió un problema momentáneo al cargar este módulo.
+                    </p>
+                    <button 
+                        onClick={() => window.location.reload()} 
+                        className="px-8 py-3 bg-(--ink) hover:bg-black text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all"
+                    >
+                        Intentar nuevamente
                     </button>
                 </div>
             );

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { AppState, BCKey } from '../types';
 
-export function useDashboardData(state: AppState, selectedCourseId: number | 'all', userId?: string) {
+export function useDashboardData(state: AppState, selectedCourseId: number | 'all', userId?: string, currentCourseRole?: any) {
     const today = new Date().toISOString().split('T')[0];
 
     const sharedCourseIds = useMemo(() => 
@@ -20,10 +20,16 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
     }, [state.estudiantes, sharedCourseIds, state.cursos, selectedCourseId]);
 
     const filteredActividades = useMemo(() => {
+        if (!userId) return [];
         const base = state.actividades.filter(a => a.userId === userId || !a.userId);
-        if (selectedCourseId === 'all') return base;
-        return base.filter(a => a.cursoId === selectedCourseId);
-    }, [state.actividades, selectedCourseId, userId]);
+        const courseFiltered = selectedCourseId === 'all' ? base : base.filter(a => a.cursoId === selectedCourseId);
+        
+        // Isolate by subject if a specific role context is provided
+        if (selectedCourseId !== 'all' && currentCourseRole && currentCourseRole.rol !== 'tutor') {
+            return courseFiltered.filter(a => a.asignatura === currentCourseRole.asignatura);
+        }
+        return courseFiltered;
+    }, [state.actividades, selectedCourseId, userId, currentCourseRole]);
 
     const filteredCalificaciones = useMemo(() => {
         const studentIds = new Set(myStudents.map(s => s.id));

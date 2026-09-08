@@ -79,7 +79,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
         avgGeneral,
         enRiesgo,
         getUpcomingEvents
-    } = useDashboardData(state, selectedCourseId, session?.user?.id);
+    } = useDashboardData(state, selectedCourseId, session?.user?.id, currentCourseRole);
 
     const proximosEventosMerged = getUpcomingEvents(selectedDate);
 

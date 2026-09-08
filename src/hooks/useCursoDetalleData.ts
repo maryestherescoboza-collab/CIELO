@@ -125,7 +125,8 @@ onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, cont
                 perteneceAlContextoDelCurso(state.cursos, curso, a.cursoId, centroContexto);
             const matchesPeriod = a.periodo === selectedPeriodo;
             const isMine = a.userId === currentUserId || !a.userId;
-            return (isMyAct || isSharedAct) && matchesPeriod && isMine;
+            const matchAsignatura = !a.asignatura || a.asignatura === myAsignatura || currentCourseRole?.rol === 'tutor';
+            return (isMyAct || isSharedAct) && matchesPeriod && isMine && matchAsignatura;
         });
         
         const sorted = [...res].sort((a, b) => {

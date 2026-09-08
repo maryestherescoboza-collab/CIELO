@@ -130,6 +130,8 @@ interface AppStore {
     // UI State
     darkMode: boolean;
     selectedCursoId: number | null;
+    selectedCursoDocenteId: number | null;
+    selectedAsignatura: string | null;
     selectedEstudianteId: number | null;
     selectedActividadId: number | null;
     selectedPeriodo: string;
@@ -158,6 +160,8 @@ interface AppStore {
     setLoading: (loading: boolean) => void;
     setDarkMode: (darkMode: boolean | ((prev: boolean) => boolean)) => void;
     setSelectedCursoId: (id: number | null) => void;
+    setSelectedCursoDocenteId: (id: number | null) => void;
+    setSelectedAsignatura: (asignatura: string | null) => void;
     setSelectedEstudianteId: (id: number | null) => void;
     setSelectedActividadId: (id: number | null) => void;
     setSelectedPeriodo: (periodo: string) => void;
@@ -253,6 +257,8 @@ export const useAppStore = create<AppStore>()(
         // UI State
         darkMode: false,
         selectedCursoId: null,
+        selectedCursoDocenteId: null,
+        selectedAsignatura: null,
         selectedEstudianteId: null,
         selectedActividadId: null,
         selectedPeriodo: 'P1',
@@ -298,6 +304,8 @@ export const useAppStore = create<AppStore>()(
             darkMode: typeof updater === 'function' ? updater(prev.darkMode) : updater
         })),
         setSelectedCursoId: (selectedCursoId: number | null) => set({ selectedCursoId }),
+        setSelectedCursoDocenteId: (selectedCursoDocenteId: number | null) => set({ selectedCursoDocenteId }),
+        setSelectedAsignatura: (selectedAsignatura: string | null) => set({ selectedAsignatura }),
         setSelectedEstudianteId: (selectedEstudianteId: number | null) => set({ selectedEstudianteId }),
         setSelectedActividadId: (selectedActividadId: number | null) => set({ selectedActividadId }),
         setSelectedPeriodo: (selectedPeriodo: string) => set({ selectedPeriodo }),
@@ -344,6 +352,8 @@ export const useAppStore = create<AppStore>()(
       name: 'terra-cognita-storage',
       partialize: (state) => ({ 
         selectedCursoId: state.selectedCursoId, 
+        selectedCursoDocenteId: state.selectedCursoDocenteId,
+        selectedAsignatura: state.selectedAsignatura,
         selectedEstudianteId: state.selectedEstudianteId,
         selectedPeriodo: state.selectedPeriodo,
         darkMode: state.darkMode,
@@ -394,6 +404,8 @@ export const useAppStore = create<AppStore>()(
         return {
           ...currentState,
           selectedCursoId: persistedState?.selectedCursoId ?? currentState.selectedCursoId,
+          selectedCursoDocenteId: persistedState?.selectedCursoDocenteId ?? currentState.selectedCursoDocenteId,
+          selectedAsignatura: persistedState?.selectedAsignatura ?? currentState.selectedAsignatura,
           selectedEstudianteId: persistedState?.selectedEstudianteId ?? currentState.selectedEstudianteId,
           selectedPeriodo: persistedState?.selectedPeriodo ?? currentState.selectedPeriodo ?? 'P1',
           darkMode: persistedState?.darkMode ?? currentState.darkMode,

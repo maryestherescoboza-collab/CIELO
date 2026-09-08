@@ -87,10 +87,15 @@ export default function Cursos({
         }
     }, [form, onAddCurso, isSaving, setShowModal, resetForm, setIsSaving]);
 
-    const handleSelectCurso = useCallback((id: number, path: string = `/curso-detalle/${id}`) => {
+    const setSelectedCursoDocenteId = useAppStore(s => s.setSelectedCursoDocenteId);
+    const setSelectedAsignatura = useAppStore(s => s.setSelectedAsignatura);
+
+    const handleSelectCurso = useCallback((id: number, path: string = `/curso-detalle/${id}`, asignatura?: string, cursoDocenteId?: number) => {
         onSelectCurso(id);
+        if (asignatura) setSelectedAsignatura(asignatura);
+        if (cursoDocenteId) setSelectedCursoDocenteId(cursoDocenteId);
         navigate(path);
-    }, [onSelectCurso, navigate]);
+    }, [onSelectCurso, setSelectedAsignatura, setSelectedCursoDocenteId, navigate]);
 
     const handleSaveDias = useCallback((curso: Curso, d: string) => {
         if (!onSaveDias) return;

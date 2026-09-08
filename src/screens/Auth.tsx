@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Mail, Lock, Loader2, User, ArrowRight, Building2, ChevronLeft, Check, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import { ConsentimientoLegal } from '../components/legal/ConsentimientoLegal';
+import AuthRetryScreen from '../components/AuthRetryScreen';
 
 interface AuthProps {
   onAuthSuccess: () => void;
@@ -11,6 +12,10 @@ interface AuthProps {
 
 const PENDING_CENTRO_KEY = 'pendingCentroCIELO';
 const PENDING_VINCULO_KEY = 'pendingVinculoCIELO';
+
+// Capa de UX: tiempo máximo de espera razonable antes de mostrar el estado
+// de reintento si la operación de autenticación no resuelve.
+const LOGIN_TIMEOUT_MS = 15000;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -59,8 +64,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   const [centrosList, setCentrosList] = useState<{ id: string; nombre: string }[]>([]);
   const [centroSel, setCentroSel] = useState('');
   const [codigoAcceso, setCodigoAcceso] = useState('');
-  const [codigoValidando, setCodigoValidando] = useState(false);
-  const [codigoInfo, setCodigoInfo] = useState<{ valido: boolean; centro: string } | null>(null);
+
+  const [idCentroInput, setIdCentroInput] = useState('');
 
   // Buscador único de centros (flujo "No, continuar como usuario")
   const [busquedaCentro, setBusquedaCentro] = useState('');
@@ -76,6 +81,11 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
+
+  // Login timeout (capa de UX): evita la carga infinita si la operación
+  // de autenticación tarda demasiado o el servicio no responde.
+  const [loginTimedOut, setLoginTimedOut] = useState(false);
+  const loginTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Registro completado (cuenta + centro) — pantalla de éxito
   const [registeredWithCentro, setRegisteredWithCentro] = useState(false);
@@ -118,7 +128,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setCentrosList([]);
     setCentroSel('');
     setCodigoAcceso('');
-    setCodigoInfo(null);
+    setIdCentroInput('');
     setBusquedaCentro('');
     setDetectandoSuscripcion(false);
     setCentroExistenteBusqueda('');
@@ -128,14 +138,34 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setNeedsEmailConfirmation(false);
     setRegisteredWithCentro(false);
     setError(null);
+    if (loginTimeoutRef.current) {
+      clearTimeout(loginTimeoutRef.current);
+      loginTimeoutRef.current = null;
+    }
+    setLoginTimedOut(false);
   };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Capa de UX: al intentar el login, arranca un timeout de seguridad.
+    // Si la operación no resuelve en un tiempo razonable (servicio lento o
+    // caído), se muestra el estado amigable de reintento en lugar de dejar
+    // un spinner infinito.
+    setLoginTimedOut(false);
+    if (loginTimeoutRef.current) {
+      clearTimeout(loginTimeoutRef.current);
+      loginTimeoutRef.current = null;
+    }
     setLoading(true);
     setError(null);
     setResendSuccess(null);
     setNeedsEmailConfirmation(false);
+
+    loginTimeoutRef.current = setTimeout(() => {
+      setLoginTimedOut(true);
+      setLoading(false);
+      loginTimeoutRef.current = null;
+    }, LOGIN_TIMEOUT_MS);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
@@ -161,8 +191,19 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         setError('Ocurrió un error inesperado durante el proceso.');
       }
     } finally {
+      if (loginTimeoutRef.current) {
+        clearTimeout(loginTimeoutRef.current);
+        loginTimeoutRef.current = null;
+      }
       setLoading(false);
     }
+  };
+
+  // Reintenta el inicio de sesión sin recargar la aplicación. Reutiliza los
+  // mismos datos de correo/contraseña ya capturados y vuelve a ejecutar la
+  // operación de autenticación normalmente.
+  const handleLoginRetry = () => {
+    handleAuth({ preventDefault: () => {} } as React.FormEvent);
   };
 
   // ─────────────────────────────────────────────────────────────────
@@ -305,7 +346,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     return centroData.id;
   };
 
-  const handleRegistro = async (modo: 'director' | 'codigo' | 'propia' | 'referencia' | 'centro_existente') => {
+  const handleRegistro = async (modo: 'director' | 'codigo' | 'propia' | 'referencia' | 'centro_existente' | 'institucional_id') => {
     setLoading(true);
     setError(null);
     setResendSuccess(null);
@@ -358,9 +399,15 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         user_id: authData.user.id,
         nombre: nombreCompleto,
         nombre_docente: nombreCompleto,
-        avatar_color: '#3b82f6'
+        avatar_color: '#' + Math.floor(Math.random()*16777215).toString(16),
+        tipo_institucion: 'escuela_publica',
+        asignaturas: [''],
+        created_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
-      if (profileError) console.error('Error profile:', profileError);
+      
+      if (profileError) {
+        throw profileError;
+      }
 
       const { error: consentError } = await supabase.from('consentimientos').insert({
         user_id: authData.user.id,
@@ -434,6 +481,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           modo,
           centroId: centroSel || null,
           codigo: codigoAcceso.trim() || null,
+          id_introducida: modo === 'institucional_id' ? idCentroInput.trim() : null,
           centro: centroForm.nombre.trim() ? centroForm : null
         }));
       }
@@ -462,7 +510,19 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     }
   };
 
-  const aplicarVinculoRegistro = async (modo: 'codigo' | 'propia' | 'referencia') => {
+  const aplicarVinculoRegistro = async (modo: 'codigo' | 'propia' | 'referencia' | 'institucional_id') => {
+    if (modo === 'institucional_id') {
+      const { data, error } = await supabase.rpc('validar_ingreso_centro_institucional', {
+        p_centro_id_seleccionado: centroSel,
+        p_id_introducida: idCentroInput.trim()
+      });
+      if (error) throw error;
+      if (data && typeof data === 'object' && 'ok' in (data as any) && (data as any).ok === false) {
+        throw new Error(String((data as any).message || 'La ID no corresponde al centro seleccionado. Verifica la ID e inténtalo nuevamente.'));
+      }
+      return;
+    }
+
     const { data, error } = await supabase.rpc('aplicar_vinculo_usuario', {
       p_modo: modo,
       p_centro_id: modo === 'propia' ? centroSel || null : null,
@@ -477,35 +537,6 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     }
   };
 
-  const validarCodigo = async () => {
-    const cod = codigoAcceso.trim();
-    if (!cod) { setError('Ingresa el código de acceso.'); return; }
-    if (!centroSel) { setError('Selecciona tu centro educativo.'); return; }
-
-    setCodigoValidando(true);
-    setError(null);
-    setCodigoInfo(null);
-    try {
-      const { data, error } = await supabase.rpc('validar_codigo_usuario', {
-        p_centro_id: centroSel,
-        p_codigo: cod
-      });
-      if (error) throw error;
-      const r = (data as any) || {};
-      if (r.ok) {
-        setCodigoInfo({ valido: true, centro: r.centro_nombre || 'tu centro' });
-      } else {
-        setCodigoInfo({ valido: false, centro: '' });
-        setError(r.message || 'El código no es válido para este centro.');
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'No se pudo validar el código.';
-      setError(msg);
-    } finally {
-      setCodigoValidando(false);
-    }
-  };
-
   // Comprueba si el centro seleccionado posee una suscripción institucional.
   // Se apoya únicamente en la tabla `suscripciones` (tipo='institucional',
   // estado='activa') mediante la función SQL centro_tiene_suscripcion_institucional.
@@ -514,7 +545,6 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   const seleccionarCentroBuscador = async (centroId: string) => {
     setCentroSel(centroId);
     setCodigoAcceso('');
-    setCodigoInfo(null);
     setDetectandoSuscripcion(true);
     setError(null);
     try {
@@ -682,7 +712,9 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
 
               <button
                 type="button"
-                onClick={() => { setIsForgotPassword(false); setError(null); setForgotSuccess(null); }}
+                onClick={() => { setIsForgotPassword(false); setError(null); setForgotSuccess(null);
+                  if (loginTimeoutRef.current) { clearTimeout(loginTimeoutRef.current); loginTimeoutRef.current = null; }
+                  setLoginTimedOut(false); }}
                 className="w-full text-center text-xs font-black text-[#3E3838]/50 hover:text-[#689C63] transition-colors uppercase tracking-widest pt-1"
               >
                 Volver al inicio de sesión
@@ -1150,7 +1182,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                       )}
                     </div>
                   ) : regStep === 5 ? (
-                    /* PASO 5: código — seleccionar centro + código */
+                    /* PASO 5: institucional_id — confirmar ID del centro */
                     <div className="animate-fade-in">
                       <div className="flex items-center gap-1 mb-3">
                         <button
@@ -1160,47 +1192,37 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
-                        <h3 className="text-xs font-black uppercase tracking-widest text-[#3E3838]">Tu centro paga tu acceso</h3>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-[#3E3838]">Confirma tu ingreso al centro educativo</h3>
                       </div>
+
+                      <p className="text-xs font-bold text-[#3E3838]/60 mb-3">
+                        Tu centro tiene una suscripción activa. Introduce la ID del centro para confirmar tu ingreso.
+                      </p>
 
                       <div className="p-3 bg-[#EAE4DA]/40 border border-[#EAE4DA] rounded-xl flex items-center gap-2 mb-3">
                         <Building2 className="w-4 h-4 text-[#689C63] shrink-0" />
                         <span className="text-xs font-bold text-[#3E3838]">{centroSelNombre}</span>
                       </div>
 
-                      <div className="space-y-1 mb-3">
-                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">Código de acceso</label>
+                      <div className="space-y-1 mb-4">
+                        <label className="text-xs font-black text-[#3E3838]/60 uppercase tracking-widest">ID del centro</label>
                         <input
-                          type="text" value={codigoAcceso}
-                          onChange={(e) => { setCodigoAcceso(e.target.value.toUpperCase()); setCodigoInfo(null); }}
+                          type="text" value={idCentroInput}
+                          onChange={(e) => setIdCentroInput(e.target.value)}
                           className={inputClass}
-                          placeholder="CÓDIGO-001"
+                          placeholder=""
                         />
                       </div>
-
-                      <button
-                        type="button" onClick={validarCodigo}
-                        disabled={codigoValidando || loading}
-                        className="w-full py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#3E3838] rounded-xl font-black text-xs tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase shadow-sm active:scale-[0.98] mb-3"
-                      >
-                        {codigoValidando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Validar código'}
-                      </button>
-
-                      {codigoInfo && codigoInfo.valido && (
-                        <div className="p-3 bg-[#689C63]/5 border border-[#689C63]/15 rounded-xl text-xs font-bold text-[#689C63] flex items-center gap-2 mb-3">
-                          <Check className="w-3.5 h-3.5" /> Código válido. Quedarás cubierto por la suscripción institucional.
-                        </div>
-                      )}
 
                       <ConsentimientoLegal variant="compact" checked={consentimientoAceptado} onChange={setConsentimientoAceptado} />
 
                       <button
                         type="button"
-                        onClick={() => handleRegistro('codigo')}
-                        disabled={loading || codigoValidando || !codigoInfo?.valido}
-                        className="w-full py-3 bg-[#5F665E] hover:bg-[#5F665E]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-2 uppercase"
+                        onClick={() => handleRegistro('institucional_id')}
+                        disabled={loading || !idCentroInput.trim()}
+                        className="w-full py-3 bg-[#5F665E] hover:bg-[#5F665E]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 uppercase mt-3"
                       >
-                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Crear mi cuenta y acceder'}
+                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Confirmar'}
                       </button>
                     </div>
                   ) : regStep === 6 ? (
@@ -1302,6 +1324,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                 /* ────────────────────────────
                    INICIO DE SESIÓN (único formulario)
                    ──────────────────────────── */
+                <>
                 <form onSubmit={handleAuth} className="space-y-4">
                   {error && (
                     <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-xs font-bold text-[#D45050] flex items-center gap-2">
@@ -1374,13 +1397,19 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                     </button>
                   )}
                 </form>
+                {loginTimedOut && (
+                  <AuthRetryScreen onRetry={handleLoginRetry} retrying={loading} />
+                )}
+                </>
               )}
 
               {!isSignUp && !isForgotPassword && (
                 <footer className="mt-5 pt-4 border-t border-slate-100 text-center flex flex-col gap-2">
                   <button
                     type="button"
-                    onClick={() => { setIsForgotPassword(true); setError(null); }}
+                    onClick={() => { setIsForgotPassword(true); setError(null);
+                    if (loginTimeoutRef.current) { clearTimeout(loginTimeoutRef.current); loginTimeoutRef.current = null; }
+                    setLoginTimedOut(false); }}
                     className="text-xs font-black text-[#689C63] hover:text-[#689C63]/90 transition-colors tracking-widest uppercase"
                   >
                     ¿Olvidaste tu contraseña?

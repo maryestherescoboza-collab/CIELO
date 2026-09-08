@@ -38,6 +38,55 @@ export function useEvaluationActions() {
         }]).select();
 
         if (actError) { 
+            // Caso específico: al reintentar / volver a CursoDetalle, el sistema
+            // puede intentar crear un Producto Final que ya existe. PostgreSQL
+            // responde con idx_unico_producto_final. En ese caso NO se muestra
+            // ningún error: se recupera la actividad existente y el flujo
+            // continúa normalmente como si la creación hubiera tenido éxito.
+            const isProductoFinalDuplicado =
+                typeof actError.message === 'string' &&
+                actError.message.toLowerCase().includes('idx_unico_producto_final');
+
+            if (isProductoFinalDuplicado) {
+                const { data: existingData } = await supabase
+                    .from('actividades')
+                    .select()
+                    .eq('curso_id', a.cursoId)
+                    .eq('periodo', a.periodo)
+                    .eq('is_producto_final', true)
+                    .limit(20);
+                const existingRow = (existingData || []).find(r =>
+                    String(r.asignatura || '') === String(a.asignatura || '')
+                );
+                if (existingRow) {
+                    const existingAct: Actividad = {
+                        id: existingRow.id,
+                        nombre: existingRow.nombre,
+                        fecha: existingRow.fecha,
+                        periodo: existingRow.periodo,
+                        cursoId: existingRow.curso_id,
+                        bcAsignados: existingRow.bc_asignados || ['BC1'],
+                        secuenciaId: existingRow.secuencia_id,
+                        planFichaId: existingRow.plan_ficha_id as string | undefined,
+                        isRec: existingRow.is_rec,
+                        isProductoFinal: existingRow.is_producto_final,
+                        userId: existingRow.user_id,
+                        asignatura: existingRow.asignatura,
+                        sharedCourseId: existingRow.shared_course_id,
+                        indicador: existingRow.indicador,
+                        producto: existingRow.producto
+                    };
+                    setState(s => ({
+                        ...s,
+                        actividades: s.actividades.some(x => x.id === existingAct.id)
+                            ? s.actividades
+                            : [...s.actividades, existingAct]
+                    }));
+                    return existingAct;
+                }
+                return null;
+            }
+
             setGenericToast({ message: `Error al crear la actividad: ${actError.message}`, type: 'error' });
             setTimeout(() => setGenericToast(null), 3000);
             return null; 

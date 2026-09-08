@@ -12,7 +12,7 @@ interface Props {
     editingAsignaturaId: number | null;
     currentUserId?: string;
     onHide: (id: number) => void;
-    onSelect: (id: number, path?: string) => void;
+    onSelect: (id: number, path?: string, asignatura?: string, cursoDocenteId?: number) => void;
     onEditDias: (id: number | null) => void;
     onEditAsignatura: (id: number | null) => void;
     onSaveDias: (c: Curso, d: string) => void;
@@ -38,7 +38,8 @@ export function CourseCard({
     onOpenCargaModal
 }: Props) {
     const isTutor = currentUserId === curso.userId;
-    const myLink = state.cursoDocentes?.find(cd => cd.cursoId === curso.id && cd.userId === currentUserId);
+    // Find the EXACT link by matching both course ID and the specific subject this card represents
+    const myLink = state.cursoDocentes?.find(cd => cd.cursoId === curso.id && cd.userId === currentUserId && cd.asignatura === curso.asignatura);
     const esTutorDelCurso = isTutor || !!myLink?.esTutor;
     const [avisoBoletines, setAvisoBoletines] = useState(false);
     const [confirmHide, setConfirmHide] = useState(false);
@@ -194,7 +195,7 @@ export function CourseCard({
             <div className="flex flex-col border-t border-(--border-soft) bg-(--linen)/10">
                 <button
                     className="w-full flex items-center justify-between px-6 py-3.5 hover:bg-(--linen)/30 text-xs font-bold text-(--ink) uppercase tracking-widest transition-all duration-200 border-b border-(--border-soft)/50 outline-none focus-visible:bg-(--linen)/20"
-                    onClick={(e) => { e.stopPropagation(); onSelect(curso.id, `/calificaciones-anuales/${curso.id}`); }}
+                    onClick={(e) => { e.stopPropagation(); onSelect(curso.id, `/calificaciones-anuales/${curso.id}`, displayAsignatura, myLink?.id); }}
                 >
                     <span className="flex items-center gap-2"><Layers size={13} className="text-(--ink-soft)" /> Histórico Anual</span>
                     <ChevronRight size={13} className="text-slate-350" />
@@ -218,7 +219,7 @@ export function CourseCard({
                 <button
                     data-guide="btn-abrir-registro-academico"
                     className="w-full flex items-center justify-between px-6 py-4.5 bg-white text-xs font-bold text-(--ink) uppercase tracking-[0.15em] transition-all duration-200 hover:bg-(--linen)/50 outline-none focus-visible:bg-(--linen)"
-                    onClick={() => onSelect(curso.id, `/curso-detalle/${curso.id}?asignatura=${encodeURIComponent(curso.asignatura)}`)}>
+                    onClick={() => onSelect(curso.id, `/curso-detalle/${curso.id}?asignatura=${encodeURIComponent(displayAsignatura)}`, displayAsignatura, myLink?.id)}>
                     <span className="flex items-center gap-2">
                         <Search size={13} className="text-(--ink-soft)" />
                         Abrir Registro Académico

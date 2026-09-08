@@ -47,7 +47,8 @@ export default function App() {
     selectedCursoId, setSelectedCursoId,
     selectedEstudianteId, setSelectedEstudianteId,
     setSearchQuery,
-    genericToast
+    genericToast,
+    selectedCursoDocenteId
   } = useAppStore(useShallow(s => ({
     state: s.state,
     loading: s.loading,
@@ -58,7 +59,8 @@ export default function App() {
     selectedEstudianteId: s.selectedEstudianteId,
     setSelectedEstudianteId: s.setSelectedEstudianteId,
     setSearchQuery: s.setSearchQuery,
-    genericToast: s.genericToast
+    genericToast: s.genericToast,
+    selectedCursoDocenteId: s.selectedCursoDocenteId
   })));
 
   const actions = {
@@ -96,14 +98,24 @@ export default function App() {
 
   const currentCourseRole = useMemo(() => {
     if (!selectedCursoId || !session?.user?.id) return null;
+    
+    // 1. Try exact match from UI selection (crucial for multi-subject teachers in same course)
+    if (selectedCursoDocenteId) {
+        const exactMatch = state.cursoDocentes.find(cd => cd.id === selectedCursoDocenteId);
+        if (exactMatch) return exactMatch;
+    }
+
+    // 2. Fallback to first match (legacy behavior)
     const linked = state.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session.user.id);
     if (linked) return linked;
+
+    // 3. Fallback to tutor role if they own the course
     const curso = state.cursos.find(c => c.id === selectedCursoId);
-    if (curso && curso.userId === session.user.id) {
+    if (curso && String(curso.userId) === session.user.id) {
       return { id: -1, cursoId: selectedCursoId, userId: session.user.id, rol: 'tutor' as const, asignatura: curso.asignatura, createdAt: curso.createdAt };
     }
     return null;
-  }, [selectedCursoId, session?.user?.id, state.cursoDocentes, state.cursos]);
+  }, [selectedCursoId, session?.user?.id, state.cursoDocentes, state.cursos, selectedCursoDocenteId]);
 
   const visibleActividades = useMemo(() => {
     const isMine = (a: any) => a.userId === session?.user?.id || !a.userId;
