@@ -5,7 +5,7 @@ import GradeCell from './GradeCell';
 import ActivityViewTab from './workspace/ActivityViewTab';
 import type { BCKey, Actividad } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
-import { PRODUCTO_FINAL_NAME } from '../../constants/productoFinal';
+
 
 
 
@@ -123,7 +123,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             }
                             if (col.type === 'actividad') {
                                 const act = col.act;
-                                const isProductoFinal = act.nombre === PRODUCTO_FINAL_NAME;
+                                const isProductoFinal = !!act.isProductoFinal;
                                 return (
                                     <div key={col.id} className="px-2 py-4 border-r border-(--border-soft) relative group flex flex-col items-center justify-center box-border" style={style}>
                                         {onOpenActivityView && (

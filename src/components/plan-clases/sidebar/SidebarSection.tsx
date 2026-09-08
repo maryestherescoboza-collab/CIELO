@@ -13,31 +13,31 @@ interface SidebarSectionProps {
 
 const COLOR_MAP = {
   orange: {
-    bg: 'bg-[#FFF3E6]',
-    iconBg: 'bg-[#F5A623]/15',
-    iconColor: 'text-[#D4841A]',
-    labelColor: 'text-[#9A6520]',
-    countBg: 'bg-[#F5A623]/12',
-    countText: 'text-[#B8841A]',
-    border: 'border-[#F5A623]/15',
+    bg: 'bg-[#EB8847]/5',
+    iconBg: 'bg-[#EB8847]/15',
+    iconColor: 'text-[#EB8847]',
+    labelColor: 'text-[#C26B33]',
+    countBg: 'bg-[#EB8847]/12',
+    countText: 'text-[#C26B33]',
+    border: 'border-[#EB8847]/15',
   },
   yellow: {
-    bg: 'bg-[#FFF9E6]',
-    iconBg: 'bg-[#E8C840]/15',
-    iconColor: 'text-[#B89A20]',
-    labelColor: 'text-[#8A7418]',
-    countBg: 'bg-[#E8C840]/12',
-    countText: 'text-[#9A8420]',
-    border: 'border-[#E8C840]/15',
+    bg: 'bg-[#F5BC5D]/10',
+    iconBg: 'bg-[#F5BC5D]/20',
+    iconColor: 'text-[#D4A04B]',
+    labelColor: 'text-[#B88630]',
+    countBg: 'bg-[#F5BC5D]/20',
+    countText: 'text-[#B88630]',
+    border: 'border-[#F5BC5D]/20',
   },
   green: {
-    bg: 'bg-[#EEF6EB]',
-    iconBg: 'bg-[#689C63]/15',
-    iconColor: 'text-[#4A7A46]',
-    labelColor: 'text-[#3D6639]',
-    countBg: 'bg-[#689C63]/12',
-    countText: 'text-[#4A7A46]',
-    border: 'border-[#689C63]/15',
+    bg: 'bg-[#7A8D69]/10',
+    iconBg: 'bg-[#7A8D69]/15',
+    iconColor: 'text-[#7A8D69]',
+    labelColor: 'text-[#5A694D]',
+    countBg: 'bg-[#7A8D69]/12',
+    countText: 'text-[#5A694D]',
+    border: 'border-[#7A8D69]/15',
   },
 } as const;
 
@@ -72,7 +72,7 @@ export default function SidebarSection({
         <span className={`text-[12.5px] font-bold ${c.labelColor} flex-1 text-left`}>
           {title}
         </span>
-        <span className={`text-[11px] font-bold ${c.countText} ${c.countBg} px-1.5 py-0.5 rounded-full min-w-[20px] text-center`}>
+        <span className={`text-[11px] font-bold ${c.countText} ${c.countBg} px-1.5 py-0.5 rounded-full min-w-5 text-center`}>
           {count}
         </span>
         <ChevronRight

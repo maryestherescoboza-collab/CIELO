@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { AppState, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, BCKey, CursoDocente } from '../types';
 import { calculateStudentPeriodBC } from '../utils/academic';
 import { perteneceAlContextoDelCurso, esEstudianteDelCurso } from '../utils/aislamiento';
-import { PRODUCTO_FINAL_NAME } from '../constants/productoFinal';
+
 
 import { useAppStore } from '../store/appStore';
 
@@ -130,8 +130,8 @@ onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, cont
         });
         
         const sorted = [...res].sort((a, b) => {
-            const isAProductoFinal = a.isProductoFinal || a.nombre === PRODUCTO_FINAL_NAME;
-            const isBProductoFinal = b.isProductoFinal || b.nombre === PRODUCTO_FINAL_NAME;
+            const isAProductoFinal = !!a.isProductoFinal;
+            const isBProductoFinal = !!b.isProductoFinal;
             
             if (isAProductoFinal && !isBProductoFinal) return 1;
             if (!isAProductoFinal && isBProductoFinal) return -1;

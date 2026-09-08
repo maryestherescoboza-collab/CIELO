@@ -12,18 +12,22 @@ import { Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 const NOTA_COLORES = [
-  '#FBF0E1',
-  '#EFE7DE',
-  '#E8F0EA',
-  '#EDEAE1',
-  '#F3EDE7',
-  '#E9EEF1',
-  '#F7EFE4',
-  '#EEF0E4',
-  '#F7ECEC',
-  '#ECE9F2',
-  '#EAF0E4',
-  '#F6EEE2',
+  '#FBF0E1', // Crema
+  '#E8F0EA', // Menta
+  '#E9EEF7', // Azul nube
+  '#F7E8E5', // Coral empolvado
+  '#ECE8F4', // Lavanda
+  '#F5EDCF', // Amarillo mantequilla
+  '#E4F0EE', // Turquesa niebla
+  '#F1E7DE', // Terracota crema
+  '#E8EDE1', // Salvia
+  '#F4E6ED', // Rosa malva
+  '#E5EDF0', // Azul gris
+  '#F3EBDD', // Vainilla
+  '#E8E4F0', // Índigo lavanda
+  '#F5E3D8', // Durazno
+  '#E3EEEE', // Aqua
+  '#EEEBDD', // Oliva crema
 ];
 
 function colorParaNota(id: string): string {

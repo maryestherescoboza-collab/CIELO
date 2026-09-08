@@ -11,7 +11,7 @@ import type { Actividad, BCKey, Secuencia } from '../../../types';
 import type { SeccionSecuencia } from '../../../lib/seccionesSecuencia';
 import { useAppStore } from '../../../store/appStore';
 import { getSecuenciasSeleccion } from './WorkspaceDatos';
-import { PRODUCTO_FINAL_NAME } from '../../../constants/productoFinal';
+
 
 export type ActivityWindowId = 'datos' | 'competencias' | 'recursos' | 'ficha' | 'producto-final';
 
@@ -45,7 +45,7 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
     onUpdateSecuencia,
     onToggleBc,
 }) => {
-    const isProductoFinal = activity.nombre === PRODUCTO_FINAL_NAME;
+    const isProductoFinal = !!activity.isProductoFinal;
 
     const initialPositions = useMemo<Record<ActivityWindowId, WorkWindowPosition>>(() => {
         const vw = window.innerWidth;
@@ -159,7 +159,7 @@ return {
     }, [openWins, onClose, isProductoFinal]);
 
     return (
-        <div className="ws-layer fixed inset-0 z-[55] pointer-events-none" data-guide="actividad-workspace">
+        <div className="ws-layer fixed inset-0 z-55 pointer-events-none" data-guide="actividad-workspace">
             <div className="ws-desk" aria-hidden="true" />
             <div className="ws-activity-tag pointer-events-auto" style={{ top: 16, left: 16 }}>
                 <span className="ws-activity-tag-name">Espacio de trabajo · {activity.nombre}</span>

@@ -81,7 +81,8 @@ const mapActividad = (a: any, cursos?: any[]): Actividad => ({
     asignatura: a.asignatura as string,
     sharedCourseId: a.shared_course_id as string || (cursos?.find(cur => cur.id === a.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === a.curso_id)?.grupo_id}` : String(a.curso_id)),
     indicador: a.indicador as string,
-    producto: a.producto as string
+    producto: a.producto as string,
+    isProductoFinal: a.is_producto_final as boolean
 });
 
 const mapCalificacion = (c: any, cursos?: any[]): CalificacionActividad => ({

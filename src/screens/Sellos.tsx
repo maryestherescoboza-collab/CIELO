@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Check, RotateCcw, X, MessageSquare, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, RotateCcw, AlertCircle } from 'lucide-react';
 import type { AppState, CalificacionActividad, RecuperacionBC } from '../types';
 import { PERIODOS_ACADEMICOS } from '../cache/academicCache';
 
@@ -27,9 +27,8 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
     const [guardando, setGuardando] = useState(false);
     const [guardados, setGuardados] = useState(0);
     
-    // Observacion Modal
-    const [modalAbierto, setModalAbierto] = useState(false);
-    const [observacionTemp, setObservacionTemp] = useState('');
+    // Navegación táctil
+    const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
     const cursos = state.cursos ?? [];
     const actividades = state.actividades ?? [];
@@ -99,17 +98,31 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
             await onSaveCalificaciones([calif], [], curso.id);
             setGuardados(g => g + 1);
             
-            setTimeout(() => {
-                if (indice + 1 >= estudiantesCurso.length) {
-                    setPaso('final');
-                } else {
+            if (indice + 1 < estudiantesCurso.length) {
+                setTimeout(() => {
                     setIndice(i => i + 1);
-                }
-            }, 500); 
+                }, 500);
+            }
         } finally {
             setGuardando(false);
         }
     }, [estudiante, actividad, curso, periodo, guardando, userId, califActual, onSaveCalificaciones, indice, estudiantesCurso.length]);
+
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        setTouchStartX(e.touches[0].clientX);
+    }, []);
+
+    const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+        if (touchStartX === null) return;
+        const touchEndX = e.changedTouches[0].clientX;
+        const deltaX = touchStartX - touchEndX;
+        if (deltaX > 50 && indice + 1 < estudiantesCurso.length) {
+            setIndice(i => i + 1);
+        } else if (deltaX < -50 && indice > 0) {
+            setIndice(i => i - 1);
+        }
+        setTouchStartX(null);
+    }, [touchStartX, indice, estudiantesCurso.length]);
 
     const reiniciar = useCallback(() => {
         setPaso('curso');
@@ -223,7 +236,8 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
     }
 
     if (paso === 'captura' && curso && actividad && estudiante) {
-        const progreso = ((indice + 1) / estudiantesCurso.length) * 100;
+        const evaluados = calificaciones.filter(c => c.actividadId === actividad.id && c.puntaje != null).length;
+        const progreso = (evaluados / estudiantesCurso.length) * 100;
         
         let statusBadge = (
             <div className="px-2.5 py-1 rounded-xl border border-dashed border-gray-300 bg-gray-50 text-[11px] font-bold text-gray-400 flex items-center gap-1">
@@ -285,7 +299,18 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                 {/* Student Active Card */}
                 <section className="relative pt-1 mb-5">
                     <div className="absolute inset-0 bg-[#E8F2EA] rounded-[26px] translate-x-1.5 translate-y-2 border border-[#1C2220]/20 pointer-events-none"></div>
-                    <div id="student-container" className="relative rounded-[26px] border-[3px] border-[#1C2220] bg-[#FEFDF9] p-4 sm:p-5 shadow-sketch transition-all duration-300">
+                    <div 
+                        id="student-container" 
+                        className="relative rounded-[26px] border-[3px] border-[#1C2220] bg-[#FEFDF9] p-4 sm:p-5 shadow-sketch transition-all duration-300"
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={(e) => {
+                            if (touchStartX) {
+                                const diffX = Math.abs(e.touches[0].clientX - touchStartX);
+                                if (diffX > 10) e.preventDefault();
+                            }
+                        }}
+                        onTouchEnd={handleTouchEnd}
+                    >
                         <div className="flex flex-col items-center text-center space-y-2">
                             <div className="relative">
                                 <div 
@@ -302,7 +327,6 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                             <div>
                                 <div className="flex items-center justify-center space-x-1.5">
                                     <h2 className="font-extrabold text-lg text-[#1C2220] leading-snug">{estudiante.nombre} {estudiante.apellido}</h2>
-                                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" title="Activa"></span>
                                 </div>
                                 <div className="flex items-center justify-center gap-2 mt-1">
                                     {statusText}
@@ -381,7 +405,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                             <svg className="w-3.5 h-3.5 stroke-[#1C2220] stroke-2 fill-none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"></path></svg>
                             Progreso
                         </span>
-                        <span className="font-black text-[#1C2220]">{indice + 1} / {estudiantesCurso.length}</span>
+                        <span className="font-black text-[#1C2220]">{evaluados} de {estudiantesCurso.length} evaluados</span>
                     </div>
                     <div className="w-full h-3.5 bg-gray-100 rounded-full border-[1.5px] border-[#1C2220] p-0.5 overflow-hidden">
                         <div className="h-full bg-[#96D1AB] rounded-full transition-all duration-300" style={{ width: `${progreso}%` }}></div>
@@ -391,57 +415,33 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                 {/* Action Controls */}
                 <section className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <button 
-                        onClick={() => setModalAbierto(true)}
-                        className="flex-1 py-3 px-3 bg-white hover:bg-gray-50 text-[#1C2220] font-bold text-xs rounded-2xl border-[1.8px] border-[#1C2220] shadow-sketch-sm transition active:translate-y-0.5 flex items-center justify-center gap-2"
+                        onClick={() => {
+                            if (indice > 0) setIndice(i => i - 1);
+                        }}
+                        disabled={indice === 0}
+                        className="flex-1 py-3 px-3 bg-white hover:bg-gray-50 disabled:opacity-50 text-[#1C2220] font-bold text-xs rounded-2xl border-[1.8px] border-[#1C2220] shadow-sketch-sm transition active:translate-y-0.5 flex items-center justify-center gap-2"
                     >
-                        <MessageSquare size={16} strokeWidth={2.5} />
-                        Observación
+                        <ChevronLeft size={16} strokeWidth={2.5} />
+                        <span>Anterior</span>
                     </button>
                     <button 
                         onClick={() => {
-                            if (indice + 1 < estudiantesCurso.length) {
-                                setIndice(i => i + 1);
-                            } else {
-                                setIndice(0); // loop
-                            }
+                            if (indice + 1 < estudiantesCurso.length) setIndice(i => i + 1);
                         }}
-                        className="flex-1 py-3 px-3 bg-[#BCE3C6] hover:bg-[#A9D8B5] text-[#1C2220] font-extrabold text-xs rounded-2xl border-[1.8px] border-[#1C2220] shadow-sketch transition active:translate-y-0.5 flex items-center justify-center gap-2"
+                        disabled={indice + 1 >= estudiantesCurso.length}
+                        className="flex-1 py-3 px-3 bg-white hover:bg-gray-50 disabled:opacity-50 text-[#1C2220] font-bold text-xs rounded-2xl border-[1.8px] border-[#1C2220] shadow-sketch-sm transition active:translate-y-0.5 flex items-center justify-center gap-2"
                     >
                         <span>Siguiente</span>
-                        <ChevronRight size={16} strokeWidth={3} />
+                        <ChevronRight size={16} strokeWidth={2.5} />
+                    </button>
+                    <button 
+                        onClick={() => setPaso('final')}
+                        className="flex-1 py-3 px-3 bg-[#1C2220] hover:bg-[#2E3330] text-white font-extrabold text-xs rounded-2xl shadow-sketch transition active:translate-y-0.5 flex items-center justify-center gap-2"
+                    >
+                        <Check size={16} strokeWidth={3} />
+                        <span>Finalizar</span>
                     </button>
                 </section>
-
-                {/* Observation Modal */}
-                {modalAbierto && (
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4 animate-in fade-in">
-                        <div className="w-full max-w-sm bg-white doodle-card p-5 space-y-4 animate-stamp shadow-2xl">
-                            <div className="flex items-center justify-between">
-                                <h3 className="font-bold text-sm text-[#1C2220]">Agregar Observación</h3>
-                                <button onClick={() => setModalAbierto(false)} className="w-7 h-7 rounded-full border-[1.5px] border-[#1C2220] flex items-center justify-center text-[#1C2220] hover:bg-gray-100 transition">
-                                    <X size={14} strokeWidth={3} />
-                                </button>
-                            </div>
-                            <textarea 
-                                value={observacionTemp}
-                                onChange={e => setObservacionTemp(e.target.value)}
-                                className="w-full text-xs rounded-xl border-[1.5px] border-[#1C2220] p-3 focus:ring-0 focus:border-emerald-600 outline-none resize-none bg-gray-50/50 font-medium" 
-                                placeholder="Escribe un refuerzo positivo o recomendación para el estudiante..." 
-                                rows={3}
-                            ></textarea>
-                            <div className="flex justify-end">
-                                <button 
-                                    onClick={() => {
-                                        setModalAbierto(false);
-                                    }}
-                                    className="px-5 py-2.5 bg-[#1C2220] text-white font-bold text-xs rounded-xl shadow-sm hover:opacity-90 active:scale-95 transition"
-                                >
-                                    Guardar Nota
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         );
     }
