@@ -237,6 +237,7 @@ export function useSupabaseData(skipInit = false) {
 
 
     const isFetching = useRef(false);
+    const isDashboardFetching = useRef(false);
 
     const timeQuery = async (name: string, queryPromise: any): Promise<any> => {
         console.log(`[DEBUG LOAD] ${name} INICIO`);
@@ -590,6 +591,8 @@ export function useSupabaseData(skipInit = false) {
                     cursoDocentes: freshState.cursoDocentes,
                 });
             }
+            
+            addLoadedModule('core');
         } catch (error) {
             console.error('[DEBUG LOAD] Error fetching data from Supabase:', error);
             console.error('[PLANIFICACION] error', error);
@@ -865,6 +868,11 @@ export function useSupabaseData(skipInit = false) {
             console.log('[DIAG][DASH] omitiendo loadDashboardData porque core no está cargado');
             return;
         }
+        if (isDashboardFetching.current) {
+            console.log('[DIAG][DASH] omitiendo loadDashboardData porque ya hay una carga en progreso');
+            return;
+        }
+        isDashboardFetching.current = true;
         console.log('[PLANIFICACION] lazy loading Dashboard data');
         console.log(`[DIAG][DASH] start user=${session.user.id} ts=${new Date().toISOString()}`);
         setLoading(true);
@@ -1074,6 +1082,7 @@ export function useSupabaseData(skipInit = false) {
         } catch (error) {
             console.error('Error loading Dashboard data:', error);
         } finally {
+            isDashboardFetching.current = false;
             setLoading(false);
         }
     }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);

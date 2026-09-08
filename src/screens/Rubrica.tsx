@@ -107,6 +107,7 @@ export default function Rubrica({
     }, [storeState, currentCourseRole]);
 
     const [selectedCursoId, setSelectedCursoId] = useState(state.cursos[0]?.id ?? 0);
+    const [selectedAsignatura, setSelectedAsignatura] = useState(state.cursos[0]?.asignatura ?? '');
 
     useEffect(() => {
         if (!readOnly && selectedCursoId) {
@@ -158,8 +159,8 @@ export default function Rubrica({
     const { startCapture, captureOverlay, isCapturing } = useTemplateCapture();
     const [captureFileId, setCaptureFileId] = useState<string | undefined>(undefined);
 
-    const currentCourse = state.cursos.find(c => c.id === selectedCursoId);
-    const asignaturaName = getAsignaturaNombre(currentCourseRole?.asignatura) || currentCourse?.asignatura || 'Asignatura';
+    const currentCourse = state.cursos.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || state.cursos.find(c => c.id === selectedCursoId);
+    const asignaturaName = getAsignaturaNombre(selectedAsignatura || currentCourseRole?.asignatura) || currentCourse?.asignatura || 'Asignatura';
     const courseName = currentCourse?.nombre || 'Curso';
     const captureFileName = `Rubrica - ${asignaturaName} - ${courseName} - ${new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()).replace(/\//g, '-')}.png`;
 
@@ -260,7 +261,7 @@ export default function Rubrica({
 
     const richCellRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-    const selectedCurso = state.cursos.find(c => c.id === selectedCursoId);
+    const selectedCurso = state.cursos.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || state.cursos.find(c => c.id === selectedCursoId);
     const estudiantes = state.estudiantes.filter((estudiante) => 
         estudiante.cursoId === selectedCursoId || 
         (selectedCurso?.sharedCourseId && estudiante.sharedCourseId === selectedCurso.sharedCourseId)
@@ -274,7 +275,8 @@ export default function Rubrica({
     const actividades = state.actividades.filter((actividad) => 
         (actividad.cursoId === selectedCursoId || 
          (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
-        (actividad.userId === session?.user?.id || !actividad.userId)
+        (actividad.userId === session?.user?.id || !actividad.userId) &&
+        (!actividad.asignatura || actividad.asignatura === selectedAsignatura)
     );
     const rubricaPlantillas = state.plantillas.filter((plantilla) =>
         plantilla.tipo === 'rubrica' && plantilla.userId === session?.user?.id
@@ -723,15 +725,17 @@ export default function Rubrica({
                                             <select
                                                 data-guide="selector-curso"
                                                 className="w-full bg-base-creme border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
-                                                value={selectedCursoId}
+                                                value={`${selectedCursoId}|${selectedAsignatura}`}
                                                 onChange={(event) => {
-                                                    setSelectedCursoId(Number(event.target.value));
+                                                    const [idStr, asig] = event.target.value.split('|');
+                                                    setSelectedCursoId(Number(idStr));
+                                                    setSelectedAsignatura(asig || '');
                                                     setSelectedEstId(null);
                                                     setSelectedActId(null);
                                                 }}
                                             >
                                                 {state.cursos.map((curso) => (
-                                                    <option key={curso.id} value={curso.id}>
+                                                    <option key={`${curso.id}|${curso.asignatura}`} value={`${curso.id}|${curso.asignatura}`}>
                                                         {curso.grado} {curso.seccion} - {getAsignaturaNombre(curso.asignatura)}
                                                      </option>
                                                 ))}

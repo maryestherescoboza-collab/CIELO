@@ -35,6 +35,7 @@ import { useSupabaseData } from '../hooks/useSupabaseData';
 
 export default function Cotejo({
     state,
+    currentCourseRole,
     onSaveCotejo,
     onUpdateCriterios,
     onSavePlantilla,
@@ -44,6 +45,7 @@ export default function Cotejo({
     initialDatos,
 }: Props) {
     const [selectedCursoId, setSelectedCursoId] = useState(state?.cursos[0]?.id ?? 0);
+    const [selectedAsignatura, setSelectedAsignatura] = useState(state?.cursos[0]?.asignatura ?? '');
     const [selectedActId, setSelectedActId] = useState<number | null>(null);
     const [selectedEstId, setSelectedEstId] = useState<number | null>(null);
     const [respuestas, setRespuestas] = useState<Record<number, number | null>>({});
@@ -71,8 +73,8 @@ export default function Cotejo({
     const { startCapture, captureOverlay, isCapturing } = useTemplateCapture();
     const [captureFileId, setCaptureFileId] = useState<string | undefined>(undefined);
 
-    const currentCourse = state?.cursos?.find(c => c.id === selectedCursoId);
-    const asignaturaName = getAsignaturaNombre(currentCourse?.asignatura) || currentCourse?.asignatura || 'Asignatura';
+    const currentCourse = state?.cursos?.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || state?.cursos?.find(c => c.id === selectedCursoId);
+    const asignaturaName = getAsignaturaNombre(selectedAsignatura || currentCourseRole?.asignatura) || currentCourse?.asignatura || 'Asignatura';
     const courseName = currentCourse?.nombre || 'Curso';
     const captureFileName = `Cotejo - ${asignaturaName} - ${courseName} - ${new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()).replace(/\//g, '-')}.png`;
 
@@ -134,11 +136,12 @@ export default function Cotejo({
         }
     }, [selectedEstId, selectedActId, selectedPlantillaId, state?.cursoDetalle, multiEvaluations]);
 
-    const selectedCurso = state?.cursos.find(c => c.id === selectedCursoId);
+    const selectedCurso = state?.cursos.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || state?.cursos.find(c => c.id === selectedCursoId);
     const actividades = state?.actividades.filter(a => 
         (a.cursoId === selectedCursoId || 
          (selectedCurso?.sharedCourseId && a.sharedCourseId === selectedCurso.sharedCourseId)) &&
-        (a.userId === session?.user?.id || !a.userId)
+        (a.userId === session?.user?.id || !a.userId) &&
+        (!a.asignatura || a.asignatura === selectedAsignatura)
     ) || [];
     const estudiantes = state?.estudiantes.filter(e => 
         e.cursoId === selectedCursoId || 
@@ -464,10 +467,16 @@ export default function Cotejo({
                                             <select
                                                 data-guide="selector-curso"
                                                 className="w-full bg-base-creme border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
-                                                value={selectedCursoId}
-                                                onChange={e => { setSelectedCursoId(Number(e.target.value)); setSelectedActId(null); setSelectedEstId(null); }}
+                                                value={`${selectedCursoId}|${selectedAsignatura}`}
+                                                onChange={e => { 
+                                                    const [idStr, asig] = e.target.value.split('|');
+                                                    setSelectedCursoId(Number(idStr)); 
+                                                    setSelectedAsignatura(asig || '');
+                                                    setSelectedActId(null); 
+                                                    setSelectedEstId(null); 
+                                                }}
                                             >
-                                                {state?.cursos.map(c => <option key={c.id} value={c.id}>{c.grado} {c.seccion} - {getAsignaturaNombre(c.asignatura)}</option>)}
+                                                {state?.cursos.map(c => <option key={`${c.id}|${c.asignatura}`} value={`${c.id}|${c.asignatura}`}>{c.grado} {c.seccion} - {getAsignaturaNombre(c.asignatura)}</option>)}
                                             </select>
                                         </div>
                                         <div>
