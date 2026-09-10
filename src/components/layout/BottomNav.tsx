@@ -23,7 +23,7 @@ const NAV_ITEMS: { label: string; screen: Screen; icon: React.ReactNode; isClose
     { label: 'Cerrar', screen: 'inicio', icon: <X size={18} />, isClose: true },
 ];
 
-const MOBILE_PRIMARY = ['Inicio', 'Sellos', 'Rúbrica', 'Cotejo', 'Incidencias'];
+const MOBILE_PRIMARY = ['Inicio', 'Sellos', 'Rúbrica', 'Cotejo', 'Incidencias', 'Cursos'];
 
 const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
     const [showMore, setShowMore] = useState(false);

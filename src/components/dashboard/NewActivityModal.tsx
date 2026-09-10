@@ -30,24 +30,11 @@ interface ExtractedActivity {
     selected: boolean;
 }
 
-const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => {
-            const result = reader.result as string;
-            const base64 = result.split(',')[1];
-            resolve(base64);
-        };
-        reader.onerror = error => reject(error);
-    });
-};
-
 export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSuccess }: NewActivityModalProps) {
     const session = useAppStore(s => s.session);
     const state = useAppStore(s => s.state);
     const today = new Date().toISOString().split('T')[0];
-    const [flowMode, setFlowMode] = useState<'choice' | 'manual' | 'pdf' | 'preview'>('choice');
+    const [flowMode, setFlowMode] = useState<'choice' | 'manual' | 'text' | 'preview'>('choice');
     
     // Manual flow states
     const [isSaving, setIsSaving] = useState(false);
@@ -60,8 +47,8 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         indicador: ''
     });
 
-    // PDF flow states
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    // IA flow (texto pegado) states
+    const [pastedText, setPastedText] = useState('');
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [extractedActivities, setExtractedActivities] = useState<ExtractedActivity[]>([]);
@@ -76,7 +63,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     // Reset all states
     const handleClose = () => {
         setFlowMode('choice');
-        setSelectedFile(null);
+        setPastedText('');
         setErrorMsg(null);
         setIsProcessing(false);
         setShowApiKeyPrompt(false);
@@ -145,42 +132,18 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         }
     }
 
-    // PDF selection and validation handler (Fase 4)
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setErrorMsg(null);
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // 1. Validar que realmente sea PDF
-        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-            setErrorMsg('El archivo seleccionado no es válido. Debe ser un documento PDF.');
-            setSelectedFile(null);
-            return;
-        }
-
-        // 2. Validar que tenga un tamaño permitido (máximo 10 MB para no exceder límites de payload)
-        const MAX_SIZE_MB = 10;
-        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-            setErrorMsg(`El archivo es demasiado grande. El tamaño máximo permitido es ${MAX_SIZE_MB} MB.`);
-            setSelectedFile(null);
-            return;
-        }
-
-        setSelectedFile(file);
-    };
-
     // Save API Key
     const handleSaveApiKey = () => {
         if (!tempApiKey.trim() || !session?.user?.id) return;
         saveGeminiApiKey(session.user.id, tempApiKey);
         setShowApiKeyPrompt(false);
         setTempApiKey('');
-        handleProcessPdf();
+        handleProcessText();
     };
 
-    // Process PDF and query Gemini API
-    const handleProcessPdf = async () => {
-        if (!selectedFile || isProcessing) return;
+    // Process pasted text and query Gemini API
+    const handleProcessText = async () => {
+        if (!pastedText.trim() || isProcessing) return;
 
         const currentUserId = session?.user?.id;
         if (!currentUserId) {
@@ -219,9 +182,6 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
             // Usamos el modelo actualizado (Fase 3)
             const endpointUrl = buildGeminiEndpoint(savedApiKey as string);
 
-            // Connection OK! Now convert PDF to Base64 and send it
-            const base64Data = await fileToBase64(selectedFile);
-            
             const targetCursoObj = cursos.find(c => c.id === targetCursoId);
             const cursoNombre = targetCursoObj ? `${targetCursoObj.grado} ${targetCursoObj.seccion} - ${targetCursoObj.nombre}` : '';
 
@@ -290,12 +250,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                         {
                             parts: [
                                 { text: prompt },
-                                {
-                                    inlineData: {
-                                        mimeType: 'application/pdf',
-                                        data: base64Data
-                                    }
-                                }
+                                { text: pastedText }
                             ]
                         }
                     ],
@@ -340,7 +295,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                 console.error(`[Gemini API Technical Error] Code ${response.status}:`, cleanErrText);
                 
                 if (response.status === 400) {
-                    throw new Error('Solicitud incorrecta: El PDF podría ser inválido, estar dañado, o exceder el tamaño soportado.');
+                    throw new Error('Solicitud incorrecta: No se pudo analizar el texto proporcionado. Verifica que el contenido sea legible y tenga el formato esperado.');
                 } else if (response.status === 401 || response.status === 403) {
                     throw new Error('API Key de Gemini no válida o sin permisos. Por favor, verifíquela.');
                 } else if (response.status === 404) {
@@ -354,7 +309,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
             const textResponse = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!textResponse) {
                 console.error('[Gemini API Technical Error] No text parts in response:', resJson);
-                throw new Error('No se recibieron actividades legibles en el análisis del documento.');
+                throw new Error('No se recibieron actividades legibles en el análisis del texto.');
             }
 
             let data;
@@ -378,14 +333,14 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
             });
 
             if (extracted.length === 0) {
-                setErrorMsg('No se encontraron actividades en el documento.');
+                setErrorMsg('No se encontraron actividades en el texto proporcionado.');
             } else {
                 setExtractedActivities(extracted);
                 setFlowMode('preview');
             }
         } catch (error: any) {
-            console.error('Error analyzing PDF:', error);
-            setErrorMsg(error.message || 'Error inesperado al procesar el archivo. Intente de nuevo.');
+            console.error('Error analyzing text:', error);
+            setErrorMsg(error.message || 'Error inesperado al analizar el texto. Intente de nuevo.');
         } finally {
             setIsProcessing(false);
         }
@@ -546,8 +501,8 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                 </div>
             );
         }
-        if (flowMode === 'pdf') {
-            const isMissingContext = !selectedFile || isProcessing || !targetCursoId || !targetPeriodo;
+        if (flowMode === 'text') {
+            const isMissingContext = !pastedText.trim() || isProcessing || !targetCursoId || !targetPeriodo;
             return (
                 <div className="flex gap-4 w-full">
                     <button 
@@ -558,14 +513,14 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                         Volver
                     </button>
                     <button 
-                        data-guide="btn-procesar-pdf"
+                        data-guide="btn-analizar-texto"
                         className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 ${isMissingContext ? 'opacity-50 cursor-not-allowed' : ''}`} 
-                        onClick={handleProcessPdf}
+                        onClick={handleProcessText}
                         disabled={isMissingContext}
                     >
-                        {isProcessing ? 'Procesando...' : (
+                        {isProcessing ? 'Analizando...' : (
                             <>
-                                <span>Procesar PDF</span>
+                                <span>Analizar</span>
                                 <TC_Flux size={14} />
                             </>
                         )}
@@ -579,7 +534,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
             <div className="flex gap-4 w-full">
                 <button 
                     className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95" 
-                    onClick={() => setFlowMode('pdf')}
+                    onClick={() => setFlowMode('text')}
                     disabled={isSaving}
                 >
                     Volver
@@ -612,8 +567,8 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                         ? 'Nueva Actividad' 
                         : flowMode === 'manual' 
                             ? 'Programar Actividad' 
-                            : flowMode === 'pdf'
-                                ? 'Importar Actividades desde PDF'
+                            : flowMode === 'text'
+                                ? 'Importar Actividades desde Texto'
                                 : 'Actividades Detectadas en el Documento'
             }
             maxWidth={flowMode === 'preview' ? '7xl' : 'lg'}
@@ -624,7 +579,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                     <div className="text-center space-y-2">
                         <h3 className="text-sm font-bold text-slate-900">Necesitamos tu API Key de Google Gemini</h3>
                         <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                            La clave será utilizada para analizar los documentos y extraer las actividades pedagógicas de forma automática.
+                            La clave será utilizada para analizar el texto de las actividades y extraer los elementos pedagógicos de forma automática.
                         </p>
                     </div>
 
@@ -675,15 +630,15 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
 
                                 <button
                                     data-guide="opcion-importar-ia"
-                                    onClick={() => setFlowMode('pdf')}
+                                    onClick={() => setFlowMode('text')}
                                     className="p-6 rounded-2xl border border-slate-200 hover:border-primary hover:bg-[#EAE4DA]/20 transition-all flex flex-col items-center text-center group"
                                 >
                                     <div className="w-12 h-12 rounded-xl bg-[#EAE4DA] flex items-center justify-center mb-4 text-[#2E3330] group-hover:bg-primary transition-colors">
                                         <TC_Archive size={24} />
                                     </div>
-                                    <h3 className="text-sm font-bold text-slate-900 mb-2">Importar Inteligente desde PDF</h3>
+                                    <h3 className="text-sm font-bold text-slate-900 mb-2">Importar Inteligente desde Texto</h3>
                                     <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                        Suba un documento PDF y use la IA para extraer y programar sus actividades de forma automática.
+                                        Pegue el texto copiado de un documento y use la IA para extraer y programar sus actividades de forma automática.
                                     </p>
                                 </button>
                             </div>
@@ -778,7 +733,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                         </div>
                     )}
 
-                    {flowMode === 'pdf' && (
+                    {flowMode === 'text' && (
                         <div className="space-y-6 py-4">
                             {errorMsg && (
                                 <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider rounded-xl">
@@ -823,30 +778,26 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                 </div>
                             </div>
 
-                            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100/50 transition-all cursor-pointer relative group">
-                                <input 
-                                    type="file" 
-                                    accept=".pdf" 
-                                    data-guide="archivo-pdf"
-                                    onChange={handleFileChange} 
+                            <div className="space-y-2.5">
+                                <label className="notion-label">Texto de la actividad</label>
+                                <textarea
+                                    data-guide="texto-actividad"
+                                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium transition-all resize-y leading-relaxed min-h-40"
+                                    rows={10}
+                                    placeholder="Pega aquí el texto copiado del PDF..."
+                                    value={pastedText}
+                                    onChange={e => setPastedText(e.target.value)}
                                     disabled={isProcessing}
-                                    className="absolute inset-0 opacity-0 cursor-pointer" 
                                 />
-                                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-[#2E3330] transition-colors mb-4">
-                                    <TC_Archive size={24} />
-                                </div>
-                                <h4 className="text-sm font-bold text-slate-900 mb-1">
-                                    {selectedFile ? selectedFile.name : 'Seleccionar Documento PDF'}
-                                </h4>
-                                <p className="text-xs text-slate-400 font-medium">
-                                    {selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB` : 'Haga clic para buscar o arrastre su archivo PDF aquí'}
+                                <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                                    Abre el PDF, copia el texto y pégalo aquí. CIELO analizará el contenido para identificar los elementos de la actividad.
                                 </p>
                             </div>
 
                             {isProcessing && (
                                 <div className="flex flex-col items-center justify-center space-y-3 py-6">
                                     <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest animate-pulse">Analizando documento...</p>
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest animate-pulse">Analizando texto...</p>
                                 </div>
                             )}
                         </div>

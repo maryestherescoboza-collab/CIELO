@@ -296,7 +296,7 @@ export const CATALOGO_GUIAS: Guide[] = [
       },
       {
         selector: '[data-guide="opcion-importar-ia"]',
-        texto: 'Selecciona «Importar Inteligente desde PDF» para crear tus actividades con la IA.',
+        texto: 'Selecciona «Importar Inteligente desde Texto» para crear tus actividades con la IA.',
         evento: 'click'
       },
       {
@@ -310,13 +310,13 @@ export const CATALOGO_GUIAS: Guide[] = [
         evento: 'change'
       },
       {
-        selector: '[data-guide="archivo-pdf"]',
-        texto: 'Haz clic en el cuadro punteado y selecciona el documento PDF que contiene tus actividades.',
+        selector: '[data-guide="texto-actividad"]',
+        texto: 'Pega aquí el texto de la actividad. Puedes copiarlo desde un PDF u otro documento.',
         evento: 'change'
       },
       {
-        selector: '[data-guide="btn-procesar-pdf"]',
-        texto: 'Haz clic en «Procesar PDF». La IA analizará el documento. Si se pide tu API Key de Gemini, ingrésala, haz clic en «Guardar API Key» y el procesamiento continuará automáticamente.',
+        selector: '[data-guide="btn-analizar-texto"]',
+        texto: 'Haz clic en «Analizar». La IA analizará el texto. Si se pide tu API Key de Gemini, ingrésala, haz clic en «Guardar API Key» y el análisis continuará automáticamente.',
         evento: 'click'
       },
       {
