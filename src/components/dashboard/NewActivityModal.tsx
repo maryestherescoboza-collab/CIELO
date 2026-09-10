@@ -568,7 +568,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                         : flowMode === 'manual' 
                             ? 'Programar Actividad' 
                             : flowMode === 'text'
-                                ? 'Importar Actividades desde Texto'
+                                ? 'Importar Actividades desde Secuencia'
                                 : 'Actividades Detectadas en el Documento'
             }
             maxWidth={flowMode === 'preview' ? '7xl' : 'lg'}
@@ -636,9 +636,9 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                     <div className="w-12 h-12 rounded-xl bg-[#EAE4DA] flex items-center justify-center mb-4 text-[#2E3330] group-hover:bg-primary transition-colors">
                                         <TC_Archive size={24} />
                                     </div>
-                                    <h3 className="text-sm font-bold text-slate-900 mb-2">Importar Inteligente desde Texto</h3>
+                                    <h3 className="text-sm font-bold text-slate-900 mb-2">Importar una Secuencia o planificación</h3>
                                     <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                        Pegue el texto copiado de un documento y use la IA para extraer y programar sus actividades de forma automática.
+                                        Pega el texto y la IA extrae lo necesario para crear las actividades que debes evaluar.
                                     </p>
                                 </button>
                             </div>
@@ -779,7 +779,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                             </div>
 
                             <div className="space-y-2.5">
-                                <label className="notion-label">Texto de la actividad</label>
+                                <label className="notion-label">Texto de la secuencia</label>
                                 <textarea
                                     data-guide="texto-actividad"
                                     className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium transition-all resize-y leading-relaxed min-h-40"
@@ -790,7 +790,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                                     disabled={isProcessing}
                                 />
                                 <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                                    Abre el PDF, copia el texto y pégalo aquí. CIELO analizará el contenido para identificar los elementos de la actividad.
+                                    Abre la secuencia, copia el texto y pégalo aquí. CIELO analizará el contenido para identificar los elementos de la actividad.
                                 </p>
                             </div>
 

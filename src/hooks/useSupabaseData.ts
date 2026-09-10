@@ -1087,7 +1087,7 @@ export function useSupabaseData(skipInit = false) {
         }
     }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
 
-    const loadCursoData = useCallback(async (cursoId: number) => {
+    const loadCursoData = useCallback(async (cursoId: number, periodo?: string) => {
         if (!session?.user?.id || !cursoId) {
             console.log(`[DIAG][CURSO] guard sin-sesion-o-curso cursoId=${cursoId ?? 'sin-curso'} ts=${new Date().toISOString()}`);
             return;
@@ -1101,7 +1101,14 @@ export function useSupabaseData(skipInit = false) {
         if (cursoPromises[cursoId] !== undefined) {
             console.log(`[PLANIFICACION] Reutilizando promesa en vuelo para Curso ${cursoId}`);
             await cursoPromises[cursoId];
-            return;
+            // Si la carga en vuelo ya dejó completo lo solicitado, no hay nada pendiente.
+            // Con período explícito solo se retorna si la slice de ESE período quedó
+            // completa; sin período, si el curso quedó cargado completo.
+            if (periodo) {
+                if (hasValidAcademicSlice(userId, centroId, cursoId, periodo)) return;
+            } else if (loadedCursos.includes(cursoId)) {
+                return;
+            }
         }
 
         const fetchPromise = (async () => {
@@ -1114,9 +1121,17 @@ export function useSupabaseData(skipInit = false) {
         // Solo se omite una consulta cuando se puede demostrar que los datos exactos
         // de ese curso y período ya están completos y pertenecen al contexto actual
         // (usuario + centro + curso + período). Ante cualquier duda → MISS → consulta.
-        const faltantesCal: string[] = PERIODOS_ACADEMICOS.filter(p => !hasValidAcademicSlice(userId, centroId, cursoId, p));
+        // Cuando se indica un período concreto (p. ej. Rúbrica/Cotejo con filtro
+        // P1..P4) la carga se acota a ESE período: se consulta a Supabase únicamente
+        // lo que falta de ese período, nunca los cuatro a la vez. La slice del período
+        // ya cargada (y en caché) se usa tal cual y no se vuelve a consultar.
+        const faltantesCal: string[] = periodo
+            ? (hasValidAcademicSlice(userId, centroId, cursoId, periodo) ? [] : [periodo])
+            : PERIODOS_ACADEMICOS.filter(p => !hasValidAcademicSlice(userId, centroId, cursoId, p));
         const faltaNullActividades = !hasValidAcademicSlice(userId, centroId, cursoId, NULL_PERIODO_TOKEN);
-        const faltantesAct: string[] = faltaNullActividades ? [...faltantesCal, NULL_PERIODO_TOKEN] : faltantesCal;
+        const faltantesAct: string[] = periodo
+            ? faltantesCal
+            : (faltaNullActividades ? [...faltantesCal, NULL_PERIODO_TOKEN] : faltantesCal);
 
         if (loadedCursos.includes(cursoId)) {
             if (faltantesAct.length === 0 && faltantesCal.length === 0) {

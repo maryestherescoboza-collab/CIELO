@@ -67,6 +67,8 @@ export default function Cotejo({
     const [showGenerarModal, setShowGenerarModal] = useState(false);
 
     const session = useAppStore(s => s.session);
+    const selectedPeriodo = useAppStore(s => s.selectedPeriodo);
+    const setSelectedPeriodo = useAppStore(s => s.setSelectedPeriodo);
     const { loadRubricaCotejoData, loadCursoData } = useSupabaseData(true);
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -94,9 +96,14 @@ export default function Cotejo({
 
     useEffect(() => {
         if (!readOnly && selectedCursoId) {
-            loadCursoData(selectedCursoId);
+            loadCursoData(selectedCursoId, selectedPeriodo);
         }
-    }, [selectedCursoId, readOnly, loadCursoData]);
+    }, [selectedCursoId, selectedPeriodo, readOnly, loadCursoData]);
+
+    useEffect(() => {
+        setSelectedActId(null);
+        setSelectedEstId(null);
+    }, [selectedPeriodo]);
 
     useEffect(() => {
         if (readOnly && initialDatos?.criterios) {
@@ -141,7 +148,8 @@ export default function Cotejo({
         (a.cursoId === selectedCursoId || 
          (selectedCurso?.sharedCourseId && a.sharedCourseId === selectedCurso.sharedCourseId)) &&
         (a.userId === session?.user?.id || !a.userId) &&
-        (!a.asignatura || a.asignatura === selectedAsignatura)
+        (!a.asignatura || a.asignatura === selectedAsignatura) &&
+        a.periodo === selectedPeriodo
     ) || [];
     const estudiantes = state?.estudiantes.filter(e => 
         e.cursoId === selectedCursoId || 
@@ -490,6 +498,24 @@ export default function Cotejo({
                                                 <option value="">Seleccionar actividad...</option>
                                                 {actividades.map(a => <option key={a.id} value={a.id}>{a.nombre} ({a.periodo})</option>)}
                                             </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Periodo</label>
+                                            <div className="flex items-center gap-1 bg-white border border-slate-350 rounded-full p-1 shadow-sm" role="radiogroup" aria-label="Periodo académico">
+                                                {['P1', 'P2', 'P3', 'P4'].map(p => (
+                                                    <button
+                                                        key={p}
+                                                        type="button"
+                                                        role="radio"
+                                                        aria-checked={selectedPeriodo === p}
+                                                        data-guide={`btn-periodo-${p}`}
+                                                        onClick={() => { setSelectedPeriodo(p); setSelectedActId(null); setSelectedEstId(null); }}
+                                                        className={`flex-1 px-2.5 py-1.5 rounded-full text-[11px] font-black tracking-wide transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${selectedPeriodo === p ? 'bg-primary text-[#2E3330] shadow-sm' : 'bg-transparent text-[#2E3330]/60 hover:bg-[#EAE4DA] hover:text-[#2E3330]'}`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 

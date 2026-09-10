@@ -82,6 +82,8 @@ export default function Rubrica({
 }: Props) {
     const storeState = useAppStore((s) => s.state);
     const addFloatingRubric = useAppStore((s) => s.addFloatingRubric);
+    const selectedPeriodo = useAppStore(s => s.selectedPeriodo);
+    const setSelectedPeriodo = useAppStore(s => s.setSelectedPeriodo);
     const { loadRubricaCotejoData, loadCursoData } = useSupabaseData(true);
 
     useEffect(() => {
@@ -111,13 +113,18 @@ export default function Rubrica({
 
     useEffect(() => {
         if (!readOnly && selectedCursoId) {
-            loadCursoData(selectedCursoId);
+            loadCursoData(selectedCursoId, selectedPeriodo);
         }
-    }, [selectedCursoId, readOnly, loadCursoData]);
+    }, [selectedCursoId, selectedPeriodo, readOnly, loadCursoData]);
 
     const [selectedEstId, setSelectedEstId] = useState<number | null>(null);
     const selectedActId = useAppStore(s => s.selectedActividadId);
     const setSelectedActId = useAppStore(s => s.setSelectedActividadId);
+
+    useEffect(() => {
+        setSelectedActId(null);
+        setSelectedEstId(null);
+    }, [selectedPeriodo, setSelectedActId, setSelectedEstId]);
     
     // Store-bound states
     const selection = useAppStore(s => s.activeRubricSelection as Selection);
@@ -276,7 +283,8 @@ export default function Rubrica({
         (actividad.cursoId === selectedCursoId || 
          (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
         (actividad.userId === session?.user?.id || !actividad.userId) &&
-        (!actividad.asignatura || actividad.asignatura === selectedAsignatura)
+        (!actividad.asignatura || actividad.asignatura === selectedAsignatura) &&
+        actividad.periodo === selectedPeriodo
     );
     const rubricaPlantillas = state.plantillas.filter((plantilla) =>
         plantilla.tipo === 'rubrica' && plantilla.userId === session?.user?.id
@@ -756,6 +764,24 @@ export default function Rubrica({
                                                     </option>
                                                 ))}
                                             </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Periodo</label>
+                                            <div className="flex items-center gap-1 bg-white border border-slate-350 rounded-full p-1 shadow-sm" role="radiogroup" aria-label="Periodo académico">
+                                                {['P1', 'P2', 'P3', 'P4'].map(p => (
+                                                    <button
+                                                        key={p}
+                                                        type="button"
+                                                        role="radio"
+                                                        aria-checked={selectedPeriodo === p}
+                                                        data-guide={`btn-periodo-${p}`}
+                                                        onClick={() => { setSelectedPeriodo(p); setSelectedActId(null); setSelectedEstId(null); }}
+                                                        className={`flex-1 px-2.5 py-1.5 rounded-full text-[11px] font-black tracking-wide transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${selectedPeriodo === p ? 'bg-primary text-[#2E3330] shadow-sm' : 'bg-transparent text-[#2E3330]/60 hover:bg-[#EAE4DA] hover:text-[#2E3330]'}`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 
