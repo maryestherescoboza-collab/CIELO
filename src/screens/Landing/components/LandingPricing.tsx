@@ -34,6 +34,20 @@ export function LandingPricing() {
     ]
   };
 
+  const planAnual = {
+    name: 'Docente Anual',
+    price: '4.50',
+    badge: 'Mejor valor',
+    subtitle: 'Compromiso anual de 12 meses al precio más bajo.',
+    secondary: 'Elige el plan anual y disfruta de un año completo de CIELO con 12 cuotas mensuales de US$4.50, ahorrando frente al plan mensual.',
+    features: [
+      'Todas las funcionalidades del plan Docente Independiente.',
+      '12 cuotas mensuales de US$4.50.',
+      'Ahorro del 25% frente al plan mensual.',
+      'Soporte prioritario.'
+    ]
+  };
+
   const planInst = {
     name: 'Institución Educativa',
     price: '5',
@@ -66,7 +80,7 @@ export function LandingPricing() {
 
         {/* Blueprint Grid Container */}
         <div className="border border-dashed border-[rgba(120,135,110,0.25)] bg-white rounded-lg overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
-          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-dashed divide-[rgba(120,135,110,0.25)]">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-dashed divide-[rgba(120,135,110,0.25)]">
 
             {/* Column 1: Plan Docente */}
             <motion.div
@@ -77,7 +91,7 @@ export function LandingPricing() {
               className="flex flex-col justify-between h-full"
             >
               {/* Top part: Header & Price */}
-              <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+              <div className="p-6 md:p-5 lg:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
                   {planDocente.name}
                 </h3>
@@ -98,7 +112,7 @@ export function LandingPricing() {
               </div>
 
               {/* Middle part: Features (flex-1 forces same height across columns) */}
-              <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
+              <div className="p-6 md:p-5 lg:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
                 {planDocente.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
                     <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
@@ -112,7 +126,7 @@ export function LandingPricing() {
               </div>
 
               {/* Bottom part: Secondary & Button */}
-              <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
+              <div className="p-6 md:p-5 lg:p-8 flex flex-col justify-end bg-white">
                 <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
                   {planDocente.secondary}
                 </p>
@@ -122,7 +136,67 @@ export function LandingPricing() {
               </div>
             </motion.div>
 
-            {/* Column 2: Plan Institución */}
+            {/* Column 2: Plan Docente Anual */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.05, type: 'spring', stiffness: 100 }}
+              className="flex flex-col justify-between h-full bg-[#F7FAF5]/60"
+            >
+              {/* Top part: Header & Price */}
+              <div className="p-6 md:p-5 lg:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    {planAnual.name}
+                  </h3>
+                  <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-[#5C7257] bg-[#EBF1E9] border border-[#D5E1D2] px-1.5 py-0.5 rounded-full leading-none">
+                    {planAnual.badge}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 mb-4 leading-normal">
+                  {planAnual.subtitle}
+                </p>
+                <div className="flex flex-col">
+                  <div className="text-4xl font-light text-zinc-900 tracking-tight">
+                    {planAnual.price} <span className="text-lg font-normal text-zinc-400">USD</span>
+                  </div>
+                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5 mb-1">
+                    por mes
+                  </div>
+                  <div className="text-xs font-semibold text-[#689C63] uppercase tracking-wider flex flex-col gap-0.5">
+                    <span>12 cuotas · compromiso anual</span>
+                    <span className="opacity-80">≈ RD$261 / mes · RD$3,132 / año</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Middle part: Features */}
+              <div className="p-6 md:p-5 lg:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-white">
+                {planAnual.features.map(feat => (
+                  <div key={feat} className="flex items-start gap-2.5">
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
+                      ✓
+                    </span>
+                    <span className="text-xs text-zinc-600 leading-tight">
+                      {feat}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom part: Secondary & Button */}
+              <div className="p-6 md:p-5 lg:p-8 flex flex-col justify-end bg-[#F7FAF5]/60">
+                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
+                  {planAnual.secondary}
+                </p>
+                <button onClick={() => handlePlanSelection('individual')} className="w-full py-2.5 px-4 bg-[#7A8D69] text-white text-xs font-medium tracking-widest uppercase hover:bg-[#689C63] transition-all duration-200">
+                  Comenzar ahora
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Column 3: Plan Institución */}
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -131,7 +205,7 @@ export function LandingPricing() {
               className="flex flex-col justify-between h-full"
             >
               {/* Top part: Header & Price */}
-              <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+              <div className="p-6 md:p-5 lg:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
                   {planInst.name}
                 </h3>
@@ -152,7 +226,7 @@ export function LandingPricing() {
               </div>
 
               {/* Middle part: Features */}
-              <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
+              <div className="p-6 md:p-5 lg:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
                 {planInst.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
                     <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
@@ -166,7 +240,7 @@ export function LandingPricing() {
               </div>
 
               {/* Bottom part: Calculator, Secondary & Button */}
-              <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
+              <div className="p-6 md:p-5 lg:p-8 flex flex-col justify-end bg-white">
 
                 {/* Calculadora Integrada */}
                 <div className="border border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/80 rounded p-3 mb-4">

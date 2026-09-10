@@ -41,6 +41,7 @@ export function CourseCard({
     // Find the EXACT link by matching both course ID and the specific subject this card represents
     const myLink = state.cursoDocentes?.find(cd => cd.cursoId === curso.id && cd.userId === currentUserId && cd.asignatura === curso.asignatura);
     const esTutorDelCurso = isTutor || !!myLink?.esTutor;
+    const isTutorDeEsteCurso = state.cursoDocentes?.some(cd => cd.cursoId === curso.id && cd.userId === currentUserId && cd.rol === 'tutor');
     const [avisoBoletines, setAvisoBoletines] = useState(false);
     const [confirmHide, setConfirmHide] = useState(false);
     const displayAsignatura = myLink ? myLink.asignatura : curso.asignatura;
@@ -174,7 +175,7 @@ export function CourseCard({
                                     )}
                                 </div>
                             </div>
-                            {isTutor && (
+                            {isTutorDeEsteCurso && (
                                 <button onClick={(e) => { e.stopPropagation(); onOpenCargaModal(curso.id); }} className="text-(--ink) hover:bg-(--linen) bg-(--linen)/50 px-3 py-1.5 rounded-full text-xs font-bold uppercase outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 transition-colors border border-(--border-soft)">
                                     Carga
                                 </button>

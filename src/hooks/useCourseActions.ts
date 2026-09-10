@@ -32,6 +32,7 @@ export function useCourseActions() {
             .from('cursos')
             .select('*')
             .eq('centro_id', centro_id)
+            .eq('periodo', c.periodo)
             .eq('grado', c.grado)
             .eq('seccion', c.seccion)
             .maybeSingle();
@@ -270,6 +271,14 @@ export function useCourseActions() {
             await syncDelete('curso_docentes', existing.id);
             setState(s => ({ ...s, cursoDocentes: s.cursoDocentes.filter(cd => cd.id !== existing.id) }));
         } else {
+            // Validar duplicado de asignatura
+            const asignaturaOcupada = state.cursoDocentes.some(cd => cd.cursoId === cursoId && cd.asignatura === asignatura);
+            if (asignaturaOcupada) {
+                setGenericToast({ message: "Esta asignatura ya está asignada a un docente en este curso.", type: 'error' });
+                setTimeout(() => setGenericToast(null), 3000);
+                return;
+            }
+
             const { data, error } = await supabase.from('curso_docentes').insert([{
                 curso_id: cursoId,
                 docente_id: targetUserId,

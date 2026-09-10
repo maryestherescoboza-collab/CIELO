@@ -218,9 +218,8 @@ export const mapRealtimePost = (p: any, perfiles?: UserProfile[], secuencias?: a
 // Generación monotónica de cargas: descarta respuestas de cargas obsoletas
 let fetchDataGeneration = 0;
 
-// DIAG (solo lectura): timestamps de carga por curso, para detectar cargas
-// concurrentes/duplicadas (hipótesis H1). No afecta flujo, estado ni caché.
-const diagCursoInFlight: Record<number, string> = {};
+// Bloqueo de concurrencia: promesas en curso por cursoId
+const cursoPromises: Record<number, Promise<void>> = {};
 
 export function useSupabaseData(skipInit = false) {
     const { 
@@ -1098,12 +1097,16 @@ export function useSupabaseData(skipInit = false) {
         const centroId = curso?.centroId ?? null;
         const userId = session.user.id;
 
-        // DIAG H1: detección de cargas concurrentes del mismo curso (no modifica flujo).
-        const yaEnVuelo = diagCursoInFlight[cursoId];
-        diagCursoInFlight[cursoId] = new Date().toISOString();
-        console.log(`[DIAG][CURSO] start cursoId=${cursoId} userId=${userId} centroId=${centroId ?? 'sin-centro'} sharedCourseId=${curso?.sharedCourseId ?? null} periodoCurso=${curso?.periodo ?? null} estado=${yaEnVuelo ? `CONCURRENTE(duplicado) desde=${yaEnVuelo}` : 'normal'} ts=${new Date().toISOString()}`);
-        const antesCurso = useAppStore.getState().state;
-        console.log(`[DIAG][CURSO] STATE_BEFORE cursoId=${cursoId} actividadesCurso=${antesCurso.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesCurso.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesCurso.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
+        // Evitar duplicaciones: si ya hay una carga en progreso para este curso, esperamos a que termine.
+        if (cursoPromises[cursoId] !== undefined) {
+            console.log(`[PLANIFICACION] Reutilizando promesa en vuelo para Curso ${cursoId}`);
+            await cursoPromises[cursoId];
+            return;
+        }
+
+        const fetchPromise = (async () => {
+            const antesCurso = useAppStore.getState().state;
+            console.log(`[DIAG][CURSO] STATE_BEFORE cursoId=${cursoId} actividadesCurso=${antesCurso.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesCurso.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesCurso.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
 
         // Paso 7 — caché académico en memoria (actividades + calificaciones) por
         // curso + período. Los períodos son conjuntos independientes para efectos de
@@ -1119,7 +1122,6 @@ export function useSupabaseData(skipInit = false) {
             if (faltantesAct.length === 0 && faltantesCal.length === 0) {
                 console.log(`[PLANIFICACION] Curso ${cursoId} completo en caché académico por período (sin consultas de actividades/calificaciones)`);
                 console.log(`[DIAG][CURSO] skip-cache-completo cursoId=${cursoId} sin-consultas ts=${new Date().toISOString()}`);
-                delete diagCursoInFlight[cursoId];
                 return;
             }
             console.log(`[PLANIFICACION] Reconciliación académica del curso ${cursoId} (períodos faltantes: ${faltantesCal.join(',')}${faltaNullActividades ? ' + sin-período' : ''})`);
@@ -1243,12 +1245,18 @@ export function useSupabaseData(skipInit = false) {
             }
         } catch (error) {
             console.error(`Error loading Curso data for ${cursoId}:`, error);
+        }
+        })();
+
+        cursoPromises[cursoId] = fetchPromise;
+        try {
+            await fetchPromise;
         } finally {
+            delete cursoPromises[cursoId];
             setLoading(false);
-            delete diagCursoInFlight[cursoId];
             console.log(`[DIAG][CURSO] end cursoId=${cursoId} ts=${new Date().toISOString()}`);
         }
-    }, [session, loadedCursos, addLoadedCurso, setState, setLoading, state.perfiles, state.cursoDocentes]);
+    }, [session, loadedCursos, addLoadedCurso, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
 
     const loadComunidadData = useCallback(async () => {
         if (!session?.user?.id) return;

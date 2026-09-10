@@ -9,16 +9,19 @@ interface PlanClasesState {
   loadingNotas: boolean;
   error: string | null;
   
-  fetchSecuencias: (usuarioId: string) => Promise<void>;
+  fetchSecuencias: (usuarioId: string, forceReload?: boolean) => Promise<void>;
   createSecuencia: (usuarioId: string, titulo: string) => Promise<SecuenciaDB | null>;
   updateSecuencia: (secuenciaId: string, updates: Partial<SecuenciaDB>) => Promise<void>;
   
   fetchNotas: (secuenciaId: string) => Promise<void>;
-  fetchAllNotas: (usuarioId: string) => Promise<void>;
+  fetchAllNotas: (usuarioId: string, forceReload?: boolean) => Promise<void>;
   createNota: (secuenciaId: string, usuarioId: string, titulo: string) => Promise<NotaDB | null>;
   getNota: (notaId: string) => Promise<NotaDB | null>;
   updateNotaContenido: (notaId: string, contenido?: NotaContenido, titulo?: string) => Promise<void>;
 }
+
+let secuenciasPromise: Promise<void> | null = null;
+let notasPromise: Promise<void> | null = null;
 
 export const usePlanClasesStore = create<PlanClasesState>((set, get) => ({
   secuencias: [],
@@ -27,21 +30,32 @@ export const usePlanClasesStore = create<PlanClasesState>((set, get) => ({
   loadingNotas: false,
   error: null,
 
-  fetchSecuencias: async (usuarioId: string) => {
-    set({ loadingSecuencias: true, error: null });
+  fetchSecuencias: async (usuarioId: string, forceReload = false) => {
+    if (!forceReload && get().secuencias.length > 0) return;
+    if (secuenciasPromise) return secuenciasPromise;
+
+    secuenciasPromise = (async () => {
+      set({ loadingSecuencias: true, error: null });
+      try {
+        const { data, error } = await supabase
+          .from('pc_secuencias')
+          .select('*')
+          .eq('usuario_id', usuarioId)
+          .order('creado_en', { ascending: false });
+          
+        if (error) throw error;
+        set({ secuencias: data as SecuenciaDB[] });
+      } catch (err: any) {
+        set({ error: err.message });
+      } finally {
+        set({ loadingSecuencias: false });
+      }
+    })();
+
     try {
-      const { data, error } = await supabase
-        .from('pc_secuencias')
-        .select('*')
-        .eq('usuario_id', usuarioId)
-        .order('creado_en', { ascending: false });
-        
-      if (error) throw error;
-      set({ secuencias: data as SecuenciaDB[] });
-    } catch (err: any) {
-      set({ error: err.message });
+      await secuenciasPromise;
     } finally {
-      set({ loadingSecuencias: false });
+      secuenciasPromise = null;
     }
   },
 
@@ -97,21 +111,32 @@ export const usePlanClasesStore = create<PlanClasesState>((set, get) => ({
     }
   },
 
-  fetchAllNotas: async (usuarioId: string) => {
-    set({ loadingNotas: true, error: null });
+  fetchAllNotas: async (usuarioId: string, forceReload = false) => {
+    if (!forceReload && get().notas.length > 0) return;
+    if (notasPromise) return notasPromise;
+
+    notasPromise = (async () => {
+      set({ loadingNotas: true, error: null });
+      try {
+        const { data, error } = await supabase
+          .from('pc_notas')
+          .select('id, secuencia_id, usuario_id, titulo, orden, creado_en, actualizado_en')
+          .eq('usuario_id', usuarioId)
+          .order('actualizado_en', { ascending: false });
+          
+        if (error) throw error;
+        set({ notas: data as unknown as NotaDB[] });
+      } catch (err: any) {
+        set({ error: err.message });
+      } finally {
+        set({ loadingNotas: false });
+      }
+    })();
+
     try {
-      const { data, error } = await supabase
-        .from('pc_notas')
-        .select('id, secuencia_id, usuario_id, titulo, orden, creado_en, actualizado_en')
-        .eq('usuario_id', usuarioId)
-        .order('actualizado_en', { ascending: false });
-        
-      if (error) throw error;
-      set({ notas: data as unknown as NotaDB[] });
-    } catch (err: any) {
-      set({ error: err.message });
+      await notasPromise;
     } finally {
-      set({ loadingNotas: false });
+      notasPromise = null;
     }
   },
 

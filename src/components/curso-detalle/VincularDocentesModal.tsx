@@ -3,6 +3,8 @@ import { Trash2, Users } from 'lucide-react';
 import type { AppState } from '../../types';
 import { ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
 import { CieloModal } from '../ui/CieloModal';
+import { supabase } from '../../lib/supabase';
+import { useAppStore } from '../../store/appStore';
 
 interface VincularDocentesModalProps {
     show: boolean;
@@ -23,6 +25,38 @@ const VincularDocentesModal: React.FC<VincularDocentesModalProps> = ({
     onToggleDocenteCurso,
     getAsignaturaNombre
 }) => {
+    const setState = useAppStore(s => s.setAppState);
+
+    React.useEffect(() => {
+        if (show) {
+            // Sincronizar con Supabase para garantizar la fuente de verdad persistida
+            const fetchLinks = async () => {
+                const { data, error } = await supabase
+                    .from('curso_docentes')
+                    .select('*')
+                    .eq('curso_id', cursoId)
+                    .eq('activo', true);
+                if (data && !error) {
+                    setState(s => {
+                        const others = s.cursoDocentes.filter(cd => cd.cursoId !== cursoId);
+                        const refreshed = data.map(d => ({
+                            id: d.id,
+                            cursoId: d.curso_id,
+                            userId: d.docente_id,
+                            rol: d.rol,
+                            esTutor: d.es_tutor,
+                            asignatura: d.asignatura,
+                            diasSemana: d.dias_semana || [],
+                            createdAt: d.created_at
+                        }));
+                        return { ...s, cursoDocentes: [...others, ...refreshed] };
+                    });
+                }
+            };
+            fetchLinks();
+        }
+    }, [show, cursoId, setState]);
+
     if (!show) return null;
 
     return (
@@ -48,7 +82,16 @@ const VincularDocentesModal: React.FC<VincularDocentesModalProps> = ({
                                         <div>
                                             <h4 className="text-slate-900 font-black text-sm uppercase tracking-wide">{asig.nombre}</h4>
                                             <p className="text-slate-400 text-xs font-bold mt-0.5">
-                                                {profile ? `Asignado a: ${profile.nombreDocente}` : 'Sin docente asignado'}
+                                                {profile ? (
+                                                    <span className="flex items-center gap-1.5">
+                                                        Asignado a: {profile.nombreDocente}
+                                                        {linked?.rol === 'tutor' ? (
+                                                            <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] uppercase font-black tracking-widest">Tutor</span>
+                                                        ) : (
+                                                            <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] uppercase font-black tracking-widest">Co-docente</span>
+                                                        )}
+                                                    </span>
+                                                ) : 'Sin docente asignado'}
                                             </p>
                                         </div>
                                     </div>

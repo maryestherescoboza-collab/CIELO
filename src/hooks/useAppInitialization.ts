@@ -12,10 +12,11 @@ interface Params {
 
 export function useAppInitialization({ state, session }: Params) {
     useEffect(() => {
-        if (session?.user?.id) {
+        const userId = session?.user?.id;
+        if (userId) {
             const updateLastSeen = async () => {
                 await supabase.from('perfiles').upsert({
-                    user_id: session.user.id,
+                    user_id: userId,
                     last_seen: new Date().toISOString(),
                 });
             };
@@ -23,7 +24,7 @@ export function useAppInitialization({ state, session }: Params) {
             const interval = setInterval(updateLastSeen, 60000);
             return () => clearInterval(interval);
         }
-    }, [session]);
+    }, [session?.user?.id]);
 
     const currentUserProfile = useMemo(
         () => state.perfiles.find(p => p.userId === session?.user?.id),
