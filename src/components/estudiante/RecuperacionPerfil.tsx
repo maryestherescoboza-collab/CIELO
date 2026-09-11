@@ -1,15 +1,12 @@
 import React from 'react';
-import { ClipboardCheck } from 'lucide-react';
 import type { AppState, BCKey, Estudiante, Curso, RecuperacionBC } from '../../types';
 import { INDICADORES_RECUPERACION, TITULOS_RECUPERACION } from '../../constants/recuperacionCotejo';
-import { BC_COLOR_THEMES, BC_ICONS } from '../../constants/competencias';
 import { actividadesParaRecuperacion } from '../../utils/recuperacion';
 
 interface RecuperacionPerfilProps {
     est: Estudiante | null | undefined;
     curso: Curso | null | undefined;
     periodo: string;
-    setPeriodo: (p: string) => void;
     state: AppState;
     currentAsignatura?: string;
     isTutor?: boolean;
@@ -33,13 +30,6 @@ const normalizar = (t: string): string[] =>
         .split(/\s+/)
         .filter(Boolean);
 
-/**
- * Devuelve el índice del indicador definitivo al que corresponde un texto
- * de indicador almacenado en recuperaciones_cotejo. Primero intenta la
- * igualdad exacta; si no coincide (textos históricos guardados con otra
- * redacción), mapea por similitud de tokens normalizados al indicador
- * definitivo de la misma BC. -1 si no hay correspondencia.
- */
 function indiceIndicadorDefinitivo(bc: 1 | 2 | 3 | 4, textoAlmacenado: string): number {
     const definitivos = INDICADORES_RECUPERACION[bc];
     const exacto = definitivos.findIndex(d => d === textoAlmacenado);
@@ -66,7 +56,6 @@ const RecuperacionPerfil: React.FC<RecuperacionPerfilProps> = ({
     est,
     curso,
     periodo,
-    setPeriodo,
     state,
     currentAsignatura,
     isTutor = false,
@@ -102,6 +91,10 @@ const RecuperacionPerfil: React.FC<RecuperacionPerfilProps> = ({
             (_d, i) => cotejo.filter(r => indiceIndicadorDefinitivo(num, r.indicador) === i).length,
         );
 
+        const bcColors: Record<string, string> = {
+            'BC1': '#537BAC', 'BC2': '#689C63', 'BC3': '#EB8847', 'BC4': '#DB5B48'
+        };
+
         return {
             key,
             num,
@@ -110,72 +103,41 @@ const RecuperacionPerfil: React.FC<RecuperacionPerfilProps> = ({
             logradas: logradasPorIndicador,
             totalActividades: aplicables.length,
             resultados: recuperacion.puntaje,
+            color: bcColors[key] || '#4E5566'
         };
     }).filter((b): b is NonNullable<typeof b> => b !== null);
 
     return (
-        <div className="w-full space-y-5 pt-2">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-                <div>
-                    <h2 className="text-[17px] font-extrabold tracking-widest text-(--navy) uppercase border-b-2 border-(--navy) pb-1.5 inline-block">
-                        Recuperación
-                    </h2>
-                    <p className="text-[12px] font-bold text-(--muted) mt-1.5 flex items-center gap-1.5">
-                        <ClipboardCheck size={13} />
-                        Informe por competencia · Solo lectura · Período {periodo}
-                    </p>
-                </div>
-                <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-sm">
-                    {['P1', 'P2', 'P3', 'P4'].map(p => (
-                        <button
-                            key={p}
-                            type="button"
-                            onClick={() => setPeriodo(p)}
-                            className={`px-5 py-2 min-h-9 leading-none rounded-lg text-xs font-extrabold tracking-[0.08em] transition-all ${
-                                periodo === p
-                                    ? 'bg-(--navy) text-white shadow-sm scale-102 font-black'
-                                    : 'text-slate-600 hover:text-(--navy-dark) hover:bg-slate-200/60'
-                            }`}
-                        >
-                            {p}
-                        </button>
-                    ))}
-                </div>
+        <div className="w-full font-sans">
+            <div className="flex items-baseline gap-2">
+                <span className="font-['Space_Grotesk'] font-bold text-[#DB5B48] text-[13px]">//</span>
+                <h2 className="font-['Space_Grotesk'] text-[12px] font-bold tracking-[0.14em] uppercase text-[#1B1F2A]">Recuperación por competencia</h2>
             </div>
+            <hr className="border-t border-[#E4E3EC] mt-2 mb-4" />
 
             {bloques.length === 0 ? (
-                <p className="text-[13px] font-bold text-(--muted) italic bg-white border border-slate-200 rounded-2xl px-4 py-6 shadow-sm">
-                    No hay recuperaciones registradas para este estudiante en el período {periodo}.
-                </p>
+                <div className="text-[11.5px] text-[#8A8FA0] italic">
+                    Sin registros de recuperación para el período {periodo}.
+                </div>
             ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                    {bloques.map(({ key, nombre, indicadores, logradas, totalActividades, resultados }) => (
-                        <div key={key} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                            <div className="flex items-center gap-2.5 px-4 py-3 bg-slate-50/70 border-b border-slate-200">
-                                <span className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center ${BC_COLOR_THEMES[key].bg} ${BC_COLOR_THEMES[key].text}`}>
-                                    {BC_ICONS[key]}
-                                </span>
-                                <span className="text-[13px] font-black uppercase tracking-wider text-(--ink) leading-snug">
-                                    Competencia {nombre}
-                                </span>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-8 gap-y-5">
+                    {bloques.map(({ key, nombre, indicadores, logradas, totalActividades, resultados, color }) => (
+                        <div key={key} className="break-inside-avoid mb-5">
+                            <div className="inline-block font-['Space_Grotesk'] text-[11px] font-bold tracking-[0.02em] leading-[1.35] text-white px-2.5 py-1 rounded mb-2.75" style={{ background: color }}>
+                                Competencia {nombre.toLowerCase()}
                             </div>
-                            <div className="px-4 py-3 space-y-2.5">
-                                {indicadores.map((indicador, i) => (
-                                    <p key={indicador} className="text-[12.5px] font-bold text-(--text) leading-relaxed">
-                                        {indicador}{' '}
-                                        Logrado en{' '}
-                                        <strong className="font-black text-(--navy)">
-                                            {logradas[i]}/{totalActividades}
-                                        </strong>{' '}
-                                        de las actividades evaluadas.
-                                    </p>
-                                ))}
-                            </div>
-                            <div className="px-4 py-3 border-t border-slate-100 flex items-center gap-2">
-                                <span className="text-[12px] font-bold text-(--text)">Resultado de recuperación:</span>
-                                <strong className={`text-[13px] font-black ${(resultados ?? 0) >= 70 ? 'text-(--tag-emerald-text)' : 'text-(--tag-rose-text)'}`}>
+                            
+                            {indicadores.map((indicador, i) => (
+                                <div key={indicador} className="text-[11px] text-[#4E5566] mb-2 leading-normal">
+                                    {indicador} Logrado en <strong className="font-bold text-[#1B1F2A]">{logradas[i]}/{totalActividades}</strong> de las actividades evaluadas.
+                                </div>
+                            ))}
+
+                            <div className="mt-2.5 pt-2 border-t border-[#EFEEF4] flex items-baseline justify-between">
+                                <div className="text-[10.5px] text-[#8A8FA0]">Resultado de recuperación</div>
+                                <div className="font-['Space_Grotesk'] text-[13.5px] font-bold" style={{ color: color }}>
                                     {resultados !== null && resultados !== undefined ? `${fmt(resultados)} puntos` : '—'}
-                                </strong>
+                                </div>
                             </div>
                         </div>
                     ))}

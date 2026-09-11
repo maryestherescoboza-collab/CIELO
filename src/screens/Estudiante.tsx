@@ -201,34 +201,81 @@ export default function Estudiante() {
     }
 
     return (
-        <div className="flex flex-col items-center w-full min-h-screen bg-(--background) text-(--ink) pb-16 custom-estudiante-screen">
-            <style dangerouslySetInnerHTML={{ __html: `
-              .custom-estudiante-screen {
-                --navy: #1c4e8a;
-                --navy-dark: #123761;
-                --grey-bar: #cbd5e1;
-                --grey-bar-fill: #1c4e8a;
-                --text: #2b2f36;
-                --muted: #5b6270;
-              }
-            ` }} />
-            <EstudianteHeader 
-                periodo={periodo} 
-                setPeriodo={setPeriodo} 
-                activeTab={activeTab} 
-                setActiveTab={setActiveTab} 
-                onBack={() => navigate('/cursos')} 
-                isTutor={isTutor}
-            />
+        <div className="flex flex-col items-center w-full min-h-screen bg-[#EFEFEC] text-[#1B1F2A] pb-16 font-sans estudiante-root-wrapper">
+            <div className="w-full no-print">
+                <EstudianteHeader 
+                    periodo={periodo} 
+                    setPeriodo={setPeriodo} 
+                    activeTab={activeTab} 
+                    setActiveTab={setActiveTab} 
+                    onBack={() => navigate('/cursos')} 
+                    isTutor={isTutor}
+                />
+            </div>
 
-            <div className="w-full px-8 relative">
-                <div className="w-full bg-white shadow-md border-x border-b border-slate-200/80 rounded-b-2xl p-8 relative border-t-[3px] border-t-(--navy)">
+            <div className="w-full px-4 sm:px-8 relative mx-auto flex justify-center overflow-x-auto pb-10 workspace-print-wrapper">
+                <style dangerouslySetInnerHTML={{ __html: `
+                    @media print {
+                        /* Ocultar UI general de CIELO */
+                        header, nav, aside, footer {
+                            display: none !important;
+                        }
+                        
+                        /* Ocultar elementos marcados como no imprimibles */
+                        .no-print {
+                            display: none !important;
+                        }
+
+                        /* Reset de contenedores padres para liberar el flujo */
+                        body, #root, .app-shell, .app-main, .estudiante-root-wrapper {
+                            display: block !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            width: 100% !important;
+                            height: auto !important;
+                            overflow: visible !important;
+                            background: white !important;
+                            position: static !important;
+                        }
+
+                        /* Configuración del workspace para impresión */
+                        .workspace-print-wrapper {
+                            display: block !important;
+                            padding: 0 !important;
+                            margin: 0 !important;
+                            max-width: none !important;
+                            overflow: visible !important;
+                        }
+
+                        /* Dimensiones exactas A4 para las hojas */
+                        .a4-page {
+                            box-shadow: none !important;
+                            width: 210mm !important;
+                            min-height: 297mm !important;
+                            height: max-content !important;
+                            margin: 0 !important;
+                            page-break-after: always;
+                            padding: 20mm 21mm !important;
+                            border: none !important;
+                        }
+
+                        .a4-page:last-child {
+                            page-break-after: auto;
+                        }
+
+                        @page {
+                            size: A4;
+                            margin: 0;
+                        }
+                    }
+                ` }} />
+                
+                <div className="flex flex-row gap-6 items-start justify-center min-w-max">
                     {activeTab === 'Perfil' && (
                         <PerfilTab 
                             est={est}
                             curso={curso}
                             periodo={periodo}
-                            setPeriodo={setPeriodo}
                             promedioPeriodo={promedioPeriodo}
                             rankingPeriodo={rankingPeriodo}
                             studentHabilidades={studentHabilidades}
@@ -242,28 +289,30 @@ export default function Estudiante() {
                     )}
 
                     {activeTab === 'Evaluación' && isTutor && (
-                        <div className="space-y-6 animate-in fade-in duration-500">
-                            <div className="flex justify-between items-center border-b pb-5 border-(--border-soft)">
-                                <div>
-                                    <h2 className="text-xl font-black text-(--ink) tracking-tight">REGISTRO ANUAL</h2>
-                                    <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
+                        <div className="a4-page w-[210mm] min-h-[297mm] bg-white shadow-[0_1px_3px_rgba(30,30,25,.08),0_10px_28px_rgba(30,30,25,.10)] p-[20mm] flex flex-col shrink-0">
+                            <div className="space-y-6 animate-in fade-in duration-500">
+                                <div className="flex justify-between items-center border-b pb-5 border-[#E4E3EC]">
+                                    <div>
+                                        <h2 className="text-xl font-black text-[#1B1F2A] tracking-tight font-['Space_Grotesk']">REGISTRO ANUAL</h2>
+                                        <p className="text-xs font-bold text-[#4E5566] uppercase tracking-widest mt-1">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
+                                    </div>
+                                    <button onClick={() => window.print()} className="no-print flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-[#689C63] text-white rounded-full font-semibold text-xs hover:opacity-90 active:scale-95 transition-all uppercase tracking-[0.08em] shadow-sm">
+                                        <Printer size={15} /> Imprimir
+                                    </button>
                                 </div>
-                                <button onClick={() => window.print()} className="flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-(--primary) text-white rounded-full font-semibold text-xs hover:opacity-90 active:scale-95 transition-all uppercase tracking-[0.08em] shadow-sm">
-                                    <Printer size={15} /> Imprimir
-                                </button>
+                                <AnnualGradesTable 
+                                    allSubjects={allSubjects}
+                                    renderGradesCellsForSubject={renderGradesCellsForSubject}
+                                />
                             </div>
-                            <AnnualGradesTable 
-                                allSubjects={allSubjects}
-                                renderGradesCellsForSubject={renderGradesCellsForSubject}
-                            />
                         </div>
                     )}
                 </div>
             </div>
 
-            <footer className="w-[92%] max-w-7xl mt-12 text-center py-8 opacity-40 select-none">
-                <p className="text-(--ink-soft) text-[14px] font-bold uppercase tracking-[0.5em] mb-2">Plataforma Educativa Noether</p>
-                <div className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-(--ink-soft)/70">
+            <footer className="w-[92%] max-w-7xl mt-auto text-center py-8 opacity-40 select-none">
+                <p className="text-[#4E5566] text-[14px] font-bold uppercase tracking-[0.5em] mb-2">Plataforma Educativa Noether</p>
+                <div className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-[#4E5566]/70">
                     <School size={14} />
                     <span>Registro Oficial Validado</span>
                 </div>
