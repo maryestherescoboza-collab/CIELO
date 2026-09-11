@@ -14,6 +14,54 @@ const BC_CIRCLE_CONFIG: Array<{ id: BCKey; label: string; icon: typeof MessageSq
   { id: 'BC4', label: COMPETENCIAS_LABEL.BC4, icon: Microscope, bg: 'bg-emerald-50', selectedBg: 'bg-emerald-600', selectedText: 'text-white' },
 ];
 
+// Límite de entrada del analizador de actividades (evita HTTP 400 por texto excesivamente largo).
+const MAX_ANALYSIS_CHARS = 15000;
+
+function truncateAnalysisText(text: string): { text: string; truncated: boolean } {
+    if (text.length <= MAX_ANALYSIS_CHARS) {
+        return { text, truncated: false };
+    }
+    const limit = text.slice(0, MAX_ANALYSIS_CHARS);
+    const lastSpace = limit.lastIndexOf(' ');
+    const safeText = lastSpace > MAX_ANALYSIS_CHARS * 0.8 ? limit.slice(0, lastSpace) : limit;
+    return { text: safeText, truncated: true };
+}
+
+function classifyGeminiError(status: number, body: string): string {
+    const lower = body.toLowerCase();
+    const quotaRelated =
+        status === 429 ||
+        lower.includes('resource_exhausted') ||
+        /rate[-_ ]?limit/.test(lower) ||
+        lower.includes('quota') ||
+        lower.includes('too many requests') ||
+        lower.includes('request limit') ||
+        /(per[- ]minute|tokens? per |rpm limit)/.test(lower) ||
+        /(token|quota).*(exhaust|temporar)/.test(lower);
+    const hasRetryHint = /retry delay|retrydelay|try again in|wait (at least )?\d+ (second|minute)|"seconds"|seconds before/.test(lower);
+    const sizeRelated = /too (long|large)|prompt too long|request is too large|maximum (input|context|length|token)|input (token )?count|input.*(exceed|too large|long)|(token|character|charact).*(exceed|max)/.test(lower);
+    const serviceUnavailable = lower.includes('unavailable') || lower.includes('overloaded') || lower.includes('temporar');
+
+    if (quotaRelated) {
+        return hasRetryHint
+            ? 'El servicio de análisis alcanzó su límite temporal. Inténtalo nuevamente en unos minutos.'
+            : 'El servicio de análisis alcanzó su límite temporal. Inténtalo nuevamente más tarde.';
+    }
+    if (status === 400 && sizeRelated) {
+        return 'El texto es demasiado extenso para analizarlo de una vez. Acorta el contenido e inténtalo nuevamente.';
+    }
+    if (status === 401 || status === 403) {
+        return 'API Key de Gemini no válida o sin permisos. Por favor, verifíquela.';
+    }
+    if (status === 404) {
+        return 'El modelo de IA no está disponible o el endpoint es incorrecto para esta API Key.';
+    }
+    if (status >= 500 || serviceUnavailable) {
+        return 'El servicio de análisis no está disponible en este momento. Inténtalo nuevamente en unos minutos.';
+    }
+    return 'No pudimos procesar este contenido. Intenta reducir el texto o pegar nuevamente la actividad.';
+}
+
 interface NewActivityModalProps {
     show: boolean;
     onClose: () => void;
@@ -50,6 +98,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     // IA flow (texto pegado) states
     const [pastedText, setPastedText] = useState('');
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [infoMsg, setInfoMsg] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [extractedActivities, setExtractedActivities] = useState<ExtractedActivity[]>([]);
     const [targetCursoId, setTargetCursoId] = useState<number>(0);
@@ -65,6 +114,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         setFlowMode('choice');
         setPastedText('');
         setErrorMsg(null);
+        setInfoMsg(null);
         setIsProcessing(false);
         setShowApiKeyPrompt(false);
         setTempApiKey('');
@@ -177,6 +227,12 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
 
         setIsProcessing(true);
         setErrorMsg(null);
+        setInfoMsg(null);
+
+        const { text: textToAnalyze, truncated } = truncateAnalysisText(pastedText);
+        if (truncated) {
+            setInfoMsg('El texto es demasiado extenso para analizarlo de una vez. Se utilizará una parte del contenido para identificar la actividad.');
+        }
 
         try {
             // Usamos el modelo actualizado (Fase 3)
@@ -240,76 +296,83 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
   ]
 }`;
 
-            const response = await fetch(endpointUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            parts: [
-                                { text: prompt },
-                                { text: pastedText }
-                            ]
-                        }
-                    ],
-                    generationConfig: {
-                        responseMimeType: 'application/json',
-                        responseSchema: {
-                            type: 'OBJECT',
-                            properties: {
-                                actividades: {
-                                    type: 'ARRAY',
-                                    items: {
-                                        type: 'OBJECT',
-                                        properties: {
-                                            nombre: { type: 'STRING' },
-                                            competencias: { 
-                                                type: 'ARRAY', 
-                                                items: { 
-                                                    type: 'OBJECT',
-                                                    properties: {
-                                                        codigo: { type: 'STRING', enum: ['BC1', 'BC2', 'BC3', 'BC4'] },
-                                                        nombre: { type: 'STRING' }
-                                                    },
-                                                    required: ['codigo', 'nombre']
-                                                } 
+            let response: Response;
+            try {
+                response = await fetch(endpointUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [
+                            {
+                                parts: [
+                                    { text: prompt },
+                                    { text: textToAnalyze }
+                                ]
+                            }
+                        ],
+                        generationConfig: {
+                            responseMimeType: 'application/json',
+                            responseSchema: {
+                                type: 'OBJECT',
+                                properties: {
+                                    actividades: {
+                                        type: 'ARRAY',
+                                        items: {
+                                            type: 'OBJECT',
+                                            properties: {
+                                                nombre: { type: 'STRING' },
+                                                competencias: { 
+                                                    type: 'ARRAY', 
+                                                    items: { 
+                                                        type: 'OBJECT',
+                                                        properties: {
+                                                            codigo: { type: 'STRING', enum: ['BC1', 'BC2', 'BC3', 'BC4'] },
+                                                            nombre: { type: 'STRING' }
+                                                        },
+                                                        required: ['codigo', 'nombre']
+                                                    } 
+                                                },
+                                                indicador_logro: { type: 'STRING' },
+                                                producto: { type: 'STRING' }
                                             },
-                                            indicador_logro: { type: 'STRING' },
-                                            producto: { type: 'STRING' }
-                                        },
-                                        required: ['nombre', 'competencias', 'indicador_logro', 'producto']
+                                            required: ['nombre', 'competencias', 'indicador_logro', 'producto']
+                                        }
                                     }
-                                }
-                            },
-                            required: ['actividades']
+                                },
+                                required: ['actividades']
+                            }
                         }
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                const cleanErrText = errText.replace(new RegExp(savedApiKey, 'g'), '***API_KEY***');
-                console.error(`[Gemini API Technical Error] Code ${response.status}:`, cleanErrText);
-                
-                if (response.status === 400) {
-                    throw new Error('Solicitud incorrecta: No se pudo analizar el texto proporcionado. Verifica que el contenido sea legible y tenga el formato esperado.');
-                } else if (response.status === 401 || response.status === 403) {
-                    throw new Error('API Key de Gemini no válida o sin permisos. Por favor, verifíquela.');
-                } else if (response.status === 404) {
-                    throw new Error('El modelo de IA no está disponible o el endpoint es incorrecto para esta API Key.');
-                } else {
-                    throw new Error(`Fallo en el servicio de Gemini (Código HTTP ${response.status}). Intente de nuevo más tarde.`);
-                }
+                    })
+                });
+            } catch (err) {
+                console.error('[NewActivityModal] Error connecting to analysis service:', err);
+                setErrorMsg('No pudimos conectar con el servicio de análisis. Revisa tu conexión a internet e inténtalo nuevamente.');
+                return;
             }
 
-            const resJson = await response.json();
+            if (!response.ok) {
+                const errText = await response.text().catch(() => '');
+                const cleanErrText = errText.replace(new RegExp(savedApiKey, 'g'), '***API_KEY***');
+                console.error(`[Gemini API Technical Error] Code ${response.status}:`, cleanErrText);
+                setErrorMsg(classifyGeminiError(response.status, errText));
+                return;
+            }
+
+            let resJson: any;
+            try {
+                resJson = await response.json();
+            } catch (e) {
+                console.error('[NewActivityModal] Invalid JSON response body:', e);
+                setErrorMsg('No pudimos interpretar la actividad con el formato esperado. Intenta pegar nuevamente la descripción de la actividad.');
+                return;
+            }
+
             const textResponse = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!textResponse) {
                 console.error('[Gemini API Technical Error] No text parts in response:', resJson);
-                throw new Error('No se recibieron actividades legibles en el análisis del texto.');
+                throw new Error('No pudimos interpretar la actividad con el formato esperado. Intenta pegar nuevamente la descripción de la actividad.');
             }
 
             let data;
@@ -317,9 +380,15 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                 data = JSON.parse(textResponse);
             } catch (e) {
                 console.error('[Gemini API Technical Error] Malformed JSON payload:', textResponse);
-                throw new Error('La IA devolvió una respuesta con formato JSON inválido. Intente procesar de nuevo.');
+                throw new Error('No pudimos interpretar la actividad con el formato esperado. Intenta pegar nuevamente la descripción de la actividad.');
             }
-            const extracted = (data.actividades || []).map((act: any) => {
+
+            if (!data || typeof data !== 'object' || !Array.isArray((data as Record<string, unknown>).actividades)) {
+                console.error('[Gemini API Technical Error] Response does not match expected schema:', data);
+                throw new Error('No pudimos interpretar la actividad con el formato esperado. Intenta pegar nuevamente la descripción de la actividad.');
+            }
+
+            const extracted = ((data as { actividades: any[] }).actividades || []).map((act: any) => {
                 const mappedBcs = Array.isArray(act.competencias) 
                     ? act.competencias.map((c: any) => c.codigo).filter((c: any) => ['BC1', 'BC2', 'BC3', 'BC4'].includes(c))
                     : [];
@@ -738,6 +807,12 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                             {errorMsg && (
                                 <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider rounded-xl">
                                     {errorMsg}
+                                </div>
+                            )}
+
+                            {infoMsg && (
+                                <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold uppercase tracking-wider rounded-xl">
+                                    {infoMsg}
                                 </div>
                             )}
 

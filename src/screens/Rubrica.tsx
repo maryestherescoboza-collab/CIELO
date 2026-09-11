@@ -402,40 +402,14 @@ export default function Rubrica({
     function handleSelect(id: string, nivel: Nivel) {
         if (!selectedAct) return;
 
-        // Flow: First select the descriptor (activeCell).
-        // Then the teacher clicks on students in the horizontal list to assign them.
+        // Selecting a cell ONLY sets the active assignment target.
+        // Students are bound to this cell when the teacher clicks their avatar
+        // (handleAvatarClick). Selecting a new cell must never re-apply itself to
+        // students that were already assigned to a previous cell.
         if (activeCell?.id === id && activeCell?.nivel === nivel) {
             setActiveCell(null);
         } else {
             setActiveCell({ id, nivel });
-        }
-
-        // If there is a selected student, we also update their individual selection
-        // and add it to multiEvaluations so it persists locally when switching students.
-        if (selectedEstId) {
-            setSelection((prev) => {
-                const isAlreadyInThisLevel = prev[id] === nivel;
-                const next = { ...prev, [id]: isAlreadyInThisLevel ? undefined : nivel };
-                const cleaned: Selection = {};
-                Object.entries(next).forEach(([k, v]) => {
-                    if (v !== undefined) cleaned[k] = v;
-                });
-                return cleaned;
-            });
-
-            setMultiEvaluations((prev) => {
-                const currentSelection = prev[selectedEstId] || {};
-                const isAlreadyInThisLevel = currentSelection[id] === nivel;
-                const nextSelection = {
-                    ...currentSelection,
-                    [id]: isAlreadyInThisLevel ? undefined : nivel
-                };
-                const cleaned: Selection = {};
-                Object.entries(nextSelection).forEach(([k, v]) => {
-                    if (v !== undefined) cleaned[k] = v;
-                });
-                return { ...prev, [selectedEstId]: cleaned };
-            });
         }
     }
 

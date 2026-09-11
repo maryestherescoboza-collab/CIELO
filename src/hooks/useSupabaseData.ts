@@ -526,7 +526,11 @@ export function useSupabaseData(skipInit = false) {
                                 resolvedCentroRolActual.rol === 'administrador' &&
                                 !!c.centro_id && c.centro_id === resolvedCentroRolActual.centro_id;
 
-                            if (isCreator && !isCentroAdmin && userCentroId && c.centro_id && c.centro_id !== userCentroId) return [];
+                            // Filtro estricto: Si el usuario está en un centro y no es administrador, 
+                            // DEBE coincidir el centro_id del curso con su centro_id actual.
+                            if (!isCentroAdmin && userCentroId && c.centro_id !== userCentroId) return [];
+                            
+                            // Regla de acceso básico: debe ser creador, co-docente, o admin del centro.
                             if (myLinks.length === 0 && !isCreator && !isCentroAdmin) return [];
 
                             const baseCurso = {
