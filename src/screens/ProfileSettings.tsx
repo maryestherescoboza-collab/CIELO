@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { supabase } from '../lib/supabase';
-import { getGeminiApiKey, saveGeminiApiKey, removeGeminiApiKey, maskApiKey } from '../lib/aiConfig';
+import { getGeminiApiKey, saveGeminiApiKey, removeGeminiApiKey, maskApiKey, getOpenAIApiKey, saveOpenAIApiKey, removeOpenAIApiKey, getAIAIProvider, saveAIAIProvider, isProviderConfigured, providerDisplayName, AI_PROVIDERS, type AIProvider } from '../lib/aiConfig';
 import { useAppStore } from '../store/appStore';
 import { PORTAL_FAMILIA_ENABLED } from '../config/features';
 import type { Session } from '@supabase/supabase-js';
@@ -1146,6 +1146,14 @@ function SeguridadTab({ centroId, centroNombre, onChangeCentro }: SeguridadTabPr
 
 function IntegrarIATab({ session }: { session: Session | null }) {
   const userId = session?.user?.id;
+  const [provider, setProvider] = useState<AIProvider>(() => getAIAIProvider(userId));
+
+  const handleSelectProvider = (p: AIProvider) => {
+    if (!userId) return;
+    saveAIAIProvider(userId, p);
+    setProvider(p);
+  };
+
   const [inputKey, setInputKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -1170,8 +1178,70 @@ function IntegrarIATab({ session }: { session: Session | null }) {
     refreshApiKey();
   };
 
+  const [openaiInputKey, setOpenaiInputKey] = useState('');
+  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+  const [openaiSavedFlash, setOpenaiSavedFlash] = useState(false);
+  const [openaiApiKey, setOpenaiApiKey] = useState<string | null>(() => getOpenAIApiKey(userId));
+  const openaiConfigurado = !!openaiApiKey;
+
+  const refreshOpenAIApiKey = () => setOpenaiApiKey(getOpenAIApiKey(userId));
+
+  const handleOpenAIGuardar = () => {
+    if (!openaiInputKey.trim() || !userId) return;
+    saveOpenAIApiKey(userId, openaiInputKey);
+    setOpenaiInputKey('');
+    refreshOpenAIApiKey();
+    setOpenaiSavedFlash(true);
+    setTimeout(() => setOpenaiSavedFlash(false), 2500);
+  };
+
+  const handleOpenAIEliminar = () => {
+    if (!userId) return;
+    if (!window.confirm('¿Eliminar tu API Key de OpenAI guardada? Tendrás que ingresarla nuevamente para usar las funciones de IA.')) return;
+    removeOpenAIApiKey(userId);
+    refreshOpenAIApiKey();
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-sm p-6">
+        <div className="flex items-start gap-4">
+          <div className="p-2.5 rounded-xl bg-(--linen)/50 text-(--ink) border border-(--border-soft) shadow-sm shrink-0">
+            <Sparkles size={20} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base font-black text-(--ink) tracking-tight">Proveedor de IA</h3>
+            <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mt-0.5">
+              El proveedor que usarán las funciones de IA de CIELO
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 inline-flex items-center gap-1 rounded-xl bg-(--linen)/30 border border-(--border-soft) p-1.5">
+          {AI_PROVIDERS.map(p => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => handleSelectProvider(p)}
+              className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
+                provider === p
+                  ? 'bg-white text-(--ink) shadow-sm'
+                  : 'text-(--ink-soft) hover:text-(--ink)'
+              }`}
+            >
+              {providerDisplayName(p)}
+            </button>
+          ))}
+        </div>
+
+        {!isProviderConfigured(userId, provider) && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs font-bold text-amber-700">
+            <AlertCircle size={14} />
+            Configura tu API de {providerDisplayName(provider)} para utilizar esta función.
+          </div>
+        )}
+      </div>
+
       <div className="rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-sm p-6">
         <div className="flex items-start gap-4 mb-6">
           <div className="p-2.5 rounded-xl bg-(--linen)/50 text-(--ink) border border-(--border-soft) shadow-sm shrink-0">
@@ -1240,6 +1310,78 @@ function IntegrarIATab({ session }: { session: Session | null }) {
           Puedes obtener tu clave gratuita en{' '}
           <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="font-semibold text-(--primary) hover:underline">
             Google AI Studio
+          </a>. La clave se guarda únicamente en este dispositivo y nunca se muestra completa ni se registra en logs.
+        </p>
+      </div>
+
+      <div className="rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-sm p-6">
+        <div className="flex items-start gap-4 mb-6">
+          <div className="p-2.5 rounded-xl bg-(--linen)/50 text-(--ink) border border-(--border-soft) shadow-sm shrink-0">
+            <Sparkles size={20} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base font-black text-(--ink) tracking-tight">OpenAI</h3>
+            <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mt-0.5">
+              Proveedor alternativo de IA para CIELO
+            </p>
+          </div>
+          <span className={`ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest border ${
+            openaiConfigurado
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : 'bg-amber-50 text-amber-700 border-amber-200'
+          }`}>
+            {openaiConfigurado ? <CheckCircle size={12} /> : <AlertCircle size={12} />}
+            {openaiConfigurado ? 'Configurado' : 'No configurado'}
+          </span>
+        </div>
+
+        {openaiConfigurado ? (
+          <div className="mb-5 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-(--linen)/20 border border-(--border-soft) px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-(--ink-soft)">Clave activa</p>
+              <p className="text-sm font-mono font-bold text-(--ink) truncate">{maskApiKey(openaiApiKey)}</p>
+            </div>
+            <button
+              onClick={handleOpenAIEliminar}
+              className="shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-attention bg-attention/10 hover:bg-attention/20 transition-all border border-attention/20 cursor-pointer"
+            >
+              Eliminar clave
+            </button>
+          </div>
+        ) : (
+          <p className="mb-5 text-sm text-(--ink-soft) leading-relaxed rounded-xl bg-(--linen)/20 border border-(--border-soft) px-4 py-3">
+            Aún no has configurado tu clave de OpenAI. Cuando lo hagas, las funciones que utilicen
+            este proveedor podrán usarla automáticamente.
+          </p>
+        )}
+
+        <SimplePasswordField
+          label={openaiConfigurado ? 'Actualizar API Key' : 'API Key de OpenAI'}
+          value={openaiInputKey}
+          onChange={setOpenaiInputKey}
+          show={showOpenaiKey}
+          onToggle={() => setShowOpenaiKey(s => !s)}
+        />
+
+        <div className="flex items-center gap-3 mt-4 flex-wrap">
+          <button
+            onClick={handleOpenAIGuardar}
+            disabled={!openaiInputKey.trim()}
+            className={`px-6 py-2.5 rounded-xl bg-(--primary) text-white shadow-sm text-xs font-bold uppercase tracking-widest outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 focus-visible:ring-offset-2 hover:opacity-90 active:scale-[0.98] transition-all ${!openaiInputKey.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {openaiConfigurado ? 'Actualizar clave' : 'Guardar clave'}
+          </button>
+          {openaiSavedFlash && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+              <CheckCircle size={14} /> Guardado
+            </span>
+          )}
+        </div>
+
+        <p className="mt-5 text-xs text-(--ink-soft) leading-relaxed">
+          Puedes obtener tu clave en{' '}
+          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="font-semibold text-(--primary) hover:underline">
+            Plataforma OpenAI
           </a>. La clave se guarda únicamente en este dispositivo y nunca se muestra completa ni se registra en logs.
         </p>
       </div>

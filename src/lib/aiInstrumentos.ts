@@ -2,7 +2,7 @@
 // Sigue las convenciones de NewActivityModal: Gemini + responseSchema estricto,
 // mensajes de error en español y clave nunca expuesta en logs.
 
-import { buildGeminiEndpoint } from './aiConfig';
+import { callAI } from './aiProvider';
 import type { CriterioCotejo, NivelPuntaje } from '../types';
 
 export type BCKey = 'BC1' | 'BC2' | 'BC3' | 'BC4';
@@ -44,50 +44,12 @@ export const NIVELES_RUBRICAS_DEFAULT: NivelPuntaje[] = [
     { nivel: 1, puntaje: 55, nombre: 'Receptivo', color: '#EB8847', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' },
 ];
 
-async function callGeminiJson<T>(apiKey: string, prompt: string, responseSchema: Record<string, unknown>): Promise<T> {
-    const endpointUrl = buildGeminiEndpoint(apiKey);
-
-    const response = await fetch(endpointUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-                responseMimeType: 'application/json',
-                responseSchema
-            }
-        })
+async function callInstrumentoIA<T>(userId: string, prompt: string, responseSchema: Record<string, unknown>): Promise<T> {
+    return callAI<T>({
+        userId,
+        prompt,
+        geminiResponseSchema: responseSchema
     });
-
-    if (!response.ok) {
-        const errText = await response.text();
-        const cleanErrText = errText.replace(new RegExp(apiKey, 'g'), '***API_KEY***');
-        console.error(`[Gemini API Technical Error] Code ${response.status}:`, cleanErrText);
-
-        if (response.status === 400) {
-            throw new Error('Solicitud incorrecta al servicio de IA. Verifica los datos ingresados.');
-        } else if (response.status === 401 || response.status === 403) {
-            throw new Error('API Key de Gemini no válida o sin permisos. Por favor, verifíquela.');
-        } else if (response.status === 404) {
-            throw new Error('El modelo de IA no está disponible o el endpoint es incorrecto para esta API Key.');
-        } else {
-            throw new Error(`Fallo en el servicio de Gemini (Código HTTP ${response.status}). Intente de nuevo más tarde.`);
-        }
-    }
-
-    const resJson = await response.json();
-    const textResponse = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!textResponse) {
-        console.error('[Gemini API Technical Error] No text parts in response:', resJson);
-        throw new Error('La IA no devolvió una respuesta legible. Intente de nuevo.');
-    }
-
-    try {
-        return JSON.parse(textResponse) as T;
-    } catch {
-        console.error('[Gemini API Technical Error] Malformed JSON payload:', textResponse);
-        throw new Error('La IA devolvió una respuesta con formato inválido. Intente de nuevo.');
-    }
 }
 
 function construirContexto(ctx: ContextoInstrumento): string {
@@ -123,7 +85,7 @@ function validarContextoBasico(ctx: ContextoInstrumento): void {
 }
 
 export async function generarRubricaConIA(
-    apiKey: string,
+    userId: string,
     ctx: ContextoInstrumento,
 ): Promise<DescriptorGenerado[]> {
     validarContextoBasico(ctx);
@@ -154,7 +116,7 @@ INSTRUCCIONES:
 
 Devuelve JSON exactamente con este esquema.`;
 
-    const data = await callGeminiJson<{ descriptores: DescriptorGenerado[] }>(apiKey, prompt, {
+    const data = await callInstrumentoIA<{ descriptores: DescriptorGenerado[] }>(userId, prompt, {
         type: 'OBJECT',
         properties: {
             descriptores: {
@@ -187,7 +149,7 @@ Devuelve JSON exactamente con este esquema.`;
 }
 
 export async function generarCotejoConIA(
-    apiKey: string,
+    userId: string,
     ctx: ContextoInstrumento,
 ): Promise<CriterioCotejo[]> {
     validarContextoBasico(ctx);
@@ -207,7 +169,7 @@ INSTRUCCIONES:
 
 Devuelve JSON exactamente con este esquema.`;
 
-    const data = await callGeminiJson<{ criterios: Array<{ titulo: string; descripcion: string }> }>(apiKey, prompt, {
+    const data = await callInstrumentoIA<{ criterios: Array<{ titulo: string; descripcion: string }> }>(userId, prompt, {
         type: 'OBJECT',
         properties: {
             criterios: {

@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Printer, Sparkles, X, Plus, Paintbrush } from 'lucide-react';
 import type { AppState, Secuencia, Curso } from '../types';
 import { useAppStore } from '../store/appStore';
-import { getGeminiApiKey, saveGeminiApiKey } from '../lib/aiConfig';
+import { getAIAIProvider, isProviderConfigured, providerDisplayName, saveAIKey } from '../lib/aiConfig';
 import { getPlanificacionDiariaTemplate } from '../templates/planificacion-diaria';
 import {
     extraerContextoPlanificacion,
@@ -416,8 +416,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
     const handleClickSugerir = () => {
         const userId = session?.user?.id;
         if (!userId) { setIaError('Sesión de usuario no válida.'); return; }
-        const apiKey = getGeminiApiKey(userId);
-        if (!apiKey) { setNecesitaKey(true); setPanelIA(true); return; }
+        if (!isProviderConfigured(userId, getAIAIProvider(userId))) { setNecesitaKey(true); setPanelIA(true); return; }
         
         setContextoInput('');
         setModalContextoOpen(true);
@@ -432,8 +431,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
         const userId = session?.user?.id;
         if (!userId) { setIaError('Sesión de usuario no válida.'); return; }
 
-        const apiKey = getGeminiApiKey(userId);
-        if (!apiKey) { setNecesitaKey(true); setPanelIA(true); return; }
+        if (!isProviderConfigured(userId, getAIAIProvider(userId))) { setNecesitaKey(true); setPanelIA(true); return; }
 
         const contexto = extraerContextoPlanificacion(contenedor);
         if (!textoContextoAdicional && !desarrolloSuficiente(contexto)) {
@@ -453,7 +451,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
         finalizarBrocha();
 
         try {
-            const resultado = await generarSugerenciasPedagogicas(apiKey, contexto, textoContextoAdicional, controller.signal);
+            const resultado = await generarSugerenciasPedagogicas(userId, contexto, textoContextoAdicional, controller.signal);
             setSugerencias(resultado);
         } catch (err: unknown) {
             if ((err as Error)?.name !== 'AbortError') {
@@ -471,7 +469,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
     const handleGuardarApiKeyIA = async () => {
         const userId = session?.user?.id;
         if (!userId || !apiKeyInput.trim()) return;
-        saveGeminiApiKey(userId, apiKeyInput);
+        saveAIKey(userId, getAIAIProvider(userId), apiKeyInput);
         setApiKeyInput('');
         setNecesitaKey(false);
         await handleGenerarSugerencias();
@@ -683,12 +681,12 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
                             {necesitaKey && (
                                 <div className="space-y-2.5 p-4 rounded-xl border border-(--border-soft) bg-(--linen)/20">
-                                    <p className="text-[11px] font-bold text-(--ink)">Configura tu API Key de Google Gemini para recibir sugerencias.</p>
+                                    <p className="text-[11px] font-bold text-(--ink)">Configura tu API Key de {providerDisplayName(getAIAIProvider(session?.user?.id))} para recibir sugerencias.</p>
                                     <input
                                         type="password"
                                         value={apiKeyInput}
                                         onChange={e => setApiKeyInput(e.target.value)}
-                                        placeholder="Ingresa tu clave de Gemini..."
+                                        placeholder={`Ingresa tu clave de ${providerDisplayName(getAIAIProvider(session?.user?.id))}...`}
                                         className="w-full px-3 py-2 text-xs font-medium border border-(--border-soft) rounded-lg outline-none focus:border-(--primary)"
                                     />
                                     <button

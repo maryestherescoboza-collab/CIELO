@@ -3,7 +3,7 @@ import { Loader2, Sparkles } from 'lucide-react';
 import type { Actividad, CriterioCotejo } from '../../types';
 import { CieloModal } from '../ui/CieloModal';
 import { useAppStore } from '../../store/appStore';
-import { getGeminiApiKey, saveGeminiApiKey } from '../../lib/aiConfig';
+import { getAIAIProvider, isProviderConfigured, providerDisplayName, saveAIKey } from '../../lib/aiConfig';
 import {
     generarRubricaConIA,
     generarCotejoConIA,
@@ -55,7 +55,7 @@ export default function GenerarInstrumentoModal({
 
     const handleGuardarApiKey = () => {
         if (!tempApiKey.trim() || !userId) return;
-        saveGeminiApiKey(userId, tempApiKey);
+        saveAIKey(userId, getAIAIProvider(userId), tempApiKey);
         setShowApiKeyPrompt(false);
         setTempApiKey('');
     };
@@ -63,8 +63,7 @@ export default function GenerarInstrumentoModal({
     const handleGenerar = async () => {
         if (isLoading || !userId) return;
 
-        const apiKey = getGeminiApiKey(userId);
-        if (!apiKey) {
+        if (!isProviderConfigured(userId, getAIAIProvider(userId))) {
             setShowApiKeyPrompt(true);
             return;
         }
@@ -99,10 +98,10 @@ export default function GenerarInstrumentoModal({
             };
 
             if (tipo === 'rubrica') {
-                const descriptores = await generarRubricaConIA(apiKey, contexto);
+                const descriptores = await generarRubricaConIA(userId, contexto);
                 onAplicarRubrica?.(descriptores);
             } else {
-                const criterios = await generarCotejoConIA(apiKey, contexto);
+                const criterios = await generarCotejoConIA(userId, contexto);
                 onAplicarCotejo?.(criterios);
             }
             onClose();
@@ -159,7 +158,7 @@ export default function GenerarInstrumentoModal({
             {showApiKeyPrompt ? (
                 <div className="py-4 space-y-6">
                     <div className="text-center space-y-2">
-                        <h3 className="text-sm font-bold text-slate-900">Necesitamos tu API Key de Google Gemini</h3>
+                        <h3 className="text-sm font-bold text-slate-900">Necesitamos tu API Key de {providerDisplayName(getAIAIProvider(userId))}</h3>
                         <p className="text-xs text-slate-500 leading-relaxed font-medium">
                             La clave será utilizada para generar los instrumentos de evaluación de forma automática.
                         </p>
@@ -167,12 +166,12 @@ export default function GenerarInstrumentoModal({
 
                     <div className="flex justify-center">
                         <a
-                            href="https://aistudio.google.com/app/api-keys?project=gen-lang-client-0626735374"
+                            href={getAIAIProvider(userId) === 'openai' ? 'https://platform.openai.com/api-keys' : 'https://aistudio.google.com/app/api-keys?project=gen-lang-client-0626735374'}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs font-bold text-primary hover:underline flex items-center gap-1.5"
                         >
-                            Obtener API Key de Google AI Studio ↗
+                            {getAIAIProvider(userId) === 'openai' ? 'Obtener API Key de OpenAI ↗' : 'Obtener API Key de Google AI Studio ↗'}
                         </a>
                     </div>
 
@@ -182,7 +181,7 @@ export default function GenerarInstrumentoModal({
                             <input
                                 type="password"
                                 className="text-base font-medium w-full bg-transparent outline-none"
-                                placeholder="Ingresa tu clave de Gemini..."
+                                placeholder={`Ingresa tu clave de ${providerDisplayName(getAIAIProvider(userId))}...`}
                                 value={tempApiKey}
                                 onChange={e => setTempApiKey(e.target.value)}
                             />

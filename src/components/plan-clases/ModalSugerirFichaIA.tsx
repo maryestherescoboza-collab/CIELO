@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { X, Sparkles, Loader2, FileText, ChevronRight, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAppStore } from '../../store/appStore';
-import { getGeminiApiKey } from '../../lib/aiConfig';
+import { getAIAIProvider, isProviderConfigured, providerDisplayName } from '../../lib/aiConfig';
 import { sugerirFichaPedagogica } from '../../lib/aiFichas';
 import type { NotaContenido } from '../../types/planClases';
 
@@ -107,9 +107,8 @@ export function ModalSugerirFichaIA({ isOpen, onClose, onSuccess }: ModalSugerir
         const userId = session?.user?.id;
         if (!userId) { setError('Sesión inválida'); return; }
         
-        const apiKey = getGeminiApiKey(userId);
-        if (!apiKey) {
-            setError('No tienes configurada tu API Key de Gemini. Configúrala en tu perfil primero.');
+        if (!isProviderConfigured(userId, getAIAIProvider(userId))) {
+            setError(`Configura tu API de ${providerDisplayName(getAIAIProvider(userId))} para utilizar esta función.`);
             return;
         }
 
@@ -125,7 +124,7 @@ export function ModalSugerirFichaIA({ isOpen, onClose, onSuccess }: ModalSugerir
             const tempDiv = parser.parseFromString(seccionSeleccionada.htmlTexto, 'text/html').body;
             const contextoLimpio = tempDiv.innerText.replace(/\\s+/g, ' ').trim();
 
-            const resultado = await sugerirFichaPedagogica(apiKey, contextoLimpio, temaInput.trim());
+            const resultado = await sugerirFichaPedagogica(userId, contextoLimpio, temaInput.trim());
             onSuccess(resultado);
             onClose();
         } catch (err: any) {

@@ -2,7 +2,7 @@
 // Reutiliza la capa única de IA (aiConfig.ts): una sola llamada por solicitud,
 // respuesta estructurada en 5 categorías. Nunca modifica el texto del docente.
 
-import { buildGeminiEndpoint } from './aiConfig';
+import { callAI } from './aiProvider';
 
 export interface SugerenciaEvaluacion {
     tecnica: string;
@@ -178,66 +178,38 @@ Prioriza sugerencias que mejoren la coherencia: INICIO -> DESARROLLO -> CIERRE -
 }
 
 export async function generarSugerenciasPedagogicas(
-    apiKey: string,
+    userId: string,
     contexto: ContextoPlanificacion,
     textoContextoAdicional?: string,
     signal?: AbortSignal
 ): Promise<SugerenciasIA> {
-    const response = await fetch(buildGeminiEndpoint(apiKey), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+    const data = await callAI<Partial<SugerenciasIA>>({
+        userId,
+        prompt: construirPrompt(contexto, textoContextoAdicional),
         signal,
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: construirPrompt(contexto, textoContextoAdicional) }] }],
-            generationConfig: {
-                responseMimeType: 'application/json',
-                responseSchema: {
+        geminiResponseSchema: {
+            type: 'OBJECT',
+            properties: {
+                inicio: { type: 'ARRAY', items: { type: 'STRING' } },
+                desarrollo: { type: 'ARRAY', items: { type: 'STRING' } },
+                cierre: { type: 'ARRAY', items: { type: 'STRING' } },
+                recursos: { type: 'ARRAY', items: { type: 'STRING' } },
+                estrategiaInclusiva: { type: 'ARRAY', items: { type: 'STRING' } },
+                evidencias: { type: 'ARRAY', items: { type: 'STRING' } },
+                evaluacion: {
                     type: 'OBJECT',
                     properties: {
-                        inicio: { type: 'ARRAY', items: { type: 'STRING' } },
-                        desarrollo: { type: 'ARRAY', items: { type: 'STRING' } },
-                        cierre: { type: 'ARRAY', items: { type: 'STRING' } },
-                        recursos: { type: 'ARRAY', items: { type: 'STRING' } },
-                        estrategiaInclusiva: { type: 'ARRAY', items: { type: 'STRING' } },
-                        evidencias: { type: 'ARRAY', items: { type: 'STRING' } },
-                        evaluacion: {
-                            type: 'OBJECT',
-                            properties: {
-                                tecnica: { type: 'STRING' },
-                                instrumento: { type: 'STRING' },
-                                sugerencia: { type: 'STRING' }
-                            },
-                            required: ['tecnica', 'instrumento', 'sugerencia']
-                        },
-                        metacognicion: { type: 'ARRAY', items: { type: 'STRING' } }
+                        tecnica: { type: 'STRING' },
+                        instrumento: { type: 'STRING' },
+                        sugerencia: { type: 'STRING' }
                     },
-                    required: ['inicio', 'desarrollo', 'cierre', 'recursos', 'estrategiaInclusiva', 'evidencias', 'evaluacion', 'metacognicion']
-                }
-            }
-        })
+                    required: ['tecnica', 'instrumento', 'sugerencia']
+                },
+                metacognicion: { type: 'ARRAY', items: { type: 'STRING' } }
+            },
+            required: ['inicio', 'desarrollo', 'cierre', 'recursos', 'estrategiaInclusiva', 'evidencias', 'evaluacion', 'metacognicion']
+        }
     });
-
-    if (!response.ok) {
-        const detalle = await response.text();
-        console.error('[Gemini Planificación] HTTP', response.status, detalle.replace(new RegExp(apiKey, 'g'), '***'));
-        if (response.status === 400) throw new Error('La solicitud de IA fue rechazada. Revisa el contenido e inténtalo de nuevo.');
-        if (response.status === 401 || response.status === 403) throw new Error('API Key de Gemini no válida o sin permisos.');
-        if (response.status === 404) throw new Error('El modelo de IA no está disponible para esta API Key.');
-        throw new Error(`Fallo del servicio de IA (HTTP ${response.status}). Inténtalo de nuevo.`);
-    }
-
-    const resJson: unknown = await response.json();
-    const texto = (resJson as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> })
-        ?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!texto) throw new Error('La IA no devolvió sugerencias legibles. Inténtalo de nuevo.');
-
-    let data: Partial<SugerenciasIA>;
-    try {
-        data = JSON.parse(texto) as Partial<SugerenciasIA>;
-    } catch {
-        throw new Error('La IA devolvió un formato inválido. Inténtalo de nuevo.');
-    }
 
     const limpiar = (arr: unknown): string[] =>
         Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string' && norm(x).length > 0) : [];

@@ -36,3 +36,75 @@ export function maskApiKey(apiKey: string): string {
 export function buildGeminiEndpoint(apiKey: string, modelName = GEMINI_MODEL): string {
     return `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
 }
+
+// ===================== OPENAI =====================
+// Misma política de seguridad que Gemini: cada usuario guarda su propia clave
+// en localStorage (clave `openai_api_key_<userId>`), nunca se registra en logs
+// ni se expone en la UI (solo versión enmascarada a través de maskApiKey).
+
+export const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+export const OPENAI_MODEL = 'gpt-4o-mini';
+
+const openAIStorageKeyFor = (userId: string) => `openai_api_key_${userId}`;
+
+export function getOpenAIApiKey(userId?: string | null): string | null {
+    if (!userId) return null;
+    try {
+        return localStorage.getItem(openAIStorageKeyFor(userId));
+    } catch {
+        return null;
+    }
+}
+
+export function saveOpenAIApiKey(userId: string, apiKey: string): void {
+    localStorage.setItem(openAIStorageKeyFor(userId), apiKey.trim());
+}
+
+export function removeOpenAIApiKey(userId: string): void {
+    localStorage.removeItem(openAIStorageKeyFor(userId));
+}
+
+export function isOpenAIConfigured(userId?: string | null): boolean {
+    return !!getOpenAIApiKey(userId);
+}
+
+// ===================== SELECCIÓN DE PROVEEDOR =====================
+// El usuario elige qué proveedor usan las funciones de IA. Se guarda por
+// usuario en localStorage (clave `ai_provider_<userId>`).
+
+export type AIProvider = 'gemini' | 'openai';
+export const AI_PROVIDERS: AIProvider[] = ['gemini', 'openai'];
+export const DEFAULT_AI_PROVIDER: AIProvider = 'gemini';
+
+const providerStorageKeyFor = (userId: string) => `ai_provider_${userId}`;
+
+export function getAIAIProvider(userId?: string | null): AIProvider {
+    if (!userId) return DEFAULT_AI_PROVIDER;
+    try {
+        const saved = localStorage.getItem(providerStorageKeyFor(userId));
+        return saved === 'gemini' || saved === 'openai' ? saved : DEFAULT_AI_PROVIDER;
+    } catch {
+        return DEFAULT_AI_PROVIDER;
+    }
+}
+
+export function saveAIAIProvider(userId: string, provider: AIProvider): void {
+    localStorage.setItem(providerStorageKeyFor(userId), provider);
+}
+
+export function providerDisplayName(provider: AIProvider): string {
+    return provider === 'openai' ? 'OpenAI' : 'Gemini';
+}
+
+export function getAIKey(userId?: string | null, provider: AIProvider = getAIAIProvider(userId)): string | null {
+    return provider === 'openai' ? getOpenAIApiKey(userId) : getGeminiApiKey(userId);
+}
+
+export function saveAIKey(userId: string, provider: AIProvider, apiKey: string): void {
+    if (provider === 'openai') saveOpenAIApiKey(userId, apiKey);
+    else saveGeminiApiKey(userId, apiKey);
+}
+
+export function isProviderConfigured(userId?: string | null, provider: AIProvider = getAIAIProvider(userId)): boolean {
+    return !!getAIKey(userId, provider);
+}

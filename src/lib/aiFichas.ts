@@ -1,4 +1,4 @@
-import { buildGeminiEndpoint } from './aiConfig';
+import { callAI } from './aiProvider';
 import type { NotaContenido } from '../types/planClases';
 
 export interface SugerenciaFichaIA {
@@ -25,7 +25,7 @@ export interface SugerenciaFichaIA {
 }
 
 export async function sugerirFichaPedagogica(
-    apiKey: string,
+    userId: string,
     contextoSeccion: string,
     temaOpcional: string,
     signal?: AbortSignal
@@ -50,78 +50,50 @@ Tema, asignatura y grado del proyecto: ${temaOpcional || 'Utiliza el siguiente c
 Contexto pedagógico de referencia (Sección de planificación extraída):
 ${contextoSeccion}`;
 
-    const body = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-            temperature: 0.7,
-            responseMimeType: 'application/json',
-            responseSchema: {
-                type: 'object',
-                properties: {
-                    intencionPedagogica: { type: 'string' },
-                    competenciasTrabajar: { type: 'string' },
-                    indicadorLogro: { type: 'string' },
-                    inicio: {
-                        type: 'object',
-                        properties: {
-                            desafio: { type: 'string' },
-                            conceptos: { type: 'array', items: { type: 'string' } },
-                            fuentes: { type: 'string' },
-                            preguntas: { type: 'array', items: { type: 'string' } },
-                        },
-                        required: ['desafio', 'conceptos', 'fuentes', 'preguntas']
+    const respuestaIA = await callAI<SugerenciaFichaIA>({
+        userId,
+        prompt,
+        signal,
+        temperature: 0.7,
+        geminiResponseSchema: {
+            type: 'object',
+            properties: {
+                intencionPedagogica: { type: 'string' },
+                competenciasTrabajar: { type: 'string' },
+                indicadorLogro: { type: 'string' },
+                inicio: {
+                    type: 'object',
+                    properties: {
+                        desafio: { type: 'string' },
+                        conceptos: { type: 'array', items: { type: 'string' } },
+                        fuentes: { type: 'string' },
+                        preguntas: { type: 'array', items: { type: 'string' } },
                     },
-                    desarrollo: {
-                        type: 'object',
-                        properties: {
-                            copiar: { type: 'string' },
-                            preguntas: { type: 'array', items: { type: 'string' } },
-                            dibujar: { type: 'string' },
-                            pasos: { type: 'array', items: { type: 'string' } },
-                            materiales: { type: 'array', items: { type: 'string' } }
-                        },
-                        required: ['copiar', 'preguntas', 'dibujar', 'pasos', 'materiales']
-                    },
-                    cierre: {
-                        type: 'object',
-                        properties: {
-                            checklist: { type: 'array', items: { type: 'string' } },
-                            metacognicion: { type: 'array', items: { type: 'string' } }
-                        },
-                        required: ['checklist', 'metacognicion']
-                    }
+                    required: ['desafio', 'conceptos', 'fuentes', 'preguntas']
                 },
-                required: ['intencionPedagogica', 'competenciasTrabajar', 'indicadorLogro', 'inicio', 'desarrollo', 'cierre']
-            }
+                desarrollo: {
+                    type: 'object',
+                    properties: {
+                        copiar: { type: 'string' },
+                        preguntas: { type: 'array', items: { type: 'string' } },
+                        dibujar: { type: 'string' },
+                        pasos: { type: 'array', items: { type: 'string' } },
+                        materiales: { type: 'array', items: { type: 'string' } }
+                    },
+                    required: ['copiar', 'preguntas', 'dibujar', 'pasos', 'materiales']
+                },
+                cierre: {
+                    type: 'object',
+                    properties: {
+                        checklist: { type: 'array', items: { type: 'string' } },
+                        metacognicion: { type: 'array', items: { type: 'string' } }
+                    },
+                    required: ['checklist', 'metacognicion']
+                }
+            },
+            required: ['intencionPedagogica', 'competenciasTrabajar', 'indicadorLogro', 'inicio', 'desarrollo', 'cierre']
         }
-    };
-
-    const res = await fetch(buildGeminiEndpoint(apiKey), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal
     });
-
-    if (!res.ok) {
-        let errDesc = 'Error al generar la ficha';
-        try {
-            const errJson = await res.json();
-            errDesc = errJson.error?.message || errDesc;
-        } catch { }
-        throw new Error(errDesc);
-    }
-
-    const data = await res.json();
-    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!texto) throw new Error('Respuesta vacía o inválida del modelo.');
-
-    let respuestaIA: SugerenciaFichaIA;
-    try {
-        respuestaIA = JSON.parse(texto);
-    } catch (e) {
-        throw new Error('El modelo devolvió un JSON inválido.');
-    }
 
     // Convertimos SugerenciaFichaIA a NotaContenido (EditorJS compatible)
     return converirAFichaEditorJS(respuestaIA);

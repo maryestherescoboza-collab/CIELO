@@ -5,7 +5,8 @@ import { COMPETENCIAS_LABEL } from '../../types';
 import { TC_Flux, TC_Genesis, TC_Archive, TC_Echo } from '../icons/TerraCognitaIcons';
 import { CieloModal } from '../ui/CieloModal';
 import { useAppStore } from '../../store/appStore';
-import { getGeminiApiKey, saveGeminiApiKey, buildGeminiEndpoint } from '../../lib/aiConfig';
+import { getAIAIProvider, isProviderConfigured, providerDisplayName, saveAIKey } from '../../lib/aiConfig';
+import { callAI } from '../../lib/aiProvider';
 
 const BC_CIRCLE_CONFIG: Array<{ id: BCKey; label: string; icon: typeof MessageSquareText; bg: string; selectedBg: string; selectedText: string }> = [
   { id: 'BC1', label: COMPETENCIAS_LABEL.BC1, icon: MessageSquareText, bg: 'bg-blue-50', selectedBg: 'bg-blue-600', selectedText: 'text-white' },
@@ -14,53 +15,10 @@ const BC_CIRCLE_CONFIG: Array<{ id: BCKey; label: string; icon: typeof MessageSq
   { id: 'BC4', label: COMPETENCIAS_LABEL.BC4, icon: Microscope, bg: 'bg-emerald-50', selectedBg: 'bg-emerald-600', selectedText: 'text-white' },
 ];
 
-// Límite de entrada del analizador de actividades (evita HTTP 400 por texto excesivamente largo).
+// Límite de entrada del analizador de actividades. CIELO valida el tamaño del texto
+// ANTES de llamar a la API (Gemini u OpenAI): si se supera, se bloquea localmente sin
+// consumir tokens, sin recortar el texto del docente y sin enviar nada al proveedor.
 const MAX_ANALYSIS_CHARS = 15000;
-
-function truncateAnalysisText(text: string): { text: string; truncated: boolean } {
-    if (text.length <= MAX_ANALYSIS_CHARS) {
-        return { text, truncated: false };
-    }
-    const limit = text.slice(0, MAX_ANALYSIS_CHARS);
-    const lastSpace = limit.lastIndexOf(' ');
-    const safeText = lastSpace > MAX_ANALYSIS_CHARS * 0.8 ? limit.slice(0, lastSpace) : limit;
-    return { text: safeText, truncated: true };
-}
-
-function classifyGeminiError(status: number, body: string): string {
-    const lower = body.toLowerCase();
-    const quotaRelated =
-        status === 429 ||
-        lower.includes('resource_exhausted') ||
-        /rate[-_ ]?limit/.test(lower) ||
-        lower.includes('quota') ||
-        lower.includes('too many requests') ||
-        lower.includes('request limit') ||
-        /(per[- ]minute|tokens? per |rpm limit)/.test(lower) ||
-        /(token|quota).*(exhaust|temporar)/.test(lower);
-    const hasRetryHint = /retry delay|retrydelay|try again in|wait (at least )?\d+ (second|minute)|"seconds"|seconds before/.test(lower);
-    const sizeRelated = /too (long|large)|prompt too long|request is too large|maximum (input|context|length|token)|input (token )?count|input.*(exceed|too large|long)|(token|character|charact).*(exceed|max)/.test(lower);
-    const serviceUnavailable = lower.includes('unavailable') || lower.includes('overloaded') || lower.includes('temporar');
-
-    if (quotaRelated) {
-        return hasRetryHint
-            ? 'El servicio de análisis alcanzó su límite temporal. Inténtalo nuevamente en unos minutos.'
-            : 'El servicio de análisis alcanzó su límite temporal. Inténtalo nuevamente más tarde.';
-    }
-    if (status === 400 && sizeRelated) {
-        return 'El texto es demasiado extenso para analizarlo de una vez. Acorta el contenido e inténtalo nuevamente.';
-    }
-    if (status === 401 || status === 403) {
-        return 'API Key de Gemini no válida o sin permisos. Por favor, verifíquela.';
-    }
-    if (status === 404) {
-        return 'El modelo de IA no está disponible o el endpoint es incorrecto para esta API Key.';
-    }
-    if (status >= 500 || serviceUnavailable) {
-        return 'El servicio de análisis no está disponible en este momento. Inténtalo nuevamente en unos minutos.';
-    }
-    return 'No pudimos procesar este contenido. Intenta reducir el texto o pegar nuevamente la actividad.';
-}
 
 interface NewActivityModalProps {
     show: boolean;
@@ -98,7 +56,6 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     // IA flow (texto pegado) states
     const [pastedText, setPastedText] = useState('');
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
-    const [infoMsg, setInfoMsg] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [extractedActivities, setExtractedActivities] = useState<ExtractedActivity[]>([]);
     const [targetCursoId, setTargetCursoId] = useState<number>(0);
@@ -114,7 +71,6 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         setFlowMode('choice');
         setPastedText('');
         setErrorMsg(null);
-        setInfoMsg(null);
         setIsProcessing(false);
         setShowApiKeyPrompt(false);
         setTempApiKey('');
@@ -185,7 +141,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     // Save API Key
     const handleSaveApiKey = () => {
         if (!tempApiKey.trim() || !session?.user?.id) return;
-        saveGeminiApiKey(session.user.id, tempApiKey);
+        saveAIKey(session.user.id, getAIAIProvider(session.user.id), tempApiKey);
         setShowApiKeyPrompt(false);
         setTempApiKey('');
         handleProcessText();
@@ -219,25 +175,22 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
             return;
         }
 
-        const savedApiKey = getGeminiApiKey(currentUserId);
-        if (!savedApiKey) {
+        if (!isProviderConfigured(currentUserId, getAIAIProvider(currentUserId))) {
             setShowApiKeyPrompt(true);
+            return;
+        }
+
+        // Validación previa local: si el texto excede el límite, se bloquea antes de
+        // cualquier llamada a la API. No se recorta el texto ni se consume un token.
+        if (pastedText.length > MAX_ANALYSIS_CHARS) {
+            setErrorMsg('El texto es demasiado extenso para analizarlo de una vez. Divide el contenido en partes más pequeñas e inténtalo nuevamente.');
             return;
         }
 
         setIsProcessing(true);
         setErrorMsg(null);
-        setInfoMsg(null);
-
-        const { text: textToAnalyze, truncated } = truncateAnalysisText(pastedText);
-        if (truncated) {
-            setInfoMsg('El texto es demasiado extenso para analizarlo de una vez. Se utilizará una parte del contenido para identificar la actividad.');
-        }
 
         try {
-            // Usamos el modelo actualizado (Fase 3)
-            const endpointUrl = buildGeminiEndpoint(savedApiKey as string);
-
             const targetCursoObj = cursos.find(c => c.id === targetCursoId);
             const cursoNombre = targetCursoObj ? `${targetCursoObj.grado} ${targetCursoObj.seccion} - ${targetCursoObj.nombre}` : '';
 
@@ -296,95 +249,41 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
   ]
 }`;
 
-            let response: Response;
-            try {
-                response = await fetch(endpointUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        contents: [
-                            {
-                                parts: [
-                                    { text: prompt },
-                                    { text: textToAnalyze }
-                                ]
-                            }
-                        ],
-                        generationConfig: {
-                            responseMimeType: 'application/json',
-                            responseSchema: {
+            const data = await callAI<{ actividades: any[] }>({
+                userId: currentUserId,
+                prompt: `${prompt}\n\nTEXTO DEL DOCUMENTO PEGADO POR EL DOCENTE:\n${pastedText}`,
+                geminiResponseSchema: {
+                    type: 'OBJECT',
+                    properties: {
+                        actividades: {
+                            type: 'ARRAY',
+                            items: {
                                 type: 'OBJECT',
                                 properties: {
-                                    actividades: {
-                                        type: 'ARRAY',
-                                        items: {
+                                    nombre: { type: 'STRING' },
+                                    competencias: { 
+                                        type: 'ARRAY', 
+                                        items: { 
                                             type: 'OBJECT',
                                             properties: {
-                                                nombre: { type: 'STRING' },
-                                                competencias: { 
-                                                    type: 'ARRAY', 
-                                                    items: { 
-                                                        type: 'OBJECT',
-                                                        properties: {
-                                                            codigo: { type: 'STRING', enum: ['BC1', 'BC2', 'BC3', 'BC4'] },
-                                                            nombre: { type: 'STRING' }
-                                                        },
-                                                        required: ['codigo', 'nombre']
-                                                    } 
-                                                },
-                                                indicador_logro: { type: 'STRING' },
-                                                producto: { type: 'STRING' }
+                                                codigo: { type: 'STRING', enum: ['BC1', 'BC2', 'BC3', 'BC4'] },
+                                                nombre: { type: 'STRING' }
                                             },
-                                            required: ['nombre', 'competencias', 'indicador_logro', 'producto']
-                                        }
-                                    }
+                                            required: ['codigo', 'nombre']
+                                        } 
+                                    },
+                                    indicador_logro: { type: 'STRING' },
+                                    producto: { type: 'STRING' }
                                 },
-                                required: ['actividades']
+                                required: ['nombre', 'competencias', 'indicador_logro', 'producto']
                             }
                         }
-                    })
-                });
-            } catch (err) {
-                console.error('[NewActivityModal] Error connecting to analysis service:', err);
-                setErrorMsg('No pudimos conectar con el servicio de análisis. Revisa tu conexión a internet e inténtalo nuevamente.');
-                return;
-            }
-
-            if (!response.ok) {
-                const errText = await response.text().catch(() => '');
-                const cleanErrText = errText.replace(new RegExp(savedApiKey, 'g'), '***API_KEY***');
-                console.error(`[Gemini API Technical Error] Code ${response.status}:`, cleanErrText);
-                setErrorMsg(classifyGeminiError(response.status, errText));
-                return;
-            }
-
-            let resJson: any;
-            try {
-                resJson = await response.json();
-            } catch (e) {
-                console.error('[NewActivityModal] Invalid JSON response body:', e);
-                setErrorMsg('No pudimos interpretar la actividad con el formato esperado. Intenta pegar nuevamente la descripción de la actividad.');
-                return;
-            }
-
-            const textResponse = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!textResponse) {
-                console.error('[Gemini API Technical Error] No text parts in response:', resJson);
-                throw new Error('No pudimos interpretar la actividad con el formato esperado. Intenta pegar nuevamente la descripción de la actividad.');
-            }
-
-            let data;
-            try {
-                data = JSON.parse(textResponse);
-            } catch (e) {
-                console.error('[Gemini API Technical Error] Malformed JSON payload:', textResponse);
-                throw new Error('No pudimos interpretar la actividad con el formato esperado. Intenta pegar nuevamente la descripción de la actividad.');
-            }
+                    },
+                    required: ['actividades']
+                }
+            });
 
             if (!data || typeof data !== 'object' || !Array.isArray((data as Record<string, unknown>).actividades)) {
-                console.error('[Gemini API Technical Error] Response does not match expected schema:', data);
                 throw new Error('No pudimos interpretar la actividad con el formato esperado. Intenta pegar nuevamente la descripción de la actividad.');
             }
 
@@ -646,7 +545,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
             {showApiKeyPrompt ? (
                 <div className="py-4 space-y-6">
                     <div className="text-center space-y-2">
-                        <h3 className="text-sm font-bold text-slate-900">Necesitamos tu API Key de Google Gemini</h3>
+                        <h3 className="text-sm font-bold text-slate-900">Necesitamos tu API Key de {providerDisplayName(getAIAIProvider(session?.user?.id))}</h3>
                         <p className="text-xs text-slate-500 leading-relaxed font-medium">
                             La clave será utilizada para analizar el texto de las actividades y extraer los elementos pedagógicos de forma automática.
                         </p>
@@ -654,12 +553,12 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
 
                     <div className="flex justify-center">
                         <a 
-                            href="https://aistudio.google.com/app/api-keys?project=gen-lang-client-0626735374"
+                            href={getAIAIProvider(session?.user?.id) === 'openai' ? 'https://platform.openai.com/api-keys' : 'https://aistudio.google.com/app/api-keys?project=gen-lang-client-0626735374'}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs font-bold text-primary hover:underline flex items-center gap-1.5"
                         >
-                            Obtener API Key de Google AI Studio ↗
+                            {getAIAIProvider(session?.user?.id) === 'openai' ? 'Obtener API Key de OpenAI ↗' : 'Obtener API Key de Google AI Studio ↗'}
                         </a>
                     </div>
 
@@ -669,7 +568,7 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                             <input 
                                 type="password"
                                 className="text-base font-medium w-full bg-transparent outline-none" 
-                                placeholder="Ingresa tu clave de Gemini..." 
+                                placeholder={`Ingresa tu clave de ${providerDisplayName(getAIAIProvider(session?.user?.id))}...`} 
                                 value={tempApiKey}
                                 onChange={e => setTempApiKey(e.target.value)} 
                             />
@@ -807,12 +706,6 @@ REGLAS CRÍTICAS DE EXTRACCIÓN:
                             {errorMsg && (
                                 <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider rounded-xl">
                                     {errorMsg}
-                                </div>
-                            )}
-
-                            {infoMsg && (
-                                <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold uppercase tracking-wider rounded-xl">
-                                    {infoMsg}
                                 </div>
                             )}
 
