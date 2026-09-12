@@ -191,62 +191,35 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         setErrorMsg(null);
 
         try {
-            const targetCursoObj = cursos.find(c => c.id === targetCursoId);
-            const cursoNombre = targetCursoObj ? `${targetCursoObj.grado} ${targetCursoObj.seccion} - ${targetCursoObj.nombre}` : '';
 
-            const prompt = `Analiza el siguiente documento PDF que contiene planificaciones o descripciones de actividades académicas.
-Extrae todas las actividades encontradas en el documento de forma exacta.
 
-INFORMACIÓN DE CONTEXTO OBLIGATORIA (Úsala para interpretar y validar las actividades extraídas, pero no inventes competencias que no se declaren explícitamente):
-- Asignatura: ${docenteAsignatura}
-- Curso: ${cursoNombre}
-- Período: ${targetPeriodo}
+            const prompt = `Extrae del siguiente texto todas las actividades académicas, incluyendo subactividades (1, 1.1, 1.2, 2, etc.).
 
-Para cada actividad, debes identificar:
-1. "nombre": Nombre exacto de la actividad (no inventes un nombre, usa el del documento).
-2. "competencias": Busca en el texto de la actividad o en secciones adyacentes (como 'Competencias', 'Propósito', 'Aprendizajes esperados') referencias a los nombres de las competencias oficiales. 
-   NO busques las etiquetas internas "BC1", "BC2", "BC3" ni "BC4". Estos códigos normalmente no aparecen en el documento.
-   Busca directamente expresiones o variantes comunes relacionadas con estas 4 competencias:
-   - Comunicativa (BC1) -> Variantes: Comunicación, Competencia comunicativa, Comunicación oral, Habilidades comunicativas.
-   - Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas (BC2) -> Variantes: Pensamiento lógico, Pensamiento creativo, Pensamiento crítico, Resolución de problemas.
-   - Científica y Tecnológica; y Ambiental y de la Salud (BC3) -> Variantes: Científica, Tecnológica, Competencia ambiental, Cuidado del ambiente y la salud.
-   - Ética y Ciudadana; y Desarrollo Personal y Espiritual (BC4) -> Variantes: Desarrollo personal, Espiritual, Ética, Ciudadana, Ciudadanía.
-   Si encuentras explícitamente alguna de estas referencias (el nombre o sus variantes contextuales asociadas a la actividad), mapea a su código interno correspondiente y devuelve un arreglo de objetos con el "codigo" (ej. "BC1") y su "nombre" oficial estricto. Si no encuentras referencias a competencias de forma explícita, devuelve un arreglo vacío [].
-3. "indicador_logro": Construye un único indicador de logro pedagógicamente coherente a partir de la actividad.
-   Debe combinar: VERBO DE ACCIÓN + CONTENIDO ESPECÍFICO + CONDICIÓN DE ÉXITO.
-   Usa un verbo observable (ej. Resuelve, Analiza, Compara, Identifica).
-   No intentes buscar literalmente el texto "Indicador de logro", constrúyelo deduciendo el desempeño principal que evalúa la tarea.
-4. "producto": Identifica el producto o evidencia de aprendizaje de la actividad.
-   Definición: el producto o evidencia de una actividad en clases es la prueba física o digital que muestra el trabajo, el aprendizaje y el logro del estudiante durante una tarea escolar. Representa la evidencia concreta que queda como resultado del trabajo del estudiante. NO debe confundirse con la actividad.
-   Pregunta guía: ¿Qué evidencia concreta produce, presenta, entrega, construye, resuelve o registra el estudiante como resultado de esta actividad?
-   Especificación de formato:
-   - El Producto debe ser breve: máximo 5 palabras.
-   - Además de identificar la evidencia, indica CUANDO CORRESPONDA el medio o lugar donde el estudiante realizará o presentará la actividad (ej.: en el cuaderno, en una hoja de trabajo, en Canva, en PowerPoint, en una plataforma digital).
-   - Solo menciona el medio o lugar si el documento lo indica explícitamente; NUNCA lo inventes. Si la actividad no indica dónde se realiza, describe únicamente la evidencia.
-   - El Producto debe describir de forma breve la evidencia final y su medio de realización, sin explicaciones adicionales y respetando siempre el máximo de 5 palabras.
-   Ejemplos de formato correcto:
-   - "Ejercicios resueltos en el cuaderno".
-   - "Mapa mental en Canva".
-   - "Glosario elaborado en el cuaderno".
-   - "Célula dibujada en el cuaderno".
-   - "Presentación creada en PowerPoint".
-   Límite anti-invención: deriva el producto ÚNICAMENTE de lo que la actividad solicita producir, entregar, construir, resolver o registrar. NO inventes una evidencia que la actividad no pida (ej.: para "Resolver los ejercicios de ecuaciones lineales" el producto es "Ejercicios de ecuaciones lineales resueltos", NO "Presentación digital sobre ecuaciones"). Esto aplica también al medio o lugar: si el PDF no lo declara, omítelo. Si la actividad genuinamente no produce ninguna evidencia identificable, devuelve una cadena vacía "".
+Cada actividad debe incluir:
 
-REGLAS CRÍTICAS DE EXTRACCIÓN:
-- La IA debe extraer ÚNICAMENTE información que pueda identificar explícitamente en el documento.
-- NO inferir competencias que no estén explícitamente nombradas en el documento con sus denominaciones oficiales o variantes claras. NO asumas la competencia sólo por el verbo de la actividad (ej. "Resolver problemas" no es BC4 si no lo declara como competencia que se está evaluando).
-- NO agregar conceptos al indicador que no estén relacionados con la actividad original.
-- NO inventar productos o evidencias que la actividad no solicite explícitamente; derívalo solo del contenido real de la tarea.
-- Devuelve la respuesta en formato JSON estructurado, cumpliendo exactamente con el siguiente esquema JSON:
+* **nombre**: título exacto si existe (ej. "Actividad 1.1", "Números enteros"). Si no tiene título, crea uno breve.
+* **competencias**: asigna la(s) competencia(s) más relacionadas con la actividad, pudiendo inferirlas por su contenido y desempeño:
+
+  * BC1: Comunicativa
+  * BC2: Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas
+  * BC3: Científica y Tecnológica; y Ambiental y de la Salud
+  * BC4: Ética y Ciudadana; y Desarrollo Personal y Espiritual
+    Si no existe una relación razonable, devuelve [].
+* **indicador_logro**: crea uno breve con verbo observable + contenido + condición de éxito.
+* **producto**: evidencia que genera la actividad. Máximo 5 palabras. Puedes inferirla cuando sea evidente e incluir el medio si aparece en el texto. Si no existe una evidencia identificable, devuelve "".
+
+REGLAS:
+No omitas actividades por tener nombres genéricos. Mantén los nombres cortos. Puedes inferir competencias, indicadores y productos cuando el contexto lo permita, pero no inventes información ajena a la actividad. Devuelve exclusivamente JSON válido:
+
 {
-  "actividades": [
-    {
-      "nombre": "string",
-      "competencias": [{"codigo": "string", "nombre": "string"}],
-      "indicador_logro": "string",
-      "producto": "string"
-    }
-  ]
+"actividades": [
+{
+"nombre": "string",
+"competencias": [{"codigo": "BC2", "nombre": "Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas"}],
+"indicador_logro": "string",
+"producto": "string"
+}
+]
 }`;
 
             const data = await callAI<{ actividades: any[] }>({
