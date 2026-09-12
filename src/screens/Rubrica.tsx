@@ -80,7 +80,16 @@ export default function Rubrica({
     readOnly = false,
     initialDatos,
 }: Props) {
-    const storeState = useAppStore((s) => s.state);
+    const session = useAppStore(s => s.session);
+    const actividadesStore = useAppStore(s => s.state.actividades);
+    const cursosStore = useAppStore(s => s.state.cursos);
+    const estudiantesStore = useAppStore(s => s.state.estudiantes);
+    const plantillasStore = useAppStore(s => s.state.plantillas);
+    const cursoDetalleStore = useAppStore(s => s.state.cursoDetalle);
+    const descriptoresRubricaStore = useAppStore(s => s.state.descriptoresRubrica);
+    const nivelesPuntajeStore = useAppStore(s => s.state.nivelesPuntaje);
+    const cursoDocentesStore = useAppStore(s => s.state.cursoDocentes);
+
     const addFloatingRubric = useAppStore((s) => s.addFloatingRubric);
     const selectedPeriodo = useAppStore(s => s.selectedPeriodo);
     const setSelectedPeriodo = useAppStore(s => s.setSelectedPeriodo);
@@ -91,25 +100,9 @@ export default function Rubrica({
             loadRubricaCotejoData();
         }
     }, [readOnly, loadRubricaCotejoData]);
-    
-    const state = useMemo(() => {
-        let act = storeState.actividades;
-        let cal = storeState.calificaciones;
 
-        if (currentCourseRole && currentCourseRole.rol === 'co-docente') {
-            act = act.filter(a => a.asignatura === currentCourseRole.asignatura);
-            cal = cal.filter(c => c.asignatura === currentCourseRole.asignatura);
-        }
-        
-        return {
-            ...storeState,
-            actividades: act,
-            calificaciones: cal
-        };
-    }, [storeState, currentCourseRole]);
-
-    const [selectedCursoId, setSelectedCursoId] = useState(state.cursos[0]?.id ?? 0);
-    const [selectedAsignatura, setSelectedAsignatura] = useState(state.cursos[0]?.asignatura ?? '');
+    const [selectedCursoId, setSelectedCursoId] = useState(cursosStore[0]?.id ?? 0);
+    const [selectedAsignatura, setSelectedAsignatura] = useState(cursosStore[0]?.asignatura ?? '');
 
     useEffect(() => {
         if (!readOnly && selectedCursoId) {
@@ -160,13 +153,58 @@ export default function Rubrica({
     const [showGenerarModal, setShowGenerarModal] = useState(false);
     const aiSkipNormalizeRef = useRef(false);
 
-    const session = useAppStore(s => s.session);
-
     const tableContainerRef = useRef<HTMLDivElement>(null);
     const { startCapture, captureOverlay, isCapturing } = useTemplateCapture();
     const [captureFileId, setCaptureFileId] = useState<string | undefined>(undefined);
 
-    const currentCourse = state.cursos.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || state.cursos.find(c => c.id === selectedCursoId);
+    const { 
+        selectedCurso,
+        estudiantes,
+        sortedEsts,
+        actividades,
+        rubricaPlantillas
+    } = useMemo(() => {
+        const curso = cursosStore.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || 
+                      cursosStore.find(c => c.id === selectedCursoId);
+        
+        const ests = estudiantesStore.filter((estudiante) => 
+            estudiante.cursoId === selectedCursoId || 
+            (curso?.sharedCourseId && estudiante.sharedCourseId === curso.sharedCourseId)
+        );
+        
+        const actSource = (currentCourseRole && currentCourseRole.rol === 'co-docente') 
+            ? actividadesStore.filter(a => a.asignatura === currentCourseRole.asignatura)
+            : actividadesStore;
+            
+        const acts = actSource.filter((actividad) => 
+            (actividad.cursoId === selectedCursoId || 
+             (curso?.sharedCourseId && actividad.sharedCourseId === curso.sharedCourseId)) &&
+            (actividad.userId === session?.user?.id || !actividad.userId) &&
+            (!actividad.asignatura || actividad.asignatura === selectedAsignatura) &&
+            actividad.periodo === selectedPeriodo
+        );
+
+        const plantillas = plantillasStore.filter((plantilla) =>
+            plantilla.tipo === 'rubrica' && plantilla.userId === session?.user?.id
+        );
+
+        const sorted = [...ests].sort((a, b) => {
+            const numA = a.numeroLista || 0;
+            const numB = b.numeroLista || 0;
+            if (numA !== numB) return numA - numB;
+            return (a.apellido + a.nombre).localeCompare(b.apellido + b.nombre);
+        });
+
+        return {
+            selectedCurso: curso,
+            estudiantes: ests,
+            sortedEsts: sorted,
+            actividades: acts,
+            rubricaPlantillas: plantillas
+        };
+    }, [cursosStore, estudiantesStore, actividadesStore, plantillasStore, selectedCursoId, selectedAsignatura, selectedPeriodo, session?.user?.id, currentCourseRole]);
+
+    const currentCourse = selectedCurso;
     const asignaturaName = getAsignaturaNombre(selectedAsignatura || currentCourseRole?.asignatura) || currentCourse?.asignatura || 'Asignatura';
     const courseName = currentCourse?.nombre || 'Curso';
     const captureFileName = `Rubrica - ${asignaturaName} - ${courseName} - ${new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()).replace(/\//g, '-')}.png`;
@@ -246,14 +284,14 @@ export default function Rubrica({
         if (localDescriptors.length === 0 || readOnly) {
             const initialDesc = readOnly && initialDatos?.descriptores
                 ? normalizeDescriptors(initialDatos.descriptores, selectedPlantillaId)
-                : normalizeDescriptors(storeState.descriptoresRubrica, selectedPlantillaId);
+                : normalizeDescriptors(descriptoresRubricaStore, selectedPlantillaId);
             setLocalDescriptors(initialDesc);
         }
 
         if (localNiveles.length === 0 || readOnly) {
             const initialNiv = readOnly && initialDatos?.niveles
                 ? initialDatos.niveles
-                : storeState.nivelesPuntaje;
+                : nivelesPuntajeStore;
             setLocalNiveles(initialNiv);
         }
     }, [readOnly, initialDatos]);
@@ -268,27 +306,7 @@ export default function Rubrica({
 
     const richCellRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-    const selectedCurso = state.cursos.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || state.cursos.find(c => c.id === selectedCursoId);
-    const estudiantes = state.estudiantes.filter((estudiante) => 
-        estudiante.cursoId === selectedCursoId || 
-        (selectedCurso?.sharedCourseId && estudiante.sharedCourseId === selectedCurso.sharedCourseId)
-    );
-    const sortedEsts = [...estudiantes].sort((a, b) => {
-        const numA = a.numeroLista || 0;
-        const numB = b.numeroLista || 0;
-        if (numA !== numB) return numA - numB;
-        return (a.apellido + a.nombre).localeCompare(b.apellido + b.nombre);
-    });
-    const actividades = state.actividades.filter((actividad) => 
-        (actividad.cursoId === selectedCursoId || 
-         (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
-        (actividad.userId === session?.user?.id || !actividad.userId) &&
-        (!actividad.asignatura || actividad.asignatura === selectedAsignatura) &&
-        actividad.periodo === selectedPeriodo
-    );
-    const rubricaPlantillas = state.plantillas.filter((plantilla) =>
-        plantilla.tipo === 'rubrica' && plantilla.userId === session?.user?.id
-    );
+    // Memoized state is defined above
     const LIMITE_PLANTILLAS = 10;
     const selectedEst = estudiantes.find((estudiante) => estudiante.id === selectedEstId) ?? null;
     const selectedAct = actividades.find((actividad) => actividad.id === selectedActId) ?? null;
@@ -344,7 +362,7 @@ export default function Rubrica({
                 return;
             }
 
-            const existing = state.cursoDetalle.find(
+            const existing = cursoDetalleStore.find(
                 (cursoDetalle) =>
                     cursoDetalle.estudianteId === selectedEstId &&
                     cursoDetalle.actividadId === selectedActId
@@ -359,7 +377,7 @@ export default function Rubrica({
                 setComentarios('');
             }
         }
-    }, [selectedEstId, selectedActId, state.cursoDetalle]);
+    }, [selectedEstId, selectedActId, cursoDetalleStore]);
 
     useEffect(() => {
         if (readOnly) return;
@@ -368,17 +386,22 @@ export default function Rubrica({
             return;
         }
         
-        let sourceDescriptors = storeState.descriptoresRubrica;
+        let sourceDescriptors = descriptoresRubricaStore;
         if (selectedPlantillaId !== null) {
-            const template = state.plantillas.find(p => p.id === selectedPlantillaId);
+            const template = plantillasStore.find(p => p.id === selectedPlantillaId);
             if (template?.datos?.descriptores) {
                 sourceDescriptors = template.datos.descriptores as DescriptorRubrica[];
             }
         }
         
         const initialDesc = normalizeDescriptors(sourceDescriptors, selectedPlantillaId);
-        setLocalDescriptors(initialDesc);
-    }, [selectedPlantillaId, storeState.descriptoresRubrica, state.plantillas, readOnly]);
+        setLocalDescriptors((prev) => {
+            if (JSON.stringify(prev) === JSON.stringify(initialDesc)) {
+                return prev;
+            }
+            return initialDesc;
+        });
+    }, [selectedPlantillaId, descriptoresRubricaStore, plantillasStore, readOnly]);
 
     function calcPuntajeTotalWithSelection(sel: Selection): number {
         const ids = Object.keys(sel);
@@ -716,7 +739,7 @@ export default function Rubrica({
                                                     setSelectedActId(null);
                                                 }}
                                             >
-                                                {state.cursos.map((curso) => (
+                                                {cursosStore.map((curso) => (
                                                     <option key={`${curso.id}|${curso.asignatura}`} value={`${curso.id}|${curso.asignatura}`}>
                                                         {curso.grado} {curso.seccion} - {getAsignaturaNombre(curso.asignatura)}
                                                      </option>
@@ -778,7 +801,7 @@ export default function Rubrica({
                                                         const val = event.target.value;
                                                         if (!val) {
                                                             setSelectedPlantillaId(null);
-                                                            setLocalDescriptors(normalizeDescriptors(state.descriptoresRubrica.slice(0, 4)));
+                                                            setLocalDescriptors(normalizeDescriptors(descriptoresRubricaStore.slice(0, 4)));
                                                             return;
                                                         }
                                                         handleLoadTemplate(Number(val));
@@ -1016,7 +1039,7 @@ export default function Rubrica({
                                         </th>
 
                                         {NIVEL_FIELDS.map((field) => {
-                                            const nivelFromState = state.nivelesPuntaje.find(n => n.nivel === field.nivel);
+                                            const nivelFromState = nivelesPuntajeStore.find(n => n.nivel === field.nivel);
                                             const nivelActual =
                                                 localNiveles.find((nivel) => nivel.nivel === field.nivel) ?? nivelFromState ?? null;
 
@@ -1165,7 +1188,7 @@ export default function Rubrica({
                 tipo="rubrica"
                 actividades={actividades}
                 cursoNombre={selectedCurso ? `${selectedCurso.grado} ${selectedCurso.seccion} - ${getAsignaturaNombre(selectedCurso.asignatura)}` : ''}
-                asignatura={storeState.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session?.user?.id)?.asignatura ?? null}
+                asignatura={cursoDocentesStore.find((cd: any) => cd.cursoId === selectedCursoId && cd.userId === session?.user?.id)?.asignatura ?? null}
                 onAplicarRubrica={aplicarRubricaIA}
             />
             {captureOverlay}
