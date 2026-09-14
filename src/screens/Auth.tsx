@@ -11,7 +11,7 @@ interface AuthProps {
 }
 
 const PENDING_CENTRO_KEY = 'pendingCentroCIELO';
-const PENDING_VINCULO_KEY = 'pendingVinculoCIELO';
+// const PENDING_VINCULO_KEY = 'pendingVinculoCIELO';
 
 // Capa de UX: tiempo máximo de espera razonable antes de mostrar el estado
 // de reintento si la operación de autenticación no resuelve.
@@ -380,13 +380,31 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         ? "http://localhost:5173"
         : "https://evaluacielo.com";
 
+      let pendingVinculo: any = null;
+      if (modo === 'director') {
+        pendingVinculo = {
+          tipo: 'crear_centro',
+          centro: {
+            nombre: centroForm.nombre.trim(),
+            distrito_educativo: centroForm.distritoEducativo.trim(),
+            telefono: centroForm.telefono.trim()
+          }
+        };
+      } else if (modo === 'propia' || modo === 'codigo' || modo === 'referencia' || modo === 'institucional_id') {
+        pendingVinculo = {
+          tipo: 'unirse',
+          centro_id: centroSel || null
+        };
+      }
+
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            nombre_docente: nombreCompleto
+            nombre_docente: nombreCompleto,
+            ...(pendingVinculo ? { pending_vinculo: pendingVinculo } : {})
           }
         }
       });
@@ -394,27 +412,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error('No se pudo crear el usuario.');
 
-      // Insertar el perfil inicial
-      const { error: profileError } = await supabase.from('perfiles').upsert({
-        user_id: authData.user.id,
-        nombre: nombreCompleto,
-        nombre_docente: nombreCompleto,
-        avatar_color: '#' + Math.floor(Math.random()*16777215).toString(16),
-        tipo_institucion: 'escuela_publica',
-        asignaturas: [''],
-        created_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
-      
-      if (profileError) {
-        throw profileError;
-      }
 
-      const { error: consentError } = await supabase.from('consentimientos').insert({
-        user_id: authData.user.id,
-        terminos_version: '1.0',
-        privacidad_version: '1.0'
-      });
-      if (consentError) console.error('Error consent:', consentError);
 
       if (modo === 'director') {
         if (authData.session) {
@@ -429,12 +427,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         }
         // Requiere confirmación de correo: guardar los datos pendientes.
         // Se crearán la cuenta, el centro y el rol de director automáticamente
-        // al primer inicio de sesión (ver usePendingCentro en App).
-        localStorage.setItem(PENDING_CENTRO_KEY, JSON.stringify({
-          nombre: centroForm.nombre,
-          distrito_educativo: centroForm.distritoEducativo,
-          telefono: centroForm.telefono
-        }));
+        // al primer inicio de sesión mediante la RPC procesar_vinculo_pendiente.
       } else if (modo === 'centro_existente') {
         // El centro ya existe en CIELO: NUNCA se crea uno nuevo. El usuario
         // debe haber confirmado antes los datos del centro encontrado.
@@ -477,13 +470,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           navigate('/inicio', { state: { freeTrial: true } });
           return;
         }
-        localStorage.setItem(PENDING_VINCULO_KEY, JSON.stringify({
-          modo,
-          centroId: centroSel || null,
-          codigo: codigoAcceso.trim() || null,
-          id_introducida: modo === 'institucional_id' ? idCentroInput.trim() : null,
-          centro: centroForm.nombre.trim() ? centroForm : null
-        }));
+        // Requiere confirmación de correo: la intención 'unirse' viaja en metadata.
       }
 
       setNeedsEmailConfirmation(true);

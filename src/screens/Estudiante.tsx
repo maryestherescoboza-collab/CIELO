@@ -16,7 +16,8 @@ export default function Estudiante() {
     const { 
         state, 
         session,
-        selectedEstudianteId
+        selectedEstudianteId,
+        setSelectedEstudianteId
     } = useAppStore();
     const { loadDashboardData, loadCursoData } = useSupabaseData(true);
 
@@ -193,9 +194,34 @@ export default function Estudiante() {
 
     if (!est) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-(--radius-lg) border-2 border-dashed border-(--border-soft)">
-                <h2 className="text-xl font-bold text-(--ink)">Estudiante no encontrado</h2>
-                <button onClick={() => navigate('/cursos')} className="mt-4 text-(--ink-soft) font-bold underline">Volver a Cursos</button>
+            <div className="flex flex-col items-center justify-start p-12 w-full min-h-screen bg-[#EFEFEC]">
+                <div className="w-full max-w-4xl bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 className="text-2xl font-black text-(--ink) mb-2 font-['Space_Grotesk']">Módulo Estudiante</h2>
+                    <p className="text-(--ink-soft) mb-8 font-medium">Selecciona un estudiante para acceder a su perfil, calificaciones y portal familiar.</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {state.estudiantes?.map((e: any) => {
+                            const c = state.cursos?.find((c: any) => c.id === e.cursoId);
+                            return (
+                                <button 
+                                    key={e.id} 
+                                    onClick={() => {
+                                        setSelectedEstudianteId(e.id);
+                                        navigate(`/estudiante/${e.id}`);
+                                    }} 
+                                    className="flex flex-col items-start p-4 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all text-left group"
+                                >
+                                    <span className="font-bold text-slate-800 group-hover:text-primary transition-colors text-sm">
+                                        {e.nombre} {e.apellido}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                        {c ? `${c.grado} ${c.seccion}` : 'Sin curso'}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
             </div>
         );
     }

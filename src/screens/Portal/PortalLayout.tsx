@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Loader2, LogOut } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
 
 export interface AsignaturaPublicada {
@@ -14,15 +14,15 @@ export interface AsignaturaPublicada {
   published_until: string;
 }
 
+export type Periodo = 'P1' | 'P2' | 'P3' | 'P4';
+
 export default function PortalLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const token = location.pathname.split('/')[2]; // /portal/:token/...
+  const token = location.pathname.split('/')[2]; 
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   
-  const [periodos] = useState(['P1', 'P2', 'P3', 'P4']);
-  const [selectedPeriodo, setSelectedPeriodo] = useState('P1');
-  
+  const [selectedPeriodo, setSelectedPeriodo] = useState<Periodo>('P1');
   const [asignaturas, setAsignaturas] = useState<AsignaturaPublicada[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,9 +50,7 @@ export default function PortalLayout() {
         });
         
         if (rpcError) throw rpcError;
-        if (data && data.error) {
-          throw new Error(data.error);
-        }
+        if (data && data.error) throw new Error(data.error);
         
         setAsignaturas(data || []);
       } catch (err: any) {
@@ -70,79 +68,63 @@ export default function PortalLayout() {
     fetchAsignaturas();
   }, [sessionToken, selectedPeriodo, token, navigate]);
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('portal_session');
-    navigate(`/portal/${token}`);
-  };
-
   if (loading && asignaturas.length === 0) {
     return (
-      <div className="min-h-screen bg-(--background) flex flex-col items-center justify-center p-6">
-        <Loader2 className="animate-spin text-(--primary) mb-4" size={32} />
-        <p className="text-(--ink-soft) text-sm font-semibold">Cargando información académica...</p>
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+        <Loader2 className="animate-spin text-stone-900 mb-4" size={32} />
+        <p className="text-stone-600 text-sm font-semibold">Cargando...</p>
       </div>
     );
   }
 
-  const currentTab = location.pathname.split('/').pop() || 'dashboard';
+  const currentPath = location.pathname.split('/').pop() || '';
 
   return (
-    <div className="portal-root">
-      <div className="portal-wrap">
-        {/* ── Top Nav ── */}
-        <div className="portal-navbar print:hidden">
-          <div className="portal-logo"><span className="logo-badge">📘</span> EduTrack</div>
-          
-          <div className="portal-navtabs custom-scrollbar">
-            <span
-              onClick={() => navigate(`/portal/${token}/dashboard`)}
-              className={`ntab ${currentTab === 'dashboard' ? 'active' : ''}`}
-            >
-              Resumen General
-            </span>
-            
-            {asignaturas.map((asig, i) => {
-              const isActive = location.pathname.includes(`/asignatura/${encodeURIComponent(asig.asignatura)}`);
-              return (
-                <span
-                  key={i}
-                  onClick={() => navigate(`/portal/${token}/asignatura/${encodeURIComponent(asig.asignatura)}`)}
-                  className={`ntab ${isActive ? 'active' : ''}`}
-                >
-                  {asig.asignatura}
-                </span>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <select
-              value={selectedPeriodo}
-              onChange={(e) => setSelectedPeriodo(e.target.value)}
-              className="bg-(--yellow-soft) border-2 border-(--ink) text-(--ink) text-xs font-bold uppercase tracking-widest py-1.5 px-3 rounded-xl cursor-pointer"
-            >
-              {periodos.map(p => (
-                <option key={p} value={p}>Periodo {p.replace('P', '')}</option>
-              ))}
-            </select>
-            <div className="portal-nav-avatar cursor-pointer hover:bg-(--coral-soft) transition-colors" onClick={handleLogout} title="Cerrar Sesión">
-              <LogOut size={16} />
-            </div>
-          </div>
-        </div>
-
-        {/* ── Contenido Principal ── */}
-        <main>
+    <div className="portal-root flex justify-center items-center min-h-screen py-0 sm:py-6 selection:bg-purple-200 bg-white">
+      <main className="w-full max-w-[430px] min-h-screen sm:min-h-[890px] sm:max-h-[940px] sm:rounded-[36px] sm:border-2 sm:border-zinc-900 overflow-hidden flex flex-col relative sm:shadow-2xl text-zinc-900 bg-white">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
           {error ? (
-            <div className="portal-card" style={{ borderColor: 'var(--coral)', textAlign: 'center' }}>
-              <p style={{ color: 'var(--coral)', fontWeight: 900, textTransform: 'uppercase' }}>Error de conexión</p>
-              <p>{error}</p>
+            <div className="p-6 text-center mt-10">
+              <p className="text-red-500 font-bold uppercase">Error de conexión</p>
+              <p className="text-stone-600 text-sm mt-2">{error}</p>
             </div>
           ) : (
-            <Outlet context={{ asignaturas, selectedPeriodo, sessionToken }} />
+            <Outlet context={{ 
+              asignaturas, 
+              selectedPeriodo, 
+              setSelectedPeriodo,
+              sessionToken 
+            }} />
           )}
-        </main>
-      </div>
+        </div>
+
+        {/* BEGIN: BottomNavigationBar */}
+        <nav className="absolute bottom-0 left-0 right-0 h-16 bg-white border-t border-black flex items-center justify-around px-6 z-20">
+          <button 
+            onClick={() => navigate(`/portal/${token}/estudiante`)}
+            aria-label="Inicio" 
+            className={`flex flex-col items-center justify-center focus:outline-none ${currentPath === 'estudiante' ? 'text-black' : 'text-neutral-700 hover:text-black'}`}
+          >
+            <svg className="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" strokeLinecap="round" strokeLinejoin="round"></path>
+            </svg>
+            <span className="text-[9px] font-semibold mt-0.5">Inicio</span>
+          </button>
+          
+          <button 
+            onClick={() => navigate(`/portal/${token}/fichas`)}
+            aria-current="page" 
+            aria-label="Agenda" 
+            className={`flex items-center space-x-1 px-4 py-1.5 border border-black rounded-lg text-black focus:outline-none ${currentPath === 'fichas' ? 'bg-brand-purple font-bold' : 'bg-transparent border-transparent'}`}
+          >
+            <svg className="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" strokeLinecap="round" strokeLinejoin="round"></path>
+            </svg>
+            <span className="text-[10px] font-bold ml-1">Agenda</span>
+          </button>
+        </nav>
+        {/* END: BottomNavigationBar */}
+      </main>
     </div>
   );
 }

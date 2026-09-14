@@ -16,6 +16,13 @@ module.exports = {
         "linen": "#EAE4DA",
         "ink": "#2E3330",
         "background": "#F8F3ED",
+        "brand-purple": "#E9D5FF",
+        "brand-purpleLight": "#F3E8FF",
+        "brand-purpleDark": "#C084FC",
+        "brand-yellow": "#FEF08A",
+        "brand-cyan": "#BAE6FD",
+        "brand-cyanLight": "#E0F2FE",
+        "brand-border": "#18181B",
 
         // Semantic bindings mapped to new palette
         "color-1": "#BFC9A6",

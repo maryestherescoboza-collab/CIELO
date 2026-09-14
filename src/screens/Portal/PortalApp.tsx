@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import PortalAuth from './PortalAuth';
-import PortalDashboard from './PortalDashboard';
-import PortalAsignatura from './PortalAsignatura';
+import PortalEstudiante from './PortalEstudiante';
+import PortalFichas from './PortalFichas';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
 
 import PortalLayout from './PortalLayout';
@@ -34,9 +34,9 @@ export default function PortalApp() {
         <Route path="*" element={<PortalAuth onLogin={() => setIsAuthenticated(true)} />} />
       ) : (
         <Route element={<PortalLayout />}>
-          <Route path="dashboard" element={<PortalDashboard />} />
-          <Route path="asignatura/:asignaturaId" element={<PortalAsignatura />} />
-          <Route path="*" element={<Navigate to="dashboard" replace />} />
+          <Route path="estudiante" element={<PortalEstudiante />} />
+          <Route path="fichas" element={<PortalFichas />} />
+          <Route path="*" element={<Navigate to="estudiante" replace />} />
         </Route>
       )}
     </Routes>

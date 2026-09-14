@@ -35,6 +35,7 @@ import { useAppStore } from './store/appStore';
 import { useAppInitialization } from './hooks/useAppInitialization';
 import { usePendingCentro } from './hooks/usePendingCentro';
 import { usePendingVinculo } from './hooks/usePendingVinculo';
+import { useProcesarVinculo } from './hooks/useProcesarVinculo';
 import { useShallow } from 'zustand/react/shallow';
 import { analizarRolAcceso } from './utils/autorizacion';
 import { PORTAL_FAMILIA_ENABLED } from './config/features';
@@ -83,6 +84,7 @@ export default function App() {
   });
   usePendingCentro(session, () => actions.refresh());
   usePendingVinculo(session, () => actions.refresh());
+  useProcesarVinculo(session, () => actions.refresh());
 
   const bootstrappedRef = useRef(false);
   useEffect(() => {

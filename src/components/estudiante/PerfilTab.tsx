@@ -285,13 +285,24 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                             {est.nombre} <span className="bg-[#DB5B48] text-white px-2.5 py-0.5 rounded-[5px] inline-block">{est.apellido}</span>
                         </div>
                         {PORTAL_FAMILIA_ENABLED && (
-                            <div className="mt-2 flex items-center gap-4">
-                                <button onClick={handleGenerateQR} disabled={isGeneratingQr} className="px-3 py-1 bg-[#1B1F2A] text-white text-[10px] font-bold uppercase rounded hover:opacity-80 transition-opacity">
-                                    {isGeneratingQr ? 'Generando...' : 'Generar QR Acceso Familiar'}
-                                </button>
+                            <div className="mt-2 flex flex-col gap-2 relative">
+                                <div className="flex items-center gap-4">
+                                    <button onClick={handleGenerateQR} disabled={isGeneratingQr} className="px-3 py-1 bg-[#1B1F2A] text-white text-[10px] font-bold uppercase rounded hover:opacity-80 transition-opacity">
+                                        {isGeneratingQr ? 'Generando...' : 'Generar Acceso Familiar'}
+                                    </button>
+                                </div>
                                 {qrVisible && qrToken && (
-                                    <div className="bg-white p-1.5 shadow border border-slate-200 rounded animate-in fade-in duration-200 absolute top-0 right-0 z-10">
+                                    <div className="bg-white p-3 shadow-lg border border-slate-200 rounded-lg animate-in fade-in duration-200 absolute top-full left-0 mt-2 z-20 flex gap-4 items-center">
                                         <QRCodeSVG value={`${window.location.origin}/portal/${qrToken}`} size={80} />
+                                        <div className="flex flex-col gap-2">
+                                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Enlace de acceso</div>
+                                            <div className="flex items-center gap-2">
+                                                <input type="text" readOnly value={`${window.location.origin}/portal/${qrToken}`} className="text-xs p-1.5 border border-slate-200 rounded bg-slate-50 w-64 text-slate-600 font-mono focus:outline-none" />
+                                                <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/portal/${qrToken}`)} className="px-2 py-1.5 bg-slate-200 text-slate-700 text-[10px] font-bold uppercase rounded hover:bg-slate-300">
+                                                    Copiar
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
