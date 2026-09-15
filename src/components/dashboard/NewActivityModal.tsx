@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageSquareText, Brain, Puzzle, Microscope } from 'lucide-react';
 import type { AppState, Actividad, BCKey } from '../../types';
 import { COMPETENCIAS_LABEL } from '../../types';
@@ -7,6 +7,8 @@ import { CieloModal } from '../ui/CieloModal';
 import { useAppStore } from '../../store/appStore';
 import { getAIAIProvider, isProviderConfigured, providerDisplayName, saveAIKey } from '../../lib/aiConfig';
 import { callAI } from '../../lib/aiProvider';
+import { calculateHash, cleanTechnicalText } from '../../lib/aiPreprocessor';
+import { getCurrentMonthAIUsage, type AIUsageStats } from '../../lib/aiUsage';
 
 const BC_CIRCLE_CONFIG: Array<{ id: BCKey; label: string; icon: typeof MessageSquareText; bg: string; selectedBg: string; selectedText: string }> = [
   { id: 'BC1', label: COMPETENCIAS_LABEL.BC1, icon: MessageSquareText, bg: 'bg-blue-50', selectedBg: 'bg-blue-600', selectedText: 'text-white' },
@@ -18,7 +20,8 @@ const BC_CIRCLE_CONFIG: Array<{ id: BCKey; label: string; icon: typeof MessageSq
 // Límite de entrada del analizador de actividades. CIELO valida el tamaño del texto
 // ANTES de llamar a la API (Gemini u OpenAI): si se supera, se bloquea localmente sin
 // consumir tokens, sin recortar el texto del docente y sin enviar nada al proveedor.
-const MAX_ANALYSIS_CHARS = 15000;
+// Este valor se ha incrementado significativamente para delegar el límite a los tokens del proveedor.
+const MAX_ANALYSIS_CHARS = 1500000;
 
 interface NewActivityModalProps {
     show: boolean;
@@ -61,10 +64,21 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     const [targetCursoId, setTargetCursoId] = useState<number>(0);
     const [targetPeriodo, setTargetPeriodo] = useState<string>('');
     const [targetFecha, setTargetFecha] = useState<string>(today);
+    const [isPromptCopied, setIsPromptCopied] = useState(false);
 
     // API Key flow states
     const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
     const [tempApiKey, setTempApiKey] = useState('');
+    
+    // AI Usage state
+    const [aiUsage, setAiUsage] = useState<AIUsageStats | null>(null);
+
+    // Fetch AI Usage when modal opens
+    useEffect(() => {
+        if (show && session?.user?.id) {
+            getCurrentMonthAIUsage(session.user.id).then(setAiUsage);
+        }
+    }, [show, session?.user?.id]);
 
     // Reset all states
     const handleClose = () => {
@@ -138,16 +152,101 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         }
     }
 
-    // Save API Key
     const handleSaveApiKey = () => {
         if (!tempApiKey.trim() || !session?.user?.id) return;
         saveAIKey(session.user.id, getAIAIProvider(session.user.id), tempApiKey);
         setShowApiKeyPrompt(false);
         setTempApiKey('');
-        handleProcessText();
+        // handleProcessText(); // Deshabilitado temporalmente
     };
 
-    // Process pasted text and query Gemini API
+    const handleCopyPrompt = async () => {
+        if (!pastedText.trim()) {
+            setErrorMsg("Debes pegar el texto de la secuencia o planificación antes de copiar el prompt.");
+            return;
+        }
+        
+        const cleanedText = cleanTechnicalText(pastedText);
+        const prompt = `Analiza el texto completo y determina todas las actividades presentes por comprensión semántica.
+
+Reglas:
+- Conserva exactamente el nombre, título o numeración (ej. Actividad 1.1) cuando exista.
+- Identifica actividades aunque se llamen "Ejercicio", "Tarea", "Parte I" o sean solo instrucciones.
+- Infiere indicador_logro, producto, y competencias.
+- Utiliza ÚNICAMENTE estas competencias: "Comunicativa", "Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas", "Científica y Tecnológica; y Ambiental y de la Salud", "Ética y Ciudadana; y Desarrollo Personal y Espiritual".
+- Devuelve ÚNICAMENTE el objeto JSON, sin explicaciones ni markdown.
+
+Estructura obligatoria:
+{
+  "actividades": [
+    {
+      "nombre": "string",
+      "indicador_logro": "string",
+      "competencias": ["string"],
+      "producto": "string"
+    }
+  ]
+}`;
+        const finalPrompt = `${prompt}\n\nTEXTO A ANALIZAR:\n${cleanedText}`;
+        
+        try {
+            await navigator.clipboard.writeText(finalPrompt);
+            setIsPromptCopied(true);
+            setTimeout(() => setIsPromptCopied(false), 2000);
+        } catch (err) {
+            setErrorMsg("No se pudo copiar el prompt al portapapeles.");
+        }
+    };
+
+    const handlePasteJson = async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            let parsed;
+            try {
+                parsed = JSON.parse(text);
+            } catch(e) {
+                const match = text.match(/```json\n([\s\S]*)\n```/) || text.match(/```\n([\s\S]*)\n```/);
+                if (match) {
+                    parsed = JSON.parse(match[1]);
+                } else {
+                    setErrorMsg('El contenido del portapapeles no es un JSON válido.');
+                    return;
+                }
+            }
+            const extracted = parsed.actividades || parsed.data?.actividades || parsed;
+            if (!Array.isArray(extracted) || extracted.length === 0) {
+                throw new Error('No se encontraron actividades en el JSON.');
+            }
+            
+            const mapCompetenciaToCode = (nombre: string) => {
+                if (!nombre) return null;
+                const norm = nombre.trim().toLowerCase();
+                if (norm.includes('comunicativa')) return 'BC1';
+                if (norm.includes('lógico') || norm.includes('resolución')) return 'BC2';
+                if (norm.includes('científica') || norm.includes('tecnológica') || norm.includes('salud')) return 'BC3';
+                if (norm.includes('ética') || norm.includes('ciudadana') || norm.includes('espiritual') || norm.includes('personal')) return 'BC4';
+                return null;
+            };
+            
+            const formatted = extracted.map((act: any) => {
+                const mappedBcs = Array.isArray(act.competencias) ? act.competencias.map(mapCompetenciaToCode).filter((c: any) => c !== null) : [];
+                return {
+                    nombre: act.nombre || 'Actividad',
+                    indicador_logro: act.indicador_logro || '',
+                    competencias: mappedBcs,
+                    producto: act.producto || '',
+                    selected: true
+                };
+            });
+            
+            setExtractedActivities(formatted);
+            setFlowMode('preview');
+        } catch (error) {
+            setErrorMsg('Error al procesar el JSON: ' + (error as Error).message);
+        }
+    };
+
+    // @ts-expect-error unused temporalmente
     const handleProcessText = async () => {
         if (!pastedText.trim() || isProcessing) return;
 
@@ -190,100 +289,186 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         setIsProcessing(true);
         setErrorMsg(null);
 
-        try {
+        const MAX_RETRIES = 1;
+        let attempt = 0;
+        let success = false;
+        
+        while (attempt <= MAX_RETRIES && !success) {
+            try {
+                const cleanedText = cleanTechnicalText(pastedText);
+                const hash = await calculateHash(cleanedText);
 
+                const prompt = `Analiza el texto completo y determina todas las actividades presentes por comprensión semántica.
 
-            const prompt = `Extrae del siguiente texto todas las actividades académicas, incluyendo subactividades (1, 1.1, 1.2, 2, etc.).
+Reglas:
+- Conserva exactamente el nombre, título o numeración (ej. Actividad 1.1) cuando exista.
+- Identifica actividades aunque se llamen "Ejercicio", "Tarea", "Parte I" o sean solo instrucciones.
+- Infiere indicador_logro, producto, y competencias.
+- Utiliza ÚNICAMENTE estas competencias: "Comunicativa", "Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas", "Científica y Tecnológica; y Ambiental y de la Salud", "Ética y Ciudadana; y Desarrollo Personal y Espiritual".
+- Devuelve ÚNICAMENTE el objeto JSON, sin explicaciones ni markdown.
 
-Cada actividad debe incluir:
+Estructura obligatoria:
+{
+  "actividades": [
+    {
+      "nombre": "string",
+      "indicador_logro": "string",
+      "competencias": ["string"],
+      "producto": "string"
+    }
+  ]
+}`;
 
-* **nombre**: título exacto si existe (ej. "Actividad 1.1", "Números enteros"). Si no tiene título, crea uno breve.
-* **competencias**: asigna la(s) competencia(s) más relacionadas con la actividad, pudiendo inferirlas por su contenido y desempeño:
+                const data = await callAI<{ actividades: any[] }>({
+                    userId: currentUserId,
+                    prompt: `${prompt}\n\nTEXTO A ANALIZAR:\n${cleanedText}`,
+                    hash: hash,
+                    originalText: pastedText,
+                    operation: 'analyze_activities',
+                    geminiResponseSchema: {
+                        type: 'OBJECT',
+                        properties: {
+                            actividades: {
+                                type: 'ARRAY',
+                                items: {
+                                    type: 'OBJECT',
+                                    properties: {
+                                        nombre: { type: 'STRING' },
+                                        indicador_logro: { type: 'STRING' },
+                                        competencias: { 
+                                            type: 'ARRAY', 
+                                            items: { type: 'STRING' } 
+                                        },
+                                        producto: { type: 'STRING' }
+                                    },
+                                    required: ['nombre', 'indicador_logro', 'competencias', 'producto']
+                                }
+                            }
+                        },
+                        required: ['actividades']
+                    }
+                });
 
-  * BC1: Comunicativa
-  * BC2: Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas
-  * BC3: Científica y Tecnológica; y Ambiental y de la Salud
-  * BC4: Ética y Ciudadana; y Desarrollo Personal y Espiritual
-    Si no existe una relación razonable, devuelve [].
-* **indicador_logro**: crea uno breve con verbo observable + contenido + condición de éxito.
-* **producto**: evidencia que genera la actividad. Máximo 5 palabras. Puedes inferirla cuando sea evidente e incluir el medio si aparece en el texto. Si no existe una evidencia identificable, devuelve "".
+                if (!data || typeof data !== 'object' || !Array.isArray((data as Record<string, unknown>).actividades)) {
+                    throw new Error('Formato JSON inválido.');
+                }
 
-REGLAS:
-No omitas actividades por tener nombres genéricos. Mantén los nombres cortos. Puedes inferir competencias, indicadores y productos cuando el contexto lo permita, pero no inventes información ajena a la actividad. Devuelve exclusivamente JSON válido:
+                // Parser tolerante: rescatar actividades válidas e ignorar las rotas
+                const validActivities = data.actividades.filter(act => {
+                    return act && typeof act.nombre === 'string' && typeof act.indicador_logro === 'string' && Array.isArray(act.competencias) && typeof act.producto === 'string';
+                });
+
+                if (validActivities.length === 0) {
+                    throw new Error('No se encontraron actividades válidas en la respuesta.');
+                }
+
+                const extracted = validActivities.map((act: any) => {
+                    const mapCompetenciaToCode = (nombre: string) => {
+                        if (!nombre) return null;
+                        const norm = nombre.trim().toLowerCase();
+                        if (norm.includes('comunicativa')) return 'BC1';
+                        if (norm.includes('lógico') || norm.includes('resolución')) return 'BC2';
+                        if (norm.includes('científica') || norm.includes('tecnológica') || norm.includes('salud')) return 'BC3';
+                        if (norm.includes('ética') || norm.includes('ciudadana') || norm.includes('espiritual') || norm.includes('personal')) return 'BC4';
+                        return null;
+                    };
+
+                    const mappedBcs = act.competencias.map(mapCompetenciaToCode).filter((c: any) => c !== null);
+                    return {
+                        nombre: act.nombre || 'Actividad',
+                        competencias: mappedBcs,
+                        indicador_logro: act.indicador_logro || '',
+                        producto: act.producto || '',
+                        selected: true
+                    };
+                });
+
+                setExtractedActivities(extracted);
+                setFlowMode('preview');
+                success = true;
+                // Refrescar uso de IA
+                getCurrentMonthAIUsage(currentUserId).then(setAiUsage);
+
+            } catch (error: any) {
+                attempt++;
+                console.error(`Error analyzing text (Intento ${attempt}):`, error);
+                
+                if (attempt > MAX_RETRIES) {
+                    const errMsg = error.message || '';
+                    if (errMsg.includes('límite temporal') || errMsg.includes('429')) {
+                        setErrorMsg('El servicio de IA está saturado en este momento. Inténtalo nuevamente más tarde.');
+                    } else if (errMsg.includes('demasiado extenso') || errMsg.includes('413') || errMsg.includes('400')) {
+                        setErrorMsg('El texto es muy extenso para procesarlo de una sola vez. Acorta el contenido o divídelo en partes e inténtalo nuevamente.');
+                    } else {
+                        setErrorMsg('El servicio de IA no respondió correctamente. Inténtalo nuevamente.');
+                    }
+                }
+            }
+        }
+        setIsProcessing(false);
+    };
+
+    // @ts-expect-error unused temporalmente
+    const handleAnalizarNavegador = async () => {
+        if (!pastedText.trim()) return;
+        
+        // Verificar si la extensión CIELO IA está instalada mediante la variable inyectada
+        // @ts-ignore
+        if (!window.__CIELO_IA_EXTENSION_INSTALLED__) {
+            setErrorMsg("Extensión no detectada. Para usar el análisis en el panel lateral, instala la extensión 'CIELO IA' y recarga la página.");
+            return;
+        }
+
+        const promptNavegador = `Analiza TODO el texto y extrae TODAS las actividades independientes.
+
+Conserva cada actividad aunque esté identificada como Actividad 1, Actividad 1.1, 1, 1.1, Ejercicio 2, un título, tema, encabezado o cualquier otra forma. No elimines ni cambies sus índices, subíndices o nombres originales.
+
+No fusiones actividades independientes.
+
+Para cada actividad devuelve:
+
+* nombre
+* indicador_logro
+* competencias
+* producto
+
+Si falta información, infiérela razonablemente. No descartes actividades por falta de información.
+
+Utiliza únicamente estas competencias:
+
+* Comunicativa
+* Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas
+* Científica y Tecnológica; y Ambiental y de la Salud
+* Ética y Ciudadana; y Desarrollo Personal y Espiritual
+
+Devuelve únicamente JSON válido con esta estructura:
 
 {
 "actividades": [
 {
 "nombre": "string",
-"competencias": [{"codigo": "BC2", "nombre": "Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas"}],
 "indicador_logro": "string",
+"competencias": ["string"],
 "producto": "string"
 }
 ]
-}`;
+}
 
-            const data = await callAI<{ actividades: any[] }>({
-                userId: currentUserId,
-                prompt: `${prompt}\n\nTEXTO DEL DOCUMENTO PEGADO POR EL DOCENTE:\n${pastedText}`,
-                geminiResponseSchema: {
-                    type: 'OBJECT',
-                    properties: {
-                        actividades: {
-                            type: 'ARRAY',
-                            items: {
-                                type: 'OBJECT',
-                                properties: {
-                                    nombre: { type: 'STRING' },
-                                    competencias: { 
-                                        type: 'ARRAY', 
-                                        items: { 
-                                            type: 'OBJECT',
-                                            properties: {
-                                                codigo: { type: 'STRING', enum: ['BC1', 'BC2', 'BC3', 'BC4'] },
-                                                nombre: { type: 'STRING' }
-                                            },
-                                            required: ['codigo', 'nombre']
-                                        } 
-                                    },
-                                    indicador_logro: { type: 'STRING' },
-                                    producto: { type: 'STRING' }
-                                },
-                                required: ['nombre', 'competencias', 'indicador_logro', 'producto']
-                            }
-                        }
-                    },
-                    required: ['actividades']
-                }
+TEXTO A ANALIZAR:
+${pastedText}`;
+
+        try {
+            await navigator.clipboard.writeText(promptNavegador);
+            
+            // Emitir evento a la extensión CIELO IA
+            const event = new CustomEvent('CIELO_IA_ANALYZE', {
+                detail: { text: pastedText, prompt: promptNavegador }
             });
-
-            if (!data || typeof data !== 'object' || !Array.isArray((data as Record<string, unknown>).actividades)) {
-                throw new Error('No pudimos interpretar la actividad con el formato esperado. Intenta pegar nuevamente la descripción de la actividad.');
-            }
-
-            const extracted = ((data as { actividades: any[] }).actividades || []).map((act: any) => {
-                const mappedBcs = Array.isArray(act.competencias) 
-                    ? act.competencias.map((c: any) => c.codigo).filter((c: any) => ['BC1', 'BC2', 'BC3', 'BC4'].includes(c))
-                    : [];
-                return {
-                    nombre: act.nombre || 'Nueva Actividad',
-                    competencias: mappedBcs,
-                    indicador_logro: act.indicador_logro || '',
-                    producto: act.producto || '',
-                    selected: true
-                };
-            });
-
-            if (extracted.length === 0) {
-                setErrorMsg('No se encontraron actividades en el texto proporcionado.');
-            } else {
-                setExtractedActivities(extracted);
-                setFlowMode('preview');
-            }
-        } catch (error: any) {
-            console.error('Error analyzing text:', error);
-            setErrorMsg(error.message || 'Error inesperado al analizar el texto. Intente de nuevo.');
-        } finally {
-            setIsProcessing(false);
+            window.dispatchEvent(event);
+            
+        } catch (err) {
+            console.error("Error al emitir evento a la extensión:", err);
+            setErrorMsg("Ocurrió un error al intentar comunicarse con el panel lateral.");
         }
     };
 
@@ -443,28 +628,27 @@ No omitas actividades por tener nombres genéricos. Mantén los nombres cortos. 
             );
         }
         if (flowMode === 'text') {
-            const isMissingContext = !pastedText.trim() || isProcessing || !targetCursoId || !targetPeriodo;
+            const isMissingContext = !pastedText.trim() || !targetCursoId || !targetPeriodo;
             return (
                 <div className="flex gap-4 w-full">
                     <button 
                         className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95" 
                         onClick={() => setFlowMode('choice')}
-                        disabled={isProcessing}
                     >
                         Volver
                     </button>
                     <button 
-                        data-guide="btn-analizar-texto"
-                        className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 ${isMissingContext ? 'opacity-50 cursor-not-allowed' : ''}`} 
-                        onClick={handleProcessText}
+                        className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95`}
+                        onClick={handleCopyPrompt}
+                    >
+                        {isPromptCopied ? 'Prompt copiado' : 'Copiar prompt'}
+                    </button>
+                    <button 
+                        className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-[#EAE4DA] text-[#2E3330] shadow-sm hover:bg-[#EAE4DA]/80 transition-all active:scale-95 ${isMissingContext ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={handlePasteJson}
                         disabled={isMissingContext}
                     >
-                        {isProcessing ? 'Analizando...' : (
-                            <>
-                                <span>Analizar</span>
-                                <TC_Flux size={14} />
-                            </>
-                        )}
+                        Pegar JSON
                     </button>
                 </div>
             );
@@ -877,6 +1061,12 @@ No omitas actividades por tener nombres genéricos. Mantén los nombres cortos. 
                                     </tbody>
                                 </table>
                             </div>
+                            {aiUsage && (
+                                <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500 border border-gray-100 flex justify-between items-center">
+                                    <span>Uso de IA este mes: <strong>{aiUsage.tokensEsteMes.toLocaleString()} tokens</strong></span>
+                                    <span>Disponible: <strong>US${aiUsage.disponible.toFixed(2)}</strong></span>
+                                </div>
+                            )}
                         </div>
                     )}
                 </>

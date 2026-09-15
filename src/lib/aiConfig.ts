@@ -72,9 +72,9 @@ export function isOpenAIConfigured(userId?: string | null): boolean {
 // El usuario elige qué proveedor usan las funciones de IA. Se guarda por
 // usuario en localStorage (clave `ai_provider_<userId>`).
 
-export type AIProvider = 'gemini' | 'openai';
-export const AI_PROVIDERS: AIProvider[] = ['gemini', 'openai'];
-export const DEFAULT_AI_PROVIDER: AIProvider = 'gemini';
+export type AIProvider = 'deepseek' | 'gemini' | 'openai';
+export const AI_PROVIDERS: AIProvider[] = ['deepseek', 'gemini', 'openai'];
+export const DEFAULT_AI_PROVIDER: AIProvider = 'deepseek';
 
 const providerStorageKeyFor = (userId: string) => `ai_provider_${userId}`;
 
@@ -82,7 +82,7 @@ export function getAIAIProvider(userId?: string | null): AIProvider {
     if (!userId) return DEFAULT_AI_PROVIDER;
     try {
         const saved = localStorage.getItem(providerStorageKeyFor(userId));
-        return saved === 'gemini' || saved === 'openai' ? saved : DEFAULT_AI_PROVIDER;
+        return saved === 'gemini' || saved === 'openai' || saved === 'deepseek' ? saved : DEFAULT_AI_PROVIDER;
     } catch {
         return DEFAULT_AI_PROVIDER;
     }
@@ -93,6 +93,7 @@ export function saveAIAIProvider(userId: string, provider: AIProvider): void {
 }
 
 export function providerDisplayName(provider: AIProvider): string {
+    if (provider === 'deepseek') return 'DeepSeek (CIELO)';
     return provider === 'openai' ? 'OpenAI' : 'Gemini';
 }
 

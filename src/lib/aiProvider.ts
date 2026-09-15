@@ -23,6 +23,11 @@ export interface CallAIOptions {
     temperature?: number;
     signal?: AbortSignal;
     model?: string;
+    
+    // Opciones específicas de DeepSeek / Edge Function
+    hash?: string;
+    originalText?: string;
+    operation?: string;
 }
 
 // Convierte un responseSchema de Gemini a JSON Schema (usado por Structured Outputs
@@ -86,6 +91,32 @@ export async function callAI<T>(options: CallAIOptions): Promise<T> {
     const provider = getAIAIProvider(options.userId);
     const apiKey = getAIKey(options.userId, provider);
 
+    if (provider === 'deepseek') {
+        const { supabase } = await import('./supabase');
+        
+        const res = await supabase.functions.invoke('cielo-ai', {
+            body: { 
+                text: options.prompt, // El prompt ya concatenó las instrucciones o podemos enviarlo crudo
+                hash: options.hash,
+                textoOriginal: options.originalText,
+                operation: options.operation || 'analyze_activities'
+            }
+        });
+
+        if (res.error) {
+            console.error('[IA][DeepSeek Edge Function] Error:', res.error);
+            const errMsg = res.error.message || 'Error desconocido';
+            if (errMsg.includes('límite mensual')) throw new Error('Has alcanzado el límite mensual de uso de IA (US$0.50).');
+            throw new Error('No pudimos procesar este contenido a través de nuestro servicio de IA. Inténtalo nuevamente.');
+        }
+        
+        if (!res.data || !res.data.data) {
+            throw new Error('Respuesta inválida desde el servicio de IA.');
+        }
+
+        return res.data.data as T;
+    }
+
     if (!apiKey) {
         throw new Error(`Configura tu API de ${providerDisplayName(provider)} para utilizar esta función.`);
     }
@@ -146,10 +177,28 @@ export async function callAI<T>(options: CallAIOptions): Promise<T> {
         throw new Error('No pudimos interpretar la respuesta del servicio de IA. Inténtalo nuevamente.');
     }
 
+    let parsed: any;
     try {
-        return JSON.parse(text) as T;
+        parsed = JSON.parse(text);
     } catch {
-        console.error('[IA][Gemini] JSON inválido en la respuesta (nada sensible registrado).');
-        throw new Error('No pudimos interpretar la respuesta del servicio de IA. Inténtalo nuevamente.');
+        try {
+            // Intenta extraer JSON de un bloque markdown
+            const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (markdownMatch && markdownMatch[1]) {
+                parsed = JSON.parse(markdownMatch[1]);
+            } else {
+                // Intenta encontrar la estructura más grande parecida a JSON { ... } o [ ... ]
+                const jsonMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+                if (jsonMatch && jsonMatch[1]) {
+                    parsed = JSON.parse(jsonMatch[1]);
+                } else {
+                    throw new Error('No JSON structure found');
+                }
+            }
+        } catch {
+            console.error('[IA][Gemini] JSON inválido en la respuesta (nada sensible registrado).');
+            throw new Error('No pudimos interpretar la respuesta del servicio de IA. Inténtalo nuevamente.');
+        }
     }
+    return parsed as T;
 }
