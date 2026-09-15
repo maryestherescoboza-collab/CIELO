@@ -81,7 +81,8 @@ serve(async (req) => {
 Reglas:
 - Conserva exactamente el nombre, título o numeración (ej. Actividad 1.1) cuando exista.
 - Identifica actividades aunque se llamen "Ejercicio", "Tarea", "Parte I" o sean solo instrucciones.
-- Infiere indicador_logro, producto, y competencias.
+- Infiere descripcion, indicador_logro, producto, y competencias.
+- La "descripcion" debe ser breve y explicar claramente en qué consiste la actividad o qué acción principal realizará el estudiante.
 - Utiliza ÚNICAMENTE estas competencias: "Comunicativa", "Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas", "Científica y Tecnológica; y Ambiental y de la Salud", "Ética y Ciudadana; y Desarrollo Personal y Espiritual".
 
 Estructura obligatoria:
@@ -89,6 +90,7 @@ Estructura obligatoria:
   "actividades": [
     {
       "nombre": "string",
+      "descripcion": "string",
       "indicador_logro": "string",
       "competencias": ["string"],
       "producto": "string"

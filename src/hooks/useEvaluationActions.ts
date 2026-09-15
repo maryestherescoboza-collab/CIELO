@@ -34,7 +34,8 @@ export function useEvaluationActions() {
             asignatura: a.asignatura || '',
             shared_course_id: shared_course_id,
             indicador: a.indicador,
-            producto: a.producto
+            producto: a.producto,
+            descripcion: a.descripcion ?? null
         }]).select();
 
         if (actError) { 
@@ -802,10 +803,11 @@ export function useEvaluationActions() {
             }
             return false;
         }
-        if (data && data[0]) {
-            const plantillaId = data[0].id;
+        const record = Array.isArray(data) ? data[0] : data;
+        if (record && record.id) {
+            const plantillaId = record.id;
             let updatedDatos = { ...datos };
-            let newPlantilla: Plantilla = { id: plantillaId, userId: session.user.id, tipo: data[0].tipo, nombre: data[0].nombre, datos: updatedDatos, createdAt: data[0].created_at };
+            let newPlantilla: Plantilla = { id: plantillaId, userId: session.user.id, tipo: record.tipo, nombre: record.nombre, datos: updatedDatos, createdAt: record.created_at };
             
             if (tipo === 'rubrica' && datos.descriptores) {
                 const descs = datos.descriptores as DescriptorRubrica[];

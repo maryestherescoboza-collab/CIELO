@@ -70,6 +70,7 @@ export interface Actividad {
     sharedCourseId?: string;
     indicador?: string;
     producto?: string;
+    descripcion?: string | null;
 }
 
 export interface CalificacionActividad {

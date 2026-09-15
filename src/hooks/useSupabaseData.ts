@@ -82,6 +82,7 @@ const mapActividad = (a: any, cursos?: any[]): Actividad => ({
     sharedCourseId: a.shared_course_id as string || (cursos?.find(cur => cur.id === a.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === a.curso_id)?.grupo_id}` : String(a.curso_id)),
     indicador: a.indicador as string,
     producto: a.producto as string,
+    descripcion: a.descripcion as string | null,
     isProductoFinal: a.is_producto_final as boolean
 });
 
@@ -1148,7 +1149,7 @@ export function useSupabaseData(skipInit = false) {
         } else {
             console.log(`[PLANIFICACION] lazy loading Curso data for course ${cursoId}`);
         }
-        setLoading(true);
+        if (!skipInit) setLoading(true);
         try {
             const baseQueries: any[] = [
                 supabase.from('estudiantes').select('*').eq('activo', true).eq('curso_id', cursoId),
@@ -1272,7 +1273,7 @@ export function useSupabaseData(skipInit = false) {
             await fetchPromise;
         } finally {
             delete cursoPromises[cursoId];
-            setLoading(false);
+            if (!skipInit) setLoading(false);
             console.log(`[DIAG][CURSO] end cursoId=${cursoId} ts=${new Date().toISOString()}`);
         }
     }, [session, loadedCursos, addLoadedCurso, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);

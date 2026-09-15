@@ -36,6 +36,7 @@ interface ExtractedActivity {
     competencias: BCKey[];
     indicador_logro: string;
     producto: string;
+    descripcion?: string;
     selected: boolean;
 }
 
@@ -172,7 +173,8 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
 Reglas:
 - Conserva exactamente el nombre, título o numeración (ej. Actividad 1.1) cuando exista.
 - Identifica actividades aunque se llamen "Ejercicio", "Tarea", "Parte I" o sean solo instrucciones.
-- Infiere indicador_logro, producto, y competencias.
+- Infiere descripcion, indicador_logro, producto, y competencias.
+- La "descripcion" debe ser breve y explicar claramente en qué consiste la actividad o qué acción principal realizará el estudiante.
 - Utiliza ÚNICAMENTE estas competencias: "Comunicativa", "Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas", "Científica y Tecnológica; y Ambiental y de la Salud", "Ética y Ciudadana; y Desarrollo Personal y Espiritual".
 - Devuelve ÚNICAMENTE el objeto JSON, sin explicaciones ni markdown.
 
@@ -181,6 +183,7 @@ Estructura obligatoria:
   "actividades": [
     {
       "nombre": "string",
+      "descripcion": "string",
       "indicador_logro": "string",
       "competencias": ["string"],
       "producto": "string"
@@ -232,6 +235,7 @@ Estructura obligatoria:
                 const mappedBcs = Array.isArray(act.competencias) ? act.competencias.map(mapCompetenciaToCode).filter((c: any) => c !== null) : [];
                 return {
                     nombre: act.nombre || 'Actividad',
+                    descripcion: act.descripcion || '',
                     indicador_logro: act.indicador_logro || '',
                     competencias: mappedBcs,
                     producto: act.producto || '',
@@ -303,7 +307,8 @@ Estructura obligatoria:
 Reglas:
 - Conserva exactamente el nombre, título o numeración (ej. Actividad 1.1) cuando exista.
 - Identifica actividades aunque se llamen "Ejercicio", "Tarea", "Parte I" o sean solo instrucciones.
-- Infiere indicador_logro, producto, y competencias.
+- Infiere descripcion, indicador_logro, producto, y competencias.
+- La "descripcion" debe ser breve y explicar claramente en qué consiste la actividad o qué acción principal realizará el estudiante.
 - Utiliza ÚNICAMENTE estas competencias: "Comunicativa", "Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas", "Científica y Tecnológica; y Ambiental y de la Salud", "Ética y Ciudadana; y Desarrollo Personal y Espiritual".
 - Devuelve ÚNICAMENTE el objeto JSON, sin explicaciones ni markdown.
 
@@ -312,6 +317,7 @@ Estructura obligatoria:
   "actividades": [
     {
       "nombre": "string",
+      "descripcion": "string",
       "indicador_logro": "string",
       "competencias": ["string"],
       "producto": "string"
@@ -334,6 +340,7 @@ Estructura obligatoria:
                                     type: 'OBJECT',
                                     properties: {
                                         nombre: { type: 'STRING' },
+                                        descripcion: { type: 'STRING' },
                                         indicador_logro: { type: 'STRING' },
                                         competencias: { 
                                             type: 'ARRAY', 
@@ -341,7 +348,7 @@ Estructura obligatoria:
                                         },
                                         producto: { type: 'STRING' }
                                     },
-                                    required: ['nombre', 'indicador_logro', 'competencias', 'producto']
+                                    required: ['nombre', 'descripcion', 'indicador_logro', 'competencias', 'producto']
                                 }
                             }
                         },
@@ -376,6 +383,7 @@ Estructura obligatoria:
                     const mappedBcs = act.competencias.map(mapCompetenciaToCode).filter((c: any) => c !== null);
                     return {
                         nombre: act.nombre || 'Actividad',
+                        descripcion: act.descripcion || '',
                         competencias: mappedBcs,
                         indicador_logro: act.indicador_logro || '',
                         producto: act.producto || '',
@@ -539,6 +547,7 @@ ${pastedText}`;
                     sharedCourseId: curso?.sharedCourseId,
                     indicador: act.indicador_logro,
                     producto: act.producto || undefined,
+                    descripcion: act.descripcion || null,
                     userId: currentUserId,
                     asignatura: docenteAsignatura
                 });
@@ -989,6 +998,7 @@ ${pastedText}`;
                                                 />
                                             </th>
                                             <th className="p-4 min-w-56">Actividad</th>
+                                            <th className="p-4 min-w-64">Descripción</th>
                                             <th className="p-4 min-w-64">Competencias</th>
                                             <th className="p-4 min-w-72">Indicador de logro</th>
                                             <th className="p-4 min-w-72">Producto</th>
@@ -1013,6 +1023,18 @@ ${pastedText}`;
                                                         value={act.nombre}
                                                         onChange={e => updateActivityField(idx, 'nombre', e.target.value)}
                                                     />
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="relative group">
+                                                        <textarea 
+                                                            rows={2}
+                                                            className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-primary py-1 font-medium text-slate-500 outline-none transition-colors resize-none leading-relaxed scrollbar-hide line-clamp-2"
+                                                            value={act.descripcion || ''}
+                                                            placeholder="No especificada"
+                                                            onChange={e => updateActivityField(idx, 'descripcion', e.target.value)}
+                                                            title={act.descripcion || ''}
+                                                        />
+                                                    </div>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex flex-col gap-1.5">

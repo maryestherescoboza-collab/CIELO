@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, CheckCircle, X, ClipboardCheck, BookMarked, Loader2, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle, X, ClipboardCheck, BookMarked, Loader2, ChevronRight, ChevronLeft, Sparkles, RefreshCw } from 'lucide-react';
 import type { AppState, CriterioCotejo, EvaluacionCotejo, CursoDocente } from '../types';
 import { getAsignaturaNombre } from '../constants/asignaturas';
 import { CieloPill } from '../components/ui/CieloPill';
@@ -453,28 +453,28 @@ export default function Cotejo({
 
                     {!isSidebarCollapsed ? (
                         <div className="flex flex-col h-full overflow-y-auto relative z-10">
-                            <div className="p-5 border-b border-slate-250 flex items-center gap-2.5">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white">
+                            <div className="p-5 border-b border-slate-100 flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                     <ClipboardCheck size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-xs font-black uppercase tracking-widest text-[#2E3330]">Instrumento</p>
-                                    <h1 className="text-lg font-black text-[#2E3330] truncate font-notion-title">Lista de Cotejo</h1>
+                                    <h1 className="text-xl font-semibold text-slate-800 truncate tracking-tight">Lista de Cotejo</h1>
+                                    <p className="text-[11px] font-medium text-slate-500">Instrumento de evaluación</p>
                                 </div>
                             </div>
 
-                            <div className="p-4 space-y-4 flex-1">
-                                <div className="space-y-4">
-                                    <div className="space-y-3">
+                            <div className="p-5 space-y-6 flex-1">
+                                <div className="space-y-5">
+                                    <div className="space-y-4">
                                         <div className="px-1">
-                                            <p className="text-xs font-black uppercase tracking-widest text-[#2E3330] mb-0.5">Contexto</p>
-                                            <p className="text-xs font-medium text-[#2E3330]/80">Configura el entorno de evaluación.</p>
+                                            <p className="text-xs font-semibold text-slate-900 mb-0.5">Contexto</p>
+                                            <p className="text-xs font-normal text-slate-900">Configura el entorno de evaluación.</p>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Curso / Grado</label>
+                                            <label className="text-[11px] font-medium text-slate-900 uppercase tracking-wider block mb-1.5 ml-1">Curso / grado</label>
                                             <select
                                                 data-guide="selector-curso"
-                                                className="w-full bg-base-creme border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none transition-colors cursor-pointer hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary shadow-sm appearance-none"
                                                 value={`${selectedCursoId}|${selectedAsignatura}`}
                                                 onChange={e => { 
                                                     const [idStr, asig] = e.target.value.split('|');
@@ -488,10 +488,10 @@ export default function Cotejo({
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Actividad</label>
+                                            <label className="text-[11px] font-medium text-slate-900 uppercase tracking-wider block mb-1.5 ml-1">Actividad</label>
                                             <select
                                                 data-guide="selector-actividad"
-                                                className="w-full bg-base-creme border border-slate-350 rounded-full px-4 py-2 text-xs font-bold text-[#2E3330] outline-none transition-all cursor-pointer focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm artisan-pill artisan-btn-white"
+                                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none transition-colors cursor-pointer hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary shadow-sm appearance-none"
                                                 value={selectedAct?.id ?? ''}
                                                 onChange={e => setSelectedActId(Number(e.target.value) || null)}
                                             >
@@ -500,8 +500,8 @@ export default function Cotejo({
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-[#2E3330] uppercase block mb-1">Periodo</label>
-                                            <div className="flex items-center gap-1 bg-white border border-slate-350 rounded-full p-1 shadow-sm" role="radiogroup" aria-label="Periodo académico">
+                                            <label className="text-[11px] font-medium text-slate-900 uppercase tracking-wider block mb-1.5 ml-1">Periodo</label>
+                                            <div className="flex items-center bg-slate-100/70 rounded-lg p-1" role="radiogroup" aria-label="Periodo académico">
                                                 {['P1', 'P2', 'P3', 'P4'].map(p => (
                                                     <button
                                                         key={p}
@@ -510,7 +510,7 @@ export default function Cotejo({
                                                         aria-checked={selectedPeriodo === p}
                                                         data-guide={`btn-periodo-${p}`}
                                                         onClick={() => { setSelectedPeriodo(p); setSelectedActId(null); setSelectedEstId(null); }}
-                                                        className={`flex-1 px-2.5 py-1.5 rounded-full text-[11px] font-black tracking-wide transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${selectedPeriodo === p ? 'bg-primary text-[#2E3330] shadow-sm' : 'bg-transparent text-[#2E3330]/60 hover:bg-[#EAE4DA] hover:text-[#2E3330]'}`}
+                                                        className={`flex-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${selectedPeriodo === p ? 'bg-white text-primary shadow-sm' : 'bg-transparent text-slate-900 hover:text-slate-900'}`}
                                                     >
                                                         {p}
                                                     </button>
@@ -519,19 +519,19 @@ export default function Cotejo({
                                         </div>
                                     </div>
 
-                                    <div className="h-px bg-slate-200" />
+                                    <div className="h-px bg-slate-100" />
 
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                         <div className="px-1 flex items-center justify-between">
-                                            <p className="text-xs font-black uppercase tracking-widest text-[#2E3330]">Plantillas</p>
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{cotejoPlantillas.length} de {LIMITE_PLANTILLAS}</span>
+                                            <p className="text-xs font-semibold text-slate-900">Plantillas</p>
+                                            <span className="text-[11px] font-medium text-slate-400">{cotejoPlantillas.length} de {LIMITE_PLANTILLAS}</span>
                                         </div>
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-2 border border-slate-350 rounded-full px-4 py-2 bg-base-creme focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm artisan-pill artisan-btn-white">
-                                                <BookMarked size={14} className="text-[#2E3330]" />
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 bg-white focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all shadow-sm">
+                                                <BookMarked size={14} className="text-slate-400" />
                                                 <select
                                                     data-guide="selector-plantilla"
-                                                    className="flex-1 bg-transparent text-xs font-bold outline-none text-[#2E3330] cursor-pointer"
+                                                    className="flex-1 bg-transparent text-sm font-medium outline-none text-slate-900 cursor-pointer appearance-none"
                                                     value={selectedPlantillaId ?? ''}
                                                     onChange={e => {
                                                         const val = e.target.value;
@@ -554,92 +554,103 @@ export default function Cotejo({
                                                         <option key={p.id} value={p.id}>{p.nombre}</option>
                                                     ))}
                                                 </select>
-                                                {selectedPlantillaId && (
-                                                    <button
-                                                        onClick={() => {
-                                                            const actual = cotejoPlantillas.find(p => p.id === selectedPlantillaId);
-                                                            if (window.confirm(`¿Eliminar la plantilla "${actual?.nombre ?? ''}"? Tus evaluaciones y calificaciones históricas NO se afectan.`) && onDeletePlantilla) {
-                                                                onDeletePlantilla(selectedPlantillaId);
-                                                                setSelectedPlantillaId(null);
-                                                                setLocalCriterios(state?.criteriosCotejo || []);
-                                                                setLocalNiveles(NIVELES);
-                                                            }
-                                                        }}
-                                                        className="p-1.5 hover:bg-red-50 rounded-lg text-red-500 transition-all ml-1 outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                                                        title="Eliminar plantilla"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                )}
                                             </div>
-                                            <button
-                                                data-guide="btn-guardar-plantilla"
-                                                onClick={async () => {
-                                                    const nombre = prompt('Nombre de la plantilla de cotejo:');
-                                                    if (nombre?.trim() && onSavePlantilla) {
-                                                        const ok = await onSavePlantilla('cotejo', nombre.trim(), { criterios: localCriterios, niveles: localNiveles });
-                                                        if (ok) {
-                                                            setSavedFlash(true);
-                                                            setTimeout(() => setSavedFlash(false), 2000);
-                                                        }
-                                                    }
-                                                }}
-                                                className="w-full bg-base-creme border border-slate-300 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:bg-slate-50 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400 shadow-sm artisan-pill artisan-btn-white"
-                                            >
-                                                Guardar como Plantilla
-                                            </button>
-                                            {selectedPlantillaId !== null && (
+
+                                            <div className="flex flex-col gap-1">
                                                 <button
+                                                    data-guide="btn-guardar-plantilla"
                                                     onClick={async () => {
-                                                        const actual = cotejoPlantillas.find(p => p.id === selectedPlantillaId);
-                                                        if (!actual || !onUpdatePlantilla) return;
-                                                        const nombre = prompt('Nuevo nombre de la plantilla:', actual.nombre);
-                                                        if (nombre === null) return;
-                                                        if (!confirm(`¿Actualizar "${actual.nombre}" con el contenido actual del editor? Las evaluaciones ya realizadas no se modifican.`)) return;
-                                                        let finalCriterios = localCriterios;
-                                                        if (onUpdateCriterios) {
-                                                            const saved = await onUpdateCriterios(localCriterios, selectedPlantillaId);
-                                                            if (saved) {
-                                                                finalCriterios = saved;
-                                                                setLocalCriterios(saved);
+                                                        const nombre = prompt('Nombre de la plantilla de cotejo:');
+                                                        if (nombre?.trim() && onSavePlantilla) {
+                                                            const ok = await onSavePlantilla('cotejo', nombre.trim(), { criterios: localCriterios, niveles: localNiveles });
+                                                            if (ok) {
+                                                                setSavedFlash(true);
+                                                                setTimeout(() => setSavedFlash(false), 2000);
                                                             }
-                                                        }
-                                                        const ok = await onUpdatePlantilla(selectedPlantillaId, {
-                                                            nombre: nombre.trim() || actual.nombre,
-                                                            datos: { criterios: finalCriterios, niveles: localNiveles },
-                                                        });
-                                                        if (ok) {
-                                                            setSavedFlash(true);
-                                                            setTimeout(() => setSavedFlash(false), 2000);
-                                                        } else {
-                                                            alert('No se pudo actualizar la plantilla.');
                                                         }
                                                     }}
-                                                    className="w-full bg-base-creme border border-primary/30 text-primary font-black uppercase tracking-wider text-[11px] py-2 rounded-full hover:bg-[#E8F0F8] transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/30 shadow-sm"
+                                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-900 hover:text-slate-900 hover:bg-slate-50 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
                                                 >
-                                                    Actualizar seleccionada
+                                                    <Save size={14} className="text-slate-400" />
+                                                    Guardar
                                                 </button>
-                                            )}
-                                            <button
-                                                data-guide="btn-generar-ia"
-                                                onClick={() => setShowGenerarModal(true)}
-                                                className="w-full bg-primary border border-primary/40 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:opacity-90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shadow-sm artisan-pill flex items-center justify-center gap-1.5"
-                                                title="Generar criterios con IA a partir del contexto del curso y la actividad"
-                                            >
-                                                <Sparkles size={13} />
-                                                Generar con IA
-                                            </button>
+
+                                                {selectedPlantillaId !== null && (
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={async () => {
+                                                                const actual = cotejoPlantillas.find(p => p.id === selectedPlantillaId);
+                                                                if (!actual || !onUpdatePlantilla) return;
+                                                                const nombre = prompt('Nuevo nombre de la plantilla:', actual.nombre);
+                                                                if (nombre === null) return;
+                                                                if (!confirm(`¿Actualizar "${actual.nombre}" con el contenido actual del editor? Las evaluaciones ya realizadas no se modifican.`)) return;
+                                                                let finalCriterios = localCriterios;
+                                                                if (onUpdateCriterios) {
+                                                                    const saved = await onUpdateCriterios(localCriterios, selectedPlantillaId);
+                                                                    if (saved) {
+                                                                        finalCriterios = saved;
+                                                                        setLocalCriterios(saved);
+                                                                    }
+                                                                }
+                                                                const ok = await onUpdatePlantilla(selectedPlantillaId, {
+                                                                    nombre: nombre.trim() || actual.nombre,
+                                                                    datos: { criterios: finalCriterios, niveles: localNiveles },
+                                                                });
+                                                                if (ok) {
+                                                                    setSavedFlash(true);
+                                                                    setTimeout(() => setSavedFlash(false), 2000);
+                                                                } else {
+                                                                    alert('No se pudo actualizar la plantilla.');
+                                                                }
+                                                            }}
+                                                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium text-slate-900 hover:text-slate-900 hover:bg-slate-50 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                                                            title="Actualizar plantilla seleccionada"
+                                                        >
+                                                            <RefreshCw size={14} className="text-slate-400" />
+                                                            Actualizar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                const actual = cotejoPlantillas.find(p => p.id === selectedPlantillaId);
+                                                                if (window.confirm(`¿Eliminar la plantilla "${actual?.nombre ?? ''}"? Tus evaluaciones y calificaciones históricas NO se afectan.`) && onDeletePlantilla) {
+                                                                    onDeletePlantilla(selectedPlantillaId);
+                                                                    setSelectedPlantillaId(null);
+                                                                    setLocalCriterios(state?.criteriosCotejo || []);
+                                                                    setLocalNiveles(NIVELES);
+                                                                }
+                                                            }}
+                                                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium text-slate-900 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                                                            title="Eliminar plantilla"
+                                                        >
+                                                            <Trash2 size={14} className="text-slate-400 group-hover:text-red-500" />
+                                                            Eliminar
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="pt-2 border-t border-slate-100">
+                                                <button
+                                                    data-guide="btn-generar-ia"
+                                                    onClick={() => setShowGenerarModal(true)}
+                                                    className="w-full bg-primary border border-primary/40 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:opacity-90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shadow-sm artisan-pill flex items-center justify-center gap-1.5"
+                                                    title="Generar criterios con IA a partir del contexto del curso y la actividad"
+                                                >
+                                                    <Sparkles size={13} />
+                                                    Generar con IA
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-5 border-t border-slate-200">
+                            <div className="p-5 border-t border-slate-100">
                                 <button
                                     onClick={() => setShowAddCrit(true)}
-                                    className="w-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 py-2.5 flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest transition-all rounded-xl"
+                                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
                                 >
-                                    <Plus size={14} />
+                                    <Plus size={14} className="text-slate-400" />
                                     Nuevo Criterio
                                 </button>
                             </div>

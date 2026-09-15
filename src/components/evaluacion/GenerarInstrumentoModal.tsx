@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Sparkles, Copy, Check, ClipboardPaste, ArrowRight } from 'lucide-react';
 import type { Actividad, CriterioCotejo } from '../../types';
 import { CieloModal } from '../ui/CieloModal';
-import { useAppStore } from '../../store/appStore';
-import { getAIAIProvider, isProviderConfigured, providerDisplayName, saveAIKey } from '../../lib/aiConfig';
 import {
-    generarRubricaConIA,
-    generarCotejoConIA,
+    generarPromptRubrica,
+    generarPromptCotejo,
     type ContextoInstrumento,
     type DescriptorGenerado,
 } from '../../lib/aiInstrumentos';
@@ -32,51 +30,34 @@ export default function GenerarInstrumentoModal({
     onAplicarRubrica,
     onAplicarCotejo,
 }: Props) {
-    const session = useAppStore(s => s.session);
-    const userId = session?.user?.id;
-
     const [selectedActivities, setSelectedActivities] = useState<number[]>([]);
     const [notas, setNotas] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
-    const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
-    const [tempApiKey, setTempApiKey] = useState('');
+    const [flowMode, setFlowMode] = useState<'select' | 'actions'>('select');
+    const [isPromptCopied, setIsPromptCopied] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setSelectedActivities([]);
             setNotas('');
-            setIsLoading(false);
             setErrorMsg(null);
-            setShowApiKeyPrompt(false);
-            setTempApiKey('');
+            setFlowMode('select');
+            setIsPromptCopied(false);
         }
     }, [isOpen]);
 
-    const handleGuardarApiKey = () => {
-        if (!tempApiKey.trim() || !userId) return;
-        saveAIKey(userId, getAIAIProvider(userId), tempApiKey);
-        setShowApiKeyPrompt(false);
-        setTempApiKey('');
-    };
-
-    const handleGenerar = async () => {
-        if (isLoading || !userId) return;
-
-        if (!isProviderConfigured(userId, getAIAIProvider(userId))) {
-            setShowApiKeyPrompt(true);
-            return;
-        }
-
-        let actividadesSeleccionadas = actividades.filter(a => selectedActivities.includes(a.id));
-        if (actividadesSeleccionadas.length === 0) {
+    const handleContinuar = () => {
+        if (selectedActivities.length === 0) {
             setErrorMsg(`Debes seleccionar al menos una actividad para generar la ${tituloTipo.toLowerCase()}.`);
             return;
         }
-
-        setIsLoading(true);
         setErrorMsg(null);
+        setFlowMode('actions');
+    };
 
+    const handleCopyPrompt = async () => {
+        let actividadesSeleccionadas = actividades.filter(a => selectedActivities.includes(a.id));
+        
         try {
             const actividadBase = actividadesSeleccionadas.length > 0 ? actividadesSeleccionadas[0] : null;
             
@@ -97,19 +78,70 @@ export default function GenerarInstrumentoModal({
                     : undefined
             };
 
-            if (tipo === 'rubrica') {
-                const descriptores = await generarRubricaConIA(userId, contexto);
-                onAplicarRubrica?.(descriptores);
+            const prompt = tipo === 'rubrica' 
+                ? generarPromptRubrica(contexto)
+                : generarPromptCotejo(contexto);
+
+            await navigator.clipboard.writeText(prompt);
+            setIsPromptCopied(true);
+            setTimeout(() => setIsPromptCopied(false), 2500);
+            setErrorMsg(null);
+        } catch (error) {
+            setErrorMsg(error instanceof Error ? error.message : 'Error al generar el prompt.');
+        }
+    };
+
+    const handlePasteResponse = async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            let parsed;
+            
+            const match = text.match(/```(?:json)?\n([\s\S]*?)\n```/);
+            if (match) {
+                try {
+                    parsed = JSON.parse(match[1]);
+                } catch(e) {
+                    throw new Error('El JSON devuelto por la IA tiene un formato inválido.');
+                }
             } else {
-                const criterios = await generarCotejoConIA(userId, contexto);
+                try {
+                    parsed = JSON.parse(text);
+                } catch(e) {
+                    throw new Error('No se encontró un bloque JSON válido en la respuesta. Recuerda copiar toda la respuesta de la IA que incluya el bloque ```json.');
+                }
+            }
+
+            if (tipo === 'rubrica') {
+                const descriptores = parsed.descriptores || parsed;
+                if (!Array.isArray(descriptores)) throw new Error('El JSON no contiene el array "descriptores".');
+                
+                const validos = descriptores.filter((d: any) =>
+                    d.bc && ['BC1', 'BC2', 'BC3', 'BC4'].includes(d.bc) && d.estrategico
+                );
+                if (validos.length === 0) throw new Error('No se encontraron descriptores válidos en la respuesta.');
+                
+                onAplicarRubrica?.(validos);
+            } else {
+                const criteriosRaw = parsed.criterios || parsed;
+                if (!Array.isArray(criteriosRaw)) throw new Error('El JSON no contiene el array "criterios".');
+                
+                const base = Date.now();
+                const criterios = criteriosRaw
+                    .filter((c: any) => c.titulo?.trim())
+                    .map((c: any, i: number) => ({
+                        id: base + i,
+                        titulo: c.titulo.trim(),
+                        descripcion: c.descripcion?.trim() || ''
+                    }));
+                
+                if (criterios.length === 0) throw new Error('No se encontraron criterios válidos en la respuesta.');
+                
                 onAplicarCotejo?.(criterios);
             }
+            
             onClose();
         } catch (error) {
-            console.error('Error generating instrument:', error);
-            setErrorMsg(error instanceof Error ? error.message : 'Error inesperado al generar con IA. Intente de nuevo.');
-        } finally {
-            setIsLoading(false);
+            setErrorMsg((error as Error).message);
         }
     };
 
@@ -124,75 +156,38 @@ export default function GenerarInstrumentoModal({
             icon={<Sparkles size={20} />}
             maxWidth="lg"
             footer={
-                <div className="flex items-center justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        disabled={isLoading}
-                        className="px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        data-guide="btn-generar-ia-modal"
-                        onClick={() => (showApiKeyPrompt ? handleGuardarApiKey() : handleGenerar())}
-                        disabled={isLoading || (showApiKeyPrompt && !tempApiKey.trim())}
-                        className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 ${(isLoading || (showApiKeyPrompt && !tempApiKey.trim())) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        {isLoading ? (
-                            <>
-                                <Loader2 size={14} className="animate-spin" />
-                                Generando...
-                            </>
-                        ) : showApiKeyPrompt ? (
-                            'Guardar API Key'
-                        ) : (
-                            <>
-                                <Sparkles size={14} />
-                                Generar
-                            </>
-                        )}
-                    </button>
+                <div className="flex items-center justify-between w-full">
+                    {flowMode === 'actions' ? (
+                        <button
+                            onClick={() => setFlowMode('select')}
+                            className="px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                        >
+                            Volver
+                        </button>
+                    ) : (
+                        <button
+                            onClick={onClose}
+                            className="px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                        >
+                            Cancelar
+                        </button>
+                    )}
+                    
+                    {flowMode === 'select' && (
+                        <button
+                            onClick={handleContinuar}
+                            className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2`}
+                        >
+                            Continuar <ArrowRight size={14} />
+                        </button>
+                    )}
                 </div>
             }
         >
-            {showApiKeyPrompt ? (
-                <div className="py-4 space-y-6">
-                    <div className="text-center space-y-2">
-                        <h3 className="text-sm font-bold text-slate-900">Necesitamos tu API Key de {providerDisplayName(getAIAIProvider(userId))}</h3>
-                        <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                            La clave será utilizada para generar los instrumentos de evaluación de forma automática.
-                        </p>
-                    </div>
-
-                    <div className="flex justify-center">
-                        <a
-                            href={getAIAIProvider(userId) === 'openai' ? 'https://platform.openai.com/api-keys' : 'https://aistudio.google.com/app/api-keys?project=gen-lang-client-0626735374'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs font-bold text-primary hover:underline flex items-center gap-1.5"
-                        >
-                            {getAIAIProvider(userId) === 'openai' ? 'Obtener API Key de OpenAI ↗' : 'Obtener API Key de Google AI Studio ↗'}
-                        </a>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="notion-label">API Key</label>
-                        <div className="search-container h-12! rounded-xl!">
-                            <input
-                                type="password"
-                                className="text-base font-medium w-full bg-transparent outline-none"
-                                placeholder={`Ingresa tu clave de ${providerDisplayName(getAIAIProvider(userId))}...`}
-                                value={tempApiKey}
-                                onChange={e => setTempApiKey(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                </div>
-            ) : (
+            {flowMode === 'select' && (
                 <div className="py-2 space-y-5">
                     <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                        La IA generará una propuesta de {tituloTipo.toLowerCase()} a partir del contexto del curso.
-                        Podrás revisarla y editarla en el instrumento antes de guardar.
+                        Selecciona el contexto curricular. Luego podrás copiar un prompt optimizado para que tu IA preferida te asista construyendo la {tituloTipo.toLowerCase()}.
                     </p>
 
                     <div className="space-y-1.5">
@@ -214,7 +209,7 @@ export default function GenerarInstrumentoModal({
                             </span>
                         </div>
                         <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                            Selecciona de 1 a 5 actividades. La IA analizará los indicadores de todas ellas para crear una {tituloTipo.toLowerCase()} más completa y coherente.
+                            Selecciona de 1 a 5 actividades. La IA analizará los indicadores para proponer un instrumento coherente.
                         </p>
                         <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar mt-2">
                             {actividades.map(a => {
@@ -246,7 +241,7 @@ export default function GenerarInstrumentoModal({
                                         <div className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                                             isSelected ? 'border-primary bg-primary text-white' : 'border-slate-300'
                                         }`}>
-                                            {isSelected && <Sparkles size={10} />}
+                                            {isSelected && <Check size={10} strokeWidth={3} />}
                                         </div>
                                     </button>
                                 );
@@ -259,7 +254,7 @@ export default function GenerarInstrumentoModal({
                         <textarea
                             rows={3}
                             className="w-full bg-base-creme border border-slate-350 rounded-xl px-4 py-3 text-sm font-medium text-[#2E3330] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none placeholder:text-slate-400 placeholder:font-normal"
-                            placeholder="Ej.: Enfocarse en el trabajo colaborativo y la presentación de resultados..."
+                            placeholder="Ej.: Enfocarse en el trabajo colaborativo..."
                             value={notas}
                             onChange={e => setNotas(e.target.value)}
                         />
@@ -270,6 +265,50 @@ export default function GenerarInstrumentoModal({
                             {errorMsg}
                         </div>
                     )}
+                </div>
+            )}
+
+            {flowMode === 'actions' && (
+                <div className="py-2 space-y-6">
+                    {errorMsg && (
+                        <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider rounded-xl">
+                            {errorMsg}
+                        </div>
+                    )}
+                    
+                    <div className="space-y-4">
+                        <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl relative">
+                            <div className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 font-bold text-xs shadow-sm">1</div>
+                            <h4 className="text-sm font-bold text-slate-800 mb-1.5">Generar Instrucción</h4>
+                            <p className="text-xs text-slate-500 font-medium mb-4">
+                                Copia el prompt preparado por CIELO con el contexto de las actividades seleccionadas y pégalo en tu IA preferida.
+                            </p>
+                            <button 
+                                className="w-full h-11 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+                                onClick={handleCopyPrompt}
+                            >
+                                {isPromptCopied ? (
+                                    <><Check size={16} className="text-emerald-500" /> Prompt copiado</>
+                                ) : (
+                                    <><Copy size={16} className="text-slate-400" /> Copiar prompt</>
+                                )}
+                            </button>
+                        </div>
+                        
+                        <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl relative">
+                            <div className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 font-bold text-xs shadow-sm">2</div>
+                            <h4 className="text-sm font-bold text-slate-800 mb-1.5">Importar Resultado</h4>
+                            <p className="text-xs text-slate-500 font-medium mb-4">
+                                Copia toda la respuesta que te devuelva la IA y pégala aquí para incorporarla a CIELO.
+                            </p>
+                            <button 
+                                className="w-full h-11 rounded-full text-xs font-bold uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                onClick={handlePasteResponse}
+                            >
+                                <ClipboardPaste size={16} /> Pegar respuesta de IA
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </CieloModal>

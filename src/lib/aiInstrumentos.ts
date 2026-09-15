@@ -2,8 +2,7 @@
 // Sigue las convenciones de NewActivityModal: Gemini + responseSchema estricto,
 // mensajes de error en español y clave nunca expuesta en logs.
 
-import { callAI } from './aiProvider';
-import type { CriterioCotejo, NivelPuntaje } from '../types';
+import type { NivelPuntaje } from '../types';
 
 export type BCKey = 'BC1' | 'BC2' | 'BC3' | 'BC4';
 
@@ -44,13 +43,7 @@ export const NIVELES_RUBRICAS_DEFAULT: NivelPuntaje[] = [
     { nivel: 1, puntaje: 55, nombre: 'Receptivo', color: '#EB8847', description: 'Requiere apoyo continuo para comprender tareas y alcanzar los objetivos.' },
 ];
 
-async function callInstrumentoIA<T>(userId: string, prompt: string, responseSchema: Record<string, unknown>): Promise<T> {
-    return callAI<T>({
-        userId,
-        prompt,
-        geminiResponseSchema: responseSchema
-    });
-}
+
 
 function construirContexto(ctx: ContextoInstrumento): string {
     const lineas = [
@@ -84,17 +77,14 @@ function validarContextoBasico(ctx: ContextoInstrumento): void {
     }
 }
 
-export async function generarRubricaConIA(
-    userId: string,
-    ctx: ContextoInstrumento,
-): Promise<DescriptorGenerado[]> {
+export function generarPromptRubrica(ctx: ContextoInstrumento): string {
     validarContextoBasico(ctx);
 
     const competenciasCtx = Object.entries(COMPETENCIAS_OFICIALES)
         .map(([codigo, nombre]) => `${codigo}: ${nombre}`)
         .join('\n   ');
 
-    const prompt = `Eres un experto en evaluación formativa por competencias (modelo chileno de Evaluación Procesual por Estándares, EPES). Redacta los descriptores de una rúbrica analítica para evaluar una actividad escolar.
+    return `Eres un experto en evaluación formativa por competencias (modelo chileno de Evaluación Procesual por Estándares, EPES). Redacta los descriptores de una rúbrica analítica para evaluar una actividad escolar.
 
 CONTEXTO:
 ${construirContexto(ctx)}
@@ -105,100 +95,51 @@ COMPETENCIAS BÁSICAS COMUNALES (BC):
 NIVELES DE LOGRO (de mayor a menor):
 ${NIVELES_RUBRICAS.map(n => `   - ${n.nombre}: ${n.descripcion}`).join('\n')}
 
-INSTRUCCIONES:
-1. Para cada competencia devuelve un objeto con su código "bc" exacto.
-2. Cada descriptor debe ser un comportamiento OBSERVABLE del estudiante en esa actividad, redactado en tercera persona, presente del indicativo (ej. "Expresa sus ideas...", "Registra datos...").
-3. Los descriptores de un mismo bc deben mostrar una progresión clara entre niveles: Estratégico supera lo esperado, Autónomo cumple lo esperado de forma independiente, Resolutivo cumple parcialmente con apoyo puntual, Receptivo está en desarrollo y requiere apoyo constante.
-4. Usa entre 1 y 2 oraciones cortas por celda. Sin viñetas, sin markdown, sin HTML, sin comillas tipográficas.
-5. Concéntrate en desempeños directamente relacionados con la actividad y la asignatura indicadas. No inventes contenidos de otras asignaturas.
-6. Si el contexto declara competencias asignadas ("bcAsignados"), enfatiza esas competencias con descriptores más específicos; el resto debe mantenerse coherente pero más general.
-7. Español de Chile neutro, registro formal pedagógico.
+INSTRUCCIONES DE ANÁLISIS:
+Analiza qué se pretende evaluar, qué evidencias son observables en estas actividades y si pueden unificarse. Identifica los aspectos críticos de desempeño antes de construir la rúbrica. Razona sobre qué elementos deben evaluarse en cada nivel.
+Cada descriptor debe ser un comportamiento OBSERVABLE del estudiante, redactado en tercera persona, presente del indicativo.
+Los descriptores de un mismo bc deben mostrar una progresión clara entre niveles: Estratégico supera lo esperado, Autónomo cumple lo esperado de forma independiente, Resolutivo cumple parcialmente con apoyo puntual, Receptivo está en desarrollo y requiere apoyo constante.
+Si el contexto declara competencias asignadas ("bcAsignados"), enfatiza esas competencias con descriptores más específicos.
 
-Devuelve JSON exactamente con este esquema.`;
-
-    const data = await callInstrumentoIA<{ descriptores: DescriptorGenerado[] }>(userId, prompt, {
-        type: 'OBJECT',
-        properties: {
-            descriptores: {
-                type: 'ARRAY',
-                items: {
-                    type: 'OBJECT',
-                    properties: {
-                        bc: { type: 'STRING', enum: ['BC1', 'BC2', 'BC3', 'BC4'] },
-                        estrategico: { type: 'STRING' },
-                        autonomo: { type: 'STRING' },
-                        resolutivo: { type: 'STRING' },
-                        receptivo: { type: 'STRING' }
-                    },
-                    required: ['bc', 'estrategico', 'autonomo', 'resolutivo', 'receptivo']
-                }
-            }
-        },
-        required: ['descriptores']
-    });
-
-    const validos = (data.descriptores || []).filter(d =>
-        d.bc && ['BC1', 'BC2', 'BC3', 'BC4'].includes(d.bc)
-    );
-
-    if (validos.length === 0) {
-        throw new Error('La IA no generó descriptores utilizables. Intenta agregar más detalles al contexto.');
+INSTRUCCIONES DE SALIDA:
+1. Redacta libremente tu análisis pedagógico y fundamenta tu propuesta.
+2. Al FINAL de tu respuesta, incluye ESTRICTAMENTE un único bloque \`\`\`json con la rúbrica estructurada.
+3. El JSON debe tener esta estructura exacta:
+{
+  "descriptores": [
+    {
+      "bc": "BC1", // (Solo usar: BC1, BC2, BC3 o BC4)
+      "estrategico": "Descripción observable...",
+      "autonomo": "Descripción observable...",
+      "resolutivo": "Descripción observable...",
+      "receptivo": "Descripción observable..."
     }
-
-    return validos;
+  ]
+}`;
 }
 
-export async function generarCotejoConIA(
-    userId: string,
-    ctx: ContextoInstrumento,
-): Promise<CriterioCotejo[]> {
+
+export function generarPromptCotejo(ctx: ContextoInstrumento): string {
     validarContextoBasico(ctx);
 
-    const prompt = `Eres un experto en evaluación formativa escolar. Genera los criterios de una Lista de Cotejo (checklist de verificación binaria: Logrado / No cumple) para evaluar una actividad escolar.
+    return `Eres un experto en evaluación formativa escolar. Genera los criterios de una Lista de Cotejo (checklist de verificación binaria: Logrado / No cumple) para evaluar una actividad escolar.
 
 CONTEXTO:
 ${construirContexto(ctx)}
 
-INSTRUCCIONES:
-1. Genera entre 6 y 10 criterios verificables mediante observación directa: cada criterio debe poder marcarse como "Logrado" o "No cumple" sin ambigüedad ni grados intermedios.
-2. "titulo": frase corta (máximo 8 palabras) que nombre el criterio. Empieza con sustantivo o verbo en infinitivo (ej. "Presentación oral del tema").
-3. "descripcion": una oración que precise qué debe observarse para marcar Logrado (comportamiento o producto observable y medible).
-4. Todos los criterios deben estar directamente relacionados con la actividad, la asignatura y el nivel escolar indicados.
-5. Ordena los criterios siguiendo la secuencia lógica de ejecución de la actividad.
-6. Sin viñetas, sin markdown, sin HTML. Español de Chile neutro, registro formal pedagógico.
+INSTRUCCIONES DE ANÁLISIS:
+Analiza los indicadores y determina qué acciones o características del producto son verdaderamente observables de forma binaria (Logrado/No Cumple). Descarta criterios ambiguos o redundantes. Razona sobre por qué seleccionaste esos criterios (genera entre 6 y 10). Ordena los criterios siguiendo la secuencia lógica de ejecución de la actividad.
 
-Devuelve JSON exactamente con este esquema.`;
-
-    const data = await callInstrumentoIA<{ criterios: Array<{ titulo: string; descripcion: string }> }>(userId, prompt, {
-        type: 'OBJECT',
-        properties: {
-            criterios: {
-                type: 'ARRAY',
-                items: {
-                    type: 'OBJECT',
-                    properties: {
-                        titulo: { type: 'STRING' },
-                        descripcion: { type: 'STRING' }
-                    },
-                    required: ['titulo', 'descripcion']
-                }
-            }
-        },
-        required: ['criterios']
-    });
-
-    const base = Date.now();
-    const criterios = (data.criterios || [])
-        .filter(c => c.titulo?.trim())
-        .map((c, i) => ({
-            id: base + i,
-            titulo: c.titulo.trim(),
-            descripcion: c.descripcion?.trim() || ''
-        }));
-
-    if (criterios.length === 0) {
-        throw new Error('La IA no generó criterios utilizables. Intenta agregar más detalles al contexto.');
+INSTRUCCIONES DE SALIDA:
+1. Redacta libremente tu análisis pedagógico y fundamenta tu propuesta.
+2. Al FINAL de tu respuesta, incluye ESTRICTAMENTE un único bloque \`\`\`json con la lista de cotejo estructurada.
+3. El JSON debe tener esta estructura exacta:
+{
+  "criterios": [
+    {
+      "titulo": "Frase corta (máx 8 palabras)",
+      "descripcion": "Comportamiento o producto observable y medible para marcar Logrado"
     }
-
-    return criterios;
+  ]
+}`;
 }
