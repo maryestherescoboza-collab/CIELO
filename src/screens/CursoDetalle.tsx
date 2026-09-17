@@ -21,7 +21,7 @@ interface Props {
     cursoId?: number;
     currentUserId?: string;
     onSaveCurso?: (c: Curso) => void;
-    onAddEstudiante?: (cursoId: number, nombre: string, apellido: string) => Promise<any>;
+    onAddEstudiante?: (cursoId: number, nombre: string, apellido: string, numeroLista?: number) => Promise<any>;
     onUpdateEstudiante?: (id: number, e: Partial<Estudiante>) => void;
     onDeleteEstudiante?: (id: number) => Promise<any>;
     onAddActividad?: (a: Omit<Actividad, 'id'>) => Promise<any>;
@@ -258,6 +258,7 @@ export default function CursoDetalle(props: Props) {
             <GradeTable 
                 actividades={actividades}
                 estudiantes={enhancedEstudiantes}
+                estudiantesRealesCurso={state.estudiantes.filter(e => Number(e.cursoId) === cursoId)}
                 bcSel={bcSel}
                 isDragging={isDragging}
                 evalMode={evalMode}
@@ -274,7 +275,7 @@ export default function CursoDetalle(props: Props) {
                 onUpdateEstudiante={(id, est) => props.onUpdateEstudiante?.(id, est)}
                 onDeleteActividad={(actId) => props.onDeleteActividad?.(actId)}
                 onToggleBc={onToggleBc}
-                onAddEstudiante={(nombre = 'Nuevo', apellido = 'Estudiante') => props.onAddEstudiante?.(cursoId, nombre, apellido)}
+                onAddEstudiante={(nombre = 'Nuevo', apellido = 'Estudiante', numeroLista) => props.onAddEstudiante?.(cursoId, nombre, apellido, numeroLista)}
                 onDeleteEstudiante={(id) => props.onDeleteEstudiante?.(id)}
                 onSetRubricTarget={setRubricTarget}
                 getGradeClass={getGradeClass}

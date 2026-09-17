@@ -1,5 +1,6 @@
 import React from 'react';
-import { Plus, EyeOff, Target } from 'lucide-react';
+import { Plus, EyeOff, Target, ClipboardList } from 'lucide-react';
+import PegarListadoModal from './PegarListadoModal';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import GradeCell from './GradeCell';
 import ActivityViewTab from './workspace/ActivityViewTab';
@@ -12,6 +13,7 @@ import { getCompetenciaDisplay } from '../../types';
 interface GradeTableProps {
     actividades: Actividad[];
     estudiantes: any[];
+    estudiantesRealesCurso: any[];
     bcSel: Record<number, Set<BCKey>>;
     isDragging: boolean;
     evalMode: string;
@@ -25,7 +27,7 @@ interface GradeTableProps {
     onUpdateEstudiante: (id: number, est: any) => void;
     onDeleteActividad: (id: number) => void;
     onToggleBc: (actId: number, bc: BCKey) => void;
-    onAddEstudiante: (nombre?: string, apellido?: string) => void;
+    onAddEstudiante: (nombre?: string, apellido?: string, numeroLista?: number) => Promise<any> | void;
     onDeleteEstudiante?: (id: number) => void;
     onSetRubricTarget: (target: any) => void;
     getGradeClass: (score: number | null) => string;
@@ -38,6 +40,7 @@ interface GradeTableProps {
 const GradeTable: React.FC<GradeTableProps> = ({
     actividades,
     estudiantes,
+    estudiantesRealesCurso,
     bcSel,
     isDragging,
     evalMode,
@@ -62,6 +65,107 @@ const GradeTable: React.FC<GradeTableProps> = ({
 }) => {
     void onAddActividad;
     const parentRef = React.useRef<HTMLDivElement>(null);
+
+    // Estado para el modal de "Pegar listado" (solo edita nombre/apellido)
+    const [showPegarListado, setShowPegarListado] = React.useState(false);
+
+    // Fuente de verdad para saber si una posición tiene estudiante REAL activo:
+    // curso actual + numero_lista. Los arrays visuales (con IDs negativos /
+    // isPlaceholder) NUNCA deciden si existe un estudiante.
+    const realesPorNumero = React.useMemo(() => {
+        const m = new Map<number, any>();
+        for (const e of estudiantesRealesCurso) {
+            if ((e.id ?? 0) > 0 && typeof e.numeroLista === 'number' && !m.has(e.numeroLista)) {
+                m.set(e.numeroLista, e);
+            }
+        }
+        return m;
+    }, [estudiantesRealesCurso]);
+
+    // Refs "frescos" para el handler global de pegado: el listener se registra una
+    // sola vez y aquí se leen SIEMPRE los valores más recientes (lista, callbacks
+    // de persistencia y fila enfocada) sin depender de cierres obsoletos.
+    const displayEstudiantesRef = React.useRef(estudiantes);
+    displayEstudiantesRef.current = estudiantes;
+    const onUpdateEstudianteRef = React.useRef(onUpdateEstudiante);
+    onUpdateEstudianteRef.current = onUpdateEstudiante;
+    const onAddEstudianteRef = React.useRef(onAddEstudiante);
+    onAddEstudianteRef.current = onAddEstudiante;
+    const realesPorNumeroRef = React.useRef(realesPorNumero);
+    realesPorNumeroRef.current = realesPorNumero;
+    const focusedRowIndexRef = React.useRef<number | null>(null);
+
+    React.useEffect(() => {
+        const handleStudentPaste = async (e: ClipboardEvent) => {
+            const activeEl = document.activeElement;
+            // Ignorar si el usuario está pegando explícitamente en otro campo de texto (ej. nombre de actividad)
+            if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                if (activeEl.getAttribute('data-guide') !== 'celda-estudiante') {
+                    return;
+                }
+            }
+
+            const text = e.clipboardData?.getData('text/plain') || e.clipboardData?.getData('text');
+            if (!text) return;
+
+            // Permite pegar aunque sea una sola línea ("Ana Pérez")
+            e.preventDefault();
+
+            // Cada línea (tolerando \n y \r\n) es una fila. Solo se recortan los
+            // espacios del inicio/final; el contenido interno del nombre no se altera.
+            const rows = text.split(/\r?\n/).map(r => r.trim()).filter(r => r.length > 0);
+            if (rows.length === 0) return;
+
+            // Si la primera fila parece cabecera, se omite solo cuando hay más filas
+            let rowsOffset = 0;
+            const firstLower = rows[0].toLowerCase();
+            if (rows.length > 1 && (firstLower.includes('nombre') || firstLower.includes('apellido') || firstLower.includes('estudiante'))) {
+                rowsOffset = 1;
+            }
+            const names = rows.slice(rowsOffset);
+            if (names.length === 0) return;
+
+            // El portapapeles es la fuente de verdad: se conserva el orden exacto.
+            // La fila inicial es la que estaba enfocada; si no hay ninguna, desde la 1.
+            // Las posiciones son numero_lista reales: si la posición ya tiene un
+            // estudiante real se actualiza nombre/apellido; si está vacía se crea.
+            const currentList = displayEstudiantesRef.current;
+            const startIdx = Math.max(0, focusedRowIndexRef.current ?? 0);
+            const startRow = currentList[startIdx]?.numeroLista ?? 1;
+            const reales = realesPorNumeroRef.current;
+            let applied = 0;
+
+            for (let i = 0; i < names.length; i++) {
+                // Solo el primer campo (tolera tabulaciones) y se eliminan prefijos
+                // de numeración del portapapeles ("1. Ana Pérez" → "Ana Pérez").
+                const cell = names[i].split('\t')[0].replace(/^\s*(?:\d{1,3})\s*[.)]\s*/, '').trim();
+                if (!cell) continue;
+
+                const parts = cell.split(' ');
+                const nombre = parts[0] || '';
+                const apellido = parts.slice(1).join(' ') || '';
+
+                const targetNumero = startRow + i;
+                const real = reales.get(targetNumero);
+
+                if (real) {
+                    // Estudiante REAL en la posición → editar SOLO nombre/apellido
+                    // usando su id real (nunca numero_lista como clave).
+                    onUpdateEstudianteRef.current(real.id, { nombre, apellido });
+                    applied++;
+                } else {
+                    // Posición vacía (hueco legacy / liberada) → crear estudiante REAL
+                    // en ese numero_lista con el flujo oficial.
+                    const creado = await onAddEstudianteRef.current(nombre, apellido, targetNumero);
+                    if (creado) applied++;
+                }
+            }
+        };
+
+        document.addEventListener('paste', handleStudentPaste);
+        return () => document.removeEventListener('paste', handleStudentPaste);
+        // El listener se registra una vez; los valores frescos se leen vía refs.
+    }, []);
 
     // [VISUAL] Número de actividades que evalúan cada competencia. Se usa solo
     // para mostrar el aporte relativo (100 / n) de cada actividad por competencia.
@@ -115,9 +219,12 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             
                             if (col.type === 'estudiantes') {
                                 return (
-                                    <div key={col.id} className="sticky left-0 z-50 bg-(--background) px-6 py-5 text-left border-r border-(--border-soft) flex items-center justify-between box-border" style={style}>
+                                    <div key={col.id} className="sticky left-0 z-50 bg-(--background) px-6 py-5 text-left border-r border-(--border-soft) flex flex-col items-start justify-center gap-3 box-border" style={style}>
                                         <span className="text-sm font-black uppercase tracking-[0.2em] italic text-[#2E3330]">Estudiantes</span>
-                                        <button data-guide="btn-agregar-estudiante" onClick={() => onAddEstudiante()} className="w-8 h-8 flex items-center justify-center hover:bg-base-creme rounded-full transition-all text-[#5F665E] hover:text-[#2E3330] border border-transparent hover:border-(--border-soft)"><Plus size={18} /></button>
+                                        <div className="flex flex-col items-start gap-1.5">
+                                            <button data-guide="btn-agregar-estudiante" onClick={() => onAddEstudiante()} className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all"><Plus size={14} strokeWidth={2.6} />Agregar estudiante</button>
+                                            <button data-guide="btn-pegar-listado" onClick={() => setShowPegarListado(true)} className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all"><ClipboardList size={14} strokeWidth={2.6} />Pegar listado</button>
+                                        </div>
                                     </div>
                                 );
                             }
@@ -246,40 +353,36 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                             return (
                                                 <div key={col.id} className="sticky left-0 z-20 bg-inherit px-6 py-3 border-r border-(--border-soft) font-semibold text-[#2E3330] flex items-center box-border" style={style}>
                                                     <div className="flex items-center gap-3 w-full">
-                                                        <span className="text-xs font-black text-[#5F665E]/40 w-4 shrink-0">{est.numeroLista || eIdx + 1}</span>
+                                                        <span className="text-xs font-black text-[#5F665E]/40 w-4 shrink-0">{eIdx + 1}</span>
                                                         <div className="flex flex-col overflow-hidden w-full">
                                                             <input 
+                                                                key={`${est.id}-${est.displayName}`}
                                                                 data-guide="celda-estudiante"
                                                                 defaultValue={est.displayName}
-                                                                onPaste={(e) => {
-                                                                    const text = e.clipboardData.getData('text');
-                                                                    if (!text.includes('\n') && !text.includes('\t')) return;
-                                                                    
-                                                                    e.preventDefault();
-                                                                    const rows = text.split(/\r?\n/).map(r => r.trim()).filter(r => r);
-                                                                    
-                                                                    rows.forEach((row, i) => {
-                                                                        const cleanRow = row.split('\t')[0].trim();
-                                                                        if (!cleanRow) return;
-                                                                        const parts = cleanRow.split(' ');
-                                                                        const nombre = parts[0] || '';
-                                                                        const apellido = parts.slice(1).join(' ') || '';
-                                                                        
-                                                                        if (i === 0) {
-                                                                            onUpdateEstudiante(est.id, { nombre, apellido });
-                                                                            e.currentTarget.value = `${nombre} ${apellido}`.trim();
-                                                                        } else {
-                                                                            onAddEstudiante(nombre, apellido);
-                                                                        }
-                                                                    });
-                                                                }}
+                                                                placeholder={est.isPlaceholder ? 'Posición vacía…' : undefined}
+                                                                onFocus={() => { focusedRowIndexRef.current = eIdx; }}
                                                                 onBlur={(e) => {
                                                                     const val = e.target.value.trim();
                                                                     if (val && val !== est.displayName) {
                                                                         const parts = val.split(' ');
                                                                         const nombre = parts[0] || '';
                                                                         const apellido = parts.slice(1).join(' ') || '';
-                                                                        onUpdateEstudiante(est.id, { nombre, apellido });
+                                                                        if (est.isPlaceholder) {
+                                                                            // Posición vacía (hueco legacy / liberada). Si por algún filtro de
+                                                                            // búsqueda un estudiante real fuera invisible pero ocupara este
+                                                                            // numero_lista, se actualiza su nombre; si no, se crea REAL aquí.
+                                                                            const real = realesPorNumeroRef.current.get(est.numeroLista);
+                                                                            if (real) {
+                                                                                onUpdateEstudianteRef.current(real.id, { nombre, apellido });
+                                                                            } else {
+                                                                                onAddEstudianteRef.current(nombre, apellido, est.numeroLista);
+                                                                            }
+                                                                            // El valor se limpia: al crearse, la fila se remonta con el nombre
+                                                                            // real; si falla, la posición queda igualmente vacía.
+                                                                            e.target.value = '';
+                                                                        } else {
+                                                                            onUpdateEstudianteRef.current(est.id, { nombre, apellido });
+                                                                        }
                                                                     } else {
                                                                         e.target.value = est.displayName;
                                                                     }
@@ -291,15 +394,28 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                                         e.currentTarget.blur();
                                                                     }
                                                                 }}
-                                                                className="text-sm font-black uppercase tracking-tight truncate bg-transparent outline-none w-full hover:bg-(--background) focus:bg-white focus:ring-1 focus:ring-[rgba(46,51,48,0.15)] rounded px-1 transition-all"
+                                                                className="text-sm font-black uppercase tracking-tight truncate bg-transparent outline-none w-full hover:bg-(--background) focus:bg-white focus:ring-1 focus:ring-[rgba(46,51,48,0.15)] rounded px-1 transition-all placeholder:text-[#5F665E]/40 placeholder:font-semibold"
                                                             />
-                                                            <span className="text-xs font-bold text-[#5F665E] uppercase tracking-widest truncate px-1">ID: {est.id.toString().slice(-6)}</span>
+                                                            {est.isPlaceholder ? (
+                                                                <span className="text-xs font-bold text-[#5F665E]/50 uppercase tracking-widest truncate px-1">N.º {est.numeroLista} · libre</span>
+                                                            ) : (
+                                                                <span className="text-xs font-bold text-[#5F665E] uppercase tracking-widest truncate px-1">ID: {est.id.toString().slice(-6)}</span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
                                             );
                                         }
                                         if (col.type === 'actividad') {
+                                            if (est.isPlaceholder) {
+                                                // Posición vacía: sin estudiante → sin notas posibles. No se
+                                                // renderiza GradeCell (evita enviar IDs negativos a setCalif).
+                                                return (
+                                                    <div key={col.id} className="px-3 py-3 border-r border-(--border-soft) flex items-center justify-center box-border bg-base-creme/40" style={style}>
+                                                        <span className="text-xs font-bold text-[#5F665E]/30">—</span>
+                                                    </div>
+                                                );
+                                            }
                                             const act = col.act;
                                             return (
                                                 <GradeCell 
@@ -314,7 +430,10 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                     activePaintColor={activePaintColor}
                                                     animations={gradeAnimations.filter(a => a.estId === est.id && a.actId === act.id)}
                                                     onInteraction={(type) => {
-                                                        if (type === 'focus') onSetFocusedCell({ estId: est.id, actId: act.id });
+                                                        if (type === 'focus') {
+                                                            focusedRowIndexRef.current = eIdx;
+                                                            onSetFocusedCell({ estId: est.id, actId: act.id });
+                                                        }
                                                         if (type === 'hover' && !isDragging) onSetFocusedCell(null);
                                                     }}
                                                     onSetGrade={(val) => onSetGrade(est.id, act.id, val)}
@@ -368,8 +487,10 @@ const GradeTable: React.FC<GradeTableProps> = ({
                         <div className="w-full flex justify-start py-3 px-6">
                             <button 
                                 onClick={() => {
-                                    if (window.confirm(`¿Seguro que deseas eliminar al último estudiante (${estudiantes[estudiantes.length - 1].displayName})?`)) {
-                                        onDeleteEstudiante(estudiantes[estudiantes.length - 1].id);
+                                    const last = estudiantes[estudiantes.length - 1];
+                                    if ((last.id ?? 0) <= 0) return;
+                                    if (window.confirm(`¿Seguro que deseas eliminar al último estudiante (${last.displayName})?`)) {
+                                        onDeleteEstudiante(last.id);
                                     }
                                 }}
                                 className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:text-danger hover:border-danger/40 hover:bg-danger/10 transition-all text-xl pb-0.5 shadow-sm"
@@ -381,6 +502,14 @@ const GradeTable: React.FC<GradeTableProps> = ({
                     )}
                 </div>
             </div>
+            <PegarListadoModal
+                show={showPegarListado}
+                onClose={() => setShowPegarListado(false)}
+                estudiantes={estudiantes}
+                estudiantesRealesCurso={estudiantesRealesCurso}
+                onUpdateEstudiante={onUpdateEstudiante}
+                onAddEstudiante={onAddEstudiante}
+            />
         </div>
     );
 };

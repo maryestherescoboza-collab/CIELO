@@ -187,8 +187,10 @@ onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, cont
             let destaca: BCKey | null = null, bestVal = -1;
             bcValues.forEach(v => { if (v.avg !== null && v.avg > bestVal) { bestVal = v.avg; destaca = v.bc; } });
 
-            const isDefault = est.nombre === 'Nuevo' && est.apellido === 'Estudiante';
-            const displayName = isDefault ? `Estudiante ${filtered.findIndex(e => e.id === est.id) + 1}` : `${est.nombre} ${est.apellido}`;
+            // Se muestra SIEMPRE el nombre real almacenado: nunca se inventa un
+            // "Estudiante N" para filas reales. Las posiciones vacías legacy se
+            // representan (visualmente) con placeholder SIN nombre.
+            const displayName = `${est.nombre} ${est.apellido}`;
 
             const califsMap: Record<number, number | null> = {};
             actividades.forEach(a => {
@@ -200,9 +202,59 @@ onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, cont
     }, [state.estudiantes, state.cursos, curso, centroContexto, cursoId, buscar, actividades, bcSel, localCalifs, localRecs, selectedPeriodo]);
 
     const finalFilteredEstudiantes = useMemo(() => {
-        const lista = !showRecoveryOnly
-            ? enhancedEstudiantes.sort((a, b) => (a.numeroLista || 0) - (b.numeroLista || 0))
-            : enhancedEstudiantes.filter(est => est.bcValues.some(v => v.avg !== null && v.avg < 70));
+        let lista = [...enhancedEstudiantes].sort((a, b) => (a.numeroLista || 0) - (b.numeroLista || 0));
+
+        if (!showRecoveryOnly) {
+            // Find max numeroLista
+            let maxN = 0;
+            for (const est of lista) {
+                if (est.numeroLista && est.numeroLista > maxN) {
+                    maxN = est.numeroLista;
+                }
+            }
+            
+            // Generate normalized list filling holes with placeholders
+            const normalizedList: any[] = [];
+            let currentIdx = 0;
+            for (let i = 1; i <= maxN; i++) {
+                if (currentIdx < lista.length && lista[currentIdx].numeroLista === i) {
+                    normalizedList.push(lista[currentIdx]);
+                    currentIdx++;
+                } else {
+                    // POSICIÓN VACÍA (hueco legacy por borrados previos): se deja
+                    // como fila editable SIN nombre. NO es un estudiante ni debe
+                    // verse como una persona ("Estudiante N"). Cuando el usuario
+                    // escriba sobre ella se creará un estudiante REAL con este
+                    // numero_lista exacto (flujo oficial en useStudentActions).
+                    normalizedList.push({
+                        id: -(1000000 + i), // ID negativo estable: SOLO visual, nunca llega a Supabase
+                        nombre: '',
+                        apellido: '',
+                        displayName: '',
+                        numeroLista: i,
+                        calificaciones: {},
+                        bcValues: [
+                            { bc: 'BC1', avg: null, rec: null, final: null },
+                            { bc: 'BC2', avg: null, rec: null, final: null },
+                            { bc: 'BC3', avg: null, rec: null, final: null },
+                            { bc: 'BC4', avg: null, rec: null, final: null }
+                        ],
+                        promTotal: null,
+                        destaca: null,
+                        isPlaceholder: true
+                    } as any);
+                }
+            }
+            // Append any remaining students that somehow had numeroLista > maxN or didn't match (fallback)
+            while (currentIdx < lista.length) {
+                normalizedList.push(lista[currentIdx]);
+                currentIdx++;
+            }
+            lista = normalizedList;
+        } else {
+            lista = lista.filter(est => est.bcValues.some(v => v.avg !== null && v.avg < 70));
+        }
+
         console.log(`[DIAG][SCREEN] CursoDetalle estudiantesConsumidos=${lista.length} estudiantesGlobal=${state.estudiantes.length} ts=${new Date().toISOString()}`);
         return lista;
     }, [enhancedEstudiantes, showRecoveryOnly]);

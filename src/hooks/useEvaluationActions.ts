@@ -952,7 +952,8 @@ export function useEvaluationActions() {
             asignatura: merged.asignatura,
             shared_course_id: merged.sharedCourseId,
             indicador: merged.indicador,
-            producto: merged.producto
+            producto: merged.producto,
+            descripcion: merged.descripcion ?? null
         });
 
         if (!error) {

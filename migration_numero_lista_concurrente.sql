@@ -19,9 +19,9 @@
 -- GARANTÍAS
 --   - Números únicos por curso sin errores 23505, aunque múltiples clientes
 --     inserten a la vez.
---   - Se consulta MAX sobre TODAS las filas del curso (incluye inactivas),
---     por lo que nunca se reutilizan números: es compatible tanto si la
---     restricción unique es total como parcial (WHERE activo).
+--   - Se consulta MAX SOLO sobre estudiantes ACTIVOS; los inactivos quedan con
+--     numero_lista NULL (ver UPDATE arriba) y nunca inflan ni bloquean ninguna
+--     posición: el próximo número asignado continúa la numeración real vigente.
 --   - La restricción "unique_numero_lista_per_course" NO se toca: queda como
 --     última línea de defensa de integridad.
 --   - Los UPDATE conservan el numero_lista existente (el trigger es solo
@@ -34,7 +34,26 @@
 --     invocarse directamente desde SQL, así que no expone superficie nueva.
 --   - SET search_path = public evita secuestro del search_path.
 --   - Idempotente: puede re-ejecutarse sin efecto adverso.
+-- Ajustes 2026 (reparación estructural de posiciones):
+--   a) REPARACIÓN DE DATOS LEGACY: los estudiantes desactivados (borrado lógico)
+--      que aún conservan un numero_lista lo liberan poniéndolo en NULL. NULL es
+--      inmune a la restricción unique (curso_id, numero_lista), de modo que la
+--      posición puede volver a usarla un estudiante activo nuevo sin errores 23505
+--      y sin eliminar el registro histórico (activo=false permanece).
+--   b) El trigger ahora calcula el MAX SOLO sobre estudiantes ACTIVOS: un
+--      inactivo nunca infla la numeración, por lo que "Agregar estudiante"
+--      asigna siempre el siguiente número tras el último estudiante real vigente.
+--   c) Defensa: garantiza que la columna acepte NULL (idempotente; si ya es
+--      nullable no hace nada). Sin esto, liberar posiciones con NULL fallaría
+--      si en la base la columna llegara a estar marcada NOT NULL.
 -- ============================================================================
+
+ALTER TABLE public.estudiantes ALTER COLUMN numero_lista DROP NOT NULL;
+
+UPDATE public.estudiantes
+   SET numero_lista = NULL
+ WHERE activo = false
+   AND numero_lista IS NOT NULL;
 
 CREATE OR REPLACE FUNCTION public.asignar_numero_lista_estudiante()
 RETURNS trigger
@@ -50,7 +69,8 @@ BEGIN
         SELECT COALESCE(MAX(e.numero_lista), 0) + 1
           INTO NEW.numero_lista
           FROM public.estudiantes e
-         WHERE e.curso_id = NEW.curso_id;
+         WHERE e.curso_id = NEW.curso_id
+           AND e.activo = true;
     END IF;
 
     RETURN NEW;
