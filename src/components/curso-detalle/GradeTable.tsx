@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, EyeOff, Target, ClipboardList, BookOpen } from 'lucide-react';
+import { Plus, Trash2, Target, ClipboardList, BookOpen } from 'lucide-react';
 import PegarListadoModal from './PegarListadoModal';
 import StudentObservationModal from './StudentObservationModal';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -248,7 +248,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                         <div className="flex flex-col items-center gap-3 w-full">
                                             <div className="flex items-center gap-2 w-full justify-center px-1">
                                                 {!isProductoFinal && (
-                                                    <button onClick={() => onDeleteActividad(act.id)} title="Desactivar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-attention rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><EyeOff size={12} /></button>
+                                                    <button onClick={() => onDeleteActividad(act.id)} title="Eliminar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-danger rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><Trash2 size={12} /></button>
                                                 )}
                                                 <input 
                                                     data-guide="celda-actividad"
