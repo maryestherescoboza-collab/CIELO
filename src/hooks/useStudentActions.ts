@@ -20,7 +20,8 @@ const mapearEstudiante = (d: any): EstudianteType => ({
     bc2: d.bc2,
     bc3: d.bc3,
     bc4: d.bc4,
-    userId: d.docente_id
+    userId: d.docente_id,
+    observacion: d.observacion
 });
 
 export function useStudentActions() {
@@ -197,7 +198,8 @@ export function useStudentActions() {
             actividades_recientes: merged.actividadesRecientes,
             en_riesgo: merged.enRiesgo,
             shared_course_id: merged.sharedCourseId || `group_${merged.grupoId}`,
-            numero_lista: merged.numeroLista
+            numero_lista: merged.numeroLista,
+            observacion: merged.observacion
         });
 
         if (error) {

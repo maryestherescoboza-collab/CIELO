@@ -32,6 +32,27 @@ const GradeCell: React.FC<GradeCellProps> = ({
     hasLowBc,
     style
 }) => {
+    const isInasistencia = score === 0;
+    const selloLabel = isInasistencia ? 'Inasistencia' : score === 1 ? '⚠︎ Se negó a\nrealizar ⚠︎' : null;
+
+    const indicadorSello = selloLabel !== null && evalMode !== 'libre' ? (
+        <div
+            className="w-[75%] h-[75%] flex items-center justify-center rounded-xs"
+            style={{
+                border: `1px dashed ${isInasistencia ? '#537BAC' : '#EB8847'}`,
+                backgroundColor: isInasistencia ? 'rgba(83, 123, 172, 0.05)' : 'rgba(235, 136, 71, 0.05)',
+                color: isInasistencia ? '#537BAC' : '#EB8847'
+            }}
+        >
+            <span
+                className="font-mono font-bold text-center leading-none whitespace-pre-line flex items-center justify-center h-full w-full"
+                style={{ fontSize: isInasistencia ? '12px' : '12px', letterSpacing: '-0.03em' }}
+            >
+                {selloLabel}
+            </span>
+        </div>
+    ) : null;
+
     return (
         <div
             data-guide="celda-evaluacion"
@@ -101,7 +122,9 @@ const GradeCell: React.FC<GradeCellProps> = ({
                         </div>
                     )
                 ) : evalMode === 'pincel' ? (
-                    <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === null ? 'w-2 h-2 bg-[rgba(46,51,48,0.08)]' : score === 100 ? 'w-6 h-6 bg-primary' : score === 85 ? 'w-6 h-6 bg-attention' : score === 70 ? 'w-6 h-6 bg-danger' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : score >= 100 ? 'w-6 h-6 bg-primary' : score >= 85 ? 'w-6 h-6 bg-attention' : score >= 70 ? 'w-6 h-6 bg-danger' : 'w-5 h-5 bg-[#2E3330]'}`} />
+                    selloLabel !== null ? indicadorSello : (
+                        <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === null ? 'w-2 h-2 bg-[rgba(46,51,48,0.08)]' : score === 100 ? 'w-6 h-6 bg-primary' : score === 85 ? 'w-6 h-6 bg-attention' : score === 70 ? 'w-6 h-6 bg-danger' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : score >= 100 ? 'w-6 h-6 bg-primary' : score >= 85 ? 'w-6 h-6 bg-attention' : score >= 70 ? 'w-6 h-6 bg-danger' : 'w-5 h-5 bg-[#2E3330]'}`} />
+                    )
                 ) : evalMode === 'libre' ? (
                     <input
                         type="text"
@@ -127,9 +150,11 @@ const GradeCell: React.FC<GradeCellProps> = ({
                         placeholder="-"
                     />
                 ) : (
-                    <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)}`}>
-                        {score ?? '-'}
-                    </span>
+                    selloLabel !== null ? indicadorSello : (
+                        <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)}`}>
+                            {score ?? '-'}
+                        </span>
+                    )
                 )}
             </div>
         </div>

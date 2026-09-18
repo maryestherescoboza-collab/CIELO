@@ -1,6 +1,7 @@
 import React from 'react';
-import { Plus, EyeOff, Target, ClipboardList } from 'lucide-react';
+import { Plus, EyeOff, Target, ClipboardList, BookOpen } from 'lucide-react';
 import PegarListadoModal from './PegarListadoModal';
+import StudentObservationModal from './StudentObservationModal';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import GradeCell from './GradeCell';
 import ActivityViewTab from './workspace/ActivityViewTab';
@@ -68,6 +69,10 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
     // Estado para el modal de "Pegar listado" (solo edita nombre/apellido)
     const [showPegarListado, setShowPegarListado] = React.useState(false);
+    
+    // Estado para modal de observación
+    const [obsModalEstudianteId, setObsModalEstudianteId] = React.useState<number | null>(null);
+
 
     // Fuente de verdad para saber si una posición tiene estudiante REAL activo:
     // curso actual + numero_lista. Los arrays visuales (con IDs negativos /
@@ -287,7 +292,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                 {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
                                                     const participa = ((bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc)) && (bcActivityCounts[bc] > 0);
                                                     const aporte = participa ? 100 / bcActivityCounts[bc] : 0;
-                                                    const txt = aporte % 1 === 0 ? String(aporte) : aporte.toFixed(2);
+                                                    const txt = String(Math.round(aporte));
                                                     return (
                                                         <span key={bc} className="w-7 flex items-baseline justify-center gap-0.5 leading-none">
                                                             <span className={`text-[11px] font-black ${participa ? 'text-[#2E3330]' : 'text-[#5F665E]/35'}`}>{txt}</span>
@@ -402,6 +407,16 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                                 <span className="text-xs font-bold text-[#5F665E] uppercase tracking-widest truncate px-1">ID: {est.id.toString().slice(-6)}</span>
                                                             )}
                                                         </div>
+                                                        {/* Icono de Observación */}
+                                                        {!est.isPlaceholder && (
+                                                            <button
+                                                                onClick={() => setObsModalEstudianteId(est.id)}
+                                                                className={`p-1.5 rounded-md transition-colors shrink-0 ${est.observacion ? 'text-amber-500 hover:bg-amber-50' : 'text-[#5F665E]/30 hover:text-[#5F665E] hover:bg-gray-100'}`}
+                                                                title="Observaciones del estudiante"
+                                                            >
+                                                                <BookOpen size={16} />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
@@ -458,7 +473,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                             const v = est.bcValues?.[col.idx];
                                             return (
                                                 <div key={col.id} className={`px-3 py-3 border-r border-(--border-soft) flex items-center justify-center box-border ${col.idx === 0 ? 'border-l-2 border-l-[rgba(46,51,48,0.08)]' : ''}`} style={style}>
-                                                    <span className={`text-base font-semibold px-2.5 py-1 rounded ${v?.avg !== null ? getGradeClass(v.avg) : ''}`}>{v?.avg ?? '-'}</span>
+                                                    <span className={`text-base font-semibold px-2.5 py-1 rounded ${v?.avg !== null ? getGradeClass(v.avg) : ''}`}>{v?.avg !== null && v?.avg !== undefined ? Math.round(v.avg) : '-'}</span>
                                                 </div>
                                             );
                                         }
@@ -509,6 +524,17 @@ const GradeTable: React.FC<GradeTableProps> = ({
                 estudiantesRealesCurso={estudiantesRealesCurso}
                 onUpdateEstudiante={onUpdateEstudiante}
                 onAddEstudiante={onAddEstudiante}
+            />
+            <StudentObservationModal
+                show={obsModalEstudianteId !== null}
+                estudiante={estudiantesRealesCurso.find(e => e.id === obsModalEstudianteId)}
+                actividades={actividades}
+                onClose={() => setObsModalEstudianteId(null)}
+                onSave={(obs) => {
+                    if (obsModalEstudianteId) {
+                        onUpdateEstudiante(obsModalEstudianteId, { observacion: obs });
+                    }
+                }}
             />
         </div>
     );

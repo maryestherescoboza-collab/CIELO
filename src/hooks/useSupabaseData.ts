@@ -133,7 +133,8 @@ const mapEstudiante = (e: any): Estudiante => ({
     bc4: e.bc4 as BCScore || { nivel: 1, puntaje: 0 },
     actividadesRecientes: e.actividades_recientes as number,
     enRiesgo: e.en_riesgo as boolean,
-    numeroLista: e.numero_lista as number
+    numeroLista: e.numero_lista as number,
+    observacion: e.observacion as string | undefined
 });
 
 const mapRecuperacion = (r: any, cursos?: any[]): RecuperacionBC => ({

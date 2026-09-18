@@ -267,6 +267,28 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     </div>
                     )}
 
+                    <div className="flex flex-col items-start gap-1">
+                        <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#5F665E]/55 whitespace-nowrap leading-none">Actividad pendiente por:</span>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => { setActivePaintColor(0); if (evalMode === 'libre') setEvalMode('numerico'); }}
+                                title="Inasistencia — aplica 0 pts a la celda"
+                                className={`min-h-7 px-2.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border ${activePaintColor === 0 ? 'bg-[#2E3330] border-transparent text-white shadow-sm' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
+                            >
+                                Inasistencia
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setActivePaintColor(1); if (evalMode === 'libre') setEvalMode('numerico'); }}
+                                title="Se negó a realizar — aplica 1 pt a la celda"
+                                className={`min-h-7 px-2.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border ${activePaintColor === 1 ? 'bg-attention border-transparent text-white shadow-sm' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
+                            >
+                                Se negó a realizar
+                            </button>
+                        </div>
+                    </div>
+
                     {isTutor && (
                         <div className="flex items-center gap-3">
                             <CieloPill as="button" variant="ghost" onClick={onShowVincular} className="gap-2 px-4.5 min-h-9 bg-white border border-(--border-soft) text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330]">

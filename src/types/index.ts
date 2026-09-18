@@ -42,6 +42,7 @@ export interface Estudiante {
     actividadesRecientes: number; enRiesgo: boolean;
     userId?: string;
     numeroLista: number;
+    observacion?: string;
 }
 
 export interface Curso {
