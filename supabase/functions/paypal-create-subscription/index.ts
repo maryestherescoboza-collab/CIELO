@@ -16,10 +16,8 @@ const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com";
 // Setup Supabase admin client to insert into suscripciones (since it bypasses RLS if needed, though RLS should allow insert for own user. Using service key ensures we can insert before the webhook comes)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-const PLAN_IDS = {
-  mensual: "P-0W2195799D194881XNKL3BSA",
-  anual: "P-7KE49709A6687770XNKL3BSA"
-};
+const PLAN_ID_MENSUAL = "P-2967335801971131ANKXAXCA";
+const PLAN_ID_ANUAL = "P-2DK87575AA1045204NKXWA5A";
 
 async function getPayPalAccessToken(): Promise<string> {
   const auth = btoa(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`);
@@ -69,17 +67,37 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = await req.json();
-    const { plan_type } = body;
+    // Comprobar si el usuario ya tiene una suscripción activa o pendiente (Evitar duplicados)
+    const { data: existingSubs, error: subsError } = await supabaseAdmin
+      .from('suscripciones')
+      .select('estado')
+      .eq('user_id', user.id)
+      .in('estado', ['activa', 'pendiente']);
 
-    if (plan_type !== 'mensual' && plan_type !== 'anual') {
-      return new Response(JSON.stringify({ error: 'Plan inválido' }), {
+    if (subsError) {
+      console.error("Error consultando suscripciones existentes:", subsError);
+      throw new Error("Error interno al verificar estado actual.");
+    }
+
+    if (existingSubs && existingSubs.length > 0) {
+      return new Response(JSON.stringify({ error: 'Ya tienes una suscripción activa o pendiente. No puedes crear otra.' }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    const planId = PLAN_IDS[plan_type];
+    let planType = 'mensual';
+    try {
+      const body = await req.json();
+      if (body.planType === 'anual') {
+        planType = 'anual';
+      }
+    } catch (e) {
+      // Body vacío o inválido, usamos 'mensual' por defecto
+    }
+
+    const PLAN_ID = planType === 'anual' ? PLAN_ID_ANUAL : PLAN_ID_MENSUAL;
+
     const accessToken = await getPayPalAccessToken();
 
     // Crear suscripción en PayPal
@@ -92,7 +110,7 @@ Deno.serve(async (req) => {
         'Prefer': 'return=representation'
       },
       body: JSON.stringify({
-        plan_id: planId,
+        plan_id: PLAN_ID,
         custom_id: user.id, // VITAL: Mapeo de usuario
         application_context: {
           brand_name: "Evaluación CIELO",

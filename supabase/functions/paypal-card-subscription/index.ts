@@ -11,10 +11,7 @@ const PAYPAL_CLIENT_ID = Deno.env.get("PAYPAL_CLIENT_ID") as string;
 const PAYPAL_CLIENT_SECRET = Deno.env.get("PAYPAL_CLIENT_SECRET") as string;
 const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com";
 
-const PAYPAL_PLANS: Record<string, string> = {
-  "mensual": "P-0W2195799D194881XNKL3BSA",
-  "anual": "P-7KE49709A6687770XNKL3BSA"
-};
+const PAYPAL_PLAN_ID = "P-2967335801971131ANKXAXCA";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -53,16 +50,13 @@ Deno.serve(async (req: Request) => {
       throw new Error("No autorizado");
     }
 
-    const { setup_token, plan_type } = await req.json();
+    const { setup_token } = await req.json();
 
     if (!setup_token) {
       throw new Error("setup_token es requerido");
     }
 
-    const planId = PAYPAL_PLANS[plan_type];
-    if (!planId) {
-      throw new Error("Plan no válido");
-    }
+    const planId = PAYPAL_PLAN_ID;
 
     const accessToken = await getPayPalAccessToken();
 

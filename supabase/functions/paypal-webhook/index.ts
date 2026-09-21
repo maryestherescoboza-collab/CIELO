@@ -12,16 +12,11 @@ const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Configuración centralizada de Planes de PayPal (IDs reales se configurarán en FASE 4)
+// Configuración centralizada del ÚNICO plan de PayPal (CIELO Docente - Mensual Definitivo)
 const PAYPAL_PLANS: Record<string, { planId: string, amount: string, currency: string }> = {
-  "docente_mensual": {
-    planId: "P-0W2195799D194881XNKL3BSA",
-    amount: "6.00",
-    currency: "USD"
-  },
-  "docente_anual_12_cuotas": {
-    planId: "PENDING_ANUAL_PLAN_ID",
-    amount: "4.50",
+  "docente_mensual_definitivo": {
+    planId: "P-2967335801971131ANKXAXCA",
+    amount: "5.00",
     currency: "USD"
   }
 };

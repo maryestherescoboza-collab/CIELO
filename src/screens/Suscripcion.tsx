@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { usePremiumAccess } from '../hooks/usePremiumAccess';
-import { Loader2 } from 'lucide-react';
+// Loader2 import removed since it's unused
 import { CieloPill } from '../components/ui/CieloPill';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,23 @@ import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 export default function Suscripcion() {
   const navigate = useNavigate();
   const { hasPremium, suscripcionActual } = usePremiumAccess();
-  const [loadingPlan, setLoadingPlan] = useState<'docente_mensual' | 'docente_anual' | null>(null);
+  // El ID oficial de Sandbox de PayPal
+  const PAYPAL_CLIENT_ID = "Af-mNy8fqCu4n5dP2W3m2LJ55jeeuUzp7Dfzq9SLtVXpBookh4wYuG7hrCtefhv2EQheWLCRLW6f6iv-";
+
+  const handleInstitutionalTrial = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.user_metadata?.trial_extension_requested) {
+        await supabase.auth.updateUser({
+          data: { trial_extension_requested: true }
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      navigate('/suscripcion/institucional');
+    }
+  };
 
   useEffect(() => {
     if ((suscripcionActual as any)?.provider === 'manual' && suscripcionActual?.estado === 'activa') {
@@ -21,9 +37,10 @@ export default function Suscripcion() {
   const PayPalSubscriptionButton = ({ planType }: { planType: 'mensual' | 'anual' }) => {
     return (
       <PayPalScriptProvider options={{ 
-        clientId: "Af-mNy8fqCu4n5dP2W3m2LJ55jeeuUzp7Dfzq9SLtVXpBookh4wYuG7hrCtefhv2EQheWLCRLW6f6iv-", 
+        clientId: PAYPAL_CLIENT_ID, 
         vault: true, 
-        intent: "subscription" 
+        intent: "subscription",
+        "enable-funding": "card"
       }}>
         <PayPalButtons 
           style={{ layout: "vertical", color: "silver", shape: "rect", label: "subscribe" }}
@@ -35,8 +52,9 @@ export default function Suscripcion() {
               throw new Error("Usuario no autenticado");
             }
 
+            // Llamamos a la Edge Function pasando el tipo de plan
             const { data, error } = await supabase.functions.invoke('paypal-create-subscription', {
-              body: { plan_type: planType }
+              body: { planType }
             });
 
             if (error) {
@@ -68,176 +86,136 @@ export default function Suscripcion() {
     );
   };
 
-  const handleSubscribe = async (plan: 'docente_mensual' | 'docente_anual') => {
-    setLoadingPlan(plan);
-    try {
-      // Nueva integración PayPal
-      const planType = plan === 'docente_mensual' ? 'mensual' : 'anual';
-      const { data, error } = await supabase.functions.invoke('paypal-create-subscription', {
-        body: { plan_type: planType }
-      });
+  const TASA_CAMBIO_RD = 58.8; // Valor configurable de tasa de cambio (USD a RD$)
+  const precioMensualUSD = 5;
+  const precioAnualUSD = 4;
+  const precioMensualRD = Math.round(precioMensualUSD * TASA_CAMBIO_RD);
+  const precioAnualRD = Math.round(precioAnualUSD * TASA_CAMBIO_RD);
 
-      if (error) {
-        console.error("Supabase edge function error:", error);
-        throw error;
-      }
+  const featuresComunes = [
+    'Evalúa por competencias de forma completa',
+    'Crea rúbricas y listas de cotejo en minutos',
+    'Lleva tu registro anecdótico y visual al día',
+    'Planifica tus clases con ayuda de la IA',
+    'Haz seguimiento del progreso de cada estudiante',
+    'Gestiona todos los cursos que quieras',
+    'Construye tu portafolio docente',
+    'Únete a la Comunidad CIELO'
+  ];
 
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      if (data?.approval_url) {
-        window.location.href = data.approval_url;
-      } else {
-        throw new Error('No se recibió URL de aprobación de PayPal');
-      }
-
-    } catch (error) {
-      console.error(error);
-      alert('Hubo un error al procesar la solicitud.');
-    } finally {
-      setLoadingPlan(null);
-    }
-  };
-
-  const planDocente = {
-    name: 'Docente Independiente',
-    price: '6',
-    subtitle: 'Suscripción mensual, renovación automática.',
-    secondary: 'Ideal para docentes que desean modernizar su práctica educativa y disponer de un entorno de trabajo integral, diseñado específicamente para la evaluación por competencias.',
-    features: [
-      'Evaluación por competencias.',
-      'Rúbricas y listas de cotejo.',
-      'Registro anecdótico.',
-      'Planificación académica.',
-      'Seguimiento del progreso estudiantil.',
-      'Gestión de cursos y estudiantes.',
-      'Portafolio docente.',
-      'Comunidad CIELO.'
-    ]
+  const planMensual = {
+    name: 'CIELO Docente Mensual',
+    subtitle: 'Empieza con 15 días gratis. Después, solo 5 USD al mes.',
+    secondary: 'El cobro lo administra PayPal mes a mes. Tu primer pago se realiza recién 15 días después de comenzar.',
+    features: featuresComunes
   };
 
   const planAnual = {
-    name: 'Plan Anual',
-    price: '4.50',
-    subtitle: '12 ciclos de acceso ininterrumpido.',
-    secondary: 'Asegura un año completo de herramientas avanzadas con un ahorro significativo a largo plazo.',
-    features: [
-      'Todas las funcionalidades del plan mensual.',
-      'Ahorro del 25% comparado al plan mensual.',
-      'Facturación anual simplificada.',
-      'Soporte prioritario.'
-    ]
+    name: 'CIELO Docente Anual',
+    badge: 'Ahorra 20%',
+    subtitle: 'Mismo acceso premium con 15 días gratis, pero a un menor costo.',
+    secondary: 'Compromiso de 12 meses. El cobro lo administra PayPal de forma mensual.',
+    features: featuresComunes
   };
 
-
-
   return (
-    <div className="min-h-screen bg-(--background) pt-5 pb-16 px-4 md:px-8">
+    <div className="min-h-screen bg-[#F8F3ED] pt-12 pb-24 px-4 md:px-8 font-sans">
       {hasPremium && suscripcionActual ? (
-        <div className="max-w-4xl mx-auto mb-8 bg-(--linen)/50 border border-(--border-soft) rounded-2xl p-6 flex items-start gap-4">
-          <div className="w-12 h-12 bg-(--linen) rounded-full flex items-center justify-center shrink-0">
-            <span className="text-(--primary) font-bold text-xl">✓</span>
+        <div className="max-w-4xl mx-auto mb-12 bg-white border border-dashed border-[rgba(120,135,110,0.25)] rounded-lg p-6 flex items-start gap-4 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+          <div className="w-12 h-12 bg-[#EBF1E9] border border-[#D5E1D2] rounded-full flex items-center justify-center shrink-0">
+            <span className="text-[#5C7257] font-bold text-xl">✓</span>
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-(--ink) mb-1">
+            <h3 className="text-lg font-bold text-zinc-900 mb-1">
               Acceso Premium Activo ({suscripcionActual.tipo === 'institucional' ? 'Institucional' : 'Individual'})
             </h3>
             {suscripcionActual.tipo === 'institucional' ? (
-              <p className="text-(--ink) text-sm">
+              <p className="text-zinc-600 text-sm mb-4">
                 Tienes acceso completo provisto por tu centro educativo.
               </p>
             ) : (
-              <p className="text-(--ink) text-sm">
-                Tu plan de Docente Independiente está activo. Disfrutas de todas las herramientas avanzadas.
+              <p className="text-zinc-600 text-sm mb-4">
+                Tu plan CIELO Docente está activo. Disfrutas de todas las herramientas avanzadas.
               </p>
             )}
             <div className="mt-4 flex gap-3">
-              <CieloPill as="button" variant="primary" className="px-4 bg-white border border-(--border-soft) text-(--ink) hover:bg-(--linen)/20 shadow-sm cursor-pointer">
+              <CieloPill as="button" variant="primary" className="px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#FAFBF9] shadow-sm cursor-pointer text-xs uppercase tracking-widest">
                 Gestionar Suscripción
               </CieloPill>
             </div>
           </div>
         </div>
       ) : suscripcionActual && suscripcionActual.estado === 'pendiente' ? (
-        <div className="max-w-4xl mx-auto mb-8 bg-(--linen)/50 border border-(--border-soft) rounded-2xl p-6 flex items-start gap-4">
-          <div className="w-12 h-12 bg-(--linen) rounded-full flex items-center justify-center shrink-0">
-            <span className="text-(--primary) font-bold text-xl">!</span>
+        <div className="max-w-4xl mx-auto mb-12 bg-white border border-dashed border-[#D97706]/40 rounded-lg p-6 flex items-start gap-4 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+          <div className="w-12 h-12 bg-[#FFFBEB] border border-[#FDE68A] rounded-full flex items-center justify-center shrink-0">
+            <span className="text-[#D97706] font-bold text-xl">!</span>
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-(--ink) mb-1">
-              Suscripción Pendiente de Pago
+            <h3 className="text-lg font-bold text-zinc-900 mb-1">
+              Suscripción Pendiente
             </h3>
-            <p className="text-(--ink-soft) text-sm">
-              Tienes una suscripción {suscripcionActual.tipo} iniciada. Completa el pago para activar tu cuenta premium.
+            <p className="text-zinc-600 text-sm mb-4">
+              Tienes una suscripción iniciada. Finaliza el proceso con PayPal.
             </p>
-            <div className="mt-4 flex gap-3">
-              <CieloPill 
-                as="button"
-                onClick={() => handleSubscribe('docente_mensual')}
-                disabled={loadingPlan !== null}
-                variant={loadingPlan !== null ? 'disabled' : 'primary'}
-                className="px-4 bg-(--primary) hover:opacity-90 text-white gap-2 shadow-sm cursor-pointer"
-              >
-                {loadingPlan !== null ? <Loader2 size={14} className="animate-spin" /> : 'Reanudar Pago'}
-              </CieloPill>
+            <div className="max-w-xs relative z-0">
+               <PayPalSubscriptionButton planType="mensual" />
             </div>
           </div>
         </div>
       ) : null}
 
-      <div className="w-full max-w-4xl mx-auto relative z-10">
+      <div className="w-[90%] max-w-4xl mx-auto relative z-10 mt-8">
         {/* Header Section */}
-        <div className="text-center mb-6 max-w-2xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-light text-(--ink) tracking-tight mb-2">
-            Planes diseñados para tu realidad.
+        <div className="text-center mb-8 max-w-2xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-light text-zinc-900 tracking-tight mb-2">
+            Lleva tu enseñanza al siguiente nivel.
           </h2>
-          <p className="text-(--ink-soft) text-sm">
-            Elige el plan ideal para continuar utilizando todas las funcionalidades avanzadas de evaluación por competencias.
+          <p className="text-zinc-500 text-xs">
+            Elige el plan que mejor se adapte a ti. Ambos incluyen todas las herramientas.
           </p>
         </div>
 
         {/* Blueprint Grid Container */}
-        <div className="border border-dashed border-(--border-soft) bg-white rounded-lg overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
-          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-dashed divide-(--border-soft)">
-
-            {/* Column 1: Plan Docente */}
+        <div className="border border-dashed border-[rgba(120,135,110,0.25)] bg-white rounded-lg overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-dashed divide-[rgba(120,135,110,0.25)]">
+            
+            {/* Column 1: Plan Mensual */}
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ type: 'spring', stiffness: 100 }}
-              className="flex flex-col justify-between h-full"
+              className="flex flex-col h-full"
             >
               {/* Top part: Header & Price */}
-              <div className="p-6 md:p-8 border-b border-dashed border-(--border-soft)">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-(--primary) mb-1">
-                  {planDocente.name}
+              <div className="p-6 md:p-5 lg:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+                  {planMensual.name}
                 </h3>
-                <p className="text-xs text-(--ink-soft) mb-4 leading-normal">
-                  {planDocente.subtitle}
+                <p className="text-xs text-zinc-400 mb-4 leading-normal">
+                  {planMensual.subtitle}
                 </p>
                 <div className="flex flex-col">
-                  <div className="text-4xl font-light text-(--ink) tracking-tight">
-                    {planDocente.price} <span className="text-lg font-normal text-(--ink-soft)">USD</span>
+                  <div className="text-4xl font-light text-zinc-900 tracking-tight">
+                    {precioMensualUSD} <span className="text-lg font-normal text-zinc-400">USD</span>
                   </div>
-                  <div className="text-xs text-(--ink-soft) uppercase tracking-wider mt-0.5 mb-1">
+                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5 mb-1">
                     por mes
                   </div>
                   <div className="text-xs font-semibold text-[#689C63] uppercase tracking-wider">
-                    ≈ RD$348 / mes
+                    ≈ RD${precioMensualRD} / mes
                   </div>
                 </div>
               </div>
 
-              {/* Middle part: Features (flex-1 forces same height across columns) */}
-              <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-(--border-soft) bg-(--linen)/5">
-                {planDocente.features.map(feat => (
+              {/* Middle part: Features */}
+              <div className="p-6 md:p-5 lg:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
+                {planMensual.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-(--linen) border border-(--border-soft) text-(--primary) flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
                       ✓
                     </span>
-                    <span className="text-xs text-(--ink) leading-tight">
+                    <span className="text-xs text-zinc-600 leading-tight">
                       {feat}
                     </span>
                   </div>
@@ -245,19 +223,20 @@ export default function Suscripcion() {
               </div>
 
               {/* Bottom part: Secondary & Button */}
-              <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-                <p className="text-xs text-(--ink-soft) italic leading-relaxed mb-4">
-                  {planDocente.secondary}
+              <div className="p-6 md:p-5 lg:p-8 flex flex-col justify-end bg-white">
+                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
+                  {planMensual.secondary}
                 </p>
-                {hasPremium && suscripcionActual?.tipo === 'individual' ? (
-                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-(--linen) border border-(--border-soft) text-(--primary) shadow-sm">
-                    Plan Actual
-                  </CieloPill>
-                ) : (
-                  <div className="space-y-3 relative z-0">
+                
+                <div className="relative z-0">
+                  {hasPremium && suscripcionActual?.tipo === 'individual' ? (
+                    <button disabled className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.2)] text-zinc-400 text-xs font-medium tracking-widest uppercase">
+                      Plan Actual
+                    </button>
+                  ) : (
                     <PayPalSubscriptionButton planType="mensual" />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </motion.div>
 
@@ -267,58 +246,104 @@ export default function Suscripcion() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 100 }}
-              className="flex flex-col justify-between h-full"
+              className="flex flex-col h-full bg-[#F7FAF5]/60"
             >
               {/* Top part: Header & Price */}
-              <div className="p-6 md:p-8 border-b border-dashed border-(--border-soft)">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-(--primary) mb-1">
-                  {planAnual.name}
-                </h3>
-                <p className="text-xs text-(--ink-soft) mb-4 leading-normal">
+              <div className="p-6 md:p-5 lg:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    {planAnual.name}
+                  </h3>
+                  <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-[#5C7257] bg-[#EBF1E9] border border-[#D5E1D2] px-1.5 py-0.5 rounded-full leading-none">
+                    {planAnual.badge}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 mb-4 leading-normal">
                   {planAnual.subtitle}
                 </p>
                 <div className="flex flex-col">
-                  <div className="text-4xl font-light text-(--ink) tracking-tight">
-                    {planAnual.price} <span className="text-lg font-normal text-(--ink-soft)">USD</span>
+                  <div className="text-4xl font-light text-zinc-900 tracking-tight">
+                    {precioAnualUSD} <span className="text-lg font-normal text-zinc-400">USD</span>
                   </div>
-                  <div className="text-xs text-(--ink-soft) uppercase tracking-wider mt-0.5 mb-1">
-                    por mes (facturado anualmente)
+                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5 mb-1">
+                    por mes (12 cuotas)
                   </div>
-                  <div className="text-xs font-semibold text-[#689C63] uppercase tracking-wider flex flex-col gap-0.5">
-                    <span>≈ RD$261 / mes</span>
-                    <span className="opacity-80">≈ RD$3,132 / año</span>
+                  <div className="text-xs font-semibold text-[#689C63] uppercase tracking-wider">
+                    ≈ RD${precioAnualRD} / mes
                   </div>
                 </div>
               </div>
 
               {/* Middle part: Features */}
-              <div className="p-6 md:p-8 flex-1 space-y-2.5 border-b border-dashed border-(--border-soft) bg-(--linen)/5">
+              <div className="p-6 md:p-5 lg:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-white">
                 {planAnual.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-(--linen) border border-(--border-soft) text-(--primary) flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
                       ✓
                     </span>
-                    <span className="text-xs text-(--ink) leading-tight">
+                    <span className="text-xs text-zinc-600 leading-tight">
                       {feat}
                     </span>
                   </div>
                 ))}
               </div>
 
-              {/* Bottom part: Calculator, Secondary & Button */}
-              <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-                <p className="text-xs text-(--ink-soft) italic leading-relaxed mb-4">
+              {/* Bottom part: Secondary & Button */}
+              <div className="p-6 md:p-5 lg:p-8 flex flex-col justify-end bg-[#F7FAF5]/60">
+                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
                   {planAnual.secondary}
                 </p>
-                {hasPremium && suscripcionActual?.tipo === 'individual' ? (
-                  <CieloPill as="button" disabled variant="disabled" className="w-full px-4 bg-(--linen) border border-(--border-soft) text-(--primary) shadow-sm">
-                    Plan Actual
-                  </CieloPill>
-                ) : (
-                  <div className="space-y-3 relative z-0">
+                
+                <div className="relative z-0">
+                  {hasPremium && suscripcionActual?.tipo === 'individual' ? (
+                    <button disabled className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.2)] text-zinc-400 text-xs font-medium tracking-widest uppercase">
+                      Plan Actual
+                    </button>
+                  ) : (
                     <PayPalSubscriptionButton planType="anual" />
-                  </div>
-                )}
+                  )}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Column 3: Institucional Proposal */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
+              className="flex flex-col h-full bg-[#FAFBF9]/20"
+            >
+              {/* Top part: Header */}
+              <div className="p-6 md:p-5 lg:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+                  Lleva CIELO a tu institución educativa
+                </h3>
+                <p className="text-xs text-zinc-400 mb-4 leading-normal">
+                  La mayoría de los usuarios sigue evaluando con el método tradicional de acumulación de puntos porque no cuenta con directrices claras para aplicar la evaluación por competencias.
+                </p>
+                <p className="text-xs text-zinc-600 font-medium mb-2 leading-normal">
+                  Con CIELO, tu institución puede dar ese paso.
+                </p>
+              </div>
+
+              {/* Middle part: Feature/Promo */}
+              <div className="p-6 md:p-5 lg:p-8 flex-1 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-white flex items-center">
+                 <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-sm font-extrabold mt-0.5">+</span>
+                    <h4 className="text-base font-bold text-zinc-900 tracking-tight leading-tight">
+                       +7 días de prueba para presentar la propuesta en tu centro.
+                    </h4>
+                 </div>
+              </div>
+
+              {/* Bottom part: Button */}
+              <div className="p-6 md:p-5 lg:p-8 flex flex-col justify-end bg-[#FAFBF9]/20">
+                <div className="relative z-0 mt-8">
+                  <button onClick={handleInstitutionalTrial} className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#F3F6F2] transition-colors shadow-sm text-xs font-medium tracking-widest uppercase cursor-pointer">
+                    Invitar a mi institución a registrarse
+                  </button>
+                </div>
               </div>
             </motion.div>
 

@@ -22,7 +22,9 @@ export function usePremiumAccess() {
   // Validamos si es docente y tiene un createdAt
   if (perfilActual?.createdAt && (!centroRolActual || centroRolActual.rol === 'docente')) {
     const createdDate = new Date(perfilActual.createdAt);
-    const trialEndDate = new Date(createdDate.getTime() + 15 * 24 * 60 * 60 * 1000);
+    const hasExtension = session?.user?.user_metadata?.trial_extension_requested === true;
+    const trialDaysTotal = hasExtension ? 22 : 15;
+    const trialEndDate = new Date(createdDate.getTime() + trialDaysTotal * 24 * 60 * 60 * 1000);
     const now = new Date();
     
     if (now < trialEndDate) {
