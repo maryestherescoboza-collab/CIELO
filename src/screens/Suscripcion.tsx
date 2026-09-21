@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { usePremiumAccess } from '../hooks/usePremiumAccess';
 // Loader2 import removed since it's unused
@@ -13,7 +13,12 @@ export default function Suscripcion() {
   // El ID oficial de Sandbox de PayPal
   const PAYPAL_CLIENT_ID = "Af-mNy8fqCu4n5dP2W3m2LJ55jeeuUzp7Dfzq9SLtVXpBookh4wYuG7hrCtefhv2EQheWLCRLW6f6iv-";
 
+  const [isExtending, setIsExtending] = useState(false);
+  const [extensionGranted, setExtensionGranted] = useState(false);
+
   const handleInstitutionalTrial = async () => {
+    if (isExtending || extensionGranted) return;
+    setIsExtending(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.user_metadata?.trial_extension_requested) {
@@ -21,10 +26,11 @@ export default function Suscripcion() {
           data: { trial_extension_requested: true }
         });
       }
+      setExtensionGranted(true);
     } catch (e) {
       console.error(e);
     } finally {
-      navigate('/suscripcion/institucional');
+      setIsExtending(false);
     }
   };
 
@@ -119,9 +125,15 @@ export default function Suscripcion() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F3ED] pt-12 pb-24 px-4 md:px-8 font-sans">
+    <div className="min-h-screen bg-[#F8F3ED] pt-6 pb-12 px-4 md:px-8 font-sans flex flex-col">
+      <div className="w-full max-w-6xl mx-auto flex justify-end mb-4">
+        <button onClick={() => navigate('/inicio')} className="px-5 py-2 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#F3F6F2] transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.01)] text-[10px] font-bold tracking-widest uppercase cursor-pointer rounded-full">
+          Volver a CIELO
+        </button>
+      </div>
+
       {hasPremium && suscripcionActual ? (
-        <div className="max-w-4xl mx-auto mb-12 bg-white border border-dashed border-[rgba(120,135,110,0.25)] rounded-lg p-6 flex items-start gap-4 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+        <div className="w-full max-w-6xl mx-auto mb-6 bg-white border border-dashed border-[rgba(120,135,110,0.25)] rounded-lg p-5 flex items-start gap-4 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
           <div className="w-12 h-12 bg-[#EBF1E9] border border-[#D5E1D2] rounded-full flex items-center justify-center shrink-0">
             <span className="text-[#5C7257] font-bold text-xl">✓</span>
           </div>
@@ -146,7 +158,7 @@ export default function Suscripcion() {
           </div>
         </div>
       ) : suscripcionActual && suscripcionActual.estado === 'pendiente' ? (
-        <div className="max-w-4xl mx-auto mb-12 bg-white border border-dashed border-[#D97706]/40 rounded-lg p-6 flex items-start gap-4 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+        <div className="w-full max-w-6xl mx-auto mb-6 bg-white border border-dashed border-[#D97706]/40 rounded-lg p-5 flex items-start gap-4 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
           <div className="w-12 h-12 bg-[#FFFBEB] border border-[#FDE68A] rounded-full flex items-center justify-center shrink-0">
             <span className="text-[#D97706] font-bold text-xl">!</span>
           </div>
@@ -164,10 +176,10 @@ export default function Suscripcion() {
         </div>
       ) : null}
 
-      <div className="w-[90%] max-w-4xl mx-auto relative z-10 mt-8">
+      <div className="w-full max-w-6xl mx-auto relative z-10 mt-2 flex-1">
         {/* Header Section */}
-        <div className="text-center mb-8 max-w-2xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-light text-zinc-900 tracking-tight mb-2">
+        <div className="text-center mb-6 max-w-2xl mx-auto">
+          <h2 className="text-2xl font-light text-zinc-900 tracking-tight mb-1">
             Lleva tu enseñanza al siguiente nivel.
           </h2>
           <p className="text-zinc-500 text-xs">
@@ -188,7 +200,7 @@ export default function Suscripcion() {
               className="flex flex-col h-full"
             >
               {/* Top part: Header & Price */}
-              <div className="p-6 md:p-5 lg:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+              <div className="p-5 lg:p-6 border-b border-dashed border-[rgba(120,135,110,0.25)]">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
                   {planMensual.name}
                 </h3>
@@ -209,7 +221,7 @@ export default function Suscripcion() {
               </div>
 
               {/* Middle part: Features */}
-              <div className="p-6 md:p-5 lg:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
+              <div className="p-5 lg:p-6 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
                 {planMensual.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
                     <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
@@ -223,7 +235,7 @@ export default function Suscripcion() {
               </div>
 
               {/* Bottom part: Secondary & Button */}
-              <div className="p-6 md:p-5 lg:p-8 flex flex-col justify-end bg-white">
+              <div className="p-5 lg:p-6 flex flex-col justify-end bg-white">
                 <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
                   {planMensual.secondary}
                 </p>
@@ -249,7 +261,7 @@ export default function Suscripcion() {
               className="flex flex-col h-full bg-[#F7FAF5]/60"
             >
               {/* Top part: Header & Price */}
-              <div className="p-6 md:p-5 lg:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+              <div className="p-5 lg:p-6 border-b border-dashed border-[rgba(120,135,110,0.25)]">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">
                     {planAnual.name}
@@ -275,7 +287,7 @@ export default function Suscripcion() {
               </div>
 
               {/* Middle part: Features */}
-              <div className="p-6 md:p-5 lg:p-8 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-white">
+              <div className="p-5 lg:p-6 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-white">
                 {planAnual.features.map(feat => (
                   <div key={feat} className="flex items-start gap-2.5">
                     <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
@@ -289,7 +301,7 @@ export default function Suscripcion() {
               </div>
 
               {/* Bottom part: Secondary & Button */}
-              <div className="p-6 md:p-5 lg:p-8 flex flex-col justify-end bg-[#F7FAF5]/60">
+              <div className="p-5 lg:p-6 flex flex-col justify-end bg-[#F7FAF5]/60">
                 <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
                   {planAnual.secondary}
                 </p>
@@ -308,14 +320,15 @@ export default function Suscripcion() {
 
             {/* Column 3: Institucional Proposal */}
             <motion.div
+              onClick={handleInstitutionalTrial}
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
-              className="flex flex-col h-full bg-[#FAFBF9]/20"
+              className={`flex flex-col h-full bg-[#FAFBF9]/20 transition-all group ${extensionGranted ? 'opacity-80' : 'cursor-pointer hover:bg-[#F3F6F2] hover:shadow-sm'}`}
             >
               {/* Top part: Header */}
-              <div className="p-6 md:p-5 lg:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+              <div className="p-5 lg:p-6 border-b border-dashed border-[rgba(120,135,110,0.25)]">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
                   Lleva CIELO a tu institución educativa
                 </h3>
@@ -328,22 +341,28 @@ export default function Suscripcion() {
               </div>
 
               {/* Middle part: Feature/Promo */}
-              <div className="p-6 md:p-5 lg:p-8 flex-1 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-white flex items-center">
+              <div className="p-5 lg:p-6 flex-1 bg-white flex flex-col justify-center border-none">
                  <div className="flex items-start gap-3">
                     <span className="w-5 h-5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-sm font-extrabold mt-0.5">+</span>
-                    <h4 className="text-base font-bold text-zinc-900 tracking-tight leading-tight">
-                       +7 días de prueba para presentar la propuesta en tu centro.
-                    </h4>
+                    <div>
+                      <h4 className="text-base font-bold text-zinc-900 tracking-tight leading-tight mb-2">
+                         +7 días de prueba para presentar la propuesta en tu centro.
+                      </h4>
+                      {extensionGranted ? (
+                        <p className="text-xs font-bold text-[#689C63] uppercase tracking-wider">
+                          ¡Extensión activada! Vuelve a CIELO.
+                        </p>
+                      ) : isExtending ? (
+                        <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
+                          Activando...
+                        </p>
+                      ) : (
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider group-hover:text-primary transition-colors">
+                          Haz clic aquí para activar
+                        </p>
+                      )}
+                    </div>
                  </div>
-              </div>
-
-              {/* Bottom part: Button */}
-              <div className="p-6 md:p-5 lg:p-8 flex flex-col justify-end bg-[#FAFBF9]/20">
-                <div className="relative z-0 mt-8">
-                  <button onClick={handleInstitutionalTrial} className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#F3F6F2] transition-colors shadow-sm text-xs font-medium tracking-widest uppercase cursor-pointer">
-                    Invitar a mi institución a registrarse
-                  </button>
-                </div>
               </div>
             </motion.div>
 
