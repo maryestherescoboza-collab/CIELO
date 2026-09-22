@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Check, RotateCcw, AlertCircle } from 'lucide-react';
 import type { AppState, CalificacionActividad, RecuperacionBC } from '../types';
 import { PERIODOS_ACADEMICOS } from '../cache/academicCache';
+import { NIVELES_DOMINIO } from '../constants/evaluacionNiveles';
 
 type Paso = 'curso' | 'periodo' | 'actividad' | 'captura' | 'final';
 
@@ -12,10 +13,10 @@ interface SellosProps {
 }
 
 const SELLOS_INFO = [
-    { valor: 100, etiqueta: 'Excelente', bg: '#DCF3E5', color: '#689C63', circleBg: '#E8F8EE', imagen: '/sellos/sello-excelente-100.png' },
-    { valor: 85, etiqueta: 'Muy Bueno', bg: '#E0F2FE', color: '#537BAC', circleBg: '#EFF9FF', imagen: '/sellos/sello-muybueno-85.png' },
-    { valor: 70, etiqueta: 'Logrado', bg: '#DBEAFE', color: '#DEAE4D', circleBg: '#EEF4FF', imagen: '/sellos/sello-logrado-70.png' },
-    { valor: 65, etiqueta: 'Por Lograr', bg: '#FEF3C7', color: '#EB8847', circleBg: '#FFFBEB', imagen: '/sellos/sello-porlograr-65.png' },
+    { valor: 100, etiqueta: NIVELES_DOMINIO[100].etiqueta, bg: '#DCF3E5', color: '#689C63', circleBg: '#E8F8EE', imagen: '/sellos/sello-excelente-100.png' },
+    { valor: 85, etiqueta: NIVELES_DOMINIO[85].etiqueta, bg: '#E0F2FE', color: '#537BAC', circleBg: '#EFF9FF', imagen: '/sellos/sello-muybueno-85.png' },
+    { valor: 70, etiqueta: NIVELES_DOMINIO[70].etiqueta, bg: '#DBEAFE', color: '#DEAE4D', circleBg: '#EEF4FF', imagen: '/sellos/sello-logrado-70.png' },
+    { valor: 55, etiqueta: NIVELES_DOMINIO[55].etiqueta, bg: '#FEF3C7', color: '#EB8847', circleBg: '#FFFBEB', imagen: '/sellos/sello-porlograr-65.png' },
     { valor: 1, etiqueta: 'Se negó a realizar', bg: '#FDE8E8', color: '#DB5B48', circleBg: '#FDF2F2', imagen: '/sellos/sello-senego-1.png' },
     { valor: 0, etiqueta: 'Inasistencia', bg: '#E1EFFE', color: '#537BAC', circleBg: '#EBF5FF', imagen: '/sellos/sello-inasistencia-0.png' },
 ] as const;

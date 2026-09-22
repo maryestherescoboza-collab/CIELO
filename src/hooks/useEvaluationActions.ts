@@ -963,14 +963,22 @@ export function useEvaluationActions() {
 
     const deleteActividad = useCallback(async (id: number) => {
         // Real physical delete
-        const { error } = await supabase.from('actividades').delete().eq('id', id);
+        const { data, error } = await supabase.from('actividades').delete().eq('id', id).select();
         
         if (error) {
             console.error('Error deleting actividad:', error);
+            setGenericToast({ message: 'Error al eliminar la actividad', type: 'error' });
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            console.warn('DELETE rechazado por RLS o actividad no encontrada:', id);
+            setGenericToast({ message: 'No tienes permiso para eliminar esta actividad', type: 'error' });
             return;
         }
         
         setState(s => ({ ...s, actividades: s.actividades.filter(a => a.id !== id) }));
+        setGenericToast({ message: 'Actividad eliminada permanentemente', type: 'success' });
     }, [setState]);
 
     const resetSchoolYear = useCallback(async () => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Target, ClipboardList, BookOpen, UserPlus } from 'lucide-react';
+import { Plus, Trash2, Target, ClipboardList, BookOpen, UserPlus, AlertTriangle } from 'lucide-react';
 import PegarListadoModal from './PegarListadoModal';
 import StudentObservationModal from './StudentObservationModal';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -8,10 +8,7 @@ import InsertarEstudianteModal from './InsertarEstudianteModal';
 import ActivityViewTab from './workspace/ActivityViewTab';
 import type { BCKey, Actividad } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
-
-
-
-
+import { CieloModal } from '../ui/CieloModal';
 interface GradeTableProps {
     actividades: Actividad[];
     estudiantes: any[];
@@ -78,6 +75,9 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
     // Estado para modal de observación
     const [obsModalEstudianteId, setObsModalEstudianteId] = React.useState<number | null>(null);
+
+    // Estado para confirmación de eliminación de actividad
+    const [actividadAEliminar, setActividadAEliminar] = React.useState<number | null>(null);
 
 
     // Fuente de verdad para saber si una posición tiene estudiante REAL activo:
@@ -255,7 +255,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                         <div className="flex flex-col items-center gap-3 w-full">
                                             <div className="flex items-center gap-2 w-full justify-center px-1">
                                                 {!isProductoFinal && (
-                                                    <button onClick={() => onDeleteActividad(act.id)} title="Eliminar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-danger rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><Trash2 size={12} /></button>
+                                                    <button onClick={() => setActividadAEliminar(act.id)} title="Eliminar actividad" className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center hover:bg-danger rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"><Trash2 size={12} /></button>
                                                 )}
                                                 <input 
                                                     data-guide="celda-actividad"
@@ -553,6 +553,44 @@ const GradeTable: React.FC<GradeTableProps> = ({
                     }
                 }}
             />
+
+            <CieloModal
+                isOpen={actividadAEliminar !== null}
+                onClose={() => setActividadAEliminar(null)}
+                title="¿Eliminar actividad?"
+                icon={<AlertTriangle className="text-danger w-5 h-5" />}
+                maxWidth="md"
+                footer={
+                    <div className="flex items-center justify-end gap-3 w-full">
+                        <button
+                            onClick={() => setActividadAEliminar(null)}
+                            className="px-5 py-2.5 rounded-full text-sm font-bold text-(--ink-soft) hover:bg-slate-100 transition-colors uppercase tracking-widest"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (actividadAEliminar !== null) {
+                                    onDeleteActividad(actividadAEliminar);
+                                    setActividadAEliminar(null);
+                                }
+                            }}
+                            className="px-5 py-2.5 rounded-full text-sm font-bold text-white bg-danger hover:bg-red-700 transition-colors shadow-md shadow-danger/20 uppercase tracking-widest"
+                        >
+                            Eliminar permanentemente
+                        </button>
+                    </div>
+                }
+            >
+                <div className="py-4">
+                    <p className="text-sm text-(--ink-soft) leading-relaxed">
+                        Esta acción eliminará permanentemente la actividad y los datos asociados a ella, incluyendo las evaluaciones y calificaciones registradas.
+                    </p>
+                    <p className="text-sm font-bold text-danger mt-4">
+                        Esta acción no se puede deshacer.
+                    </p>
+                </div>
+            </CieloModal>
         </div>
     );
 };
