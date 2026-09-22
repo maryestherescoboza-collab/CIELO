@@ -212,21 +212,72 @@ export function useStudentActions() {
         // Un ID <= 0 es un placeholder visual: no hay registro que desactivar.
         if (!(id > 0)) return;
 
-        // Logical deactivation instead of physical delete: se conserva el registro
-        // histórico (calificaciones, actividades, incidencias, relaciones leídas
-        // por estudiantes.id), se libera la posición: activo=false Y numero_lista
-        // = NULL. NULL es inmune a la unique (curso_id, numero_lista), así la
-        // posición puede reutilizarse para un estudiante real nuevo sin romper la
-        // constraint ni el MAX del trigger (éste considera solo activos).
-        const { error } = await supabase.from('estudiantes').update({ activo: false, numero_lista: null }).eq('id', id);
+        // Eliminación física: Las llaves foráneas con ON DELETE CASCADE
+        // se encargarán de borrar en cascada calificaciones, incidencias y otros datos.
+        const { error } = await supabase.from('estudiantes').delete().eq('id', id);
         if (!error) {
             setState(s => ({ ...s, estudiantes: s.estudiantes.filter(e => e.id !== id) }));
         }
     }, [setState]);
 
+    const handleAddEstudianteEnPosicion = useCallback(async (cursoId: number, nombre: string, apellido: string, posicion: number) => {
+        if (!session?.user?.id) return null;
+        
+        const colors = ['#059669', '#10b981', '#34d399', '#0f172a', '#334155', '#475569', '#64748b'];
+        const cId = Number(cursoId);
+        const currentCurso = state.cursos.find(c => c.id === cId);
+        
+        if (!currentCurso || !currentCurso.grupoId) {
+            setGenericToast({ message: 'Error: Curso no válido o sin grupo asignado.', type: 'error' });
+            setTimeout(() => setGenericToast(null), 3000);
+            return null;
+        }
+
+        const nextId = Math.max(0, ...state.estudiantes.map(x => (typeof x.id === 'number' ? x.id : 0))) + 1;
+        const avatarColor = colors[nextId % colors.length];
+
+        const { data, error } = await supabase.rpc('rpc_insertar_estudiante_posicion', {
+            p_curso_id: cId,
+            p_posicion: posicion,
+            p_nombre: nombre,
+            p_apellido: apellido,
+            p_avatar_color: avatarColor,
+            p_grupo_id: currentCurso.grupoId,
+            p_docente_id: session.user.id,
+            p_shared_course_id: currentCurso.sharedCourseId || `group_${currentCurso.grupoId}`
+        });
+
+        if (error) {
+            console.error('[rpc_insertar_estudiante_posicion] Detalle del error:', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                fullError: error
+            });
+            setGenericToast({ message: `Error Supabase [${error.code}]: ${error.message} (Revisar consola)`, type: 'error' });
+            setTimeout(() => setGenericToast(null), 8000);
+            return null;
+        }
+
+        // Ya que la BD desplazó múltiples registros subyacentes, lo más seguro es forzar
+        // un refetch de los estudiantes desde el componente (o retornar true para que
+        // el componente dispare el refetch). Aquí retornamos la data, y dejaremos que
+        // el UI trigeree la recarga o al menos confirme el éxito.
+        if (data) {
+            const mapped = mapearEstudiante(data);
+            setGenericToast({ message: 'Estudiante agregado correctamente.', type: 'success' });
+            setTimeout(() => setGenericToast(null), 5000);
+            return mapped;
+        }
+        
+        return null;
+    }, [session, state.cursos, state.estudiantes, setGenericToast]);
+
     return {
         addEstudiante: handleAddEstudiante,
         updateEstudiante: handleUpdateEstudiante,
-        deleteEstudiante: handleDeleteEstudiante
+        deleteEstudiante: handleDeleteEstudiante,
+        addEstudianteEnPosicion: handleAddEstudianteEnPosicion
     };
 }

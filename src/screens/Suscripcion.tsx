@@ -200,34 +200,34 @@ export default function Suscripcion() {
               className="flex flex-col h-full"
             >
               {/* Top part: Header & Price */}
-              <div className="p-5 lg:p-6 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+              <div className="p-4 lg:p-5 border-b border-dashed border-[rgba(120,135,110,0.25)]">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
                   {planMensual.name}
                 </h3>
-                <p className="text-xs text-zinc-400 mb-4 leading-normal">
+                <p className="text-[11px] text-zinc-400 mb-3 leading-normal">
                   {planMensual.subtitle}
                 </p>
                 <div className="flex flex-col">
-                  <div className="text-4xl font-light text-zinc-900 tracking-tight">
-                    {precioMensualUSD} <span className="text-lg font-normal text-zinc-400">USD</span>
+                  <div className="text-3xl font-light text-zinc-900 tracking-tight">
+                    {precioMensualUSD} <span className="text-sm font-normal text-zinc-400">USD</span>
                   </div>
-                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5 mb-1">
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider mt-0.5 mb-1">
                     por mes
                   </div>
-                  <div className="text-xs font-semibold text-[#689C63] uppercase tracking-wider">
+                  <div className="text-[10px] font-semibold text-[#689C63] uppercase tracking-wider">
                     ≈ RD${precioMensualRD} / mes
                   </div>
                 </div>
               </div>
 
               {/* Middle part: Features */}
-              <div className="p-5 lg:p-6 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
+              <div className="p-4 lg:p-5 flex-1 space-y-2 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-[#FAFBF9]/20">
                 {planMensual.features.map(feat => (
-                  <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
+                  <div key={feat} className="flex items-start gap-2">
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-[10px] font-extrabold mt-0.5">
                       ✓
                     </span>
-                    <span className="text-xs text-zinc-600 leading-tight">
+                    <span className="text-[11px] text-zinc-600 leading-tight">
                       {feat}
                     </span>
                   </div>
@@ -235,14 +235,14 @@ export default function Suscripcion() {
               </div>
 
               {/* Bottom part: Secondary & Button */}
-              <div className="p-5 lg:p-6 flex flex-col justify-end bg-white">
-                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
+              <div className="p-4 lg:p-5 flex flex-col justify-end bg-white">
+                <p className="text-[10px] text-zinc-400 italic leading-relaxed mb-3">
                   {planMensual.secondary}
                 </p>
                 
                 <div className="relative z-0">
                   {hasPremium && suscripcionActual?.tipo === 'individual' ? (
-                    <button disabled className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.2)] text-zinc-400 text-xs font-medium tracking-widest uppercase">
+                    <button disabled className="w-full py-2 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.2)] text-zinc-400 text-[10px] font-medium tracking-widest uppercase rounded-sm">
                       Plan Actual
                     </button>
                   ) : (
@@ -261,39 +261,39 @@ export default function Suscripcion() {
               className="flex flex-col h-full bg-[#F7FAF5]/60"
             >
               {/* Top part: Header & Price */}
-              <div className="p-5 lg:p-6 border-b border-dashed border-[rgba(120,135,110,0.25)]">
+              <div className="p-4 lg:p-5 border-b border-dashed border-[rgba(120,135,110,0.25)]">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">
                     {planAnual.name}
                   </h3>
-                  <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-[#5C7257] bg-[#EBF1E9] border border-[#D5E1D2] px-1.5 py-0.5 rounded-full leading-none">
+                  <span className="inline-block text-[8px] font-bold uppercase tracking-wider text-[#5C7257] bg-[#EBF1E9] border border-[#D5E1D2] px-1.5 py-0.5 rounded-full leading-none">
                     {planAnual.badge}
                   </span>
                 </div>
-                <p className="text-xs text-zinc-400 mb-4 leading-normal">
+                <p className="text-[11px] text-zinc-400 mb-3 leading-normal">
                   {planAnual.subtitle}
                 </p>
                 <div className="flex flex-col">
-                  <div className="text-4xl font-light text-zinc-900 tracking-tight">
-                    {precioAnualUSD} <span className="text-lg font-normal text-zinc-400">USD</span>
+                  <div className="text-3xl font-light text-zinc-900 tracking-tight">
+                    {precioAnualUSD} <span className="text-sm font-normal text-zinc-400">USD</span>
                   </div>
-                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-0.5 mb-1">
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider mt-0.5 mb-1">
                     por mes (12 cuotas)
                   </div>
-                  <div className="text-xs font-semibold text-[#689C63] uppercase tracking-wider">
+                  <div className="text-[10px] font-semibold text-[#689C63] uppercase tracking-wider">
                     ≈ RD${precioAnualRD} / mes
                   </div>
                 </div>
               </div>
 
               {/* Middle part: Features */}
-              <div className="p-5 lg:p-6 flex-1 space-y-2.5 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-white">
+              <div className="p-4 lg:p-5 flex-1 space-y-2 border-b border-dashed border-[rgba(120,135,110,0.25)] bg-white">
                 {planAnual.features.map(feat => (
-                  <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-xs font-extrabold mt-0.5">
+                  <div key={feat} className="flex items-start gap-2">
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-[10px] font-extrabold mt-0.5">
                       ✓
                     </span>
-                    <span className="text-xs text-zinc-600 leading-tight">
+                    <span className="text-[11px] text-zinc-600 leading-tight">
                       {feat}
                     </span>
                   </div>
@@ -301,14 +301,14 @@ export default function Suscripcion() {
               </div>
 
               {/* Bottom part: Secondary & Button */}
-              <div className="p-5 lg:p-6 flex flex-col justify-end bg-[#F7FAF5]/60">
-                <p className="text-xs text-zinc-400 italic leading-relaxed mb-4">
+              <div className="p-4 lg:p-5 flex flex-col justify-end bg-[#F7FAF5]/60">
+                <p className="text-[10px] text-zinc-400 italic leading-relaxed mb-3">
                   {planAnual.secondary}
                 </p>
                 
                 <div className="relative z-0">
                   {hasPremium && suscripcionActual?.tipo === 'individual' ? (
-                    <button disabled className="w-full py-2.5 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.2)] text-zinc-400 text-xs font-medium tracking-widest uppercase">
+                    <button disabled className="w-full py-2 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.2)] text-zinc-400 text-[10px] font-medium tracking-widest uppercase rounded-sm">
                       Plan Actual
                     </button>
                   ) : (
@@ -320,49 +320,52 @@ export default function Suscripcion() {
 
             {/* Column 3: Institucional Proposal */}
             <motion.div
-              onClick={handleInstitutionalTrial}
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
-              className={`flex flex-col h-full bg-[#FAFBF9]/20 transition-all group ${extensionGranted ? 'opacity-80' : 'cursor-pointer hover:bg-[#F3F6F2] hover:shadow-sm'}`}
+              className={`flex flex-col h-full bg-[#FAFBF9]/20 transition-all ${extensionGranted ? 'opacity-95' : ''}`}
             >
               {/* Top part: Header */}
-              <div className="p-5 lg:p-6 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+              <div className="p-4 lg:p-5 border-b border-dashed border-[rgba(120,135,110,0.25)] flex-1 flex flex-col items-center justify-center text-center">
+                <h3 className="text-[13px] font-bold uppercase tracking-wider text-primary mb-2">
                   Lleva CIELO a tu institución educativa
                 </h3>
-                <p className="text-xs text-zinc-400 mb-4 leading-normal">
+                <p className="text-xs text-zinc-500 mb-3 leading-relaxed max-w-[90%]">
                   La mayoría de los usuarios sigue evaluando con el método tradicional de acumulación de puntos porque no cuenta con directrices claras para aplicar la evaluación por competencias.
                 </p>
-                <p className="text-xs text-zinc-600 font-medium mb-2 leading-normal">
+                <p className="text-xs text-zinc-700 font-bold mb-0 leading-relaxed">
                   Con CIELO, tu institución puede dar ese paso.
                 </p>
               </div>
 
-              {/* Middle part: Feature/Promo */}
-              <div className="p-5 lg:p-6 flex-1 bg-white flex flex-col justify-center border-none">
-                 <div className="flex items-start gap-3">
-                    <span className="w-5 h-5 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-sm font-extrabold mt-0.5">+</span>
-                    <div>
-                      <h4 className="text-base font-bold text-zinc-900 tracking-tight leading-tight mb-2">
-                         +7 días de prueba para presentar la propuesta en tu centro.
-                      </h4>
-                      {extensionGranted ? (
-                        <p className="text-xs font-bold text-[#689C63] uppercase tracking-wider">
-                          ¡Extensión activada! Vuelve a CIELO.
-                        </p>
-                      ) : isExtending ? (
-                        <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
-                          Activando...
-                        </p>
-                      ) : (
-                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider group-hover:text-primary transition-colors">
-                          Haz clic aquí para activar
-                        </p>
-                      )}
-                    </div>
+              {/* Middle part: Feature/Promo & Button */}
+              <div className="p-4 lg:p-5 bg-white flex flex-col justify-end">
+                 <div className="flex items-start gap-2 mb-3">
+                    <span className="w-4 h-4 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-[10px] font-extrabold mt-0.5">+</span>
+                    <h4 className="text-[12px] font-bold text-zinc-900 tracking-tight leading-snug">
+                       +7 días de prueba para presentar la propuesta en tu centro.
+                    </h4>
                  </div>
+                 
+                 {extensionGranted ? (
+                    <div className="flex flex-col w-full">
+                      <button disabled className="w-full py-1.5 px-3 bg-[#EBF1E9]/40 border border-dashed border-[#D5E1D2] text-[#5C7257] text-[10px] font-bold tracking-widest uppercase cursor-not-allowed rounded-sm">
+                        Extensión activada
+                      </button>
+                      <p className="text-[10px] text-zinc-500 text-center font-medium mt-1.5">
+                        Vuelve a CIELO para continuar.
+                      </p>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handleInstitutionalTrial}
+                      disabled={isExtending}
+                      className="w-full py-1.5 px-3 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#F3F6F2] transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.01)] text-[10px] font-bold tracking-widest uppercase rounded-sm cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                    >
+                      {isExtending ? 'Activando...' : 'Obtener 7 días adicionales'}
+                    </button>
+                  )}
               </div>
             </motion.div>
 

@@ -1,9 +1,10 @@
 import React from 'react';
-import { Plus, Trash2, Target, ClipboardList, BookOpen } from 'lucide-react';
+import { Plus, Trash2, Target, ClipboardList, BookOpen, UserPlus } from 'lucide-react';
 import PegarListadoModal from './PegarListadoModal';
 import StudentObservationModal from './StudentObservationModal';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import GradeCell from './GradeCell';
+import InsertarEstudianteModal from './InsertarEstudianteModal';
 import ActivityViewTab from './workspace/ActivityViewTab';
 import type { BCKey, Actividad } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
@@ -29,6 +30,7 @@ interface GradeTableProps {
     onDeleteActividad: (id: number) => void;
     onToggleBc: (actId: number, bc: BCKey) => void;
     onAddEstudiante: (nombre?: string, apellido?: string, numeroLista?: number) => Promise<any> | void;
+    onAddEstudianteEnPosicion?: (nombre: string, apellido: string, posicion: number) => Promise<any>;
     onDeleteEstudiante?: (id: number) => void;
     onSetRubricTarget: (target: any) => void;
     getGradeClass: (score: number | null) => string;
@@ -56,6 +58,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     onDeleteActividad,
     onToggleBc,
     onAddEstudiante,
+    onAddEstudianteEnPosicion,
     onDeleteEstudiante,
     onSetRubricTarget,
     getGradeClass,
@@ -70,6 +73,9 @@ const GradeTable: React.FC<GradeTableProps> = ({
     // Estado para el modal de "Pegar listado" (solo edita nombre/apellido)
     const [showPegarListado, setShowPegarListado] = React.useState(false);
     
+    // Estado para modal de insertar estudiante en posición
+    const [showInsertar, setShowInsertar] = React.useState(false);
+
     // Estado para modal de observación
     const [obsModalEstudianteId, setObsModalEstudianteId] = React.useState<number | null>(null);
 
@@ -228,6 +234,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                         <span className="text-sm font-black uppercase tracking-[0.2em] italic text-[#2E3330]">Estudiantes</span>
                                         <div className="flex flex-col items-start gap-1.5">
                                             <button data-guide="btn-agregar-estudiante" onClick={() => onAddEstudiante()} className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all"><Plus size={14} strokeWidth={2.6} />Agregar estudiante</button>
+                                            <button onClick={() => setShowInsertar(true)} className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all"><UserPlus size={14} strokeWidth={2.6} />Agregar en posición</button>
                                             <button data-guide="btn-pegar-listado" onClick={() => setShowPegarListado(true)} className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all"><ClipboardList size={14} strokeWidth={2.6} />Pegar listado</button>
                                         </div>
                                     </div>
@@ -525,6 +532,16 @@ const GradeTable: React.FC<GradeTableProps> = ({
                 onUpdateEstudiante={onUpdateEstudiante}
                 onAddEstudiante={onAddEstudiante}
             />
+            {onAddEstudianteEnPosicion && (
+                <InsertarEstudianteModal
+                    show={showInsertar}
+                    onClose={() => setShowInsertar(false)}
+                    maxPosicion={Math.max(0, ...estudiantesRealesCurso.map(e => e.numeroLista || 0))}
+                    onInsertar={async (n, a, p) => {
+                        return onAddEstudianteEnPosicion(n, a, p);
+                    }}
+                />
+            )}
             <StudentObservationModal
                 show={obsModalEstudianteId !== null}
                 estudiante={estudiantesRealesCurso.find(e => e.id === obsModalEstudianteId)}

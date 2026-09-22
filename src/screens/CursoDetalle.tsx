@@ -22,6 +22,7 @@ interface Props {
     currentUserId?: string;
     onSaveCurso?: (c: Curso) => void;
     onAddEstudiante?: (cursoId: number, nombre: string, apellido: string, numeroLista?: number) => Promise<any>;
+    onAddEstudianteEnPosicion?: (cursoId: number, nombre: string, apellido: string, posicion: number) => Promise<any>;
     onUpdateEstudiante?: (id: number, e: Partial<Estudiante>) => void;
     onDeleteEstudiante?: (id: number) => Promise<any>;
     onAddActividad?: (a: Omit<Actividad, 'id'>) => Promise<any>;
@@ -276,6 +277,14 @@ export default function CursoDetalle(props: Props) {
                 onDeleteActividad={(actId) => props.onDeleteActividad?.(actId)}
                 onToggleBc={onToggleBc}
                 onAddEstudiante={(nombre = 'Nuevo', apellido = 'Estudiante', numeroLista) => props.onAddEstudiante?.(cursoId, nombre, apellido, numeroLista)}
+                onAddEstudianteEnPosicion={async (nombre, apellido, posicion) => {
+                    if (!props.onAddEstudianteEnPosicion) return null;
+                    const result = await props.onAddEstudianteEnPosicion(cursoId, nombre, apellido, posicion);
+                    if (result) {
+                        loadCursoData(cursoId);
+                    }
+                    return result;
+                }}
                 onDeleteEstudiante={(id) => props.onDeleteEstudiante?.(id)}
                 onSetRubricTarget={setRubricTarget}
                 getGradeClass={getGradeClass}

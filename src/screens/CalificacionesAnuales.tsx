@@ -30,7 +30,13 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
         if (!curso) return [];
         return state.estudiantes
             .filter(e => esEstudianteDelCurso(state.cursos, curso, e, centroContexto))
-            .sort((a, b) => a.apellido.localeCompare(b.apellido));
+            .sort((a, b) => {
+                const numA = typeof a.numeroLista === 'number' ? a.numeroLista : Infinity;
+                const numB = typeof b.numeroLista === 'number' ? b.numeroLista : Infinity;
+                if (numA !== numB) return numA - numB;
+                // Si ambos no tienen número o tienen el mismo, desempatar por apellido
+                return (a.apellido || '').localeCompare(b.apellido || '');
+            });
     }, [state.estudiantes, state.cursos, curso, centroContexto]);
 
     const reportData = useMemo(() => {
@@ -60,15 +66,25 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                 });
 
                 const validScores = periodScores.filter(v => v !== null) as number[];
-                return validScores.length > 0
-                    ? Math.round(validScores.reduce((acc, score) => acc + score, 0) / validScores.length)
+                const exact = validScores.length > 0
+                    ? validScores.reduce((acc, score) => acc + score, 0) / validScores.length
                     : 0;
+
+                return {
+                    rounded: Math.round(exact),
+                    display: validScores.length > 0 ? exact.toFixed(1) : ''
+                };
             };
 
-            const pc1 = calculatePC('BC1');
-            const pc2 = calculatePC('BC2');
-            const pc3 = calculatePC('BC3');
-            const pc4 = calculatePC('BC4');
+            const pc1_data = calculatePC('BC1');
+            const pc2_data = calculatePC('BC2');
+            const pc3_data = calculatePC('BC3');
+            const pc4_data = calculatePC('BC4');
+
+            const pc1 = pc1_data.rounded;
+            const pc2 = pc2_data.rounded;
+            const pc3 = pc3_data.rounded;
+            const pc4 = pc4_data.rounded;
 
             const cf = Math.round((pc1 + pc2 + pc3 + pc4) / 4);
 
@@ -122,7 +138,10 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                 id: est.id,
                 num: idx + 1,
                 name: `${est.apellido}, ${est.nombre}`,
-                pc1, pc2, pc3, pc4,
+                pc1: pc1_data.display, 
+                pc2: pc2_data.display, 
+                pc3: pc3_data.display, 
+                pc4: pc4_data.display,
                 cf, cf50, cec, cec50, ccf,
                 cf30, ceex, ceex70, cexf,
                 cfSpec, ceSpec,
