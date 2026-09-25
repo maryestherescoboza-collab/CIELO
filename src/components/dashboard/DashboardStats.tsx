@@ -38,7 +38,6 @@ export function DashboardStats({ totalEstudiantes, incidenciasCount, avgGeneral,
                         </div>
                         <div className="flex items-baseline gap-2">
                             <p className={`text-4xl font-semibold font-notion-title tracking-tight ${s.text} leading-none`}>{s.value}</p>
-                            {s.label === 'Promedio G.' && <span className="text-xs font-black tracking-tighter text-[#2E3330] bg-[#EAE4DA] px-2 py-0.5 rounded-full border border-black/5 animate-pulse">↑ 1.5%</span>}
                         </div>
                     </div>
                 </div>

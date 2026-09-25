@@ -10,14 +10,14 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 const PAYPAL_CLIENT_ID = Deno.env.get("PAYPAL_CLIENT_ID") as string;
 const PAYPAL_CLIENT_SECRET = Deno.env.get("PAYPAL_CLIENT_SECRET") as string;
 
-// Fase Sandbox
-const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com";
+// Fase Live
+const PAYPAL_API_BASE = "https://api-m.paypal.com";
 
 // Setup Supabase admin client to insert into suscripciones (since it bypasses RLS if needed, though RLS should allow insert for own user. Using service key ensures we can insert before the webhook comes)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-const PLAN_ID_MENSUAL = "P-2967335801971131ANKXAXCA";
-const PLAN_ID_ANUAL = "P-2DK87575AA1045204NKXWA5A";
+const PLAN_ID_MENSUAL = "P-5S963969E1293252RNKEJQCA";
+const PLAN_ID_ANUAL = "P-94080814BU072521XNKMCYDQ";
 
 async function getPayPalAccessToken(): Promise<string> {
   const auth = btoa(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`);

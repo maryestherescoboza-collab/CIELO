@@ -8,7 +8,7 @@ import {
     Check
 } from 'lucide-react';
 import type { Curso } from '../../../../types';
-
+import { NIVELES_DOMINIO } from '../../../../constants/evaluacionNiveles';
 interface CursoDetalleHeaderProps {
     curso: Curso | undefined;
     buscar: string;
@@ -154,10 +154,10 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             }
 
                             const tooltips: Record<number, { title: string; desc: string }> = {
-                                100: { title: '100 — Dominio completo', desc: 'Domina el indicador con autonomía.' },
-                                85: { title: '85 — Logro esperado', desc: 'Alcanza lo esperado con algunas dificultades.' },
-                                70: { title: '70 — Logro parcial', desc: 'Demuestra parcialmente el indicador.' },
-                                55: { title: '55 — Inicio', desc: 'Evidencia limitada; necesita apoyo.' },
+                                100: { title: `100 — ${NIVELES_DOMINIO[100].etiqueta}`, desc: NIVELES_DOMINIO[100].descriptor },
+                                85: { title: `85 — ${NIVELES_DOMINIO[85].etiqueta}`, desc: NIVELES_DOMINIO[85].descriptor },
+                                70: { title: `70 — ${NIVELES_DOMINIO[70].etiqueta}`, desc: NIVELES_DOMINIO[70].descriptor },
+                                55: { title: `55 — ${NIVELES_DOMINIO[55].etiqueta}`, desc: NIVELES_DOMINIO[55].descriptor },
                             };
                             const tt = tooltips[val];
 

@@ -6,12 +6,14 @@ import { CieloPill } from '../components/ui/CieloPill';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { useAppStore } from '../store/appStore';
 
 export default function Suscripcion() {
   const navigate = useNavigate();
   const { hasPremium, suscripcionActual } = usePremiumAccess();
-  // El ID oficial de Sandbox de PayPal
-  const PAYPAL_CLIENT_ID = "Af-mNy8fqCu4n5dP2W3m2LJ55jeeuUzp7Dfzq9SLtVXpBookh4wYuG7hrCtefhv2EQheWLCRLW6f6iv-";
+  const setState = useAppStore(s => s.setState);
+  // El ID oficial de Live de PayPal
+  const PAYPAL_CLIENT_ID = "BAALGDYDZVHKbF-LAgkLOESd5uPYHjrnsQlUySvjMkkeA--XHzJYpfwyhzz-PkUUiYEQTiNi4zDYf2udJ4";
 
   const [isExtending, setIsExtending] = useState(false);
   const [extensionGranted, setExtensionGranted] = useState(false);
@@ -20,25 +22,44 @@ export default function Suscripcion() {
     if (isExtending || extensionGranted) return;
     setIsExtending(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.user_metadata?.trial_extension_requested) {
-        await supabase.auth.updateUser({
-          data: { trial_extension_requested: true }
-        });
+      const { data: activatedAt, error } = await supabase.rpc('activar_extension_institucional');
+      
+      if (error) throw error;
+      
+      if (activatedAt) {
+        // Obtenemos el userId de la sesión para actualizar el store
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+           setState(prev => ({
+             ...prev,
+             perfiles: prev.perfiles.map(p => 
+               p.userId === session.user.id 
+                 ? { ...p, trial_extension_activated_at: activatedAt } 
+                 : p
+             )
+           }));
+        }
+        setExtensionGranted(true);
+      } else {
+        // Ya estaba activada antes
+        alert('Ya has utilizado tus 7 días de prueba institucionales.');
       }
-      setExtensionGranted(true);
     } catch (e) {
       console.error(e);
+      alert('Ha ocurrido un error al activar la extensión.');
     } finally {
       setIsExtending(false);
     }
   };
 
   useEffect(() => {
+    if (hasPremium) {
+      navigate('/inicio', { replace: true });
+    }
     if ((suscripcionActual as any)?.provider === 'manual' && suscripcionActual?.estado === 'activa') {
       navigate('/inicio', { replace: true });
     }
-  }, [suscripcionActual, navigate]);
+  }, [hasPremium, suscripcionActual, navigate]);
 
   const PayPalSubscriptionButton = ({ planType }: { planType: 'mensual' | 'anual' }) => {
     return (
@@ -123,6 +144,8 @@ export default function Suscripcion() {
     secondary: 'Compromiso de 12 meses. El cobro lo administra PayPal de forma mensual.',
     features: featuresComunes
   };
+
+
 
   return (
     <div className="min-h-screen bg-[#F8F3ED] pt-6 pb-12 px-4 md:px-8 font-sans flex flex-col">

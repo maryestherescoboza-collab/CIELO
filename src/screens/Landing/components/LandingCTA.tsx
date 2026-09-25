@@ -26,10 +26,10 @@ export function LandingCTA() {
             Más calma para planificar. Más claridad para evaluar. Más tiempo para acompañar a cada estudiante.
           </p>
           <button 
-            onClick={() => navigate('/auth')}
-            className="px-10 py-5 rounded-full bg-[#BFC9A6] text-[#1d4431] text-base font-bold uppercase tracking-widest hover:bg-[#A9B492] hover:-translate-y-1 transition-all duration-300 shadow-[0_12px_28px_rgba(191,201,166,0.4)]"
+            onClick={() => navigate('/auth?plan=individual')}
+            className="px-10 py-5 rounded-full bg-[#DEAE4D] text-[#2E3330] text-base font-bold uppercase tracking-widest hover:bg-[#C99C44] hover:-translate-y-1 transition-all duration-300 shadow-[0_8px_20px_rgba(222,174,77,0.3)]"
           >
-            Comenzar con CIELO
+            Comenzar prueba gratis
           </button>
         </motion.div>
       </div>

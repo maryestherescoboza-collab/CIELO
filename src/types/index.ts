@@ -300,6 +300,7 @@ export interface UserProfile {
     bio: string;
     avatarUrl: string;
     createdAt?: string;
+    trial_extension_activated_at?: string | null;
     asignatura: string;
     asignaturas?: string[];
     lastSeen?: string;

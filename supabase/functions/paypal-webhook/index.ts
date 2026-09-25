@@ -7,16 +7,20 @@ const PAYPAL_CLIENT_ID = Deno.env.get("PAYPAL_CLIENT_ID") as string;
 const PAYPAL_CLIENT_SECRET = Deno.env.get("PAYPAL_CLIENT_SECRET") as string;
 const PAYPAL_WEBHOOK_ID = Deno.env.get("PAYPAL_WEBHOOK_ID") as string;
 
-// Fase Sandbox
-const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com";
+// Fase Live
+const PAYPAL_API_BASE = "https://api-m.paypal.com";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Configuración centralizada del ÚNICO plan de PayPal (CIELO Docente - Mensual Definitivo)
 const PAYPAL_PLANS: Record<string, { planId: string, amount: string, currency: string }> = {
   "docente_mensual_definitivo": {
-    planId: "P-2967335801971131ANKXAXCA",
+    planId: "P-5S963969E1293252RNKEJQCA",
     amount: "5.00",
+    currency: "USD"
+  },
+  "docente_anual_definitivo": {
+    planId: "P-94080814BU072521XNKMCYDQ",
+    amount: "48.00",
     currency: "USD"
   }
 };

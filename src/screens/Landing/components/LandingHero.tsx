@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { HeroFloats } from './HeroFloats';
 
 export function LandingHero() {
+  const navigate = useNavigate();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -66,14 +68,14 @@ export function LandingHero() {
 
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => document.getElementById('descubrir')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-8 py-4 rounded-full bg-[#BFC9A6] text-[#1d4431] text-sm font-black uppercase tracking-widest hover:bg-[#A9B492] hover:-translate-y-1 transition-all shadow-[0_12px_28px_rgba(191,201,166,0.4)] w-full sm:w-auto"
+              onClick={() => navigate('/auth?plan=individual')}
+              className="px-8 py-4 rounded-full bg-[#DEAE4D] text-[#2E3330] text-sm font-black uppercase tracking-widest hover:bg-[#C99C44] hover:-translate-y-1 transition-all shadow-[0_8px_20px_rgba(222,174,77,0.3)] w-full sm:w-auto"
             >
-              Comenzar a explorar
+              Comenzar prueba gratis
             </button>
             <button
               onClick={() => document.getElementById('planes')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-8 py-4 rounded-full bg-white/80 backdrop-blur-md text-[#1d4431] text-sm font-black uppercase tracking-widest border border-[#BFC9A6]/50 hover:bg-white hover:-translate-y-1 transition-all shadow-lg w-full sm:w-auto"
+              className="px-8 py-4 rounded-full bg-white/80 backdrop-blur-md text-[#2E3330] text-sm font-black uppercase tracking-widest border border-[#DEAE4D]/20 hover:bg-white hover:-translate-y-1 transition-all shadow-lg w-full sm:w-auto"
             >
               Ver Planes
             </button>

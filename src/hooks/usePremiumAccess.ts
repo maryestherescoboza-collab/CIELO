@@ -22,20 +22,38 @@ export function usePremiumAccess() {
   // Validamos si es docente y tiene un createdAt
   if (perfilActual?.createdAt && (!centroRolActual || centroRolActual.rol === 'docente')) {
     const createdDate = new Date(perfilActual.createdAt);
-    const hasExtension = session?.user?.user_metadata?.trial_extension_requested === true;
-    const trialDaysTotal = hasExtension ? 22 : 15;
-    const trialEndDate = new Date(createdDate.getTime() + trialDaysTotal * 24 * 60 * 60 * 1000);
     const now = new Date();
     
-    if (now < trialEndDate) {
-      hasTrial = true;
-      trialDaysLeft = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (perfilActual.trial_extension_activated_at) {
+      const extensionDate = new Date(perfilActual.trial_extension_activated_at);
+      const trialEndDate = new Date(extensionDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      
+      if (now < trialEndDate) {
+        hasTrial = true;
+        trialDaysLeft = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      }
+    } else {
+      const trialEndDate = new Date(createdDate.getTime() + 15 * 24 * 60 * 60 * 1000);
+      if (now < trialEndDate) {
+        hasTrial = true;
+        trialDaysLeft = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      }
     }
   }
 
-  const hasPremium = 
-    (suscripcionActual && (suscripcionActual.estado === 'activa' || suscripcionActual.tipo === 'promocional')) ||
-    hasTrial;
+  let hasValidSubscription = false;
+  if (suscripcionActual) {
+    if (suscripcionActual.estado === 'activa' || suscripcionActual.tipo === 'promocional') {
+      hasValidSubscription = true;
+    } else if (suscripcionActual.estado === 'cancelada' && suscripcionActual.fecha_fin) {
+      const fechaFin = new Date(suscripcionActual.fecha_fin);
+      if (new Date() < fechaFin) {
+        hasValidSubscription = true;
+      }
+    }
+  }
+
+  const hasPremium = hasValidSubscription || hasTrial;
 
   // Cualquiera de los 4 roles administrativos confiere gestión de centro.
   const isDirector = 
