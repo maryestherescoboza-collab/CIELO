@@ -416,6 +416,7 @@ export function useSupabaseData(skipInit = false) {
                 return {
                     userId: p.user_id as string,
                     nombreDocente: p.nombre as string || p.nombre_docente as string || '',
+                    telefono: p.telefono as string || undefined,
                     bio: p.bio as string || '',
                     avatarUrl: p.avatar_url as string || '',
                     avatarColor: p.avatar_color as string || '',

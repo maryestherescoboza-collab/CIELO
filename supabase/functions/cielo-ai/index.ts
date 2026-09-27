@@ -77,7 +77,10 @@ serve(async (req) => {
     const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
     if (!apiKey) throw new Error('DEEPSEEK_API_KEY no configurada en el servidor.');
 
-    const prompt = `Analiza todo el contenido proporcionado, pero devuelve únicamente el JSON solicitado. No repitas el texto original. No expliques tus decisiones. No agregues información que no esté solicitada.
+    let systemPrompt = '';
+
+    if (operation === 'analyze_activities') {
+        systemPrompt = `Analiza todo el contenido proporcionado, pero devuelve únicamente el JSON solicitado. No repitas el texto original. No expliques tus decisiones. No agregues información que no esté solicitada.
 Reglas:
 - Conserva exactamente el nombre, título o numeración (ej. Actividad 1.1) cuando exista.
 - Identifica actividades aunque se llamen "Ejercicio", "Tarea", "Parte I" o sean solo instrucciones.
@@ -97,6 +100,51 @@ Estructura obligatoria:
     }
   ]
 }`;
+    } else if (operation === 'generate_lesson_plan') {
+        systemPrompt = `Devuelve la respuesta estrictamente utilizando la siguiente estructura JSON. No agregues texto adicional fuera del JSON:
+{
+  "tituloFicha": "string",
+  "metadata": {
+    "duracionMinutos": 0,
+    "materialesRequeridos": ["string"]
+  },
+  "intencionPedagogica": "string",
+  "competenciasTrabajar": ["string"],
+  "indicadorLogro": "string",
+  "inicio": {
+    "desafio": "string",
+    "conceptos": ["string"],
+    "preguntas": ["string"]
+  },
+  "desarrollo": {
+    "actividades": ["string"],
+    "pasos": ["string"]
+  },
+  "cierre": {
+    "checklist": ["string"],
+    "metacognicion": ["string"]
+  },
+  "evidencia": "string"
+}`;
+    } else if (operation === 'generate_daily_planning') {
+        systemPrompt = `Devuelve la respuesta estrictamente utilizando la siguiente estructura JSON. No agregues texto adicional fuera del JSON:
+{
+  "inicio": ["string"],
+  "desarrollo": ["string"],
+  "cierre": ["string"],
+  "recursos": ["string"],
+  "estrategiaInclusiva": ["string"],
+  "evidencias": ["string"],
+  "evaluacion": {
+    "tecnica": "string",
+    "instrumento": "string",
+    "sugerencia": "string"
+  },
+  "metacognicion": ["string"]
+}`;
+    } else {
+        throw new Error(`Operación no soportada: ${operation}`);
+    }
 
     const dsResponse = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -108,7 +156,7 @@ Estructura obligatoria:
         model: 'deepseek-chat',
         response_format: { type: 'json_object' },
         messages: [
-          { role: 'system', content: prompt },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: text }
         ],
         temperature: 0.3

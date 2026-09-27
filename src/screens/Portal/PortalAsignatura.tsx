@@ -8,23 +8,35 @@ interface Evidencia {
   id: number;
   nombre: string;
   fecha: string;
-  indicador: string;
-  bcAsignados: string[] | any;
+  indicador?: string;
+  bcAsignados?: string[] | any;
   puntaje: number | null;
   descriptores: string[] | null;
+  eval_detalle?: {
+    rubricaData?: Record<string, unknown>;
+    cotejoData?: Record<string, unknown>;
+    plantillaId?: number | null;
+  } | null;
 }
+
+const getDescriptorText = (ev: Evidencia): string[] => {
+    if (ev.descriptores && ev.descriptores.length > 0) {
+        return ev.descriptores;
+    }
+    if (ev.puntaje !== null && (!ev.eval_detalle?.rubricaData && !ev.eval_detalle?.cotejoData)) {
+        if (ev.puntaje === 100) return ["Demuestra el indicador completo, correctamente y con autonomía."];
+        if (ev.puntaje === 85) return ["Demuestra el indicador completo, pero presenta alguna dificultad, imprecisión o necesidad de orientación."];
+        if (ev.puntaje === 70) return ["Demuestra una parte del indicador, pero aún no alcanza el desempeño completo."];
+        if (ev.puntaje === 55) return ["Muestra evidencia limitada del indicador y todavía necesita apoyo para alcanzarlo."];
+    }
+    return [];
+};
 
 interface Incidencia {
   id: number;
   fecha: string;
   categoria: string;
   descripcion: string;
-}
-
-interface Recuperacion {
-  bc: number;
-  puntaje: number | null;
-  fecha: string;
 }
 
 export default function PortalAsignatura() {
@@ -41,7 +53,6 @@ export default function PortalAsignatura() {
   const [error, setError] = useState<string | null>(null);
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
   const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
-  const [recuperaciones, setRecuperaciones] = useState<Recuperacion[]>([]);
 
   // Configuración de la asignatura actual
   const config = asignaturas.find(a => a.asignatura === decodedAsignatura);
@@ -53,18 +64,13 @@ export default function PortalAsignatura() {
       setLoading(true);
       setError(null);
       try {
-        const [evidenciasRes, incidenciasRes, recuperacionesRes] = await Promise.all([
+        const [evidenciasRes, incidenciasRes] = await Promise.all([
           supabase.rpc('portal_get_evidencias', {
             p_session_token: sessionToken,
             p_periodo: selectedPeriodo,
             p_asignatura: decodedAsignatura
           }),
           supabase.rpc('portal_get_incidencias', {
-            p_session_token: sessionToken,
-            p_periodo: selectedPeriodo,
-            p_asignatura: decodedAsignatura
-          }),
-          supabase.rpc('portal_get_recuperaciones', {
             p_session_token: sessionToken,
             p_periodo: selectedPeriodo,
             p_asignatura: decodedAsignatura
@@ -77,12 +83,8 @@ export default function PortalAsignatura() {
         if (incidenciasRes.error) throw incidenciasRes.error;
         if (incidenciasRes.data && incidenciasRes.data.error) throw new Error(incidenciasRes.data.error);
         
-        if (recuperacionesRes.error) throw recuperacionesRes.error;
-        if (recuperacionesRes.data && recuperacionesRes.data.error) throw new Error(recuperacionesRes.data.error);
-        
         setEvidencias(evidenciasRes.data || []);
         setIncidencias(incidenciasRes.data || []);
-        setRecuperaciones(recuperacionesRes.data || []);
       } catch (err: any) {
         console.error(err);
         setError(err.message || 'Error al cargar los datos');
@@ -263,18 +265,21 @@ export default function PortalAsignatura() {
             <p style={{ fontStyle: 'italic', color: '#666', fontSize: 13 }}>No hay actividades publicadas para esta asignatura en este período.</p>
           ) : (
             <div className="evi-list">
-              {evidencias.map((ev) => (
+              {evidencias.map((ev) => {
+                const isEvaluated = ev.puntaje !== null || (ev.descriptores && ev.descriptores.length > 0) || ev.eval_detalle;
+                const statusText = !isEvaluated ? 'Pendiente' : (config.mostrar_puntajes && ev.puntaje !== null) ? `${ev.puntaje}%` : 'Evaluada';
+                const finalDescriptores = getDescriptorText(ev);
+
+                return (
                 <div key={ev.id} className="evi-card">
                   <div className="evi-top">
                     <div>
                       <h3 className="evi-title">{ev.nombre}</h3>
                       <div className="evi-date">{ev.fecha}</div>
                     </div>
-                    {config.mostrar_puntajes && ev.puntaje !== null && (
-                      <span className={`evi-score ${ev.puntaje >= 85 ? 'alto' : ev.puntaje >= 70 ? 'medio' : 'bajo'}`}>
-                        {ev.puntaje}%
-                      </span>
-                    )}
+                    <span className={`evi-score ${!isEvaluated ? '' : (ev.puntaje !== null && ev.puntaje >= 85) ? 'alto' : (ev.puntaje !== null && ev.puntaje >= 70) ? 'medio' : 'bajo'}`} style={!isEvaluated ? { background: '#f5f5f4', color: '#78716c' } : {}}>
+                        {statusText}
+                    </span>
                   </div>
                   
                   {ev.indicador && (
@@ -284,17 +289,17 @@ export default function PortalAsignatura() {
                   )}
 
                   <div className="check-list" style={{ marginTop: 12 }}>
-                    {ev.descriptores && ev.descriptores.length > 0 ? (
+                    {finalDescriptores.length > 0 ? (
                       <div className="check-label-group">
                         <div className="glabel">Desempeño / Evidencias</div>
-                        {ev.descriptores.map((desc, idx) => renderDescriptor(desc, idx))}
+                        {finalDescriptores.map((desc, idx) => renderDescriptor(desc, idx))}
                       </div>
                     ) : (
-                      <div className="evi-desc">Sin descriptores registrados.</div>
+                        isEvaluated ? <div className="evi-desc">Evaluada sin descriptores cualitativos.</div> : <div className="evi-desc" style={{fontStyle: 'italic', color: '#999'}}>Pendiente de evaluación.</div>
                     )}
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>
@@ -314,31 +319,6 @@ export default function PortalAsignatura() {
                   <div className="be-quote">"{inc.descripcion}"</div>
                 </div>
                 <span className="tag-pill">{inc.categoria}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ===== RECUPERACIÓN ===== */}
-      {config.mostrar_recuperacion && recuperaciones.length > 0 && (
-        <div className="portal-card">
-          <div className="portal-section-head">
-            <span className="dot"></span><h2>Recuperación — Informe por competencia</h2>
-          </div>
-          
-          <div>
-            {recuperaciones.map((rec, i) => (
-              <div key={i} className="rec-card" style={{ background: i % 2 === 0 ? 'var(--coral-soft)' : 'var(--teal-soft)' }}>
-                <div className="rec-top">
-                  <span className="rec-title">Competencia BC{rec.bc}</span>
-                  <span className="rec-result">
-                    {config.mostrar_puntajes ? (rec.puntaje !== null ? `Resultado: ${rec.puntaje} pts` : 'Pendiente') : 'Oculto'}
-                  </span>
-                </div>
-                <div className="rec-item">
-                  Evaluación de recuperación registrada el <span className="fraction">{rec.fecha ? rec.fecha : 'Sin fecha'}</span>.
-                </div>
               </div>
             ))}
           </div>

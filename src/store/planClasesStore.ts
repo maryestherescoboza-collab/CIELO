@@ -18,6 +18,9 @@ interface PlanClasesState {
   createNota: (secuenciaId: string, usuarioId: string, titulo: string) => Promise<NotaDB | null>;
   getNota: (notaId: string) => Promise<NotaDB | null>;
   updateNotaContenido: (notaId: string, contenido?: NotaContenido, titulo?: string) => Promise<void>;
+  
+  getFichaCursos: (notaId: string) => Promise<number[]>;
+  compartirFicha: (notaId: string, cursoIds: number[]) => Promise<void>;
 }
 
 let secuenciasPromise: Promise<void> | null = null;
@@ -216,6 +219,60 @@ export const usePlanClasesStore = create<PlanClasesState>((set, get) => ({
       }
     } catch (err: any) {
       console.error('Error al autoguardar nota:', err.message);
+    }
+  },
+
+  getFichaCursos: async (notaId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('ficha_cursos')
+        .select('curso_id')
+        .eq('nota_id', notaId);
+      
+      if (error) throw error;
+      return data.map(r => r.curso_id) || [];
+    } catch (err: any) {
+      console.error('Error al obtener cursos de la ficha:', err.message);
+      return [];
+    }
+  },
+
+  compartirFicha: async (notaId: string, cursoIds: number[]) => {
+    try {
+      // 1. Obtener cursos actuales
+      const { data: currentData, error: fetchError } = await supabase
+        .from('ficha_cursos')
+        .select('curso_id')
+        .eq('nota_id', notaId);
+      if (fetchError) throw fetchError;
+      
+      const currentCursos = currentData.map(r => r.curso_id);
+      
+      // 2. Determinar cuáles agregar y cuáles quitar
+      const toAdd = cursoIds.filter(id => !currentCursos.includes(id));
+      const toRemove = currentCursos.filter(id => !cursoIds.includes(id));
+      
+      // 3. Eliminar los que ya no están
+      if (toRemove.length > 0) {
+        const { error: delError } = await supabase
+          .from('ficha_cursos')
+          .delete()
+          .eq('nota_id', notaId)
+          .in('curso_id', toRemove);
+        if (delError) throw delError;
+      }
+      
+      // 4. Agregar los nuevos
+      if (toAdd.length > 0) {
+        const inserts = toAdd.map(cId => ({ nota_id: notaId, curso_id: cId }));
+        const { error: insError } = await supabase
+          .from('ficha_cursos')
+          .insert(inserts);
+        if (insError) throw insError;
+      }
+    } catch (err: any) {
+      console.error('Error al compartir ficha:', err.message);
+      throw err;
     }
   },
 }));

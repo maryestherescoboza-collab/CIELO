@@ -297,6 +297,7 @@ export interface Suscripcion {
 export interface UserProfile {
     userId: string;
     nombreDocente: string;
+    telefono?: string;
     bio: string;
     avatarUrl: string;
     createdAt?: string;

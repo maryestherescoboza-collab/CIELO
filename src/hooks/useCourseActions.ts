@@ -70,8 +70,25 @@ export function useCourseActions() {
 
             if (linkError) {
                 console.error('Error linking to existing course:', linkError);
-                setGenericToast({ message: "No se pudo realizar la vinculación al curso existente.", type: 'error' });
-                setTimeout(() => setGenericToast(null), 3000);
+                
+                // Buscar quién tiene la asignatura
+                const { data: conflictLink } = await supabase
+                    .from('curso_docentes')
+                    .select('docente_id')
+                    .eq('curso_id', existingData.id)
+                    .eq('asignatura', c.asignatura)
+                    .maybeSingle();
+
+                let nombreConflicto = 'otro docente';
+                if (conflictLink?.docente_id) {
+                    const perfilConflicto = state.perfiles.find(p => p.userId === conflictLink.docente_id);
+                    if (perfilConflicto) {
+                        nombreConflicto = perfilConflicto.nombreDocente || 'otro docente';
+                    }
+                }
+
+                setGenericToast({ message: `La asignatura ya está siendo utilizada por ${nombreConflicto}. Elige otra asignatura para crear el curso.`, type: 'error' });
+                setTimeout(() => setGenericToast(null), 8000);
                 return null;
             }
 
@@ -185,9 +202,9 @@ export function useCourseActions() {
                 createdAt: finalCurso.created_at
             };
             
-            // Add mapped course to state if it isn't already there
+            // Add mapped course to state if it isn't already there (matching ID and Subject)
             setState(s => {
-                const exists = s.cursos.some(cur => cur.id === mapped.id);
+                const exists = s.cursos.some(cur => cur.id === mapped.id && cur.asignatura === mapped.asignatura);
                 return {
                     ...s,
                     cursos: exists ? s.cursos : [...s.cursos, mapped]

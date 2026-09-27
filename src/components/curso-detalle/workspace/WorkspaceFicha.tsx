@@ -4,6 +4,9 @@ import { useAppStore } from '../../../store/appStore';
 import { usePlanClasesStore } from '../../../store/planClasesStore';
 import type { Actividad } from '../../../types';
 import type { NotaDB, NotaContenido } from '../../../types/planClases';
+import { ModalSugerirFichaIA } from '../../plan-clases/ModalSugerirFichaIA';
+import { Sparkles } from 'lucide-react';
+import type { ContextoFichaIA } from '../../../lib/aiFichas';
 
 export interface WorkspaceFichaProps {
     activity: Actividad;
@@ -15,9 +18,6 @@ export interface WorkspaceFichaProps {
     onUpdateActividad: (id: number, patch: Partial<Actividad>) => void;
 }
 
-// Ventana "Ficha de clase": vista previa tipo nota de la ficha vinculada a la
-// actividad. Reutiliza los mismos mecanismos de carga (usePlanClasesStore) y de
-// persistencia (onUpdateActividad) que la tarjeta interior anterior; no edita pc_notas.
 const WorkspaceFicha: React.FC<WorkspaceFichaProps> = ({
     activity,
     position,
@@ -35,7 +35,11 @@ const WorkspaceFicha: React.FC<WorkspaceFichaProps> = ({
     const fetchAllNotas = usePlanClasesStore((s) => s.fetchAllNotas);
     const fetchSecuencias = usePlanClasesStore((s) => s.fetchSecuencias);
     const getNota = usePlanClasesStore((s) => s.getNota);
+    const createNota = usePlanClasesStore((s) => s.createNota);
+    const updateNotaContenido = usePlanClasesStore((s) => s.updateNotaContenido);
+
     const [fichaAsignada, setFichaAsignada] = useState<NotaDB | null>(null);
+    const [modalIAOpen, setModalIAOpen] = useState(false);
 
     useEffect(() => {
         if (!sessionUserId) return;
@@ -98,6 +102,52 @@ const WorkspaceFicha: React.FC<WorkspaceFichaProps> = ({
         onUpdateActividad(activity.id, { planFichaId: next } as unknown as Partial<Actividad>);
     };
 
+    const contextoFicha = useMemo<ContextoFichaIA>(() => {
+        const sec = planSecuencias.find(s => s.id === activity.secuenciaId?.toString());
+        return {
+            curso: {
+                grado: sec?.grado || 'Grado no especificado',
+                asignatura: activity.asignatura || 'Asignatura no especificada',
+            },
+            actividad: {
+                titulo: activity.nombre,
+                indicadorLogro: activity.indicador,
+                competencias: activity.bcAsignados ? [...activity.bcAsignados] : [],
+                producto: activity.producto,
+                descripcion: activity.descripcion || undefined
+            },
+            contextoClase: {}
+        };
+    }, [activity, planSecuencias]);
+
+    const handleSuccessIA = async (contenidoEditado: NotaContenido) => {
+        if (!sessionUserId) return;
+
+        if (fichaAsignadaId && fichaAsignada) {
+            // Actualizar existente
+            await updateNotaContenido(fichaAsignadaId, contenidoEditado);
+            // Idealmente deberíamos actualizar metadata_json también, pero updateNotaContenido no lo expone actualmente.
+        } else {
+            // Crear nueva ficha
+            // Buscar una secuencia default o usar una cualquiera (o crearla)
+            let seqId = activity.secuenciaId?.toString() || planSecuencias[0]?.id;
+            
+            // Si aún no hay seqId (no hay secuencias), podríamos fallar, pero supongamos que createNota falla.
+            // Para simplificar, usamos la primera secuencia disponible.
+            if (!seqId) {
+                alert('No tienes secuencias creadas en Plan de Clases. Debes crear una primero.');
+                return;
+            }
+
+            const nuevaFicha = await createNota(seqId, sessionUserId, 'Ficha Generada con IA');
+            if (nuevaFicha) {
+                // Actualizar titulo y contenido
+                await updateNotaContenido(nuevaFicha.id, contenidoEditado);
+                commitFicha(nuevaFicha.id);
+            }
+        }
+    };
+
     return (
         <FloatingWorkWindow
             id="ficha"
@@ -110,44 +160,64 @@ const WorkspaceFicha: React.FC<WorkspaceFichaProps> = ({
             onWindowFocus={onWindowFocus}
             onClose={onClose}
         >
-            <div className="ws-note-pane">
-                <div className="ws-card-head">
-                    <span className="ws-dot ws-dot-blue" />
-                    <span className="ws-card-kicker">Ficha</span>
+            <div className="ws-note-pane flex flex-col h-full">
+                <div className="flex-1">
+                    <div className="ws-card-head">
+                        <span className="ws-dot ws-dot-blue" />
+                        <span className="ws-card-kicker">Ficha</span>
+                    </div>
+                    <div className={fichaAsignadaId ? 'ws-note-title' : 'ws-note-title ws-note-title-empty'}>
+                        {fichaAsignadaId
+                            ? (fichaAsignada?.titulo ?? planNotas.find((n) => n.id === fichaAsignadaId)?.titulo ?? 'Ficha asociada')
+                            : 'Sin ficha asociada'}
+                    </div>
+                    {fichaAsignadaId && <div className="ws-note-divider" />}
+                    {fichaAsignadaId ? (
+                        extractoFicha
+                            ? <div className="ws-note-excerpt">{extractoFicha}</div>
+                            : <div className="ws-note-empty">Esta ficha no contiene contenido previo.</div>
+                    ) : (
+                        <div className="ws-note-empty">Elige una ficha de tu plan de clases para vincularla a esta actividad.</div>
+                    )}
                 </div>
-                <div className={fichaAsignadaId ? 'ws-note-title' : 'ws-note-title ws-note-title-empty'}>
-                    {fichaAsignadaId
-                        ? (fichaAsignada?.titulo ?? planNotas.find((n) => n.id === fichaAsignadaId)?.titulo ?? 'Ficha asociada')
-                        : 'Sin ficha asociada'}
-                </div>
-                {fichaAsignadaId && <div className="ws-note-divider" />}
-                {fichaAsignadaId ? (
-                    extractoFicha
-                        ? <div className="ws-note-excerpt">{extractoFicha}</div>
-                        : <div className="ws-note-empty">Esta ficha no contiene contenido previo.</div>
-                ) : (
-                    <div className="ws-note-empty">Elige una ficha de tu plan de clases para vincularla a esta actividad.</div>
-                )}
-                <div className="ws-note-action-row">
-                    <span className="ws-note-action-label">Cambiar ficha</span>
-                    <select
-                        className="ws-card-select ws-note-action"
-                        value={activity.planFichaId ?? ''}
-                        onChange={(e) => commitFicha(e.target.value)}
-                        title="Ficha de clase asociada a la actividad (opcional)"
-                        aria-label="Ficha de clase asociada a la actividad"
+
+                <div className="flex flex-col gap-2 mt-4">
+                    <button 
+                        onClick={() => setModalIAOpen(true)}
+                        className="w-full h-8 rounded-lg bg-[#689C63]/10 text-[#689C63] font-bold text-[12px] hover:bg-[#689C63]/20 flex items-center justify-center gap-1.5 transition-colors"
                     >
-                        <option value="">Sin ficha</option>
-                        {listaFichas.map((grupo) => (
-                            <optgroup key={grupo.secuenciaId} label={grupo.secuenciaTitulo}>
-                                {grupo.fichas.map((n) => (
-                                    <option key={n.id} value={n.id}>{n.titulo}</option>
-                                ))}
-                            </optgroup>
-                        ))}
-                    </select>
+                        <Sparkles size={14} /> {fichaAsignadaId ? 'Regenerar con IA' : 'Crear ficha con IA'}
+                    </button>
+                    
+                    <div className="ws-note-action-row">
+                        <span className="ws-note-action-label">Cambiar ficha</span>
+                        <select
+                            className="ws-card-select ws-note-action"
+                            value={activity.planFichaId ?? ''}
+                            onChange={(e) => commitFicha(e.target.value)}
+                            title="Ficha de clase asociada a la actividad (opcional)"
+                            aria-label="Ficha de clase asociada a la actividad"
+                        >
+                            <option value="">Sin ficha</option>
+                            {listaFichas.map((grupo) => (
+                                <optgroup key={grupo.secuenciaId} label={grupo.secuenciaTitulo}>
+                                    {grupo.fichas.map((n) => (
+                                        <option key={n.id} value={n.id}>{n.titulo}</option>
+                                    ))}
+                                </optgroup>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
+
+            <ModalSugerirFichaIA
+                isOpen={modalIAOpen}
+                onClose={() => setModalIAOpen(false)}
+                contextoFicha={contextoFicha}
+                fichaExistente={!!fichaAsignadaId}
+                onSuccess={handleSuccessIA}
+            />
         </FloatingWorkWindow>
     );
 };

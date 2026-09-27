@@ -1,18 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Loader2 } from 'lucide-react';
-import type { AsignaturaPublicada, Periodo } from './PortalLayout';
+import { usePortal } from './portalContext';
+import type { Periodo } from './PortalLayout';
 
 interface Evidencia {
   id: number;
   nombre: string;
   fecha: string;
-  indicador: string;
-  bcAsignados: string[] | any;
+  indicador?: string;
+  bcAsignados?: string[] | any;
   puntaje: number | null;
   descriptores: string[] | null;
+  eval_detalle?: {
+    rubricaData?: Record<string, unknown>;
+    cotejoData?: Record<string, unknown>;
+    plantillaId?: number | null;
+  } | null;
 }
+
+const getDescriptorText = (ev: Evidencia): string[] => {
+    if (ev.descriptores && ev.descriptores.length > 0) {
+        return ev.descriptores;
+    }
+    if (ev.puntaje !== null && (!ev.eval_detalle?.rubricaData && !ev.eval_detalle?.cotejoData)) {
+        if (ev.puntaje === 100) return ["Demuestra el indicador completo, correctamente y con autonomía."];
+        if (ev.puntaje === 85) return ["Demuestra el indicador completo, pero presenta alguna dificultad, imprecisión o necesidad de orientación."];
+        if (ev.puntaje === 70) return ["Demuestra una parte del indicador, pero aún no alcanza el desempeño completo."];
+        if (ev.puntaje === 55) return ["Muestra evidencia limitada del indicador y todavía necesita apoyo para alcanzarlo."];
+    }
+    return [];
+};
 
 interface Incidencia {
   id: number;
@@ -21,19 +39,8 @@ interface Incidencia {
   descripcion: string;
 }
 
-interface Recuperacion {
-  bc: number;
-  puntaje: number | null;
-  fecha: string;
-}
-
 export default function PortalEstudiante() {
-  const { sessionToken, asignaturas, selectedPeriodo, setSelectedPeriodo } = useOutletContext<{
-    sessionToken: string;
-    asignaturas: AsignaturaPublicada[];
-    selectedPeriodo: Periodo;
-    setSelectedPeriodo: (p: Periodo) => void;
-  }>();
+  const { sessionToken, asignaturas, selectedPeriodo, setSelectedPeriodo } = usePortal();
 
   const [selectedAsignatura, setSelectedAsignatura] = useState<string>(
     asignaturas.length > 0 ? asignaturas[0].asignatura : ''
@@ -43,7 +50,6 @@ export default function PortalEstudiante() {
   const [error, setError] = useState<string | null>(null);
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
   const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
-  const [recuperaciones, setRecuperaciones] = useState<Recuperacion[]>([]);
 
   useEffect(() => {
     if (asignaturas.length > 0 && !selectedAsignatura) {
@@ -60,18 +66,13 @@ export default function PortalEstudiante() {
       setLoading(true);
       setError(null);
       try {
-        const [evidenciasRes, incidenciasRes, recuperacionesRes] = await Promise.all([
+        const [evidenciasRes, incidenciasRes] = await Promise.all([
           supabase.rpc('portal_get_evidencias', {
             p_session_token: sessionToken,
             p_periodo: selectedPeriodo,
             p_asignatura: selectedAsignatura
           }),
           supabase.rpc('portal_get_incidencias', {
-            p_session_token: sessionToken,
-            p_periodo: selectedPeriodo,
-            p_asignatura: selectedAsignatura
-          }),
-          supabase.rpc('portal_get_recuperaciones', {
             p_session_token: sessionToken,
             p_periodo: selectedPeriodo,
             p_asignatura: selectedAsignatura
@@ -84,12 +85,8 @@ export default function PortalEstudiante() {
         if (incidenciasRes.error) throw incidenciasRes.error;
         if (incidenciasRes.data && incidenciasRes.data.error) throw new Error(incidenciasRes.data.error);
         
-        if (recuperacionesRes.error) throw recuperacionesRes.error;
-        if (recuperacionesRes.data && recuperacionesRes.data.error) throw new Error(recuperacionesRes.data.error);
-        
         setEvidencias(evidenciasRes.data || []);
         setIncidencias(incidenciasRes.data || []);
-        setRecuperaciones(recuperacionesRes.data || []);
       } catch (err: any) {
         console.error(err);
         setError(err.message || 'Error al cargar los datos');
@@ -166,7 +163,18 @@ export default function PortalEstudiante() {
     return '';
   };
 
-  if (!asignaturas.length) return null;
+  if (!asignaturas.length) {
+    // Antes `return null`: sin Publishing configurado el Portal se quedaba en
+    // blanco sin decir nada. Ahora es un estado que el estudiante puede leer.
+    return (
+      <div className="px-5 pt-10 pb-28 text-center">
+        <p className="text-base font-black text-black">Todavía no hay nada publicado</p>
+        <p className="text-sm text-stone-600 mt-2 leading-relaxed">
+          Tu docente aún no ha compartido notas ni actividades para este periodo.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="px-5 pt-4 pb-28 space-y-6">
@@ -268,29 +276,31 @@ export default function PortalEstudiante() {
                 </span>
               </div>
               
-              {evidencias.map(ev => (
+              {evidencias.map(ev => {
+                const isEvaluated = ev.puntaje !== null || (ev.descriptores && ev.descriptores.length > 0) || ev.eval_detalle;
+                const statusText = !isEvaluated ? 'Pendiente' : (activeAsignaturaConfig.mostrar_puntajes && ev.puntaje !== null) ? `${ev.puntaje} %` : 'Evaluada';
+                const finalDescriptores = getDescriptorText(ev);
+                
+                return (
                 <article key={ev.id} className="border border-black rounded-2xl overflow-hidden bg-white">
                   <div className="p-3.5 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-stone-500">{ev.fecha}</span>
-                      {activeAsignaturaConfig.mostrar_puntajes && ev.puntaje !== null && (
-                        <span className="text-base font-black text-black tracking-tight">{ev.puntaje} pts</span>
-                      )}
+                      <span className={`text-base font-black tracking-tight ${!isEvaluated ? 'text-stone-400' : 'text-black'}`}>{statusText}</span>
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-black">{ev.nombre}</h3>
-                      {(!ev.descriptores || ev.descriptores.length === 0) && !ev.indicador && (
-                        <p className="text-[11px] mt-0.5 italic text-stone-500">Sin descriptores registrados.</p>
-                      )}
                     </div>
-                    {(ev.descriptores && ev.descriptores.length > 0) || ev.indicador ? (
+                    {finalDescriptores.length > 0 || ev.indicador ? (
                       <div className="rounded-xl p-2.5 text-xs border border-stone-200 space-y-1 bg-stone-50">
                         {ev.indicador && <p className="text-[11px] font-bold text-stone-700">{ev.indicador}</p>}
-                        {ev.descriptores?.map((desc, i) => (
+                        {finalDescriptores.map((desc, i) => (
                           <p key={i} className="text-[11px] leading-relaxed text-stone-700 font-medium">"{mapDescriptores(desc)}"</p>
                         ))}
                       </div>
-                    ) : null}
+                    ) : (
+                        isEvaluated ? <p className="text-[11px] mt-0.5 italic text-stone-500">Evaluada sin descriptores detallados.</p> : null
+                    )}
                   </div>
                   {ev.bcAsignados && ev.bcAsignados.length > 0 && (
                     <div className="border-t border-stone-200 p-3 flex flex-wrap items-center justify-between gap-2 bg-stone-50">
@@ -304,7 +314,7 @@ export default function PortalEstudiante() {
                     </div>
                   )}
                 </article>
-              ))}
+              )})}
             </section>
           )}
 
@@ -332,65 +342,6 @@ export default function PortalEstudiante() {
             </section>
           )}
 
-          {activeAsignaturaConfig.mostrar_recuperacion && (recuperaciones.length > 0 || evidencias.length > 0) && (
-            <section className="space-y-2.5" data-purpose="recovery-points-quest">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold tracking-wider uppercase text-black">Recuperación por Competencia</h2>
-                <span className="px-2.5 py-0.5 border border-black rounded-full text-[10px] font-bold bg-stone-100 text-black">4 Competencias</span>
-              </div>
-              <div className="space-y-3">
-                {[1, 2, 3, 4].map(bcNum => {
-                  const bcStr = `BC${bcNum}`;
-                  const recup = recuperaciones.find(r => r.bc === bcNum);
-                  const bcEvidencias = bcsData[bcStr].evidencias;
-                  const indicadoresUnicos = Array.from(new Set(bcEvidencias.map(e => e.indicador).filter(Boolean)));
-                  
-                  const getTitle = () => {
-                    switch(bcNum) {
-                      case 1: return 'Competencia Comunicativa';
-                      case 2: return 'Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas';
-                      case 3: return 'Científica y Tecnológica; y Ambiental y de la Salud';
-                      case 4: return 'Ética y Ciudadana; y Desarrollo Personal y Espiritual';
-                      default: return '';
-                    }
-                  };
-
-                  return (
-                    <div key={bcNum} className="border border-black rounded-2xl p-3.5 space-y-2.5 bg-white">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="text-[10px] font-bold uppercase text-stone-500">Competencia {bcNum}</span>
-                          <h3 className="text-xs font-black text-black">{getTitle()}</h3>
-                        </div>
-                        {activeAsignaturaConfig.mostrar_puntajes && recup && recup.puntaje !== null ? (
-                           <span className="text-xs font-bold border border-black px-2.5 py-0.5 rounded-full bg-black text-white whitespace-nowrap">
-                             {recup.puntaje} pts
-                           </span>
-                        ) : (
-                           <span className="text-[10px] font-bold border border-stone-300 px-2 py-0.5 rounded-full bg-stone-50 text-stone-500 whitespace-nowrap">
-                             Sin evaluar
-                           </span>
-                        )}
-                      </div>
-                      
-                      {indicadoresUnicos.length > 0 ? (
-                        <ul className="space-y-1.5 text-xs font-medium text-black">
-                          {indicadoresUnicos.map((ind, i) => (
-                            <li key={i} className="flex items-start gap-1.5">
-                              <span className="material-symbols-outlined text-base mt-0.5 shrink-0 text-black" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                              <span>{ind}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-[11px] text-stone-500 italic">No hay indicadores evaluados en este período.</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
 
         </>
       )}

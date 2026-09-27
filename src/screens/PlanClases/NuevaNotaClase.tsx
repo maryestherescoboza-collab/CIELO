@@ -8,6 +8,9 @@ import {
   Loader2,
   Cloud,
   FileText,
+  Users,
+  Globe,
+  Route as RouteIcon,
 } from 'lucide-react';
 
 import type {
@@ -18,7 +21,10 @@ import type {
 import { NotaEditor } from '../../components/plan-clases/NotaEditor';
 import { InfoClase, type InfoClaseDatos } from '../../components/plan-clases/InfoClase';
 import { CompartirModal } from '../../components/plan-clases/CompartirModal';
+import { CompartirCursosModal } from '../../components/plan-clases/CompartirCursosModal';
+import { PortalComentariosDocentePanel } from '../../components/plan-clases/PortalComentariosDocentePanel';
 import { ComentariosPanel } from '../../components/plan-clases/ComentariosPanel';
+import ConstructorRuta from '../../components/plan-clases/rutas/ConstructorRuta';
 import { usePlanClasesStore } from '../../store/planClasesStore';
 import { uid } from '../../utils/uid';
 import '../../components/plan-clases/cielo-editor.css';
@@ -56,8 +62,11 @@ export default function NuevaNotaClase({
   
   const [estadoGuardado, setEstadoGuardado] = useState<EstadoGuardado>('guardado');
   const [compartirAbierto, setCompartirAbierto] = useState(false);
+  const [compartirCursosAbierto, setCompartirCursosAbierto] = useState(false);
   const [comentariosAbierto, setComentariosAbierto] = useState(false);
+  const [comentariosPortalAbierto, setComentariosPortalAbierto] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [rutaAbierta, setRutaAbierta] = useState(false);
 
   const [comentarios, setComentarios] = useState<NotaComentario[]>([]);
   const [compartidaCon, setCompartidaCon] = useState<NotaCompartida[]>([]);
@@ -197,11 +206,25 @@ export default function NuevaNotaClase({
           {/* Acciones */}
           <div className="flex items-center gap-1.5">
             <button
+              onClick={() => setRutaAbierta(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-3.5 sm:px-4 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#689C63] hover:text-[#4a7a46] active:scale-95"
+            >
+              <RouteIcon size={15} />
+              <span className="hidden sm:inline">Ruta de aprendizaje</span>
+            </button>
+            <button
               onClick={() => setCompartirAbierto(true)}
               className="inline-flex items-center gap-1.5 rounded-xl bg-[#689C63] px-3.5 sm:px-4 text-white text-[13px] font-bold h-9 transition-all hover:bg-[#5a8a55] active:scale-95"
             >
               <Share2 size={15} />
               <span className="hidden sm:inline">Compartir</span>
+            </button>
+            <button
+              onClick={() => setCompartirCursosAbierto(true)}
+              className="relative inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-3.5 sm:px-4 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#3e6088] hover:text-[#3e6088] active:scale-95"
+            >
+              <Globe size={15} />
+              <span className="hidden sm:inline">Publicar en Portal</span>
             </button>
             <button
               onClick={() => setComentariosAbierto(true)}
@@ -216,6 +239,13 @@ export default function NuevaNotaClase({
               )}
             </button>
 
+            <button
+              onClick={() => setComentariosPortalAbierto(true)}
+              className="relative inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-3.5 sm:px-4 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#3e6088] hover:text-[#3e6088] active:scale-95"
+            >
+              <Users size={15} />
+              <span className="hidden sm:inline">Dudas Estudiantes</span>
+            </button>
             <button
               onClick={() => setMenuAbierto(v => !v)}
               className="p-2 rounded-xl border border-[#2E3330]/10 bg-white text-[#2E3330]/60 hover:text-[#2E3330] transition-colors"
@@ -274,6 +304,12 @@ export default function NuevaNotaClase({
         onQuitar={quitarCompartida}
       />
 
+      <CompartirCursosModal
+        abierto={compartirCursosAbierto}
+        notaId={notaId}
+        onCerrar={() => setCompartirCursosAbierto(false)}
+      />
+
       <ComentariosPanel
         abierto={comentariosAbierto}
         onCerrar={() => setComentariosAbierto(false)}
@@ -284,7 +320,20 @@ export default function NuevaNotaClase({
         userName={userName}
         userAvatarColor={userAvatarColor}
       />
+
+      <PortalComentariosDocentePanel
+        abierto={comentariosPortalAbierto}
+        onCerrar={() => setComentariosPortalAbierto(false)}
+        notaId={notaId}
+      />
       
+      {/* ── Constructor de rutas: pantalla completa sobre la ficha ── */}
+      {rutaAbierta && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto" style={{ background: '#FAF9F7' }}>
+          <ConstructorRuta notaId={notaId} onCerrar={() => setRutaAbierta(false)} />
+        </div>
+      )}
+
       {/* Dropdown temporal para menú si se necesita */}
       {menuAbierto && (
         <div className="absolute top-16 right-6 w-48 bg-white border border-[#2E3330]/10 rounded-xl shadow-lg p-2 z-50">

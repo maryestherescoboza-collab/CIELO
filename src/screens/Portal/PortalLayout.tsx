@@ -81,7 +81,7 @@ export default function PortalLayout() {
 
   return (
     <div className="portal-root flex justify-center items-center min-h-screen py-0 sm:py-6 selection:bg-purple-200 bg-white">
-      <main className="w-full max-w-[430px] min-h-screen sm:min-h-[890px] sm:max-h-[940px] sm:rounded-[36px] sm:border-2 sm:border-zinc-900 overflow-hidden flex flex-col relative sm:shadow-2xl text-zinc-900 bg-white">
+      <main className="w-full max-w-107.5 min-h-screen sm:min-h-222.5 sm:max-h-235 sm:rounded-[36px] sm:border-2 sm:border-zinc-900 overflow-hidden flex flex-col relative sm:shadow-2xl text-zinc-900 bg-white">
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
           {error ? (
             <div className="p-6 text-center mt-10">
@@ -89,11 +89,12 @@ export default function PortalLayout() {
               <p className="text-stone-600 text-sm mt-2">{error}</p>
             </div>
           ) : (
-            <Outlet context={{ 
-              asignaturas, 
-              selectedPeriodo, 
+            <Outlet context={{
+              token,
+              asignaturas,
+              selectedPeriodo,
               setSelectedPeriodo,
-              sessionToken 
+              sessionToken
             }} />
           )}
         </div>
@@ -112,12 +113,23 @@ export default function PortalLayout() {
           </button>
           
           <button 
+            onClick={() => navigate(`/portal/${token}/recuperaciones`)}
+            aria-label="Recuperaciones" 
+            className={`flex flex-col items-center justify-center focus:outline-none ${currentPath === 'recuperaciones' ? 'text-black' : 'text-neutral-700 hover:text-black'}`}
+          >
+            <svg className="w-5 h-5 stroke-[1.8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span className="text-[9px] font-semibold mt-0.5">Recuperación</span>
+          </button>
+
+          <button 
             onClick={() => navigate(`/portal/${token}/fichas`)}
             aria-current="page" 
             aria-label="Agenda" 
             className={`flex items-center space-x-1 px-4 py-1.5 border border-black rounded-lg text-black focus:outline-none ${currentPath === 'fichas' ? 'bg-brand-purple font-bold' : 'bg-transparent border-transparent'}`}
           >
-            <svg className="w-4 h-4 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" strokeLinecap="round" strokeLinejoin="round"></path>
             </svg>
             <span className="text-[10px] font-bold ml-1">Agenda</span>

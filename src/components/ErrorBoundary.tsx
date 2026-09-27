@@ -2,8 +2,18 @@ import React from 'react';
 import { Sparkles } from 'lucide-react';
 import { attemptChunkRecovery, isChunkLoadError } from '../utils/chunkRecovery';
 
-export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null, isChunkError: boolean, recovering: boolean }> {
-    constructor(props: { children: React.ReactNode }) {
+interface ErrorBoundaryProps {
+    children: React.ReactNode;
+    /**
+     * Pantalla propia para errores que NO sean de carga de chunk. Sirve para que
+     * el Portal del estudiante no muestre el cartel de "Algo salió mal" de la
+     * aplicacion docente. Si no se pasa, se usa el generico de siempre.
+     */
+    fallback?: React.ReactNode;
+}
+
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasError: boolean, error: Error | null, isChunkError: boolean, recovering: boolean }> {
+    constructor(props: ErrorBoundaryProps) {
         super(props);
         this.state = { hasError: false, error: null, isChunkError: false, recovering: false };
     }
@@ -65,6 +75,11 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
                         </div>
                     </div>
                 );
+            }
+
+            // Fallback propio de quien lo paso (p.ej. el Portal del estudiante).
+            if (this.props.fallback) {
+                return this.props.fallback;
             }
 
             // Fallback genérico para otros errores de React

@@ -44,7 +44,7 @@ export function useEstudianteData({ state, selectedId, currentCourseRole, curren
 
         const actsPeriodo = state.actividades.filter(a => {
             const actCurso = state.cursos.find(c => c.id === a.cursoId);
-            const isMatch = (actCurso?.sharedCourseId === est.sharedCourseId || a.cursoId === curso.id) && a.periodo === periodo;
+            const isMatch = ((actCurso?.sharedCourseId && actCurso?.sharedCourseId === est.sharedCourseId) || a.cursoId === curso.id) && a.periodo === periodo;
             const actAsignatura = a.asignatura || actCurso?.asignatura || '';
             const matchesRole = !currentCourseRole || actAsignatura === currentCourseRole.asignatura;
             return isMatch && matchesRole;
@@ -64,7 +64,7 @@ export function useEstudianteData({ state, selectedId, currentCourseRole, curren
         const rankings = filteredEsts.map(e => {
             const eActs = state.actividades.filter(a => {
                 const actCurso = state.cursos.find(cx => cx.id === a.cursoId);
-                const isMatch = (actCurso?.sharedCourseId === est.sharedCourseId || a.cursoId === curso.id) && a.periodo === periodo;
+                const isMatch = ((actCurso?.sharedCourseId && actCurso?.sharedCourseId === est.sharedCourseId) || a.cursoId === curso.id) && a.periodo === periodo;
                 const actAsignatura = a.asignatura || actCurso?.asignatura || '';
                 const matchesRole = !currentCourseRole || actAsignatura === currentCourseRole.asignatura;
                 return isMatch && matchesRole;
@@ -85,7 +85,7 @@ export function useEstudianteData({ state, selectedId, currentCourseRole, curren
         if (!est || !curso) return [];
         const res = state.actividades.filter(a => {
             const actCurso = state.cursos.find(c => c.id === a.cursoId);
-            const isMatch = (actCurso?.sharedCourseId === est.sharedCourseId || a.cursoId === curso.id) && a.periodo === periodo;
+            const isMatch = ((actCurso?.sharedCourseId && actCurso?.sharedCourseId === est.sharedCourseId) || a.cursoId === curso.id) && a.periodo === periodo;
             const actAsignatura = a.asignatura || actCurso?.asignatura || '';
             const matchesRole = !currentCourseRole || actAsignatura === currentCourseRole.asignatura;
             return isMatch && matchesRole;

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Loader2 } from 'lucide-react';
-import type { AsignaturaPublicada, Periodo } from './PortalLayout';
+import { usePortal, rutaPortal } from './portalContext';
 
 interface Evidencia {
   id: number;
@@ -16,16 +16,22 @@ interface Evidencia {
   _asignatura: string; 
 }
 
+interface FichaCompartida {
+  id: string;
+  titulo: string;
+  fecha: string;
+  curso_id: number;
+}
+
 export default function PortalFichas() {
-  const { sessionToken, asignaturas, selectedPeriodo } = useOutletContext<{
-    sessionToken: string;
-    asignaturas: AsignaturaPublicada[];
-    selectedPeriodo: Periodo;
-  }>();
+  const { sessionToken, asignaturas, selectedPeriodo, token } = usePortal();
+
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allEvidencias, setAllEvidencias] = useState<Evidencia[]>([]);
+  const [fichasCompartidas, setFichasCompartidas] = useState<FichaCompartida[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,6 +63,17 @@ export default function PortalFichas() {
         const combined = results.flat();
         
         setAllEvidencias(combined);
+
+        // Fetch Fichas Reales Compartidas
+        const { data: fichasData, error: fichasError } = await supabase.rpc('portal_get_fichas_compartidas', {
+          p_session_token: sessionToken
+        });
+        
+        if (fichasError) throw fichasError;
+        if (fichasData && !fichasData.error) {
+          setFichasCompartidas(fichasData);
+        }
+
       } catch (err: any) {
         console.error(err);
         setError(err.message || 'Error al cargar las fichas');
@@ -128,7 +145,7 @@ export default function PortalFichas() {
                 className={`flex-none px-3 py-1.5 border border-black rounded-lg text-xs flex items-center space-x-1.5 transition ${isSelected ? 'bg-brand-purple text-black font-bold shadow-sm' : 'bg-white text-black font-semibold hover:bg-neutral-50'}`}
               >
                 <span className="text-[11px]">{getSubjectIcon(asig.asignatura)}</span>
-                <span className="truncate max-w-[100px]">{asig.asignatura}</span>
+                <span className="truncate max-w-25">{asig.asignatura}</span>
                 {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-black ml-1"></span>}
               </button>
             );
@@ -138,7 +155,33 @@ export default function PortalFichas() {
 
       <section className="mb-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-black tracking-tight">Cronograma y Fichas</h2>
+          <h2 className="text-sm font-bold text-black tracking-tight">Fichas de Clase</h2>
+        </div>
+        
+        {!loading && !error && fichasCompartidas.length === 0 ? (
+          <div className="text-center py-6 bg-white border border-neutral-200 rounded-xl mb-6">
+             <p className="text-neutral-500 text-sm">No hay fichas compartidas.</p>
+          </div>
+        ) : (
+          <div className="space-y-3 mb-6">
+            {fichasCompartidas.map((ficha) => (
+              <article key={`ficha-${ficha.id}`} className="w-full border border-black rounded-lg p-3 bg-white shadow-sm flex items-center justify-between cursor-pointer hover:bg-neutral-50 transition-colors" onClick={() => navigate(rutaPortal(token, 'fichas', ficha.id))}>
+                <div>
+                  <h3 className="text-xs font-bold text-black">{ficha.titulo || 'Sin título'}</h3>
+                  <div className="mt-1 flex items-center space-x-2">
+                    <span className="text-[10px] font-bold text-neutral-500">Publicado el {new Date(ficha.fecha).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="text-[10px] font-bold text-black hover:underline">
+                  Abrir ›
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-black tracking-tight">Cronograma y Evaluaciones</h2>
           <span className="text-xs text-neutral-500 font-medium">Período {selectedPeriodo.replace('P','')}</span>
         </div>
         
@@ -163,7 +206,7 @@ export default function PortalFichas() {
                 <article key={`${ev._asignatura}-${ev.id}`} className={`w-full border border-black rounded-lg p-3 ${getCardColorClass(i)}`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 bg-neutral-100 border border-black rounded text-black uppercase tracking-tight truncate max-w-[120px]">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 bg-neutral-100 border border-black rounded text-black uppercase tracking-tight truncate max-w-30">
                         {ev._asignatura}
                       </span>
                     </div>

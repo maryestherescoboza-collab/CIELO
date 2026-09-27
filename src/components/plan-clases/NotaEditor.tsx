@@ -4,21 +4,28 @@ import { getEditorTools } from './editorTools';
 import type { EditorJS, EditorOutputData, EditorReadyHandler } from '../../types/editorjs';
 import { usePlanClasesStore } from '../../store/planClasesStore';
 import { Loader2 } from 'lucide-react';
+import type { NotaContenido } from '../../types/planClases';
 
 const EditorJSClass = EditorJSModule as unknown as new (config: Record<string, unknown>) => EditorJS;
 
 interface NotaEditorProps {
-  notaId: string;
+  notaId?: string;
   readOnly?: boolean;
   onReady?: EditorReadyHandler;
   onSaving?: (isSaving: boolean) => void;
+  initialDataOverride?: NotaContenido;
+  disableAutoSave?: boolean;
+  onChangeContent?: (data: NotaContenido) => void;
 }
 
 export function NotaEditor({
   notaId,
   readOnly = false,
   onReady,
-  onSaving
+  onSaving,
+  initialDataOverride,
+  disableAutoSave = false,
+  onChangeContent
 }: NotaEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorJS | null>(null);
@@ -30,12 +37,14 @@ export function NotaEditor({
   const onSavingRef = useRef(onSaving);
   const updateNotaContenidoRef = useRef(updateNotaContenido);
   const onReadyRef = useRef(onReady);
+  const onChangeContentRef = useRef(onChangeContent);
 
   useEffect(() => {
     onSavingRef.current = onSaving;
     updateNotaContenidoRef.current = updateNotaContenido;
     onReadyRef.current = onReady;
-  }, [onSaving, updateNotaContenido, onReady]);
+    onChangeContentRef.current = onChangeContent;
+  }, [onSaving, updateNotaContenido, onReady, onChangeContent]);
 
   // Control estricto del ciclo de vida de Editor.js
   useEffect(() => {
@@ -43,12 +52,18 @@ export function NotaEditor({
     let editorInstance: EditorJS | null = null;
 
     const initEditor = async () => {
-      // 1. Obtener JSON de Supabase
+      // 1. Obtener JSON de Supabase o usar el override
       setLoading(true);
-      const notaDB = await getNota(notaId);
-      const initialData = notaDB?.contenido_json 
-        ? (notaDB.contenido_json as unknown as EditorOutputData) 
-        : undefined;
+      
+      let initialData: EditorOutputData | undefined;
+      if (initialDataOverride) {
+        initialData = initialDataOverride as unknown as EditorOutputData;
+      } else if (notaId) {
+        const notaDB = await getNota(notaId);
+        initialData = notaDB?.contenido_json 
+          ? (notaDB.contenido_json as unknown as EditorOutputData) 
+          : undefined;
+      }
       
       if (!isMounted) return;
 
@@ -76,9 +91,15 @@ export function NotaEditor({
             try {
               onSavingRef.current?.(true);
               const savedData = (await api.saver.save()) as EditorOutputData;
+              
               if (isMounted) {
-                // Actualizar silenciosamente en Supabase/Zustand
-                await updateNotaContenidoRef.current(notaId, savedData as any);
+                onChangeContentRef.current?.(savedData as unknown as NotaContenido);
+                
+                // Actualizar silenciosamente en Supabase/Zustand solo si está habilitado el autoguardado
+                if (!disableAutoSave && notaId) {
+                    await updateNotaContenidoRef.current(notaId, savedData as any);
+                }
+                
                 onSavingRef.current?.(false);
               }
             } catch (error) {
@@ -122,7 +143,7 @@ export function NotaEditor({
       editorRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notaId, readOnly, getNota]);
+  }, [notaId, readOnly, getNota, disableAutoSave]);
 
   return (
     <div className="relative min-h-75">
@@ -131,7 +152,7 @@ export function NotaEditor({
           <Loader2 className="animate-spin text-[#689C63]" size={32} />
         </div>
       )}
-      <div ref={containerRef} className="cielo-editorjs" />
+      <div ref={containerRef} className="cielo-editorjs bg-white p-4 rounded-xl shadow-sm border border-[#2E3330]/10" />
     </div>
   );
 }

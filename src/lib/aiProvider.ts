@@ -1,10 +1,5 @@
 // Dispatcher único entre proveedores de IA (Gemini / OpenAI).
-// Las funciones de negocio mantienen SUS prompts, su schema de respuesta (formato
-// Gemini) y su misma estructura de resultado; aquí SOLO cambia el transporte según
-// el proveedor seleccionado por el usuario (aiConfig). Si el proveedor elegido no
-// tiene la clave configurada, se lanza el mensaje indicado por el producto.
-// Seguridad: la clave de Gemini viaja en el endpoint (requisito de la API) y la de
-// OpenAI en la cabecera Authorization; en ambos casos se redacta en cualquier log.
+// Implementa sistema de Fallback a DeepSeek cuando el proveedor principal falla por cuota.
 
 import {
     buildGeminiEndpoint,
@@ -12,7 +7,7 @@ import {
     getAIKey,
     providerDisplayName
 } from './aiConfig';
-import { callOpenAIJson } from './aiOpenAI';
+import { callOpenAIJson, OpenAIError } from './aiOpenAI';
 
 export interface CallAIOptions {
     userId: string;
@@ -30,10 +25,8 @@ export interface CallAIOptions {
     operation?: string;
 }
 
-// Convierte un responseSchema de Gemini a JSON Schema (usado por Structured Outputs
-// de OpenAI). Se conservan type (normalizado a minúsculas), properties, items,
-// required, enum y description; normalizeStrictSchema de aiOpenAI agrega
-// additionalProperties:false y required completo para el modo estricto.
+export type FallbackAware<T> = T & { _fallbackUsed?: boolean };
+
 function geminiSchemaToJsonSchema(schema: Record<string, unknown>, depth = 0): Record<string, unknown> {
     if (depth > 12 || typeof schema !== 'object' || schema === null) return schema;
     const next: Record<string, unknown> = {};
@@ -87,54 +80,16 @@ function geminiFriendlyError(status: number, body: string): string {
     return 'No pudimos procesar este contenido. Verifica los datos ingresados e inténtalo nuevamente.';
 }
 
-export async function callAI<T>(options: CallAIOptions): Promise<T> {
-    const provider = getAIAIProvider(options.userId);
-    const apiKey = getAIKey(options.userId, provider);
-
-    if (provider === 'deepseek') {
-        const { supabase } = await import('./supabase');
-        
-        const res = await supabase.functions.invoke('cielo-ai', {
-            body: { 
-                text: options.prompt, // El prompt ya concatenó las instrucciones o podemos enviarlo crudo
-                hash: options.hash,
-                textoOriginal: options.originalText,
-                operation: options.operation || 'analyze_activities'
-            }
-        });
-
-        if (res.error) {
-            console.error('[IA][DeepSeek Edge Function] Error:', res.error);
-            const errMsg = res.error.message || 'Error desconocido';
-            if (errMsg.includes('límite mensual')) throw new Error('Has alcanzado el límite mensual de uso de IA (US$0.50).');
-            throw new Error('No pudimos procesar este contenido a través de nuestro servicio de IA. Inténtalo nuevamente.');
-        }
-        
-        if (!res.data || !res.data.data) {
-            throw new Error('Respuesta inválida desde el servicio de IA.');
-        }
-
-        return res.data.data as T;
+class GeminiError extends Error {
+    isQuotaError: boolean;
+    constructor(message: string, isQuotaError: boolean) {
+        super(message);
+        this.name = 'GeminiError';
+        this.isQuotaError = isQuotaError;
     }
+}
 
-    if (!apiKey) {
-        throw new Error(`Configura tu API de ${providerDisplayName(provider)} para utilizar esta función.`);
-    }
-
-    if (provider === 'openai') {
-        return callOpenAIJson<T>(apiKey, options.prompt, {
-            jsonSchema: options.geminiResponseSchema ? geminiSchemaToJsonSchema(options.geminiResponseSchema) : undefined,
-            jsonObject: !options.geminiResponseSchema,
-            systemPrompt: options.systemPrompt,
-            temperature: options.temperature,
-            signal: options.signal,
-            model: options.model
-        });
-    }
-
-    // Gemini: se reproduce el transporte que ya usaban las funciones
-    // (generateContent + responseMimeType/responseSchema) para no cambiar el
-    // comportamiento actual cuando el usuario usa Gemini.
+async function callGemini<T>(apiKey: string, options: CallAIOptions): Promise<T> {
     const endpointUrl = buildGeminiEndpoint(apiKey, options.model);
 
     let response: Response;
@@ -161,7 +116,14 @@ export async function callAI<T>(options: CallAIOptions): Promise<T> {
     if (!response.ok) {
         const errText = await response.text().catch(() => '');
         console.error(`[IA][Gemini] HTTP ${response.status}:`, redactKey(errText, apiKey));
-        throw new Error(geminiFriendlyError(response.status, errText));
+        
+        const lower = String(errText || '').toLowerCase();
+        const isQuotaError = lower.includes('resource_exhausted') ||
+                             lower.includes('quota') || 
+                             lower.includes('insufficient_quota') ||
+                             lower.includes('out_of_credit');
+                             
+        throw new GeminiError(geminiFriendlyError(response.status, errText), isQuotaError);
     }
 
     let resJson: any;
@@ -182,12 +144,10 @@ export async function callAI<T>(options: CallAIOptions): Promise<T> {
         parsed = JSON.parse(text);
     } catch {
         try {
-            // Intenta extraer JSON de un bloque markdown
             const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
             if (markdownMatch && markdownMatch[1]) {
                 parsed = JSON.parse(markdownMatch[1]);
             } else {
-                // Intenta encontrar la estructura más grande parecida a JSON { ... } o [ ... ]
                 const jsonMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
                 if (jsonMatch && jsonMatch[1]) {
                     parsed = JSON.parse(jsonMatch[1]);
@@ -201,4 +161,83 @@ export async function callAI<T>(options: CallAIOptions): Promise<T> {
         }
     }
     return parsed as T;
+}
+
+async function callDeepSeek<T>(options: CallAIOptions): Promise<T> {
+    const { supabase } = await import('./supabase');
+    
+    const res = await supabase.functions.invoke('cielo-ai', {
+        body: { 
+            text: options.prompt, 
+            hash: options.hash,
+            textoOriginal: options.originalText,
+            operation: options.operation || 'analyze_activities'
+        }
+    });
+
+    if (res.error) {
+        console.error('[IA][DeepSeek Edge Function] Error:', res.error);
+        const errMsg = res.error.message || 'Error desconocido';
+        if (errMsg.includes('límite mensual')) throw new Error('Has alcanzado el límite mensual de uso de IA (US$0.50).');
+        throw new Error('No pudimos procesar este contenido a través de nuestro servicio de IA. Inténtalo nuevamente.');
+    }
+    
+    if (!res.data || !res.data.data) {
+        throw new Error('Respuesta inválida desde el servicio de IA.');
+    }
+
+    return res.data.data as T;
+}
+
+export async function callAI<T>(options: CallAIOptions): Promise<FallbackAware<T>> {
+    const provider = getAIAIProvider(options.userId);
+    const apiKey = getAIKey(options.userId, provider);
+
+    if (!apiKey) {
+        throw new Error(`Configura tu API de ${providerDisplayName(provider)} para utilizar esta función.`);
+    }
+
+    try {
+        if (provider === 'openai') {
+            return (await callOpenAIJson<T>(apiKey, options.prompt, {
+                jsonSchema: options.geminiResponseSchema ? geminiSchemaToJsonSchema(options.geminiResponseSchema) : undefined,
+                jsonObject: !options.geminiResponseSchema,
+                systemPrompt: options.systemPrompt,
+                temperature: options.temperature,
+                signal: options.signal,
+                model: options.model
+            })) as FallbackAware<T>;
+        } else {
+            return (await callGemini<T>(apiKey, options)) as FallbackAware<T>;
+        }
+    } catch (err: any) {
+        // Analizar si es un error de cuota/saldo/créditos
+        let isQuotaError = false;
+        
+        if (err instanceof OpenAIError) {
+            isQuotaError = err.kind === 'QUOTA_EXHAUSTED';
+        } else if (err instanceof GeminiError) {
+            isQuotaError = err.isQuotaError;
+        } else if (err?.message?.toLowerCase().includes('quota') || err?.message?.toLowerCase().includes('resource_exhausted')) {
+            isQuotaError = true;
+        }
+
+        // Si es cuota agotada, usamos DeepSeek como fallback
+        if (isQuotaError) {
+            console.warn(`[IA] Fallback a DeepSeek activado por error de cuota en ${provider}.`);
+            try {
+                const fallbackResult = await callDeepSeek<T>(options);
+                if (fallbackResult && typeof fallbackResult === 'object') {
+                    Object.assign(fallbackResult, { _fallbackUsed: true });
+                }
+                return fallbackResult as FallbackAware<T>;
+            } catch (fallbackErr) {
+                // Si DeepSeek también falla, arrojamos su error real
+                throw fallbackErr;
+            }
+        }
+
+        // Si no es un error de cuota (ej. error de auth, de red, etc), se lanza normalmente
+        throw err;
+    }
 }

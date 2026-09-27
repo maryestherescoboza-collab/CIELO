@@ -185,6 +185,36 @@ export default function App() {
     return <Landing />;
   }
 
+  if (PORTAL_FAMILIA_ENABLED && pathname.startsWith('/portal/')) {
+    // El Portal solia vivir dentro de <AppRoutes>, que ya venia envuelto en
+    // <ErrorBoundary>. Al sacarlo de ahi se perdio la red: cualquier error de
+    // render en una pantalla del Portal tumbaba la app entera en blanco. El
+    // estudiante no tiene a quien reportarle, asi que se muestra el estado y se
+    // ofrece volver a entrar, sin filtrar detalles tecnicos.
+    return (
+      <ErrorBoundary
+        fallback={
+          <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
+            <p className="text-base font-bold text-black">No se pudo mostrar esta pantalla.</p>
+            <p className="text-sm text-neutral-600 mt-2 max-w-sm leading-relaxed">
+              Vuelve a abrir el enlace del portal e inténtalo de nuevo.
+            </p>
+            <a
+              href="/"
+              className="mt-6 text-sm font-bold text-black underline underline-offset-4"
+            >
+              Ir al inicio
+            </a>
+          </div>
+        }
+      >
+        <Routes>
+          <Route path="/portal/:token/*" element={<PortalApp />} />
+        </Routes>
+      </ErrorBoundary>
+    );
+  }
+
   if (pathname === '/terminos') {
     return <Terminos />;
   }
@@ -196,13 +226,6 @@ export default function App() {
   if (!session) {
     if (pathname === '/reset-password') {
       return <ResetPassword />;
-    }
-    if (PORTAL_FAMILIA_ENABLED && pathname.startsWith('/portal/')) {
-      return (
-        <Routes>
-          <Route path="/portal/:token/*" element={<PortalApp />} />
-        </Routes>
-      );
     }
     return <Auth onAuthSuccess={() => actions.refresh()} />;
   }

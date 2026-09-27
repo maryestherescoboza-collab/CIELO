@@ -187,6 +187,7 @@ export async function generarSugerenciasPedagogicas(
         userId,
         prompt: construirPrompt(contexto, textoContextoAdicional),
         signal,
+        operation: 'generate_daily_planning',
         geminiResponseSchema: {
             type: 'OBJECT',
             properties: {
