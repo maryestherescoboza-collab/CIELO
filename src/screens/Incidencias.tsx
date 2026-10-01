@@ -1,10 +1,11 @@
 import { useState, useMemo, type ElementType } from 'react';
 import {
     Search, AlertCircle, Bookmark, FileText,
-    ShieldAlert, Trash2, CheckCircle
+    ShieldAlert, Trash2, CheckCircle, Printer
 } from 'lucide-react';
 import type { AppState, Incidencia } from '../types';
 import { CieloPill } from '../components/ui/CieloPill';
+import { generarFichaReferenciaDocx } from '../utils/docxGenerator';
 interface Props {
     state: AppState;
     onAddIncidencia: (i: Omit<Incidencia, 'id'>) => void;
@@ -440,16 +441,27 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                                         </span>
                                                     </td>
                                                     <td className="p-4 text-center">
-                                                        <button
-                                                            onClick={() => {
-                                                                if (onDeleteIncidencia && window.confirm('¿Eliminar esta incidencia?')) {
-                                                                    onDeleteIncidencia(incidencia.id);
-                                                                }
-                                                            }}
-                                                            className="text-(--ink-soft) hover:text-(--danger) transition-colors lg:opacity-0 lg:group-hover:opacity-100 p-2 lg:p-1 rounded-full hover:bg-white border border-transparent hover:border-red-200 cursor-pointer"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <button
+                                                                onClick={() => {
+                                                                    generarFichaReferenciaDocx(incidencia, state, session);
+                                                                }}
+                                                                title="Descargar ficha de referencia"
+                                                                className="text-(--ink-soft) hover:text-(--primary) transition-colors p-2 lg:p-1 rounded-full hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
+                                                            >
+                                                                <Printer size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (onDeleteIncidencia && window.confirm('¿Eliminar esta incidencia?')) {
+                                                                        onDeleteIncidencia(incidencia.id);
+                                                                    }
+                                                                }}
+                                                                className="text-(--ink-soft) hover:text-(--danger) transition-colors p-2 lg:p-1 rounded-full hover:bg-white border border-transparent hover:border-red-200 cursor-pointer"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             )
