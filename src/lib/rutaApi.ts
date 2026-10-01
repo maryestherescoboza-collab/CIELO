@@ -15,12 +15,16 @@
 import { supabase } from './supabase';
 import type {
     ActividadDocente,
+    ActividadExistente,
     ProgresoRuta,
+    PuntajesDocente,
+    PuntajesRuta,
     RespuestaRuta,
     ResumenRutaEstudiante,
     RutaDocente,
     RutaEstudiante,
     RutaResumen,
+    TipoActividad,
     VeredictoIntento,
 } from '../types/rutas';
 
@@ -175,9 +179,9 @@ export const rutaApiDocente = {
             p_obligatorio: datos.obligatorio ?? true,
         });
         if (error) throw error;
-        const err = mensajeDeError(data, 'No se pudo crear la actividad');
+        const err = mensajeDeError(data, 'No se pudo crear el item');
         if (err) throw new Error(err);
-        return desenrollar<{ id: string }>(data, 'No se pudo crear la actividad');
+        return desenrollar<{ id: string }>(data, 'No se pudo crear el item');
     },
 
     async eliminarActividad(actividadId: string) {
@@ -185,7 +189,7 @@ export const rutaApiDocente = {
             p_actividad_id: actividadId,
         });
         if (error) throw error;
-        const err = mensajeDeError(data, 'No se pudo eliminar la actividad');
+        const err = mensajeDeError(data, 'No se pudo eliminar el item');
         if (err) throw new Error(err);
         return true;
     },
@@ -235,9 +239,104 @@ export const rutaApiDocente = {
             },
         });
         if (error) throw error;
-        const err = mensajeDeError(data, 'No se pudo guardar la actividad');
+        const err = mensajeDeError(data, 'No se pudo guardar el item');
         if (err) throw new Error(err);
         return true;
+    },
+
+    /* ── Ponderación ── */
+
+    /**
+     * Guarda la ponderación completa de la ruta en una sola transaccion.
+     *
+     * El servidor valida que las etapas sumen 100 y que las actividades de
+     * cada etapa sumen 100 ANTES de escribir nada. `faltan` viaja en el error
+     * para que el constructor pueda decir cuántos puntos le faltan al docente
+     * en vez de un "no se pudo guardar" sin explicación.
+     */
+    async actualizarPesos(
+        rutaId: string,
+        pesos: { etapas: { id?: string; peso: number; actividades: { id?: string; peso: number }[] }[] },
+    ) {
+        const { data, error } = await supabase.rpc('ruta_actualizar_pesos', {
+            p_ruta_id: rutaId,
+            p_pesos: pesos,
+        });
+        if (error) throw error;
+        const err = mensajeDeError(data, 'No se pudieron guardar los porcentajes');
+        if (err) throw new Error(err);
+        return true;
+    },
+
+    /**
+     * Reparte 100% en partes iguales. Sin `etapaId` reparte entre las etapas
+     * de la ruta; con `etapaId`, entre las actividades de esa etapa.
+     */
+    async rebalancear(rutaId: string, etapaId?: string) {
+        const { data, error } = await supabase.rpc('ruta_rebalancear_pesos', {
+            p_ruta_id: rutaId,
+            p_etapa_id: etapaId ?? null,
+        });
+        if (error) throw error;
+        const err = mensajeDeError(data, 'No se pudo repartir el 100%');
+        if (err) throw new Error(err);
+        return true;
+    },
+
+    /* ── Reaprovechar actividades que ya existen en CIELO ── */
+
+    /**
+     * Catálogo de actividades de public.actividades que el docente puede
+     * vincular. La RPC ya filtra por curso compartido y por autoría, así que
+     * lo que llega aquí es solo lo que de verdad puede usar.
+     */
+    async actividadesExistentes(
+        rutaId: string,
+        opciones: { busqueda?: string; asignatura?: string } = {},
+    ): Promise<ActividadExistente[]> {
+        const { data, error } = await supabase.rpc('ruta_actividades_existentes', {
+            p_ruta_id: rutaId,
+            p_busqueda: opciones.busqueda?.trim() || null,
+            p_asignatura: opciones.asignatura || null,
+        });
+        if (error) throw error;
+        const err = mensajeDeError(data, 'No se pudieron cargar las actividades');
+        if (err) throw new Error(err);
+        return (data as ActividadExistente[]) ?? [];
+    },
+
+    /**
+     * Vincula una actividad existente a una etapa SIN duplicarla: la ruta
+     * apunta a la fila original y el puntaje acaba en calificaciones.
+     *
+     * `tipo` es el tipo de la RUTA, no el de CIELO: es lo que decide cómo se
+     * corrige, con el mismo motor (ruta_evaluar_respuesta) que ya usa el
+     * resto de actividades.
+     */
+    async vincularActividad(etapaId: string, actividadOrigenId: number, tipo: TipoActividad) {
+        const { data, error } = await supabase.rpc('ruta_vincular_actividad', {
+            p_etapa_id: etapaId,
+            p_actividad_origen_id: actividadOrigenId,
+            p_tipo: tipo,
+        });
+        if (error) throw error;
+        const err = mensajeDeError(data, 'No se pudo calificar la actividad');
+        if (err) throw new Error(err);
+        return desenrollar<{ id: string; orden: number; titulo?: string }>(
+            data,
+            'No se pudo calificar la actividad',
+        );
+    },
+
+    /** Cuaderno de notas ponderado de la ruta, por estudiante. */
+    async puntajesDocente(rutaId: string): Promise<PuntajesDocente> {
+        const { data, error } = await supabase.rpc('ruta_puntajes_docente', {
+            p_ruta_id: rutaId,
+        });
+        if (error) throw error;
+        const err = mensajeDeError(data, 'No se pudieron cargar los puntajes');
+        if (err) throw new Error(err);
+        return desenrollar<PuntajesDocente>(data, 'No se pudieron cargar los puntajes');
     },
 };
 
@@ -297,5 +396,21 @@ export const rutaApiPortal = {
         const err = mensajeDeError(data, 'No se pudo cargar el progreso');
         if (err) throw new Error(err);
         return desenrollar<ProgresoRuta>(data, 'No se pudo cargar el progreso');
+    },
+
+    /**
+     * Puntaje ponderado del estudiante: por etapa, por actividad y total.
+     * Es lo que la RPC proyecta ademas a calificaciones cuando la actividad
+     * vino de CIELO.
+     */
+    async puntaje(sessionToken: string, rutaId: string): Promise<PuntajesRuta> {
+        const { data, error } = await supabase.rpc('portal_ruta_puntaje', {
+            p_session_token: sessionToken,
+            p_ruta_id: rutaId,
+        });
+        if (error) throw error;
+        const err = mensajeDeError(data, 'No se pudo cargar el puntaje');
+        if (err) throw new Error(err);
+        return desenrollar<PuntajesRuta>(data, 'No se pudo cargar el puntaje');
     },
 };

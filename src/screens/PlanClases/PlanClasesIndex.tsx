@@ -49,7 +49,7 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
   const { secuenciaId, notaId: urlNotaId } = useParams();
   const session = useAppStore((s) => s.session);
   
-  const { notas, loadingNotas, error, fetchNotas, createNota } = usePlanClasesStore();
+  const { notas, loadingNotas, error, fetchNotas, fetchAllNotas, createNota } = usePlanClasesStore();
   const [isCreating, setIsCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -68,8 +68,14 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
   useEffect(() => {
     if (secuenciaId) {
       fetchNotas(secuenciaId);
+      return;
     }
-  }, [secuenciaId, fetchNotas]);
+    // /plan-de-clases/mis-notas es "Plan de clases -> Fichas" sin secuencia
+    // concreta: el tablero de todas las fichas del docente.
+    if (session?.user?.id) {
+      fetchAllNotas(session.user.id);
+    }
+  }, [secuenciaId, fetchNotas, fetchAllNotas, session?.user?.id]);
 
   const handleCreateNota = async () => {
     if (!secuenciaId || !session?.user?.id) return;
@@ -212,7 +218,7 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
                 <h2 className="text-[15px] font-bold text-[#2E3330]">Tablero</h2>
                 {!loadingNotas && (
                   <span className="px-2.5 py-0.5 rounded-full bg-[#2E3330]/5 text-[#2E3330]/70 text-[12px] font-bold">
-                    {notas.length} fichas en esta secuencia
+                    {notas.length} {secuenciaId ? 'fichas en esta secuencia' : 'fichas'}
                   </span>
                 )}
               </div>

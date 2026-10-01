@@ -5,6 +5,8 @@ import PortalEstudiante from './PortalEstudiante';
 import PortalFichas from './PortalFichas';
 import PortalFichaDetalle from './PortalFichaDetalle';
 import PortalRuta from './PortalRuta';
+import PortalPortafolio from './PortalPortafolio';
+import PortalDrive from './PortalDrive';
 import PortalRecuperaciones from './PortalRecuperaciones';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
 import { Loader2 } from 'lucide-react';
@@ -50,6 +52,11 @@ export default function PortalApp() {
       ) : (
         <Route element={<PortalLayout />}>
           <Route path="estudiante" element={<PortalEstudiante />} />
+          <Route path="portafolio" element={<PortalPortafolio />} />
+          {/* Ruta real pero SIN boton en la barra inferior: la barra ya tiene cuatro
+              entradas y Drive es un ajuste del Portafolio, no un modulo de primer
+              nivel. Se entra desde la tarjeta de Drive en el Portafolio. */}
+          <Route path="drive" element={<PortalDrive />} />
           <Route path="recuperaciones" element={<PortalRecuperaciones />} />
           <Route path="fichas" element={<PortalFichas />} />
           <Route path="fichas/:id" element={<PortalFichaDetalle />} />

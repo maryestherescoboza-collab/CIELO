@@ -255,7 +255,7 @@ export default function PortalEstudiante() {
             <div className="relative border border-black rounded-2xl p-3 bg-white">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xs font-bold tracking-wider uppercase font-mono text-black">EMBLEMAS POR COMPETENCIA</h2>
+                  <h2 className="text-xs font-bold tracking-wider uppercase font-mono text-black">LOGRO POR COMPETENCIA</h2>
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-2 pt-1 pb-1">

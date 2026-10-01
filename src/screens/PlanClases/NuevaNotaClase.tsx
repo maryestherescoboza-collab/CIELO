@@ -24,6 +24,7 @@ import { CompartirModal } from '../../components/plan-clases/CompartirModal';
 import { CompartirCursosModal } from '../../components/plan-clases/CompartirCursosModal';
 import { PortalComentariosDocentePanel } from '../../components/plan-clases/PortalComentariosDocentePanel';
 import { ComentariosPanel } from '../../components/plan-clases/ComentariosPanel';
+import { FichaActividadesPanel } from '../../components/plan-clases/FichaActividadesPanel';
 import ConstructorRuta from '../../components/plan-clases/rutas/ConstructorRuta';
 import { usePlanClasesStore } from '../../store/planClasesStore';
 import { uid } from '../../utils/uid';
@@ -278,6 +279,9 @@ export default function NuevaNotaClase({
           <div className="mt-4">
             <InfoClase datos={infoClase} onChange={handleInfoClaseChange} />
           </div>
+
+          {/* Actividades vinculadas a esta ficha + "Solicitar subir producto" */}
+          <FichaActividadesPanel notaId={notaId} />
 
           {/* Regla sutil */}
           <div className="my-6 h-px w-full opacity-40" style={{ background: 'rgba(46,51,48,0.12)' }} />

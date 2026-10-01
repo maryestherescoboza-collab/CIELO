@@ -382,6 +382,19 @@ export function validarPregunta(
 
     const pasos = config.pasos ?? [];
     if (pasos.length > 0) {
+        const totalEspacios = pasos.reduce((n, p) => n + p.espacios.length, 0);
+
+        // Un procedimiento sin NINGUN hueco no se puede responder: el motor
+        // nunca lo daria por correcto y el estudiante se quedaria pulsando
+        // "Comprobar" sin feedback posible. Es el error de authoring mas
+        // silencioso que hay, asi que se corta aqui y no en el Portal.
+        if (totalEspacios === 0) {
+            avisos.push({
+                nivel: 'error',
+                mensaje: 'El procedimiento necesita al menos un espacio por completar.',
+            });
+        }
+
         const sinRespuesta = pasos.reduce(
             (n, p) => n + p.espacios.filter((e) => !e.respuesta.trim()).length,
             0,
@@ -440,7 +453,7 @@ export function validarPregunta(
 
 export interface AvisoRuta {
     nivel: 'error' | 'aviso';
-    /** "Etapa 2 / Actividad 1 / Pregunta 3" */
+    /** "Etapa 2 / Item 1 / Pregunta 3" */
     donde: string;
     mensaje: string;
 }
@@ -471,23 +484,23 @@ export function validarRuta(etapas: EtapaParaValidar[]): AvisoRuta[] {
             avisos.push({
                 nivel: 'aviso',
                 donde: etiquetaEtapa,
-                mensaje: 'La etapa no tiene actividades: el estudiante la vera vacia.',
+                mensaje: 'La etapa no tiene items: el estudiante la verá vacía.',
             });
         }
 
         etapa.actividades.forEach((actividad, j) => {
-            const etiquetaActividad = `${etapa.titulo?.trim() || etiquetaEtapa} / Actividad ${j + 1}`;
+            const etiquetaActividad = `${etapa.titulo?.trim() || etiquetaEtapa} / Item ${j + 1}`;
 
             if (actividad.preguntas.length === 0) {
                 avisos.push({
                     nivel: 'error',
                     donde: etiquetaActividad,
-                    mensaje: 'La actividad no tiene preguntas.',
+                    mensaje: 'El item no tiene preguntas.',
                 });
             }
 
             actividad.preguntas.forEach((pregunta, k) => {
-                const donde = `${etapa.titulo?.trim() || etiquetaEtapa} / Act. ${j + 1} / Preg. ${k + 1}`;
+                const donde = `${etapa.titulo?.trim() || etiquetaEtapa} / Item ${j + 1} / Preg. ${k + 1}`;
                 const dePregunta = validarPregunta(
                     pregunta.enunciado,
                     actividad.tipo,

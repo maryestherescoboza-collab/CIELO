@@ -71,6 +71,9 @@ export interface Actividad {
     sharedCourseId?: string;
     indicador?: string;
     producto?: string;
+    /** El docente pidió que el estudiante entregue un producto en esta
+        actividad. La entrega se registra en `evidencias`; aquí no hay fila. */
+    requiereProducto?: boolean;
     descripcion?: string | null;
 }
 

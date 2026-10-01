@@ -1,13 +1,15 @@
-import { useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Printer, School } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { useEstudianteData } from '../hooks/useEstudianteData';
 import { useSupabaseData } from '../hooks/useSupabaseData';
 import EstudianteHeader from '../components/estudiante/EstudianteHeader';
+import EstudianteSubnav, { type SubseccionEstudiante } from '../components/estudiante/EstudianteSubnav';
+import EvidenciasBandeja from '../components/estudiante/EvidenciasBandeja';
 import PerfilTab from '../components/estudiante/PerfilTab';
 import AnnualGradesTable from '../components/estudiante/AnnualGradesTable';
-import type { BCKey, CursoDocente, Curso, Actividad } from '../types';
+import type { BCKey, CursoDocente, Curso, Actividad, Estudiante } from '../types';
 import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
 
 export default function Estudiante() {
@@ -20,6 +22,13 @@ export default function Estudiante() {
         setSelectedEstudianteId
     } = useAppStore();
     const { loadDashboardData, loadCursoData } = useSupabaseData(true);
+
+    // El modulo Estudiante tiene dos subsecciones. `fichas` es exactamente lo
+    // que habia antes (la ficha del estudiante seleccionado) y `evidencias` es
+    // la bandeja global del curso. La subseccion NO se deduce del estudiante
+    // seleccionado: la bandeja no es la ficha de nadie, es de todo el curso, y
+    // por eso se puede abrir sin tener un alumno abierto.
+    const [subseccion, setSubseccion] = useState<SubseccionEstudiante>('fichas');
 
     useEffect(() => {
         loadDashboardData();
@@ -192,16 +201,35 @@ export default function Estudiante() {
         );
     }, [curso, est, state.actividades, state.calificaciones, state.recuperaciones, state.cursos]);
 
+    // La bandeja global no necesita un estudiante abierto, asi que se resuelve
+    // antes del `!est`. Se queda con la subnavegacion y SIN `EstudianteHeader`:
+    // esa cabecera ofrece el periodo y los tabs Perfil/Evaluacion del alumno, que
+    // aqui no aplican (el filtro de periodo vive dentro de la propia bandeja).
+    if (subseccion === 'evidencias') {
+        return (
+            <div className="flex flex-col items-center w-full min-h-screen bg-[#EFEFEC] text-[#1B1F2A] font-sans estudiante-root-wrapper">
+                <div className="w-full no-print">
+                    <EstudianteSubnav activa="evidencias" onCambiar={setSubseccion} />
+                </div>
+                <div className="w-full flex-1 flex justify-center py-4">
+                    <EvidenciasBandeja />
+                </div>
+            </div>
+        );
+    }
+
     if (!est) {
         return (
             <div className="flex flex-col items-center justify-start p-12 w-full min-h-screen bg-[#EFEFEC]">
-                <div className="w-full max-w-4xl bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                <div className="w-full max-w-4xl">
+                    <EstudianteSubnav activa="fichas" onCambiar={setSubseccion} />
+                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-4">
                     <h2 className="text-2xl font-black text-(--ink) mb-2 font-['Space_Grotesk']">Módulo Estudiante</h2>
                     <p className="text-(--ink-soft) mb-8 font-medium">Selecciona un estudiante para acceder a su perfil, calificaciones y portal familiar.</p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {state.estudiantes?.map((e: any) => {
-                            const c = state.cursos?.find((c: any) => c.id === e.cursoId);
+                        {state.estudiantes?.map((e: Estudiante) => {
+                            const c = state.cursos?.find(c => c.id === e.cursoId);
                             return (
                                 <button 
                                     key={e.id} 
@@ -222,6 +250,7 @@ export default function Estudiante() {
                         })}
                     </div>
                 </div>
+                </div>
             </div>
         );
     }
@@ -237,6 +266,7 @@ export default function Estudiante() {
                     onBack={() => navigate('/cursos')} 
                     isTutor={isTutor}
                 />
+                <EstudianteSubnav activa="fichas" onCambiar={setSubseccion} />
             </div>
 
             <div className="w-full px-4 sm:px-8 relative mx-auto flex justify-center overflow-x-auto pb-10 workspace-print-wrapper">

@@ -1,16 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Loader2, ArrowLeft, Send, Route as RouteIcon, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, Send, Route as RouteIcon, Check, CheckCircle2, PhoneCall, PackageOpen } from 'lucide-react';
 import { rutaApiPortal } from '../../lib/rutaApi';
 import type { ResumenRutaEstudiante } from '../../types/rutas';
+import type { ActividadProductoFicha } from '../../types/evidencias';
 import { usePortal, rutaPortal } from './portalContext';
+import PortalEvidenciaForm from './PortalEvidenciaForm';
 
 interface FichaDetalle {
   id: string;
   titulo: string;
   contenido_json: any;
   actualizado_en: string;
+  /** Actividades de la ficha que piden producto. Viene resuelto desde la RPC. */
+  actividades?: ActividadProductoFicha[];
 }
 
 interface Comentario {
@@ -34,52 +38,54 @@ export default function PortalFichaDetalle() {
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [rutas, setRutas] = useState<ResumenRutaEstudiante[]>([]);
+  const [actividadEntregando, setActividadEntregando] = useState<ActividadProductoFicha | null>(null);
+
+  const cargarFicha = useCallback(async () => {
+    if (!id || !sessionToken) return;
+    setLoading(true);
+    try {
+      const { data, error: fetchError } = await supabase.rpc('portal_get_ficha_detalle', {
+        p_session_token: sessionToken,
+        p_nota_id: id
+      });
+      
+      if (fetchError) throw fetchError;
+      if (data && data.error) throw new Error(data.error);
+      
+      setFicha(data);
+
+      // Fetch comentarios
+      const { data: comData, error: comError } = await supabase.rpc('portal_get_comentarios_ficha', {
+        p_session_token: sessionToken,
+        p_nota_id: id
+      });
+
+      if (comError) throw comError;
+      if (comData && !comData.error) {
+        setComentarios(comData);
+      }
+
+      // Rutas publicadas de esta ficha. Si la migracion todavia no esta
+      // aplicada, la ficha tiene que seguir funcionando igual.
+      try {
+        const disponibles = await rutaApiPortal.listar(sessionToken, id);
+        setRutas(disponibles);
+      } catch {
+        setRutas([]);
+      }
+
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar la ficha');
+    } finally {
+      setLoading(false);
+    }
+  }, [id, sessionToken]);
 
   useEffect(() => {
-    if (!id || !sessionToken) return;
+    cargarFicha();
+  }, [cargarFicha]);
 
-    const fetchFicha = async () => {
-      setLoading(true);
-      try {
-        const { data, error: fetchError } = await supabase.rpc('portal_get_ficha_detalle', {
-          p_session_token: sessionToken,
-          p_nota_id: id
-        });
-        
-        if (fetchError) throw fetchError;
-        if (data && data.error) throw new Error(data.error);
-        
-        setFicha(data);
-
-        // Fetch comentarios
-        const { data: comData, error: comError } = await supabase.rpc('portal_get_comentarios_ficha', {
-          p_session_token: sessionToken,
-          p_nota_id: id
-        });
-
-        if (comError) throw comError;
-        if (comData && !comData.error) {
-          setComentarios(comData);
-        }
-
-        // Rutas publicadas de esta ficha. Si la migracion todavia no esta
-        // aplicada, la ficha tiene que seguir funcionando igual.
-        try {
-          const disponibles = await rutaApiPortal.listar(sessionToken, id);
-          setRutas(disponibles);
-        } catch {
-          setRutas([]);
-        }
-
-      } catch (err: any) {
-        setError(err.message || 'Error al cargar la ficha');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFicha();
-  }, [id, sessionToken]);
+  const productos = ficha?.actividades ?? [];
 
   const handleEnviarComentario = async () => {
     if (!nuevoComentario.trim() || !id || !sessionToken) return;
@@ -242,6 +248,86 @@ export default function PortalFichaDetalle() {
         </div>
       </article>
 
+      {/* ── Producto que pide el docente ──
+          La solicitud vive AQUÍ, dentro de la propia ficha, no en un aviso
+          aparte. El estudiante abre la ficha, lee la clase y ve qué tiene que
+          entregar. La entrega usa el sistema de evidencias que ya existe
+          (`PortalEvidenciaForm` -> `portal_crear_evidencia`): Google Drive o
+          archivo local. */}
+      {productos.length > 0 && (
+        <section className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm mb-8">
+          <h2 className="flex items-center gap-2 text-base font-bold text-black mb-1">
+            <PackageOpen size={17} className="text-neutral-500" />
+            Productos que debes entregar
+          </h2>
+          <p className="text-xs text-neutral-500 mb-5">
+            Tu docente pidió un producto para esta ficha. Entrégalo aquí mismo.
+          </p>
+
+          <div className="space-y-3">
+            {productos.map((producto) => (
+              <div
+                key={producto.actividad_id}
+                className={`rounded-2xl border p-4 ${
+                  producto.entregado
+                    ? 'border-emerald-200 bg-emerald-50/50'
+                    : 'border-amber-200 bg-amber-50/40'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <span
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      producto.entregado ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'
+                    }`}
+                  >
+                    {producto.entregado ? <CheckCircle2 size={17} /> : <PhoneCall size={17} />}
+                  </span>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-black">{producto.actividad}</p>
+                    <p className="text-[11px] text-neutral-500">
+                      {[producto.asignatura, producto.periodo]
+                        .filter(Boolean)
+                        .join(' · ') || 'Actividad de la ficha'}
+                    </p>
+                    {producto.producto && (
+                      <p className="text-xs text-neutral-700 mt-1.5 leading-relaxed">
+                        <span className="font-semibold">Producto esperado:</span> {producto.producto}
+                      </p>
+                    )}
+
+                    {producto.entregado ? (
+                      <div className="mt-3">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white">
+                          <Check size={12} /> Producto entregado
+                        </span>
+                        {producto.entregas.length > 0 && (
+                          <ul className="mt-2 space-y-1">
+                            {producto.entregas.map((entrega) => (
+                              <li key={entrega.id} className="text-[11px] text-neutral-600">
+                                {entrega.nombre} · {new Date(entrega.created_at).toLocaleDateString()}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setActividadEntregando(producto)}
+                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2 text-xs font-bold text-white hover:bg-neutral-800 active:scale-95 transition-all"
+                      >
+                        <PhoneCall size={15} />
+                        Entregar producto
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Rutas de aprendizaje */}
       {rutas.length > 0 && (
         <section className="mb-8">
@@ -338,6 +424,34 @@ export default function PortalFichaDetalle() {
           </button>
         </div>
       </section>
+
+      {/* Entrega del producto: reutiliza `PortalEvidenciaForm`, el mismo
+          formulario del Portafolio (Drive o archivo local -> evidencias). La
+          ficha, el curso y el estudiante los resuelve la RPC, no el cliente. */}
+      {actividadEntregando && sessionToken && (
+        <PortalEvidenciaForm
+          sessionToken={sessionToken}
+          token={token}
+          actividades={[
+            {
+              actividad_id: actividadEntregando.actividad_id,
+              actividad: actividadEntregando.actividad,
+              fecha: actividadEntregando.fecha,
+              periodo: actividadEntregando.periodo,
+              asignatura: actividadEntregando.asignatura,
+              ficha_id: id ?? null,
+              ficha: ficha?.titulo ?? null,
+              evidencias: actividadEntregando.entregas.length,
+            },
+          ]}
+          actividadInicial={actividadEntregando.actividad_id}
+          onCerrar={() => setActividadEntregando(null)}
+          onGuardada={() => {
+            setActividadEntregando(null);
+            cargarFicha();
+          }}
+        />
+      )}
     </div>
   );
 }

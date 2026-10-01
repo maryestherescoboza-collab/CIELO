@@ -1,6 +1,17 @@
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3';
+
+/** Scope del docente: solo los archivos que CIELO mismo crea (registrogard). */
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+/**
+ * Scope del estudiante del Portal.
+ *
+ * Utiliza unicamente `drive.file` junto con Google Picker.
+ * Esto evita solicitar el scope sensible `drive.readonly` mientras permite
+ * al alumno organizar y adjuntar trabajos existentes.
+ */
+export const SCOPE_LECTURA_ESTUDIANTE = 'https://www.googleapis.com/auth/drive.file';
 
 const CIELO_FOLDER = 'CIELO';
 const REGISTRO_FOLDER = 'Registro anecdótico';
@@ -24,6 +35,7 @@ declare global {
                     };
                 };
             };
+            picker?: any;
         };
     }
 }
@@ -95,7 +107,14 @@ export async function getNotasFolderId(token: string): Promise<string> {
     return ensureChildFolder(token, rootId, NOTAS_FOLDER);
 }
 
-export function requestGoogleAccessToken(): Promise<string> {
+/**
+ * Pide un token de acceso con el scope por defecto (docente).
+ *
+ * Se acepta un scope alternativo porque el estudiante del Portal necesita mas
+ * permisos, pero el flujo GIS es el MISMO: no hay un segundo cliente OAuth ni un
+ * boton aparte. Quien llama decide el scope.
+ */
+export function requestGoogleAccessToken(scope: string = SCOPES): Promise<string> {
     return new Promise((resolve, reject) => {
         const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
         if (!clientId) {
@@ -108,7 +127,7 @@ export function requestGoogleAccessToken(): Promise<string> {
         }
         const client = window.google.accounts.oauth2.initTokenClient({
             client_id: clientId,
-            scope: SCOPES,
+            scope,
             callback: (tokenResponse) => {
                 cachedAccessToken = tokenResponse.access_token;
                 tokenExpiresAt = Date.now() + tokenResponse.expires_in * 1000;
@@ -259,4 +278,97 @@ export async function fetchThumbnailBlob(fileId: string, token: string): Promise
     } catch {
         return null;
     }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   PORTAL DEL ESTUDIANTE — carpetas por asignatura y lectura de archivos
+   ═════════════════════════════════════════════════════════════════════════
+   Estas funciones son deliberadamente distintas de las de arriba, y no es
+   casualidad:
+
+   · `buscarCarpetaHija` NO crea nada. `getCIELOFolderId`/`ensureChildFolder` si
+     crean la carpeta `CIELO` y la del módulo si faltan, porque el docente
+     quiere que la estructura este lista. El estudiante no: connecting Drive no
+     puede crear nada, la carpeta se crea solo cuando el confirma una asignatura.
+
+   · La carpeta se identifica por su `id` real devuelto por Google, guardado en
+     Supabase. Buscar por nombre es fragil (el alumno puede renombrar, duplicar
+     o tener dos carpetas iguales) y por eso solo se usa `buscarCarpetaHija` como
+     BARRA DE FALLBACK cuando todavia no hay id guardado.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+export const MIME_CARPETA = 'application/vnd.google-apps.folder';
+
+export interface ArchivoDrive {
+    id: string;
+    nombre: string;
+    mimeType: string;
+    /** Google solo lo devuelve para imagenes, video y Docs/Sheets/Slides. */
+    thumbnailLink: string | null;
+    /** `application/vnd.google-apps.*` indica un archivo nativo de Google. */
+    esGoogleDoc: boolean;
+    tamanoBytes: number | null;
+    modificadoEn: string | null;
+    webViewLink: string | null;
+}
+
+/**
+ * Busca una carpeta hija por nombre. NO la crea.
+ *
+ * Devolver `null` en vez de crear es deliberado: es lo que permite que el
+ * estudiante decida que asignaturas configurar. La primera vez no hay id
+ * guardado, asi que el nombre es el unico punto de partida; a partir de ahi se
+ * va siempre por id.
+ */
+export async function buscarCarpetaHija(token: string, parentId: string, name: string): Promise<string | null> {
+    return findChildFolder(token, parentId, name);
+}
+
+/** Crea una carpeta hija. Solo se llama desde la confirmacion del estudiante. */
+export async function crearCarpetaHija(token: string, parentId: string, name: string): Promise<string> {
+    return createFolder(token, name, parentId);
+}
+
+/** Lo que devuelve `files.list` crudo, antes de mapearlo a `ArchivoDrive`. */
+interface ArchivoDriveCrudo {
+    id: string;
+    name: string;
+    mimeType: string;
+    thumbnailLink?: string | null;
+    size?: string | null;
+    modifiedTime?: string | null;
+    webViewLink?: string | null;
+}
+
+function aArchivoDrive(f: ArchivoDriveCrudo): ArchivoDrive {
+    return {
+        id: f.id,
+        nombre: f.name,
+        mimeType: f.mimeType,
+        thumbnailLink: f.thumbnailLink ?? null,
+        esGoogleDoc: typeof f.mimeType === 'string' && f.mimeType.startsWith('application/vnd.google-apps.'),
+        tamanoBytes: f.size ? Number(f.size) : null,
+        modificadoEn: f.modifiedTime ?? null,
+        webViewLink: f.webViewLink ?? null,
+    };
+}
+
+
+
+/** Metadatos de un archivo concreto, para registrar la evidencia sin traerlo. */
+export async function obtenerArchivo(token: string, fileId: string): Promise<ArchivoDrive> {
+    const fields = 'id,name,mimeType,thumbnailLink,size,modifiedTime,webViewLink';
+    const res = await fetch(`${DRIVE_API}/files/${fileId}?fields=${fields}`, { headers: headers(token) });
+    if (!res.ok) throw new Error('No se pudo leer ese archivo de Google Drive');
+    return aArchivoDrive((await res.json()) as ArchivoDriveCrudo);
+}
+
+/** Enlace para abrir la carpeta de la asignatura en el Drive del estudiante. */
+export function abrirCarpetaEnDrive(folderId: string): string {
+    return `https://drive.google.com/drive/folders/${folderId}`;
+}
+
+/** Enlace de edicion/visualizacion de un archivo de Drive. */
+export function abrirArchivoEnDrive(archivo: Pick<ArchivoDrive, 'id' | 'webViewLink'>): string {
+    return archivo.webViewLink || `https://drive.google.com/file/d/${archivo.id}/view`;
 }

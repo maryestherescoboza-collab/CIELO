@@ -137,6 +137,42 @@ export interface RevisionHuecos {
  * cuadrado. No tira: un paso puede ser decorativo y quedarse sin huecos, que es
  * una decision legitima del docente.
  */
+/**
+ * Reconstruye el texto del paso con lo que el estudiante puso en cada hueco:
+ * "a² = ( [ ] )² + ( [ ] )²" + ["3", "4"] -> "a² = ( 3 )² + ( 4 )²".
+ *
+ * Es el espejo en el cliente de `ruta_texto_paso_resuelto` (SQL). El Portal
+ * envia el paso ya armado y el servidor compara esa expresion completa contra
+ * la que configuro el docente, con `ruta_comparar`. Por eso el formato no
+ * importa: "(3)^2+(4)^2" y "3²+4²" son la misma respuesta sin comparar texto.
+ *
+ * Devuelve `null` si el texto no tiene hueco o sobran huecos sin respuesta:
+ * un paso a medio rellenar no se envia, se ve incompleto en pantalla.
+ */
+export function resolverTextoPaso(
+    texto: string | null | undefined,
+    valores: string[],
+): string | null {
+    const fuente = texto ?? '';
+    if (contarHuecos(fuente) === 0) return null;
+
+    let indice = 0;
+    let vacios = 0;
+    const resuelto = fuente.replace(PATRON_HUECO, () => {
+        const valor = (valores[indice] ?? '').trim();
+        indice += 1;
+        if (!valor) vacios += 1;
+        return valor ? ` ${valor} ` : ' [ ] ';
+    });
+
+    // Un paso a medio rellenar no devuelve texto: no hay ecuacion que mirar.
+    // Devolver el andamiaje con los huecos abiertos serviria solo para
+    // confundirse, porque parece un paso terminado.
+    if (vacios > 0) return null;
+
+    return resuelto.replace(/\s+/g, ' ').trim();
+}
+
 export function revisarHuecos(texto: string, espacios: number): RevisionHuecos {
     const marcados = contarHuecos(texto);
     if (marcados === espacios) return { texto, avisos: [] };

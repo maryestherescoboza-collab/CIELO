@@ -212,13 +212,29 @@ export function useStudentActions() {
         // Un ID <= 0 es un placeholder visual: no hay registro que desactivar.
         if (!(id > 0)) return;
 
-        // Eliminación física: Las llaves foráneas con ON DELETE CASCADE
-        // se encargarán de borrar en cascada calificaciones, incidencias y otros datos.
-        const { error } = await supabase.from('estudiantes').delete().eq('id', id);
+        const est = state.estudiantes.find(e => e.id === id);
+        if (!est) return;
+
+        // Eliminación lógica y renumeración transaccional:
+        // No borra datos académicos asociados para evitar pérdidas accidentales.
+        const { error } = await supabase.rpc('rpc_eliminar_estudiante_posicion', {
+            p_estudiante_id: id
+        });
+        
         if (!error) {
-            setState(s => ({ ...s, estudiantes: s.estudiantes.filter(e => e.id !== id) }));
+            setState(s => {
+                // Eliminamos el estudiante del array y renumeramos los que le seguían
+                const filtered = s.estudiantes.filter(e => e.id !== id);
+                const updated = filtered.map(e => {
+                    if (e.cursoId === est.cursoId && typeof e.numeroLista === 'number' && typeof est.numeroLista === 'number' && e.numeroLista > est.numeroLista) {
+                        return { ...e, numeroLista: e.numeroLista - 1 };
+                    }
+                    return e;
+                });
+                return { ...s, estudiantes: updated };
+            });
         }
-    }, [setState]);
+    }, [state.estudiantes, setState]);
 
     const handleAddEstudianteEnPosicion = useCallback(async (cursoId: number, nombre: string, apellido: string, posicion: number) => {
         if (!session?.user?.id) return null;
@@ -266,7 +282,7 @@ export function useStudentActions() {
         // el UI trigeree la recarga o al menos confirme el éxito.
         if (data) {
             const mapped = mapearEstudiante(data);
-            setGenericToast({ message: 'Estudiante agregado correctamente.', type: 'success' });
+            setGenericToast({ message: 'Estudiante agregado correctamente. Refresca la página para visualizar la lista actualizada.', type: 'success' });
             setTimeout(() => setGenericToast(null), 5000);
             return mapped;
         }

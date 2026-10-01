@@ -23,6 +23,9 @@ import {
     Save,
     Route as RouteIcon,
     CircleAlert,
+    Scale,
+    Link2,
+    PhoneCall,
 } from 'lucide-react';
 
 import type {
@@ -39,10 +42,25 @@ import {
     ETIQUETA_TIPO_ACTIVIDAD,
     TIPOS_ACTIVIDAD_V1,
     esTipoActividadV1,
+    opcionesVerdaderoFalso,
+    normalizarOpcionesVerdaderoFalso,
+    TEXTO_VERDADERO_FALSO,
 } from '../../../types/rutas';
 import { rutaApiDocente } from '../../../lib/rutaApi';
 import { validarPregunta, validarRuta } from '../../../lib/rutaValidacion';
+import {
+    aPayloadPesos,
+    esExacto,
+    excedente,
+    faltante,
+    formatear,
+    leerPorcentaje,
+    repartirEnPartesIguales,
+    sumarPesos,
+    validarPesos,
+} from '../../../lib/rutaPesos';
 import { EditorPasos } from './EditorPasos';
+import { SelectorActividadExistente } from './SelectorActividadExistente';
 
 /* ─────────────────────────────────────────────────────────────────────────
    Ayudas locales
@@ -63,17 +81,16 @@ function actividadVacia(tipo: TipoActividad): ActividadDocente {
     const base: ActividadDocente = {
         tipo,
         titulo: '',
-        instrucciones: '',
+        // El servidor rebalancea al crear; el objeto local nace en 100 para que
+        // el campo no parpadee cuando la etapa tiene un solo item.
+        peso: 100,
         orden: 0,
         config: { datos: [] },
         obligatorio: true,
         preguntas: [preguntaVacia(TIPOS_RESPUESTA_POR_ACTIVIDAD[tipo][0], tipo)],
     };
     if (tipo === 'verdadero_falso') {
-        base.preguntas[0].opciones = [
-            { texto: 'Verdadero', orden: 1, es_correcta: true },
-            { texto: 'Falso', orden: 2, es_correcta: false },
-        ];
+        base.preguntas[0].opciones = opcionesVerdaderoFalso();
     }
     return base;
 }
@@ -93,6 +110,35 @@ function preguntaVacia(tipo: TipoRespuesta, actividad: TipoActividad): PreguntaD
         peso: 1,
         opciones: [],
     };
+}
+
+/**
+ * Deja un item de Verdadero/Falso con "Verdadero" como unica correcta.
+ *
+ * Se aplica al CARGAR y al GUARDAR, no solo al crear. Un item guardado antes de
+ * este cambio puede tener "Falso" marcada, y sin normalizarlo el docente abriria
+ * el formulario, veria que dice "Respuesta correcta: Verdadero" y el servidor
+ * seguiria sumando al reves: la interfaz y la correccion discrepando, que es
+ * justo el bug que el cambio busca cerrar.
+ *
+ * No destruye nada: conserva ids, textos y orden, y solo mueve la marca.
+ */
+function normalizarItem(actividad: ActividadDocente): ActividadDocente {
+    if (actividad.tipo !== 'verdadero_falso') return actividad;
+    return {
+        ...actividad,
+        preguntas: actividad.preguntas.map((p) => ({
+            ...p,
+            opciones: normalizarOpcionesVerdaderoFalso(p.opciones),
+        })),
+    };
+}
+
+function normalizarItems(etapas: EtapaDocente[]): EtapaDocente[] {
+    return etapas.map((etapa) => ({
+        ...etapa,
+        actividades: etapa.actividades.map(normalizarItem),
+    }));
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -119,6 +165,7 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
 
     const [etapaAbierta, setEtapaAbierta] = useState<string | null>(null);
     const [actividadAbierta, setActividadAbierta] = useState<string | null>(null);
+    const [etapaParaVincular, setEtapaParaVincular] = useState<string | null>(null);
 
     /* ── Carga: la ficha puede tener varias rutas, no solo una ── */
     useEffect(() => {
@@ -137,7 +184,7 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                     setTitulo(completa.titulo);
                     setDescripcion(completa.descripcion ?? '');
                     setEstado(completa.estado);
-                    setEtapas(completa.etapas ?? []);
+                    setEtapas(normalizarItems(completa.etapas ?? []));
                 }
             } catch (e) {
                 if (vigente) setError(e instanceof Error ? e.message : 'No se pudo cargar');
@@ -159,7 +206,7 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
             setTitulo(completa.titulo);
             setDescripcion(completa.descripcion ?? '');
             setEstado(completa.estado);
-            setEtapas(completa.etapas ?? []);
+            setEtapas(normalizarItems(completa.etapas ?? []));
             setEtapaAbierta(null);
             setActividadAbierta(null);
         } catch (e) {
@@ -231,6 +278,23 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
         return creada.id;
     }, [rutaId, notaId, titulo, descripcion]);
 
+    /**
+     * Persiste la ponderación en la misma transacción que valida el servidor.
+     *
+     * Se manda aunque las sumas no cuadren: la RPC lo rechaza con un mensaje
+     * claro, y preferimos que el error llegue del servidor —que es quien
+     * valida de verdad— a que el cliente invente una excepcion. El estado
+     * local nunca se da por bueno sin que la base lo confirme.
+     */
+    const guardarPesos = useCallback(
+        async (id: string) => {
+            const persistibles = etapas.filter((e) => e.id);
+            if (persistibles.length === 0) return;
+            await rutaApiDocente.actualizarPesos(id, aPayloadPesos(persistibles));
+        },
+        [etapas],
+    );
+
     /* ── Guardado ── */
     const guardar = useCallback(async () => {
         setGuardando(true);
@@ -243,6 +307,7 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                 descripcion,
                 estado,
             });
+            await guardarPesos(id);
             setAviso('Guardado');
             setTimeout(() => setAviso(null), 1800);
             await refrescarLista();
@@ -251,7 +316,7 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
         } finally {
             setGuardando(false);
         }
-    }, [crearRutaSiHaceFalta, titulo, descripcion, estado, refrescarLista]);
+    }, [crearRutaSiHaceFalta, guardarPesos, titulo, descripcion, estado, refrescarLista]);
 
     /* ── Etapas ── */
     const agregarEtapa = async () => {
@@ -259,10 +324,20 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
         try {
             const id = await crearRutaSiHaceFalta();
             const creada = await rutaApiDocente.crearEtapa(id, `Etapa ${etapas.length + 1}`);
-            setEtapas((prev) => [
-                ...prev,
-                { id: creada.id, titulo: `Etapa ${prev.length + 1}`, descripcion: '', orden: prev.length, actividades: [] },
-            ]);
+            setEtapas((prev) => {
+                const siguiente = [
+                    ...prev,
+                    {
+                        id: creada.id,
+                        titulo: `Etapa ${prev.length + 1}`,
+                        descripcion: '',
+                        peso: 0,
+                        orden: prev.length,
+                        actividades: [],
+                    },
+                ];
+                return repartirEnPartesIguales(siguiente);
+            });
             setEtapaAbierta(creada.id);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'No se pudo crear la etapa');
@@ -274,12 +349,51 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
     };
 
     const eliminarEtapa = async (etapaId: string) => {
-        if (!window.confirm('¿Eliminar esta etapa y sus actividades? Se perderá el progreso registrado.')) return;
+        if (!window.confirm('¿Eliminar esta etapa y sus items? Se perderá el progreso registrado.')) return;
         try {
             await rutaApiDocente.eliminarEtapa(etapaId);
-            setEtapas((prev) => prev.filter((e) => e.id !== etapaId));
+            // La RPC rebalancea las etapas que quedan; el reparto local es el
+            // mismo calculo, asi que la pantalla no queda desfasada.
+            setEtapas((prev) => repartirEnPartesIguales(prev.filter((e) => e.id !== etapaId)));
+            if (etapaAbierta === etapaId) setEtapaAbierta(null);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'No se pudo eliminar');
+        }
+    };
+
+    /** Reparte 100% en partes iguales entre las actividades de una etapa. */
+    const repartirEtapa = async (etapaId: string) => {
+        if (!rutaId) {
+            setError('Guarda la ruta antes de repartir: hace falta su identificador.');
+            return;
+        }
+        try {
+            await rutaApiDocente.rebalancear(rutaId, etapaId);
+            setEtapas((prev) =>
+                prev.map((e) =>
+                    e.id === etapaId ? { ...e, actividades: repartirEnPartesIguales(e.actividades) } : e,
+                ),
+            );
+            setAviso('Repartido en partes iguales');
+            setTimeout(() => setAviso(null), 1800);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'No se pudo repartir');
+        }
+    };
+
+    /** Reparte 100% en partes iguales entre las etapas de la ruta. */
+    const repartirRuta = async () => {
+        if (!rutaId) {
+            setError('Guarda la ruta antes de repartir: hace falta su identificador.');
+            return;
+        }
+        try {
+            await rutaApiDocente.rebalancear(rutaId);
+            setEtapas((prev) => repartirEnPartesIguales(prev));
+            setAviso('Repartido en partes iguales');
+            setTimeout(() => setAviso(null), 1800);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'No se pudo repartir');
         }
     };
 
@@ -309,10 +423,10 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                     e.id === etapaId
                         ? {
                               ...e,
-                              actividades: [
+                              actividades: repartirEnPartesIguales([
                                   ...e.actividades,
                                   { ...actividadVacia(tipo), id: creada.id, orden: e.actividades.length },
-                              ],
+                              ]),
                           }
                         : e,
                 ),
@@ -320,7 +434,7 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
             setEtapaAbierta(etapaId);
             setActividadAbierta(creada.id);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'No se pudo crear la actividad');
+            setError(e instanceof Error ? e.message : 'No se pudo crear el item');
         }
     };
 
@@ -345,12 +459,55 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
             setEtapas((prev) =>
                 prev.map((e) =>
                     e.id === etapaId
-                        ? { ...e, actividades: e.actividades.filter((a) => a.id !== actividadId) }
+                        ? {
+                              ...e,
+                              actividades: repartirEnPartesIguales(
+                                  e.actividades.filter((a) => a.id !== actividadId),
+                              ),
+                          }
                         : e,
                 ),
             );
+            if (actividadAbierta === actividadId) setActividadAbierta(null);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'No se pudo eliminar');
+        }
+    };
+
+    /**
+     * Vincula una actividad que ya existe en CIELO.
+     *
+     * La RPC crea el puntero y precarga titulo e instrucciones desde
+     * public.actividades, que despues el docente puede reescribir: lo que se
+     * reutiliza es la actividad, no su redaccion. La fila local nace con las
+     * preguntas en blanco porque una actividad de CIELO no trae preguntas con
+     * respuesta declarada; hay que escribirlas para que el motor sepa corregir.
+     */
+    const vincularActividad = async (
+        etapaId: string,
+        actividadOrigenId: number,
+        tipo: TipoActividad,
+    ) => {
+        setError(null);
+        try {
+            const creada = await rutaApiDocente.vincularActividad(etapaId, actividadOrigenId, tipo);
+            setEtapas((prev) =>
+                prev.map((e) => {
+                    if (e.id !== etapaId) return e;
+                    const actividad: ActividadDocente = {
+                        ...actividadVacia(tipo),
+                        id: creada.id,
+                        orden: e.actividades.length,
+                        actividad_origen_id: actividadOrigenId,
+                    };
+                    return { ...e, actividades: repartirEnPartesIguales([...e.actividades, actividad]) };
+                }),
+            );
+            setEtapaAbierta(etapaId);
+            setActividadAbierta(creada.id);
+            setEtapaParaVincular(null);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'No se pudo calificar la actividad');
         }
     };
 
@@ -359,11 +516,15 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
         setGuardando(true);
         setError(null);
         try {
-            await rutaApiDocente.guardarActividad(actividad.id, actividad);
-            setAviso('Actividad guardada');
+            // Se normaliza aqui y no solo en memoria: si por lo que sea el
+            // estado trajera "Falso" como correcta, esta es la ultima linea
+            // antes de que llegue a la base, y ahi no puede colarse.
+            const aGuardar = normalizarItem(actividad);
+            await rutaApiDocente.guardarActividad(actividad.id, aGuardar);
+            setAviso('Item guardado');
             setTimeout(() => setAviso(null), 1800);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'No se pudo guardar la actividad');
+            setError(e instanceof Error ? e.message : 'No se pudo guardar el item');
         } finally {
             setGuardando(false);
         }
@@ -389,8 +550,13 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
     /**
      * Publicar es el punto de no retorno: despues el estudiante ve el
      * contenido. Por eso se revisa la ruta entera y se bloquea si hay errores.
+     *
+     * Los porcentajes van en la misma lista que el resto porque un error de
+     * ponderacion es tan bloqueante como una pregunta sin enunciado: con las
+     * etapas en 80 % el calculo del puntaje deja de ser justo, aunque todas las
+     * preguntas esten perfectas.
      */
-    const problemas = validarRuta(etapas);
+    const problemas = [...validarRuta(etapas), ...validarPesos(etapas)];
     const errores = problemas.filter((p) => p.nivel === 'error');
 
     const publicar = async () => {
@@ -403,6 +569,10 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
         try {
             const id = await crearRutaSiHaceFalta();
             await rutaApiDocente.actualizar(id, { titulo: titulo.trim(), descripcion, estado: 'publicada' });
+            // Se persiste la ponderacion ANTES de publicar: si los porcentajes
+            // no cuadran, la ruta se queda en borrador y el estudiante nunca
+            // ve un puntaje mal repartido.
+            await guardarPesos(id);
             setEstado('publicada');
             await refrescarLista();
         } catch (e) {
@@ -587,13 +757,28 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                         className="w-full text-[14px] text-[#2E3330]/75 bg-transparent outline-none placeholder:text-[#2E3330]/25 resize-y leading-relaxed"
                     />
 
-                    <div className="mt-4 pt-3 border-t border-[#2E3330]/8 flex items-center gap-4 text-[12px] text-[#2E3330]/55">
+                    <div className="mt-4 pt-3 border-t border-[#2E3330]/8 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-[#2E3330]/55">
                         <span>
                             {etapas.length} etapa{etapas.length === 1 ? '' : 's'}
                         </span>
                         <span>
-                            {totalActividades} actividade{totalActividades === 1 ? '' : 's'}
+                            {totalActividades} item{totalActividades === 1 ? '' : 's'}
                         </span>
+                        {etapas.length > 0 && (
+                            <>
+                                <ResumenSuma
+                                    pesos={etapas.map((e) => e.peso)}
+                                    cantidad={etapas.length}
+                                />
+                                <button
+                                    onClick={repartirRuta}
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2E3330]/40 hover:text-[#4a7a46] transition-colors"
+                                    title="Repartir 100% en partes iguales entre las etapas de la ruta"
+                                >
+                                    <Scale size={11} /> Repartir
+                                </button>
+                            </>
+                        )}
                         <span className="ml-auto">Desbloqueo secuencial</span>
                         {rutaId && (
                             <button
@@ -630,6 +815,13 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                                     placeholder="Nombre de la etapa"
                                     className="flex-1 text-[15px] font-bold text-[#2E3330] bg-transparent outline-none placeholder:text-[#2E3330]/25 min-w-0"
                                 />
+                                <CampoPeso
+                                    valor={etapa.peso}
+                                    etiqueta={`Peso de la etapa ${indiceEtapa + 1} en la ruta, en porcentaje`}
+                                    onCommit={(peso) =>
+                                        peso !== null && actualizarEtapaLocal(etapa.id!, { peso })
+                                    }
+                                />
                                 <div className="flex items-center gap-0.5 shrink-0">
                                     <button
                                         onClick={() => moverEtapa(indiceEtapa, -1)}
@@ -659,9 +851,26 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
 
                             {etapaAbierta === etapa.id && (
                                 <div className="border-t border-[#2E3330]/8 bg-[#FAF9F7] p-3 space-y-2">
+                                    {etapa.actividades.length > 0 && (
+                                        <div className="flex items-center gap-2 px-1">
+                                            <ResumenSuma
+                                                pesos={etapa.actividades.map((a) => a.peso)}
+                                                cantidad={etapa.actividades.length}
+                                            />
+                                            <div className="flex-1" />
+                                            <button
+                                                onClick={() => repartirEtapa(etapa.id!)}
+                                                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2E3330]/40 hover:text-[#4a7a46] transition-colors"
+                                                title="Repartir 100% en partes iguales entre los items de esta etapa"
+                                            >
+                                                <Scale size={11} /> Repartir
+                                            </button>
+                                        </div>
+                                    )}
+
                                     {etapa.actividades.length === 0 && (
                                         <p className="text-[12px] text-[#2E3330]/45 py-2 text-center">
-                                            Esta etapa aun no tiene actividades.
+                                            Esta etapa aún no tiene items.
                                         </p>
                                     )}
 
@@ -674,6 +883,14 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                                                 <span className="px-2 py-0.5 rounded-md bg-[#3e6088]/10 text-[#3e6088] text-[10px] font-bold uppercase tracking-wide">
                                                     {ETIQUETA_TIPO_ACTIVIDAD[actividad.tipo]}
                                                 </span>
+                                                {actividad.actividad_origen_id && (
+                                                    <span
+                                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#689C63]/15 text-[#4a7a46] text-[10px] font-bold uppercase tracking-wide"
+                                                        title="Este item viene de CIELO. Al completarse, su puntaje pasa a calificaciones."
+                                                    >
+                                                        <Link2 size={9} /> CIELO
+                                                    </span>
+                                                )}
                                                 <input
                                                     value={actividad.titulo ?? ''}
                                                     onChange={(e) =>
@@ -681,12 +898,22 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                                                             titulo: e.target.value,
                                                         })
                                                     }
-                                                    placeholder="Título de la actividad (opcional)"
+                                                    placeholder="Título del item (opcional)"
                                                     className="flex-1 text-[13px] font-semibold text-[#2E3330] bg-transparent outline-none placeholder:text-[#2E3330]/30 min-w-0"
                                                 />
                                                 <span className="text-[10px] text-[#2E3330]/40 shrink-0">
                                                     {actividad.preguntas.length} preg.
                                                 </span>
+                                                <CampoPeso
+                                                    valor={actividad.peso}
+                                                    etiqueta={`Peso del item dentro de ${etapa.titulo || 'la etapa'}, en porcentaje`}
+                                                    onCommit={(peso) =>
+                                                        peso !== null &&
+                                                        actualizarActividadLocal(etapa.id!, actividad.id!, {
+                                                            peso,
+                                                        })
+                                                    }
+                                                />
                                                 <button
                                                     onClick={() =>
                                                         setActividadAbierta(
@@ -694,7 +921,7 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                                                         )
                                                     }
                                                     className="p-1.5 rounded-lg text-[#2E3330]/40 hover:text-[#3e6088] transition-colors"
-                                                    aria-label="Editar actividad"
+                                                    aria-label="Editar item"
                                                 >
                                                     {actividadAbierta === actividad.id ? (
                                                         <ChevronUp size={14} />
@@ -705,7 +932,7 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                                                 <button
                                                     onClick={() => eliminarActividad(etapa.id!, actividad.id!)}
                                                     className="p-1.5 rounded-lg text-[#2E3330]/35 hover:text-red-600 transition-colors"
-                                                    aria-label="Eliminar actividad"
+                                                    aria-label="Eliminar item"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -732,6 +959,19 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                                     <SelectorTipoActividad
                                         onElegir={(tipo) => agregarActividad(etapa.id!, tipo)}
                                     />
+
+                                    <button
+                                        onClick={() => setEtapaParaVincular(etapa.id!)}
+                                        disabled={!rutaId}
+                                        title={
+                                            rutaId
+                                                ? 'Califica una actividad que ya existe en CIELO con esta ruta, sin duplicarla'
+                                                : 'Guarda la ruta primero: hace falta su identificador para buscar actividades'
+                                        }
+                                        className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#689C63]/45 py-2.5 px-3 text-center text-[12px] font-bold leading-snug text-[#4a7a46] bg-[#689C63]/6 hover:bg-[#689C63]/12 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <Link2 size={13} /> Calificar una actividad con esta ruta de aprendizaje
+                                    </button>
                                 </div>
                             )}
                         </section>
@@ -745,7 +985,108 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                     <Plus size={15} /> Agregar etapa
                 </button>
             </main>
+
+            {etapaParaVincular && rutaId && (
+                <SelectorActividadExistente
+                    rutaId={rutaId}
+                    etapaTitulo={etapas.find((e) => e.id === etapaParaVincular)?.titulo ?? 'la etapa'}
+                    onVincular={(actividadOrigenId, tipo) =>
+                        vincularActividad(etapaParaVincular, actividadOrigenId, tipo)
+                    }
+                    onCerrar={() => setEtapaParaVincular(null)}
+                />
+            )}
         </div>
+    );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Campos de ponderación
+   ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Input de porcentaje.
+ *
+ * Se escribe con estado propio para no romper el estado del formulario: cada
+ * tecla es un borrador y solo al salir del campo se avisa al padre. Un input
+ * controlado que sube el valor en cada pulsación hace focus-salto en el
+ * maestro y es imposible escribir "0.5" encima de "25".
+ */
+function CampoPeso({
+    valor,
+    onCommit,
+    etiqueta,
+    className = '',
+}: {
+    valor: number;
+    onCommit: (valor: number | null) => void;
+    etiqueta: string;
+    className?: string;
+}) {
+    const [borrador, setBorrador] = useState<string | null>(null);
+
+    const mostrado = borrador ?? String(valor);
+
+    const confirmar = () => {
+        if (borrador === null) return;
+        const leido = leerPorcentaje(borrador);
+        if (leido !== null) onCommit(leido);
+        setBorrador(null);
+    };
+
+    return (
+        <label
+            className={`inline-flex items-center gap-1 rounded-lg border border-[#2E3330]/10 bg-white px-1.5 h-7 focus-within:border-[#689C63] transition-colors ${className}`}
+            title={etiqueta}
+        >
+            <span className="text-[10px] font-bold text-[#2E3330]/35 leading-none">%</span>
+            <input
+                value={mostrado}
+                onChange={(e) => setBorrador(e.target.value)}
+                onBlur={confirmar}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    if (e.key === 'Escape') setBorrador(null);
+                }}
+                inputMode="decimal"
+                aria-label={etiqueta}
+                className="w-11 bg-transparent outline-none text-[12px] font-bold text-[#2E3330] tabular-nums text-right"
+            />
+        </label>
+    );
+}
+
+/**
+ * Estado de una suma de porcentajes.
+ *
+ * El mensaje es el que el docente necesita para decidir, no "inválido":
+ * saber que faltan 15 % es accionable; saber que la suma no es 100 no lo es.
+ */
+function ResumenSuma({ pesos, cantidad }: { pesos: number[]; cantidad: number }) {
+    if (cantidad === 0) return null;
+    const suma = sumarPesos(pesos);
+    const ok = esExacto(suma);
+
+    return (
+        <span
+            className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
+                ok ? 'text-[#4a7a46]' : 'text-amber-700'
+            }`}
+        >
+            {ok ? (
+                <>
+                    <Check size={11} /> Suma {formatear(suma)} %
+                </>
+            ) : suma > 100 ? (
+                <>
+                    <CircleAlert size={11} /> Excede {formatear(excedente(suma))} %
+                </>
+            ) : (
+                <>
+                    <CircleAlert size={11} /> Faltan {formatear(faltante(suma))} %
+                </>
+            )}
+        </span>
     );
 }
 
@@ -763,12 +1104,12 @@ function SelectorTipoActividad({ onElegir }: { onElegir: (tipo: TipoActividad) =
                     onClick={() => setAbierto(true)}
                     className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#2E3330]/18 py-2.5 text-[12px] font-bold text-[#2E3330]/50 hover:border-[#689C63]/45 hover:text-[#4a7a46] transition-colors"
                 >
-                    <Plus size={13} /> Agregar actividad
+                    <Plus size={13} /> Agregar item
                 </button>
             ) : (
                 <div className="rounded-xl border border-[#2E3330]/10 bg-white p-2.5">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/45 mb-2 px-1">
-                        Tipo de actividad
+                        Tipo de item
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                         {TIPOS_ACTIVIDAD_V1.map((tipo) => (
@@ -834,17 +1175,75 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
 
     return (
         <div className="border-t border-[#2E3330]/8 p-3.5 space-y-4">
-            <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-1">
-                    Instrucciones
+            {/*
+              No hay campo de Instrucciones. El enunciado de cada pregunta ya
+              dice que hacer y el titulo del item dice de que trata: un campo mas
+              era texto que el docente tenia que repetir en todos los items.
+
+              `instrucciones` NO se borra del objeto ni de la base: los items
+              antiguos que ya la tienen la conservan y siguen guardandola al
+              editar, asi que quitar el campo no destructura nada.
+            */}
+
+            <div className="rounded-xl border border-[#2E3330]/10 bg-white p-3 space-y-3">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={actividad.config.solicita_producto ?? false}
+                        onChange={(e) =>
+                            onChange({
+                                config: { ...actividad.config, solicita_producto: e.target.checked },
+                            })
+                        }
+                        className="mt-0.5"
+                    />
+                    <div>
+                        <span className="flex items-center gap-1.5 text-[12px] font-bold text-[#2E3330]">
+                            <PhoneCall size={13} className="text-[#689C63]" />
+                            Solicitar subir producto (Evidencia)
+                        </span>
+                        <span className="block text-[11px] text-[#2E3330]/50 mt-0.5 leading-relaxed">
+                            El estudiante tendrá un espacio para subir un archivo o enlazar su Google Drive en este ítem.
+                        </span>
+                    </div>
                 </label>
-                <textarea
-                    value={actividad.instrucciones ?? ''}
-                    onChange={(e) => onChange({ instrucciones: e.target.value })}
-                    rows={2}
-                    placeholder="Qué debe hacer el estudiante en esta actividad."
-                    className="w-full px-3 py-2 text-[13px] rounded-lg border border-[#2E3330]/10 focus:outline-none focus:border-[#689C63] resize-y leading-relaxed"
-                />
+
+                {(actividad.config.solicita_producto ?? false) && (
+                    <div className="pl-6 space-y-3 pt-2 border-t border-[#2E3330]/5">
+                        <label className="block">
+                            <span className="block text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-1">
+                                Nombre del producto
+                            </span>
+                            <input
+                                type="text"
+                                value={actividad.config.nombre_producto ?? ''}
+                                onChange={(e) =>
+                                    onChange({
+                                        config: { ...actividad.config, nombre_producto: e.target.value },
+                                    })
+                                }
+                                placeholder="Ej: Ensayo final, Presentación en PDF..."
+                                className="w-full px-3 py-2 text-[12px] font-semibold rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
+                            />
+                        </label>
+                        <label className="block">
+                            <span className="block text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-1">
+                                Instrucciones específicas (opcional)
+                            </span>
+                            <textarea
+                                value={actividad.config.instruccion_producto ?? ''}
+                                onChange={(e) =>
+                                    onChange({
+                                        config: { ...actividad.config, instruccion_producto: e.target.value },
+                                    })
+                                }
+                                placeholder="Describe qué esperas que entregue el estudiante..."
+                                rows={2}
+                                className="w-full px-3 py-2 text-[12px] font-semibold rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63] resize-y"
+                            />
+                        </label>
+                    </div>
+                )}
             </div>
 
             {actividad.preguntas.map((pregunta, indice) => {
@@ -1008,7 +1407,7 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                     className="inline-flex items-center gap-1.5 rounded-xl bg-[#2E3330] px-3.5 py-1.5 text-white text-[12px] font-bold hover:bg-[#3e463f] disabled:opacity-50 transition-colors"
                 >
                     {guardando ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-                    Guardar actividad
+                    Guardar item
                 </button>
             </div>
         </div>
@@ -1028,6 +1427,29 @@ function EditorOpciones({
     onChange: (opciones: PreguntaDocente['opciones']) => void;
     fija: boolean;
 }) {
+    // En Verdadero/Falso no hay nada que decidir: la correcta es SIEMPRE
+    // "Verdadero" y las dos opciones las ve el estudiante al responder. Se
+    // muestran como informacion, sin radio ni campos, para que no exista por
+    // donde marcar "Falso". El texto se imprime desde la constante para que no
+    // pueda desincronizarse de lo que el servidor da por correcto.
+    if (fija) {
+        return (
+            <div className="rounded-lg border border-[#2E3330]/10 bg-[#FAF9F7] px-3 py-2.5">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-1.5">
+                    Respuesta correcta
+                </p>
+                <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#689C63]/15 px-2.5 py-1 text-[13px] font-bold text-[#4a7a46]">
+                        <Check size={13} /> {TEXTO_VERDADERO_FALSO.verdadero}
+                    </span>
+                    <span className="text-[11px] text-[#2E3330]/45">
+                        El estudiante ve las dos opciones; solo {TEXTO_VERDADERO_FALSO.verdadero.toLowerCase()} suma.
+                    </span>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-1.5">
             {opciones.map((opcion, i) => (
@@ -1038,7 +1460,6 @@ function EditorOpciones({
                         onChange={() =>
                             onChange(opciones.map((o, j) => ({ ...o, es_correcta: j === i })))
                         }
-                        disabled={fija}
                         className="accent-[#689C63] shrink-0"
                         title={opcion.es_correcta ? 'Respuesta correcta' : 'Marcar como correcta'}
                     />
@@ -1047,10 +1468,9 @@ function EditorOpciones({
                         onChange={(e) =>
                             onChange(opciones.map((o, j) => (j === i ? { ...o, texto: e.target.value } : o)))
                         }
-                        disabled={fija}
-                        className="flex-1 px-3 py-1.5 text-[13px] rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63] disabled:bg-[#2E3330]/[0.03] disabled:text-[#2E3330]/60"
+                        className="flex-1 px-3 py-1.5 text-[13px] rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
                     />
-                    {!fija && opciones.length > 2 && (
+                    {opciones.length > 2 && (
                         <button
                             onClick={() => onChange(opciones.filter((_, j) => j !== i))}
                             className="p-1.5 rounded-lg text-[#2E3330]/35 hover:text-red-600 transition-colors"
@@ -1061,19 +1481,17 @@ function EditorOpciones({
                     )}
                 </div>
             ))}
-            {!fija && (
-                <button
-                    onClick={() =>
-                        onChange([
-                            ...opciones,
-                            { texto: '', orden: opciones.length, es_correcta: false },
-                        ])
-                    }
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#3e6088] hover:underline"
-                >
-                    <Plus size={11} /> Agregar opción
-                </button>
-            )}
+            <button
+                onClick={() =>
+                    onChange([
+                        ...opciones,
+                        { texto: '', orden: opciones.length, es_correcta: false },
+                    ])
+                }
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#3e6088] hover:underline"
+            >
+                <Plus size={11} /> Agregar opción
+            </button>
         </div>
     );
 }

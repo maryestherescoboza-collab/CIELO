@@ -17,11 +17,41 @@
  */
 
 import { useMemo, useState } from 'react';
-import { Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, AlertTriangle, Sparkles } from 'lucide-react';
 
 import type { PasoProcedimiento, PreguntaConfig, TipoRespuesta } from '../../../types/rutas';
 import { comparar, parsearNumero } from '../../../lib/rutaValidacion';
-import { contarHuecos, partirPaso, sincronizarHuecos, totalEspacios } from '../../../lib/rutaPasos';
+import {
+    contarHuecos,
+    partirPaso,
+    resolverTextoPaso,
+    sincronizarHuecos,
+    totalEspacios,
+} from '../../../lib/rutaPasos';
+import {
+    FORMULAS_MATEMATICAS,
+    PIEZAS_EXPRESION,
+    buscarFormula,
+    generarPasosDesdeFormula,
+} from '../../../lib/formulasMatematicas';
+
+const PIEZAS_NUMERICAS = PIEZAS_EXPRESION.filter((p) => p.tipo === 'numero');
+
+/** Como el estudiantes responde los huecos de un paso. */
+type ModoHueco = 'libre' | 'numerica' | 'expresion';
+
+const piezasPorModo = (modo: ModoHueco) => {
+    if (modo === 'numerica') return PIEZAS_NUMERICAS;
+    if (modo === 'expresion') return PIEZAS_EXPRESION;
+    return undefined;
+};
+
+const modoDePaso = (paso: PasoProcedimiento): ModoHueco => {
+    const piezas = paso.piezas ?? paso.espacios[0]?.piezas;
+    if (!piezas || piezas.length === 0) return 'libre';
+    const soloDigitos = piezas.every((p) => p.tipo === 'numero');
+    return soloDigitos && piezas.length <= 10 ? 'numerica' : 'expresion';
+};
 
 export interface EditorPasosProps {
     pasos: PasoProcedimiento[];
@@ -47,8 +77,56 @@ export function EditorPasos({
 }: EditorPasosProps) {
     const [verRespuestas, setVerRespuestas] = useState(true);
     const [pruebas, setPruebas] = useState<Record<string, Prueba>>({});
+    const [plantilla, setPlantilla] = useState('');
 
     const total = useMemo(() => totalEspacios(pasos), [pasos]);
+    const formula = buscarFormula(plantilla);
+
+    /**
+     * Cambia como se responden los huecos de un paso. Es lo unico que el
+     * docente elige del rompecabezas: la lista de piezas viene de la biblioteca
+     * de formulas, no se escribe a mano.
+     */
+    const cambiarModo = (indicePaso: number, modo: ModoHueco) => {
+        const paso = pasos[indicePaso];
+        const piezas = piezasPorModo(modo);
+        actualizarPaso(indicePaso, {
+            piezas,
+            espacios: paso.espacios.map((e) => ({ ...e, piezas })),
+        });
+    };
+
+    /** Estructura de la formula elegida, sin respuestas: la pone el docente. */
+    const generarDesdePlantilla = () => {
+        if (!formula) return;
+        const conRespuestas = pasos.some((p) => p.espacios.some((e) => e.respuesta.trim() !== ''));
+        if (
+            conRespuestas &&
+            !window.confirm(
+                'Generar la estructura reemplaza los pasos actuales y borra las claves que ya escribiste. ¿Continuar?',
+            )
+        ) {
+            return;
+        }
+        onChange(generarPasosDesdeFormula(formula));
+    };
+
+    /**
+     * El paso completo que el estudiante va a ver, con las claves ya puestas.
+     *
+     * Es una VISTA, no una comparacion: el texto del paso lo escribio el
+     * docente y es el mismo para todos los estudiantes, asi que la correccion
+     * mathematical va hueco por hueco (abajo, "probar"). Se muestra para que el
+     * docente lea la ecuacion completa y note si el andamiaje esta bien
+     *plantado: un "a² = ( 3 ) + ( 4 )" se ve raro antes de publicarlo.
+     */
+    const pasoArmado = (indicePaso: number): string | null => {
+        const paso = pasos[indicePaso];
+        return resolverTextoPaso(
+            paso.texto,
+            paso.espacios.map((e) => e.respuesta),
+        );
+    };
 
     const actualizarPaso = (indice: number, cambios: Partial<PasoProcedimiento>) => {
         onChange(pasos.map((p, i) => (i === indice ? { ...p, ...cambios } : p)));
@@ -191,6 +269,47 @@ export function EditorPasos({
                 estudiante deba completar. CIELO guarda y evalua cada espacio por separado.
             </p>
 
+            {/* ── Plantillas de CIELO: la estructura, no la solución ── */}
+            <div className="rounded-xl border border-[#689C63]/25 bg-[#689C63]/5 p-3 space-y-2.5">
+                <div className="flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-[#4a7a46]" />
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-[#2E3330]/60">
+                        Plantilla de fórmula
+                    </p>
+                </div>
+                <p className="text-[11px] text-[#2E3330]/55 leading-relaxed">
+                    CIELO arma la estructura del procedimiento y el teclado de cada paso. No
+                    resuelve el ejercicio: los datos y las claves de los huecos los pones tu.
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                    <select
+                        value={plantilla}
+                        onChange={(e) => setPlantilla(e.target.value)}
+                        className="flex-1 min-w-40 px-2.5 py-1.5 text-[12px] font-semibold rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
+                    >
+                        <option value="">Elige una fórmula…</option>
+                        {FORMULAS_MATEMATICAS.map((f) => (
+                            <option key={f.id} value={f.id}>
+                                {f.nombre}
+                            </option>
+                        ))}
+                    </select>
+                    <button
+                        type="button"
+                        onClick={generarDesdePlantilla}
+                        disabled={!formula}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#689C63] text-white text-[12px] font-bold hover:bg-[#5a8a55] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <Sparkles size={12} /> Generar estructura
+                    </button>
+                </div>
+                {formula?.referencia && (
+                    <p className="text-[11px] font-mono text-[#2E3330]/55">
+                        {formula.referencia} · {formula.pasos.length} pasos, sin respuestas
+                    </p>
+                )}
+            </div>
+
             {pasos.length === 0 && (
                 <div className="rounded-xl border border-dashed border-[#2E3330]/20 py-8 text-center">
                     <p className="text-[12px] text-[#2E3330]/50 mb-3">Todavia no hay pasos.</p>
@@ -290,6 +409,50 @@ export function EditorPasos({
 
                                 {paso.espacios.length > 0 && (
                                     <div className="pt-1 space-y-2">
+                                        {/* ── Teclado del paso ── */}
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[11px] font-semibold text-[#2E3330]/50 w-14 shrink-0">
+                                                Teclado
+                                            </span>
+                                            <select
+                                                value={modoDePaso(paso)}
+                                                onChange={(e) =>
+                                                    cambiarModo(indicePaso, e.target.value as ModoHueco)
+                                                }
+                                                className="text-[12px] font-semibold px-2 py-1 rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
+                                            >
+                                                <option value="libre">Texto libre</option>
+                                                <option value="numerica">Solo números (0-9)</option>
+                                                <option value="expresion">Expresión completa</option>
+                                            </select>
+                                            <span className="text-[10px] text-[#2E3330]/45">
+                                                {modoDePaso(paso) === 'libre'
+                                                    ? 'El estudiante escribe con teclado'
+                                                    : 'El estudiante arma la respuesta con piezas, sin teclado libre'}
+                                            </span>
+                                        </div>
+
+                                        {/* ── Vista del paso ya armado ──
+                                            Lo que el estudiante leera con sus
+                                            numeros puestos. */}
+                                        {(() => {
+                                            const armado = pasoArmado(indicePaso);
+                                            if (!armado) return null;
+                                            return (
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-[11px] font-semibold text-[#2E3330]/50 w-14 shrink-0">
+                                                        Se vera
+                                                    </span>
+                                                    <code className="flex-1 min-w-40 px-2.5 py-1.5 text-[12px] font-mono rounded-lg bg-[#2E3330]/[0.04] text-[#2E3330]/75">
+                                                        {armado}
+                                                    </code>
+                                                    <span className="text-[10px] text-[#2E3330]/45">
+                                                        la clave se compara hueco por hueco
+                                                    </span>
+                                                </div>
+                                            );
+                                        })()}
+
                                         {paso.espacios.map((espacio, indiceEspacio) => {
                                             const clave = `${indicePaso}-${indiceEspacio}`;
                                             const prueba = pruebas[clave];

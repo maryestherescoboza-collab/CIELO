@@ -79,6 +79,8 @@ const GradeTable: React.FC<GradeTableProps> = ({
     // Estado para confirmación de eliminación de actividad
     const [actividadAEliminar, setActividadAEliminar] = React.useState<number | null>(null);
 
+    // Estado para confirmación de eliminación de estudiante
+    const [estudianteAEliminar, setEstudianteAEliminar] = React.useState<{ id: number, displayName: string } | null>(null);
 
     // Fuente de verdad para saber si una posición tiene estudiante REAL activo:
     // curso actual + numero_lista. Los arrays visuales (con IDs negativos /
@@ -364,8 +366,20 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                         if (col.type === 'estudiantes') {
                                             return (
                                                 <div key={col.id} className="sticky left-0 z-20 bg-inherit px-6 py-3 border-r border-(--border-soft) font-semibold text-[#2E3330] flex items-center box-border" style={style}>
-                                                    <div className="flex items-center gap-3 w-full">
-                                                        <span className="text-xs font-black text-[#5F665E]/40 w-4 shrink-0">{eIdx + 1}</span>
+                                                    <div className="flex items-center gap-2 w-full">
+                                                        {!est.isPlaceholder && onDeleteEstudiante && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setEstudianteAEliminar({ id: est.id, displayName: est.displayName });
+                                                                }}
+                                                                className="w-5 h-5 flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-400 hover:text-danger hover:border-danger/40 hover:bg-danger/10 transition-all text-sm pb-0.5 shadow-sm shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                                title="Eliminar estudiante"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        )}
+                                                        <span className={`text-xs font-black text-[#5F665E]/40 w-4 shrink-0 text-right ${!(!est.isPlaceholder && onDeleteEstudiante) ? 'ml-7' : ''}`}>{eIdx + 1}</span>
                                                         <div className="flex flex-col overflow-hidden w-full">
                                                             <input 
                                                                 key={`${est.id}-${est.displayName}`}
@@ -505,23 +519,6 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             );
                         })}
                     </div>
-                    {estudiantes.length > 0 && onDeleteEstudiante && (
-                        <div className="w-full flex justify-start py-3 px-6">
-                            <button 
-                                onClick={() => {
-                                    const last = estudiantes[estudiantes.length - 1];
-                                    if ((last.id ?? 0) <= 0) return;
-                                    if (window.confirm(`¿Seguro que deseas eliminar al último estudiante (${last.displayName})?`)) {
-                                        onDeleteEstudiante(last.id);
-                                    }
-                                }}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:text-danger hover:border-danger/40 hover:bg-danger/10 transition-all text-xl pb-0.5 shadow-sm"
-                                title="Eliminar último estudiante"
-                            >
-                                ×
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
             <PegarListadoModal
@@ -588,6 +585,44 @@ const GradeTable: React.FC<GradeTableProps> = ({
                     </p>
                     <p className="text-sm font-bold text-danger mt-4">
                         Esta acción no se puede deshacer.
+                    </p>
+                </div>
+            </CieloModal>
+
+            <CieloModal
+                isOpen={estudianteAEliminar !== null}
+                onClose={() => setEstudianteAEliminar(null)}
+                title={`¿Eliminar definitivamente a ${estudianteAEliminar?.displayName}?`}
+                icon={<AlertTriangle className="text-danger w-5 h-5" />}
+                maxWidth="md"
+                footer={
+                    <div className="flex items-center justify-end gap-3 w-full">
+                        <button
+                            onClick={() => setEstudianteAEliminar(null)}
+                            className="px-5 py-2.5 rounded-full text-sm font-bold text-(--ink-soft) hover:bg-slate-100 transition-colors uppercase tracking-widest"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (estudianteAEliminar !== null && onDeleteEstudiante) {
+                                    onDeleteEstudiante(estudianteAEliminar.id);
+                                    setEstudianteAEliminar(null);
+                                }
+                            }}
+                            className="px-5 py-2.5 rounded-full text-sm font-bold text-white bg-danger hover:bg-red-700 transition-colors shadow-md shadow-danger/20 uppercase tracking-widest"
+                        >
+                            Eliminar definitivamente
+                        </button>
+                    </div>
+                }
+            >
+                <div className="py-4">
+                    <p className="text-sm text-(--ink-soft) leading-relaxed">
+                        Esta acción eliminará al estudiante y no podrás recuperar su información.
+                    </p>
+                    <p className="text-sm text-(--ink-soft) leading-relaxed mt-4">
+                        Además, los estudiantes que le siguen en el número de lista cambiarán automáticamente de número para rellenar el espacio disponible.
                     </p>
                 </div>
             </CieloModal>
