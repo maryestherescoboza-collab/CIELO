@@ -29,6 +29,7 @@ interface NewActivityModalProps {
     onAddActividad: (a: Omit<Actividad, 'id'>) => Promise<any>;
     cursos: AppState['cursos'];
     onSuccess: () => void;
+    initialDate?: string | null;
 }
 
 interface ExtractedActivity {
@@ -40,7 +41,7 @@ interface ExtractedActivity {
     selected: boolean;
 }
 
-export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSuccess }: NewActivityModalProps) {
+export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSuccess, initialDate }: NewActivityModalProps) {
     const session = useAppStore(s => s.session);
     const state = useAppStore(s => s.state);
     const today = new Date().toISOString().split('T')[0];
@@ -50,7 +51,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     const [isSaving, setIsSaving] = useState(false);
     const [form, setForm] = useState({
         nombre: '',
-        fecha: today,
+        fecha: initialDate || today,
         secuenciaId: '',
         bcs: ['BC1'] as BCKey[],
         cursoId: cursos[0]?.id ?? 0,
@@ -81,6 +82,16 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         }
     }, [show, session?.user?.id]);
 
+    useEffect(() => {
+        if (show && initialDate) {
+            setForm(f => ({ ...f, fecha: initialDate }));
+            setTargetFecha(initialDate);
+        } else if (show) {
+            setForm(f => ({ ...f, fecha: today }));
+            setTargetFecha(today);
+        }
+    }, [show, initialDate]);
+
     // Reset all states
     const handleClose = () => {
         setFlowMode('choice');
@@ -92,10 +103,10 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         setExtractedActivities([]);
         setTargetCursoId(0);
         setTargetPeriodo('');
-        setTargetFecha(today);
+        setTargetFecha(initialDate || today);
         setForm({
             nombre: '',
-            fecha: today,
+            fecha: initialDate || today,
             secuenciaId: '',
             bcs: ['BC1'] as BCKey[],
             cursoId: cursos[0]?.id ?? 0,

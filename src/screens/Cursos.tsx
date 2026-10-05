@@ -1,10 +1,9 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { Plus, BookOpen } from 'lucide-react';
 import type { Curso } from '../types';
 import { useAppStore } from '../store/appStore';
 import { useNavigate } from 'react-router-dom';
 import { useCursosData } from '../hooks/useCursosData';
-import { useSupabaseData } from '../hooks/useSupabaseData';
 import { CourseCard } from '../components/courses/CourseCard';
 import { NewCourseModal } from '../components/courses/NewCourseModal';
 import { LinkTeacherModal } from '../components/courses/LinkTeacherModal';
@@ -54,11 +53,7 @@ export default function Cursos({
         filteredPerfiles
     } = useCursosData(state);
 
-    const { loadDashboardData } = useSupabaseData(true);
-
-    useEffect(() => {
-        loadDashboardData();
-    }, [loadDashboardData]);
+    // Cursos rendering relies on core context (state.cursos, state.cursoDocentes)
 
     const handleCreate = useCallback(async () => {
         if (!form.seccion.trim() || isSaving) return;

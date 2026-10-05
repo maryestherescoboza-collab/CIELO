@@ -29,7 +29,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
     const state = useAppStore(s => s.state);
     const session = useAppStore(s => s.session);
     const { hasTrial, trialDaysLeft, suscripcionActual } = usePremiumAccess();
-    const { loadDashboardData } = useSupabaseData(true);
+    const { loadDashboardData, contextReady } = useSupabaseData(true);
     const [selectedCourseId, setSelectedCourseId] = useState<number | 'all'>('all');
     const [showModal, setShowModal] = useState(false);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -53,8 +53,10 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
     }, [location, navigate]);
 
     useEffect(() => {
-        loadDashboardData();
-    }, [loadDashboardData]);
+        if (contextReady) {
+            loadDashboardData();
+        }
+    }, [contextReady, loadDashboardData]);
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 700);
@@ -223,8 +225,19 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                     {isLoading ? (
                         <div className="h-70 w-full rounded-[10px] bg-slate-200/40 animate-pulse border border-slate-200" />
                     ) : (
-                        <div className="bg-white border border-slate-200 rounded-[10px] p-6 shadow-sm relative overflow-hidden group">
+                        <div className="bg-white rounded-[10px] p-6 relative overflow-hidden group">
                             <CalendarWidget eventos={state.eventos} actividades={state.actividades} tareas={state.tareas} onSelectDate={setSelectedDate} />
+                            <div className="mt-4 flex justify-end">
+                                <button 
+                                    onClick={() => navigate('/calendario')}
+                                    className="group flex items-center gap-2 text-[#465a38] hover:text-[#2d3a23] transition-all text-[13px] font-black uppercase tracking-widest bg-transparent p-1 mt-2"
+                                >
+                                    <span>Abrir calendario</span>
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-transform duration-300 group-hover:translate-x-1.5">
+                                        <path fillRule="evenodd" clipRule="evenodd" d="M12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4ZM2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12ZM11.2929 8.70711C10.9024 8.31658 10.9024 7.68342 11.2929 7.29289C11.6834 6.90237 12.3166 6.90237 12.7071 7.29289L16.7071 11.2929C17.0976 11.6834 17.0976 12.3166 16.7071 12.7071L12.7071 16.7071C12.3166 17.0976 11.6834 17.0976 11.2929 16.7071C10.9024 16.3166 10.9024 15.6834 11.2929 15.2929L13.5858 13H8C7.44772 13 7 12.5523 7 12C7 11.4477 7.44772 11 8 11H13.5858L11.2929 8.70711Z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

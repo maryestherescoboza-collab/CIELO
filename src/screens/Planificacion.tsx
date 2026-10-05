@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 
 import { useAppStore } from '../store/appStore';
 import RegistroAnecdotico from '../components/RegistroAnecdotico';
+import { ActividadesPorCursoSection } from '../components/planificacion/ActividadesPorCursoSection';
 
 export function detectResourceType(url: string): TipoRecurso {
     const lowerUrl = url.toLowerCase();
@@ -79,13 +80,13 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
     const state = useAppStore((s) => s.state);
     const session = useAppStore((s) => s.session);
     const loading = useAppStore((s) => s.loading);
-    const { loadPlanificacionData } = useSupabaseData(true);
+    const { loadPlanificacionData, contextReady } = useSupabaseData(true);
 
     useEffect(() => {
-        if (!readOnly) {
+        if (!readOnly && contextReady) {
             loadPlanificacionData();
         }
-    }, [readOnly, loadPlanificacionData]);
+    }, [readOnly, contextReady, loadPlanificacionData]);
 
     if (readOnly && initialDatos) {
         return (
@@ -554,6 +555,8 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                             })}
                         </div>
                     </div>
+
+                    <ActividadesPorCursoSection cursoId={cursoSel} />
                 </div>
             </div>
 

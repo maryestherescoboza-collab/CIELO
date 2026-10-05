@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import type { AppState, Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, Secuencia, EventoCalendario, Docente, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, TareaInstitucional, TareaDocente, Centro } from '../types';
 import { useAppStore } from '../store/appStore';
 import { esRolAdministrador } from '../utils/autorizacion';
+import { normalizarHora } from '../utils/diasSemana';
 import { getValidCentro, saveCentroCache } from '../cache/centroCache';
 import { savePerfilCacheFromRow } from '../cache/perfilCache';
 import { getValidCursoCache, saveCursoCache } from '../cache/cursoCache';
@@ -71,6 +72,12 @@ const mapActividad = (a: any, cursos?: any[]): Actividad => ({
     cursoId: a.curso_id as number,
     fecha: a.fecha as string,
     periodo: a.periodo as string,
+    // Campos del calendario: sin ellos la vista semanal no puede ubicar ni
+    // distinguir actividades de fichas (tipo_calendario === 'clase').
+    hora_inicio: normalizarHora(a.hora_inicio) ?? undefined,
+    duracion_minutos: (a.duracion_minutos as number | undefined) ?? undefined,
+    tipo_calendario: (a.tipo_calendario || 'actividad') as 'actividad' | 'clase',
+    color_calendario: a.color_calendario as any,
     bcAsignados: (a.bc_asignados && (a.bc_asignados as BCKey[]).length > 0)
         ? a.bc_asignados as BCKey[]
         : ['BC1'] as BCKey[],
@@ -241,6 +248,9 @@ export function useSupabaseData(skipInit = false) {
 
     const isFetching = useRef(false);
     const isDashboardFetching = useRef(false);
+    const isCalendarioFetching = useRef(false);
+    const isActividadesFetching = useRef(false);
+    const isIncidenciasFetching = useRef(false);
 
     const timeQuery = async (name: string, queryPromise: any): Promise<any> => {
         console.log(`[DEBUG LOAD] ${name} INICIO`);
@@ -580,6 +590,7 @@ export function useSupabaseData(skipInit = false) {
                             esTutor: cd.es_tutor as boolean,
                             asignatura: cd.asignatura as string,
                             diasSemana: cd.dias_semana as string[] || [],
+                            horarios: cd.horarios as any || [],
                             createdAt: cd.created_at as string
                         })),
                     suscripcionActual: resolvedSuscripcionActual,
@@ -1516,16 +1527,270 @@ export function useSupabaseData(skipInit = false) {
         if (error) console.error('Error syncing soft-delete to ' + table + ':', error);
     }, [session]);
 
+    const loadCalendarioData = useCallback(async () => {
+        if (!session?.user?.id) return;
+        if (loadedModules.includes('calendario')) return;
+        if (!loadedModules.includes('core')) {
+            console.log('[DIAG][CALENDARIO] omitiendo porque core no está cargado');
+            return;
+        }
+        if (isCalendarioFetching.current) return;
+        isCalendarioFetching.current = true;
+        console.log('[PLANIFICACION] lazy loading Calendario data');
+        setLoading(true);
+        try {
+            const currentProfile = state.perfiles.find(p => p.userId === session.user.id);
+            const userCentroId = currentProfile?.centro_id;
+            const isCentroAdmin = esRolAdministrador(currentProfile?.rol);
+
+            const misCursosTutor = state.cursos
+                .filter(c => c.isTutorOficial && String(c.userId) === session.user.id)
+                .map(c => c.id);
+            const misCursosVinculados = state.cursoDocentes
+                .filter(cd => cd.userId === session.user.id)
+                .map(cd => cd.cursoId);
+            const cursosActivos = state.cursos.filter(c => 
+                isCentroAdmin ? (c.centroId === userCentroId) : (String(c.userId) === session.user.id || misCursosTutor.includes(c.id))
+            );
+            const cursosParticipaIds = Array.from(new Set<number>([
+                ...cursosActivos.map(c => c.id),
+                ...misCursosVinculados
+            ]));
+
+            let actQuery = supabase.from('actividades').select('*').eq('activo', true);
+            if (isCentroAdmin && misCursosTutor.length === 0) {
+                actQuery = actQuery.in('curso_id', cursosActivos.map(c => c.id));
+            } else if (cursosParticipaIds.length > 0) {
+                actQuery = actQuery.in('curso_id', cursosParticipaIds);
+            } else {
+                actQuery = actQuery.eq('user_id', session.user.id);
+            }
+
+            const results = await Promise.all([
+                actQuery,
+                supabase.from('calendario_minerd').select('*'),
+                supabase.from('eventos').select('*')
+            ]);
+
+            const actividades = results[0].data || [];
+            const calendarioMinerd = results[1].data || [];
+            const eventos = results[2].data || [];
+
+            setState(prev => {
+                const mappedAct = actividades.map((a: Record<string, unknown>) => mapActividad(a, prev.cursos));
+                const mappedCalendarioMinerd = (calendarioMinerd || []).map((ev: Record<string, unknown>): EventoCalendario => ({
+                    id: ev.id as number,
+                    titulo: ev.titulo as string,
+                    fecha: ev.fecha_inicio as string,
+                    tipo: ev.tipo as EventoCalendario['tipo'],
+                    descripcion: (ev.descripcion as string) || undefined,
+                    fechaInicio: (ev.fecha_inicio as string) || undefined,
+                    fechaFin: (ev.fecha_fin as string) || undefined,
+                    updatedAt: (ev.updated_at as string) || undefined,
+                }));
+                const mappedEventos = (eventos || []).map((ev: Record<string, unknown>): EventoCalendario => ({
+                    id: ev.id as number,
+                    titulo: ev.titulo as string,
+                    fecha: ev.fecha as string,
+                    tipo: ev.tipo as EventoCalendario['tipo'],
+                    descripcion: (ev.descripcion as string) || undefined,
+                    fechaInicio: (ev.fecha_inicio as string) || undefined,
+                    fechaFin: (ev.fecha_fin as string) || undefined,
+                    updatedAt: (ev.updated_at as string) || undefined,
+                }));
+
+                const existingActMap = new Map(prev.actividades.map(a => [a.id, a]));
+                mappedAct.forEach(a => existingActMap.set(a.id, a));
+
+                return {
+                    ...prev,
+                    actividades: Array.from(existingActMap.values()),
+                    calendarioMinerd: mappedCalendarioMinerd,
+                    eventos: mappedEventos
+                };
+            });
+            addLoadedModule('calendario');
+        } catch (error) {
+            console.error('Error loading Calendario data:', error);
+        } finally {
+            isCalendarioFetching.current = false;
+            setLoading(false);
+        }
+    }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
+
+    const loadActividadesData = useCallback(async () => {
+        if (!session?.user?.id) return;
+        if (loadedModules.includes('actividades')) return;
+        if (!loadedModules.includes('core')) {
+            console.log('[DIAG][ACTIVIDADES] omitiendo porque core no está cargado');
+            return;
+        }
+        if (isActividadesFetching.current) return;
+        isActividadesFetching.current = true;
+        console.log('[PLANIFICACION] lazy loading Actividades data');
+        setLoading(true);
+        try {
+            const currentProfile = state.perfiles.find(p => p.userId === session.user.id);
+            const userCentroId = currentProfile?.centro_id;
+            const isCentroAdmin = esRolAdministrador(currentProfile?.rol);
+
+            const misCursosTutor = state.cursos
+                .filter(c => c.isTutorOficial && String(c.userId) === session.user.id)
+                .map(c => c.id);
+            const misCursosVinculados = state.cursoDocentes
+                .filter(cd => cd.userId === session.user.id)
+                .map(cd => cd.cursoId);
+            const cursosActivos = state.cursos.filter(c => 
+                isCentroAdmin ? (c.centroId === userCentroId) : (String(c.userId) === session.user.id || misCursosTutor.includes(c.id))
+            );
+            const cursosParticipaIds = Array.from(new Set<number>([
+                ...cursosActivos.map(c => c.id),
+                ...misCursosVinculados
+            ]));
+
+            let actQuery = supabase.from('actividades').select('*').eq('activo', true);
+            if (isCentroAdmin && misCursosTutor.length === 0) {
+                actQuery = actQuery.in('curso_id', cursosActivos.map(c => c.id));
+            } else if (cursosParticipaIds.length > 0) {
+                actQuery = actQuery.in('curso_id', cursosParticipaIds);
+            } else {
+                actQuery = actQuery.eq('user_id', session.user.id);
+            }
+
+            const { data: actividades } = await actQuery;
+
+            setState(prev => {
+                const mappedAct = (actividades || []).map((a: Record<string, unknown>) => mapActividad(a, prev.cursos));
+                const existingActMap = new Map(prev.actividades.map(a => [a.id, a]));
+                mappedAct.forEach(a => existingActMap.set(a.id, a));
+
+                return {
+                    ...prev,
+                    actividades: Array.from(existingActMap.values())
+                };
+            });
+            addLoadedModule('actividades');
+        } catch (error) {
+            console.error('Error loading Actividades data:', error);
+        } finally {
+            isActividadesFetching.current = false;
+            setLoading(false);
+        }
+    }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
+
+    const loadIncidenciasData = useCallback(async () => {
+        if (!session?.user?.id) return;
+        if (loadedModules.includes('incidencias')) return;
+        if (!loadedModules.includes('core')) {
+            console.log('[DIAG][INCIDENCIAS] omitiendo porque core no está cargado');
+            return;
+        }
+        if (isIncidenciasFetching.current) return;
+        isIncidenciasFetching.current = true;
+        console.log('[PLANIFICACION] lazy loading Incidencias data');
+        setLoading(true);
+        try {
+            const currentProfile = state.perfiles.find(p => p.userId === session.user.id);
+            const userCentroId = currentProfile?.centro_id;
+            const isCentroAdmin = esRolAdministrador(currentProfile?.rol);
+
+            const misCursosTutor = state.cursos
+                .filter(c => c.isTutorOficial && String(c.userId) === session.user.id)
+                .map(c => c.id);
+            const misCursosVinculados = state.cursoDocentes
+                .filter(cd => cd.userId === session.user.id)
+                .map(cd => cd.cursoId);
+            const cursosActivos = state.cursos.filter(c => 
+                isCentroAdmin ? (c.centroId === userCentroId) : (String(c.userId) === session.user.id || misCursosTutor.includes(c.id))
+            );
+            const cursosParticipaIds = Array.from(new Set<number>([
+                ...cursosActivos.map(c => c.id),
+                ...misCursosVinculados
+            ]));
+
+            const misSharedCourseIds = Array.from(new Set(
+                state.cursos
+                    .filter(c => cursosParticipaIds.includes(c.id))
+                    .map(c => c.sharedCourseId)
+                    .filter(Boolean)
+            ));
+
+            const incidenciaOrFilter =
+                `user_id.eq.${session.user.id}` +
+                (misSharedCourseIds.length > 0 ? `,shared_course_id.in.(${misSharedCourseIds.join(',')})` : '');
+
+            let incidenciasQuery = supabase.from('incidencias').select('*').eq('activo', true);
+            if (isCentroAdmin && currentProfile?.centro_id) {
+                incidenciasQuery = incidenciasQuery.eq('centro_id', currentProfile.centro_id);
+            } else {
+                incidenciasQuery = incidenciasQuery.or(incidenciaOrFilter);
+            }
+
+            const results = await Promise.all([
+                incidenciasQuery,
+                supabase.from('estudiantes').select('*').eq('activo', true).in('curso_id', cursosParticipaIds.length > 0 ? cursosParticipaIds : [-1])
+            ]);
+
+            const incidencias = results[0].data || [];
+            const estudiantes = results[1].data || [];
+
+            setState(prev => {
+                const mappedIncidencias = (incidencias || []).map((i: Record<string, unknown>): Incidencia => ({
+                    id: i.id as number,
+                    estudianteId: i.estudiante_id as number,
+                    categoria: i.categoria as 'Conducta' | 'Académico' | 'Salud' | 'Otro',
+                    descripcion: i.descripcion as string,
+                    accionesTomadas: i.acciones_tomadas as string[] || [],
+                    acuerdos: i.acuerdos as string,
+                    fecha: i.fecha as string,
+                    gravedad: i.gravedad as 'leve' | 'moderada' | 'grave',
+                    userId: i.user_id as string,
+                    sharedCourseId: (i.shared_course_id as string) || '',
+                    centroId: (i.centro_id as string) || ''
+                }));
+
+                const mappedEst = (estudiantes || []).map((e: any) => mapEstudiante(e));
+                const estMap = new Map(prev.estudiantes.map(e => [e.id, e]));
+                mappedEst.forEach(e => estMap.set(e.id, e));
+
+                return {
+                    ...prev,
+                    incidencias: mappedIncidencias,
+                    estudiantes: Array.from(estMap.values())
+                };
+            });
+            addLoadedModule('incidencias');
+        } catch (error) {
+            console.error('Error loading Incidencias data:', error);
+        } finally {
+            isIncidenciasFetching.current = false;
+            setLoading(false);
+        }
+    }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
+
+    const loadSellosData = useCallback(async (cursoId?: number, periodo?: string) => {
+        if (cursoId) {
+            await loadCursoData(cursoId, periodo);
+        }
+    }, [loadCursoData]);
+
+    const contextReady = loadedModules.includes('core') && !!session?.user?.id;
+
     return {
         state,
         setState,
         loading,
         session,
+        contextReady,
         syncUpsert,
         syncDelete,
         refresh: fetchData,
         loadDashboardData,
         loadCursoData,
+        loadCalendarioData,
+        loadActividadesData,
+        loadIncidenciasData,
+        loadSellosData,
         loadComunidadData,
         loadPlanificacionData,
         loadRubricaCotejoData

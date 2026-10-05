@@ -27,10 +27,12 @@ export default function PrintBoletines({ state }: PrintBoletinesProps) {
     const cursoId = Number(rawCursoId) || 0;
     const session = useAppStore(s => s.session);
     
-    const { loadDashboardData } = useSupabaseData(true);
+    const { loadCursoData, contextReady } = useSupabaseData(true);
     useEffect(() => {
-        loadDashboardData();
-    }, [loadDashboardData]);
+        if (contextReady && cursoId) {
+            loadCursoData(cursoId);
+        }
+    }, [contextReady, cursoId, loadCursoData]);
 
     const curso = useMemo(() => {
         return state.cursos.find(c => c.id === cursoId);

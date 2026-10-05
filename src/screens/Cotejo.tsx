@@ -69,7 +69,7 @@ export default function Cotejo({
     const session = useAppStore(s => s.session);
     const selectedPeriodo = useAppStore(s => s.selectedPeriodo);
     const setSelectedPeriodo = useAppStore(s => s.setSelectedPeriodo);
-    const { loadRubricaCotejoData, loadCursoData } = useSupabaseData(true);
+    const { loadRubricaCotejoData, loadCursoData, contextReady } = useSupabaseData(true);
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
     const { startCapture, captureOverlay, isCapturing } = useTemplateCapture();
@@ -89,16 +89,16 @@ export default function Cotejo({
     };
 
     useEffect(() => {
-        if (!readOnly) {
+        if (!readOnly && contextReady) {
             loadRubricaCotejoData();
         }
-    }, [readOnly, loadRubricaCotejoData]);
+    }, [readOnly, contextReady, loadRubricaCotejoData]);
 
     useEffect(() => {
-        if (!readOnly && selectedCursoId) {
+        if (!readOnly && contextReady && selectedCursoId) {
             loadCursoData(selectedCursoId, selectedPeriodo);
         }
-    }, [selectedCursoId, selectedPeriodo, readOnly, loadCursoData]);
+    }, [selectedCursoId, selectedPeriodo, readOnly, contextReady, loadCursoData]);
 
     useEffect(() => {
         setSelectedActId(null);

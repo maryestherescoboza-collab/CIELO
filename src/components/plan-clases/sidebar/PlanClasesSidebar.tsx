@@ -37,7 +37,8 @@ export default function PlanClasesSidebar() {
   const totalSecuenciasPc = secuencias.length;
   const totalPlanificaciones = stateSecuencias.length;
   const totalPlantillasHtml = PLANTILLAS_HTML.length;
-  const totalElementos = totalNotas + totalSecuenciasPc + totalPlanificaciones + totalPlantillasHtml;
+  const totalActividades = useAppStore(s => s.state.actividades.length);
+  const totalElementos = totalNotas + totalSecuenciasPc + totalPlanificaciones + totalPlantillasHtml + 1; // +1 for actividades link
 
   const isNotaActive = (id: string) => notaId === id;
   const isSecuenciaActive = (id: string) => secuenciaId === id && !notaId;
@@ -167,6 +168,21 @@ export default function PlanClasesSidebar() {
                 isActive={location.pathname === plantilla.path}
               />
             ))}
+          </SidebarSection>
+
+          {/* Actividades */}
+          <SidebarSection
+            title="Actividades"
+            icon={BookOpen}
+            count={totalActividades}
+            color="orange"
+            defaultOpen={location.pathname.includes('/actividades')}
+          >
+            <SidebarItem
+              label="Ver actividades"
+              path="/plan-de-clases/actividades"
+              isActive={location.pathname.includes('/actividades')}
+            />
           </SidebarSection>
         </div>
       </div>

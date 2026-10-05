@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Check, RotateCcw, AlertCircle } from 'lucide-react';
 import type { AppState, CalificacionActividad, RecuperacionBC } from '../types';
 import { PERIODOS_ACADEMICOS } from '../cache/academicCache';
 import { SELLOS_INFO } from '../constants/sellos';
+import { useSupabaseData } from '../hooks/useSupabaseData';
 
 type Paso = 'curso' | 'periodo' | 'actividad' | 'captura' | 'final';
 
@@ -23,6 +24,14 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
     
     // Navegación táctil
     const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+    const { loadCursoData, contextReady } = useSupabaseData(true);
+
+    useEffect(() => {
+        if (contextReady && cursoId) {
+            loadCursoData(cursoId, periodo || undefined);
+        }
+    }, [contextReady, cursoId, periodo, loadCursoData]);
 
     const cursos = state.cursos ?? [];
     const actividades = state.actividades ?? [];

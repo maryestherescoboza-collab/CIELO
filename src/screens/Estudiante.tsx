@@ -21,7 +21,7 @@ export default function Estudiante() {
         selectedEstudianteId,
         setSelectedEstudianteId
     } = useAppStore();
-    const { loadDashboardData, loadCursoData } = useSupabaseData(true);
+    const { loadCursoData, contextReady } = useSupabaseData(true);
 
     // El modulo Estudiante tiene dos subsecciones. `fichas` es exactamente lo
     // que habia antes (la ficha del estudiante seleccionado) y `evidencias` es
@@ -30,10 +30,6 @@ export default function Estudiante() {
     // por eso se puede abrir sin tener un alumno abierto.
     const [subseccion, setSubseccion] = useState<SubseccionEstudiante>('fichas');
 
-    useEffect(() => {
-        loadDashboardData();
-    }, [loadDashboardData]);
-
     const selectedId = Number(id) || selectedEstudianteId || (state.estudiantes && state.estudiantes.length > 0 ? state.estudiantes[0].id : 0);
 
     const estBase = state.estudiantes.find(e => e.id === selectedId);
@@ -41,12 +37,11 @@ export default function Estudiante() {
     const currentCourseRole = state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoBase?.id && cd.userId === session?.user?.id);
     const isTutor = !currentCourseRole || currentCourseRole.rol === 'tutor' || currentCourseRole.esTutor;
 
-    // Recuperaciones y cotejo de recuperación solo se cargan via loadCursoData
-    // (loadDashboardData NO los trae). Si no se visitó el curso antes, el Perfil
-    // no tendría esos datos: garantiza la carga del curso del estudiante.
     useEffect(() => {
-        if (cursoBase?.id) loadCursoData(cursoBase.id);
-    }, [cursoBase?.id, loadCursoData]);
+        if (contextReady && cursoBase?.id) {
+            loadCursoData(cursoBase.id);
+        }
+    }, [contextReady, cursoBase?.id, loadCursoData]);
 
     const {
         periodo,

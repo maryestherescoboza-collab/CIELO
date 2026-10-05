@@ -13,11 +13,13 @@ const Dashboard = lazyLoad(() => import('./screens/Dashboard'));
 const Cursos = lazyLoad(() => import('./screens/Cursos'));
 const CursoDetalle = lazyLoad(() => import('./screens/CursoDetalle'));
 const Incidencias = lazyLoad(() => import('./screens/Incidencias'));
+const Calendario = lazyLoad(() => import('./screens/Calendario').then(m => ({ default: m.Calendario })));
 const Planificacion = lazyLoad(() => import('./screens/Planificacion'));
 const PlanificacionDiariaEditor = lazyLoad(() => import('./screens/PlanificacionDiariaEditor'));
 const PlanClasesIndex = lazyLoad(() => import('./screens/PlanClases/PlanClasesIndex'));
 const PlanClasesLayout = lazyLoad(() => import('./components/plan-clases/PlanClasesLayout'));
 const SecuenciasIndex = lazyLoad(() => import('./screens/PlanClases/SecuenciasIndex'));
+const ActividadesIndex = lazyLoad(() => import('./screens/PlanClases/ActividadesIndex'));
 const Comunidad = lazyLoad(() => import('./screens/Comunidad'));
 const Rubrica = lazyLoad(() => import('./screens/Rubrica'));
 const Cotejo = lazyLoad(() => import('./screens/Cotejo'));
@@ -290,6 +292,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/curso-detalle/:id" element={<CourseDetailRouteWrapper setSelectedCursoId={setSelectedCursoId} renderCourseDetail={renderCourseDetail} />} />
       <Route path="/print-boletines/:cursoId" element={<PrintBoletines state={state} docenteNombre={docenteNombre} />} />
       <Route path="/incidencias" element={<Incidencias state={state} onAddIncidencia={addIncidencia} onDeleteIncidencia={deleteIncidencia} />} />
+      <Route path="/calendario" element={<Calendario onAddActividad={addActividad} />} />
       <Route element={<PlanClasesLayout />}>
         <Route path="/planificacion" element={<Planificacion onAddSecuencia={addSecuencia} onUpdateSecuencia={updateSecuencia} onDeleteSecuencia={deleteSecuencia} />} />
         <Route path="/planificacion-diaria/plantilla" element={<PlanificacionDiariaEditor state={state} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
@@ -297,6 +300,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         
         <Route path="/plan-de-clases">
           <Route index element={<Navigate to="secuencias" replace />} />
+          <Route path="actividades" element={<ActividadesIndex />} />
           <Route path="mis-notas" element={<PlanClasesIndex />} />
           <Route path="secuencias" element={<SecuenciasIndex />} />
           <Route path="secuencias/:secuenciaId/notas" element={<PlanClasesIndex 

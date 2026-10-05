@@ -96,22 +96,22 @@ export default function Rubrica({
     const addFloatingRubric = useAppStore((s) => s.addFloatingRubric);
     const selectedPeriodo = useAppStore(s => s.selectedPeriodo);
     const setSelectedPeriodo = useAppStore(s => s.setSelectedPeriodo);
-    const { loadRubricaCotejoData, loadCursoData } = useSupabaseData(true);
+    const { loadRubricaCotejoData, loadCursoData, contextReady } = useSupabaseData(true);
 
     useEffect(() => {
-        if (!readOnly) {
+        if (!readOnly && contextReady) {
             loadRubricaCotejoData();
         }
-    }, [readOnly, loadRubricaCotejoData]);
+    }, [readOnly, contextReady, loadRubricaCotejoData]);
 
     const [selectedCursoId, setSelectedCursoId] = useState(cursosStore[0]?.id ?? 0);
     const [selectedAsignatura, setSelectedAsignatura] = useState(cursosStore[0]?.asignatura ?? '');
 
     useEffect(() => {
-        if (!readOnly && selectedCursoId) {
+        if (!readOnly && contextReady && selectedCursoId) {
             loadCursoData(selectedCursoId, selectedPeriodo);
         }
-    }, [selectedCursoId, selectedPeriodo, readOnly, loadCursoData]);
+    }, [selectedCursoId, selectedPeriodo, readOnly, contextReady, loadCursoData]);
 
     const [selectedEstId, setSelectedEstId] = useState<number | null>(null);
     const selectedActId = useAppStore(s => s.selectedActividadId);

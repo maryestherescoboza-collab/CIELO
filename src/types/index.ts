@@ -1,6 +1,6 @@
 export type Screen =
     | 'inicio' | 'dashboard' | 'cursos' | 'curso-detalle'
-    | 'incidencias' | 'planificacion' | 'plan-de-clases' | 'comunidad'
+    | 'incidencias' | 'calendario' | 'planificacion' | 'plan-de-clases' | 'comunidad'
     | 'rubrica' | 'cotejo' | 'sellos' | 'estudiante' | 'calificaciones-anuales' | 'ajustes';
 
 export type NavExtra = {
@@ -75,6 +75,10 @@ export interface Actividad {
         actividad. La entrega se registra en `evidencias`; aquí no hay fila. */
     requiereProducto?: boolean;
     descripcion?: string | null;
+    hora_inicio?: string;
+    duracion_minutos?: number;
+    tipo_calendario?: 'actividad' | 'clase';
+    color_calendario?: 'green' | 'blue' | 'orange' | 'yellow' | 'red';
 }
 
 export interface CalificacionActividad {
@@ -435,7 +439,26 @@ export interface CursoDocente {
     esTutor?: boolean;
     asignatura: string;
     diasSemana?: string[];
+    horarios?: Array<{ dia: string; inicio: string; fin: string }>;
     createdAt?: string;
+}
+
+export interface AsistenciaSesion {
+    id: string;
+    curso_id: number;
+    user_id: string;
+    fecha: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface AsistenciaExcepcion {
+    id: string;
+    sesion_id: string;
+    estudiante_id: number;
+    estado: 'F' | 'J' | 'A';
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface AppState {
@@ -448,6 +471,8 @@ export interface AppState {
     recuperacionesCotejo: RecuperacionCotejo[];
     secuencias: Secuencia[];
     eventos: EventoCalendario[];
+    asistenciaSesiones?: AsistenciaSesion[];
+    asistenciaExcepciones?: AsistenciaExcepcion[];
     calendarioMinerd: EventoCalendario[];
     posts: Post[];
     descriptoresRubrica: DescriptorRubrica[];

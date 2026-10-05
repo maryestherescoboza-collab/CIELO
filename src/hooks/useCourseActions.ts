@@ -101,6 +101,7 @@ export function useCourseActions() {
                     esTutor: linkData[0].es_tutor,
                     asignatura: linkData[0].asignatura,
                     diasSemana: linkData[0].dias_semana,
+                    horarios: linkData[0].horarios || [],
                     createdAt: linkData[0].created_at
                 };
                 setState(s => ({
@@ -173,6 +174,7 @@ export function useCourseActions() {
                         esTutor: linkData[0].es_tutor,
                         asignatura: linkData[0].asignatura,
                         diasSemana: linkData[0].dias_semana,
+                        horarios: linkData[0].horarios || [],
                         createdAt: linkData[0].created_at
                     };
                     setState(s => ({
@@ -315,6 +317,7 @@ export function useCourseActions() {
                     esTutor: data[0].es_tutor,
                     asignatura: data[0].asignatura,
                     diasSemana: data[0].dias_semana || [],
+                    horarios: data[0].horarios || [],
                     createdAt: data[0].created_at
                 };
                 
@@ -390,6 +393,7 @@ export function useCourseActions() {
                     esTutor: data[0].es_tutor,
                     asignatura: data[0].asignatura,
                     diasSemana: data[0].dias_semana || [],
+                    horarios: data[0].horarios || [],
                     createdAt: data[0].created_at
                 };
                 setState(s => ({
@@ -455,6 +459,7 @@ export function useCourseActions() {
                     esTutor: data[0].es_tutor,
                     asignatura: data[0].asignatura,
                     diasSemana: data[0].dias_semana || [],
+                    horarios: data[0].horarios || [],
                     createdAt: data[0].created_at
                 };
                 setState(s => ({

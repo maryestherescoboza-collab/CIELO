@@ -61,29 +61,40 @@ export function CalendarWidget({ actividades = [], onSelectDate }: CalendarWidge
     }
 
     return (
-        <div className="terra-calendar-root relative select-none">
-            {/* Header controls */}
-            <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest font-notion-title">{monthNames[month]} {year}</span>
-                <div className="flex gap-1">
-                    <button className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800" onClick={prevMonth}>
-                        <TC_Flux size={14} className="rotate-180" />
-                    </button>
-                    <button className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800" onClick={nextMonth}>
-                        <TC_Flux size={14} />
-                    </button>
-                </div>
-            </div>
+        <div 
+            className="terra-calendar-root relative select-none rounded-3xl p-5 overflow-hidden shadow-sm border border-white/40"
+            style={{ 
+                backgroundImage: `url('/calendar-bg.jpg')`, 
+                backgroundSize: 'cover', 
+                backgroundPosition: 'center' 
+            }}
+        >
+            {/* Subtle overlay for legibility */}
+            <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] pointer-events-none" />
 
-            {/* Flat Grid (Zero Gap) */}
-            <div className="grid grid-cols-7 gap-0 border border-slate-150 rounded-2xl overflow-hidden bg-white shadow-sm">
-                {dayNames.map((d, i) => (
-                    <div key={i} className="text-center py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-wider bg-slate-50/50 border-b border-slate-100">{d}</div>
-                ))}
-                {totalDays.map((dayObj, idx) => {
-                    if (!dayObj || !dayObj.dateStr) {
-                        return <div key={`empty-${idx}`} className="bg-slate-50/20 aspect-square w-full" />;
-                    }
+            <div className="relative z-10">
+                {/* Header controls */}
+                <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-black text-slate-800 uppercase tracking-widest font-notion-title drop-shadow-sm">{monthNames[month]} {year}</span>
+                    <div className="flex gap-1 bg-white/50 backdrop-blur-md rounded-xl p-0.5 shadow-sm border border-white/60">
+                        <button className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-white transition-all text-slate-600 hover:text-slate-900" onClick={prevMonth}>
+                            <TC_Flux size={14} className="rotate-180" />
+                        </button>
+                        <button className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-white transition-all text-slate-600 hover:text-slate-900" onClick={nextMonth}>
+                            <TC_Flux size={14} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Flat Grid (Zero Gap) */}
+                <div className="grid grid-cols-7 gap-0 rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm">
+                    {dayNames.map((d, i) => (
+                        <div key={i} className="text-center py-2.5 text-[10px] font-black text-slate-700 uppercase tracking-wider bg-white/40 border-b border-white/50">{d}</div>
+                    ))}
+                    {totalDays.map((dayObj, idx) => {
+                        if (!dayObj || !dayObj.dateStr) {
+                            return <div key={`empty-${idx}`} className="bg-white/20 aspect-square w-full" />;
+                        }
 
                     const dateStr = dayObj.dateStr;
                     const colIndex = idx % 7;
@@ -163,6 +174,7 @@ export function CalendarWidget({ actividades = [], onSelectDate }: CalendarWidge
                     }
 
                     const dayActividadesCount = actividades.filter(a => a.fecha === dateStr).length;
+                    const dayFichasCount = (state.secuencias || []).filter(s => s.fechaInicio === dateStr).length;
 
                     return (
                         <button
@@ -188,10 +200,13 @@ export function CalendarWidget({ actividades = [], onSelectDate }: CalendarWidge
                                 {dayObj.dayNum}
                             </span>
 
-                            {dayActividadesCount > 0 && (
-                                <div className="flex gap-0.5 mt-0.5 justify-center h-1 items-center">
+                            {(dayActividadesCount > 0 || dayFichasCount > 0) && (
+                                <div className="flex flex-wrap gap-0.5 mt-0.5 justify-center max-w-[80%] items-center">
                                     {Array.from({ length: Math.min(3, dayActividadesCount) }).map((_, idx) => (
-                                        <span key={idx} className="w-1 h-1 rounded-full bg-primary" />
+                                        <span key={`act-${idx}`} className="w-1 h-1 rounded-full bg-[#689c63]" title="Actividad" />
+                                    ))}
+                                    {Array.from({ length: Math.min(3, dayFichasCount) }).map((_, idx) => (
+                                        <span key={`ficha-${idx}`} className="w-1 h-1 rounded-full bg-[#537bac]" title="Ficha" />
                                     ))}
                                 </div>
                             )}
@@ -199,6 +214,7 @@ export function CalendarWidget({ actividades = [], onSelectDate }: CalendarWidge
                     );
                 })}
             </div>
+        </div>
         </div>
     );
 }

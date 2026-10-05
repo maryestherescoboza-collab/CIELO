@@ -76,11 +76,13 @@ import { useSupabaseData } from '../hooks/useSupabaseData';
 
 export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia }: Props) {
     const session = useAppStore((s) => s.session);
-    const { loadDashboardData } = useSupabaseData(true);
+    const { loadIncidenciasData, contextReady } = useSupabaseData(true);
 
     useEffect(() => {
-        loadDashboardData();
-    }, [loadDashboardData]);
+        if (contextReady) {
+            loadIncidenciasData();
+        }
+    }, [contextReady, loadIncidenciasData]);
 
     const currentUserId = session?.user?.id;
     const [buscarEst, setBuscarEst] = useState('');

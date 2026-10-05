@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, Printer, GraduationCap, Users } from 'lucide-react';
 import { getAsignaturaNombre } from '../constants/asignaturas';
 import type { AppState, BCKey, Screen, CursoDocente } from '../types';
 import { calculateStudentPeriodBC } from '../utils/academic';
 import { esEstudianteDelCurso } from '../utils/aislamiento';
+import { useSupabaseData } from '../hooks/useSupabaseData';
 
 interface Props {
     state: AppState;
@@ -13,6 +14,14 @@ interface Props {
 }
 
 export default function CalificacionesAnuales({ state, currentCourseRole, cursoId, onNavigate }: Props) {
+    const { loadCursoData, contextReady } = useSupabaseData(true);
+
+    useEffect(() => {
+        if (contextReady && cursoId) {
+            loadCursoData(cursoId);
+        }
+    }, [contextReady, cursoId, loadCursoData]);
+
     const curso = state.cursos.find(c => c.id === cursoId);
     const [editingExtra, setEditingExtra] = useState<Record<number, Record<string, number>>>({});
 

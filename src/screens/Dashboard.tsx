@@ -1,6 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import type { BCKey, Estudiante } from '../types';
 import { useAppStore } from '../store/appStore';
+import { useSupabaseData } from '../hooks/useSupabaseData';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { SmoothLineChart, StudentPopulationChart, DonutChart } from './DashboardCharts';
@@ -23,6 +24,14 @@ interface Props {
 
 export default function Dashboard({ docenteNombre }: Props) {
   const { state, session } = useAppStore(useShallow(s => ({ state: s.state, session: s.session })));
+  const { loadDashboardData, contextReady } = useSupabaseData(true);
+
+  useEffect(() => {
+    if (contextReady) {
+      loadDashboardData();
+    }
+  }, [contextReady, loadDashboardData]);
+
   const navigate = useNavigate();
   const [selectedCursoId, setSelectedCursoId] = useState<string>(
     state.cursos.length > 0 ? String(state.cursos[0].id) : 'all'
