@@ -138,6 +138,7 @@ interface AppRoutesProps {
   updateEstudiante: any;
   deleteEstudiante: any;
   addEstudianteEnPosicion: any;
+  reordenarEstudiantePosicion: any;
   addIncidencia: any;
   deleteIncidencia: any;
   addSecuencia: any;
@@ -178,7 +179,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   onlineUsers, currentUserProfile,
   addActividad, updateActividad, deleteActividad, saveCalificaciones, saveRecuperacionCotejo,
   addCurso, deleteCurso, saveCurso, toggleDocenteCurso, updateDocenteAsignatura, updateDocenteDias,
-  addEstudiante, updateEstudiante, deleteEstudiante, addEstudianteEnPosicion,
+  addEstudiante, updateEstudiante, deleteEstudiante, addEstudianteEnPosicion, reordenarEstudiantePosicion,
   addIncidencia, deleteIncidencia,
   addSecuencia, updateSecuencia, deleteSecuencia,
   addPost, reportPost, importResource, deletePost,
@@ -253,6 +254,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
         onSaveCurso={saveCurso}
         onAddEstudiante={addEstudiante}
         onAddEstudianteEnPosicion={addEstudianteEnPosicion}
+        onReordenarEstudiantePosicion={reordenarEstudiantePosicion}
         onUpdateEstudiante={updateEstudiante}
         onDeleteEstudiante={deleteEstudiante}
         onAddActividad={addActividad}

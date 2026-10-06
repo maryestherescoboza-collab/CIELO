@@ -8,6 +8,11 @@ import { NewActivityModal } from '../components/dashboard/NewActivityModal';
 import { AttendanceWizardModal } from '../components/dashboard/AttendanceWizardModal';
 import { AttendanceReportModal } from '../components/dashboard/AttendanceReportModal';
 import { ModalHorarioClase } from '../components/dashboard/ModalHorarioClase';
+import { ModalConfigurarHorarios, DEFAULT_INTERVALOS_SEMANA, type IntervaloHorario, formatIntervaloRango, formatHora12h } from '../components/dashboard/ModalConfigurarHorarios';
+import { ModalEtiquetaTiempo, type EtiquetaTiempoSemanal } from '../components/dashboard/ModalEtiquetaTiempo';
+import { ModalOpcionSlotVacio } from '../components/dashboard/ModalOpcionSlotVacio';
+import { ModalAccionCurso } from '../components/dashboard/ModalAccionCurso';
+import { Settings } from 'lucide-react';
 import type { Actividad, EventoCalendario } from '../types';
 import { usePlanClasesStore } from '../store/planClasesStore';
 import { cdImparteEnDia, diaDeSemana, normalizarAsignatura, normalizarDia, normalizarHora } from '../utils/diasSemana';
@@ -280,6 +285,70 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
     // Modal Form State
     const [entryDate, setEntryDate] = useState(iso(new Date()));
     const [entryTime, setEntryTime] = useState<string>('10:00');
+
+    // Weekly View Configurable Schedule Intervals State
+    const [intervalosSemana, setIntervalosSemana] = useState<IntervaloHorario[]>(() => {
+        try {
+            const saved = localStorage.getItem('cielo_intervalos_semana');
+            if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return DEFAULT_INTERVALOS_SEMANA;
+    });
+
+    // Weekly View Time Labels State (Recreo, Almuerzo, Hora pedagógica)
+    const [etiquetasTiempo, setEtiquetasTiempo] = useState<EtiquetaTiempoSemanal[]>(() => {
+        try {
+            const saved = localStorage.getItem('cielo_etiquetas_tiempo');
+            if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return [];
+    });
+
+    const [isConfigHorariosOpen, setIsConfigHorariosOpen] = useState(false);
+    const [isEtiquetaModalOpen, setIsEtiquetaModalOpen] = useState(false);
+    const [isSlotVacioModalOpen, setIsSlotVacioModalOpen] = useState(false);
+    const [isAccionCursoModalOpen, setIsAccionCursoModalOpen] = useState(false);
+
+    const [selectedCursoAccion, setSelectedCursoAccion] = useState<{
+        cursoId: number;
+        cursoNombre: string;
+        asignatura: string;
+        inicio: string;
+        fin: string;
+    } | null>(null);
+
+    const [slotVacioInfo, setSlotVacioInfo] = useState<{
+        dateIso: string;
+        dia: string;
+        timeStr: string;
+        timeEndStr: string;
+    } | null>(null);
+
+    const [editingEtiqueta, setEditingEtiqueta] = useState<EtiquetaTiempoSemanal | null>(null);
+
+    const handleSaveIntervalosSemana = (nuevos: IntervaloHorario[]) => {
+        const ordenados = [...nuevos].sort((a, b) => a.inicio.localeCompare(b.inicio));
+        setIntervalosSemana(ordenados);
+        localStorage.setItem('cielo_intervalos_semana', JSON.stringify(ordenados));
+    };
+
+    const handleSaveEtiqueta = (etiqueta: EtiquetaTiempoSemanal) => {
+        const existe = etiquetasTiempo.some(e => e.id === etiqueta.id);
+        let nuevas: EtiquetaTiempoSemanal[];
+        if (existe) {
+            nuevas = etiquetasTiempo.map(e => e.id === etiqueta.id ? etiqueta : e);
+        } else {
+            nuevas = [...etiquetasTiempo, etiqueta];
+        }
+        setEtiquetasTiempo(nuevas);
+        localStorage.setItem('cielo_etiquetas_tiempo', JSON.stringify(nuevas));
+    };
+
+    const handleDeleteEtiqueta = (id: string) => {
+        const nuevas = etiquetasTiempo.filter(e => e.id !== id);
+        setEtiquetasTiempo(nuevas);
+        localStorage.setItem('cielo_etiquetas_tiempo', JSON.stringify(nuevas));
+    };
 
     useEffect(() => {
         if (session?.user?.id) {
@@ -692,7 +761,10 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
          * ninguna clase. El mapeo minutos→px sigue siendo lineal, así que
          * posicionar, soltar y redimensionar comparten la misma escala.
          * ---------------------------------------------------------------- */
-        const minutos = modelo.flatMap(d => d.bloques.flatMap(b => [toMinutes(b.inicio), toMinutes(b.fin)]));
+        const minIntervalos = intervalosSemana.flatMap(i => [toMinutes(i.inicio), toMinutes(i.fin)]);
+        const minBloques = modelo.flatMap(d => d.bloques.flatMap(b => [toMinutes(b.inicio), toMinutes(b.fin)]));
+        const minEtiquetas = etiquetasTiempo.flatMap(e => [toMinutes(e.inicio), toMinutes(e.fin)]);
+        const minutos = [...minIntervalos, ...minBloques, ...minEtiquetas];
         const GRID_INI = minutos.length
             ? snapMin(Math.floor(Math.min(...minutos) / STEP_MIN) * STEP_MIN - STEP_MIN)
             : 8 * 60;
@@ -715,8 +787,8 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
             snapMin(GRID_INI + y / PX_POR_MIN);
 
         // Marcas de referencia: sólo dentro del rango ocupado, y horarias.
-        const marcasHora: number[] = [];
-        for (let m = Math.ceil(GRID_INI / 60) * 60; m <= GRID_FIN; m += 60) marcasHora.push(m);
+        const marcasHora: string[] = intervalosSemana.map(i => i.inicio);
+
 
         const cursoLabel = (cursoId: number) => {
             const curso = cursos.find((cu: any) => cu.id === cursoId);
@@ -736,7 +808,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
             prefijo: string
         ) =>
             children.map((item: ItemCalendario) => (
-                <div key={`${prefijo}-${item.id}`} className={`rounded-[2px] bg-white/60 px-1 py-0.5 text-[9px] font-bold ${c.text} truncate`}>
+                <div key={`${prefijo}-${item.id}`} className={`rounded-xs bg-white/60 px-1 py-0.5 text-[9px] font-bold ${c.text} truncate`}>
                     {prefijo === 'ficha' ? `📄 ${item.nombre}` : item.nombre}
                 </div>
             ));
@@ -755,7 +827,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                         return (
                             <div
                                 key={`cd-sin-horario-${s.cdId}`}
-                                className={`p-1.5 rounded-[2px] border border-dashed ${c.border} ${c.bg} opacity-80 cursor-grab active:cursor-grabbing hover:opacity-100 flex flex-col gap-0.5`}
+                                className={`p-1.5 rounded-xs border border-dashed ${c.border} ${c.bg} opacity-80 cursor-grab active:cursor-grabbing hover:opacity-100 flex flex-col gap-0.5`}
                                 draggable
                                 onDragStart={(e) => {
                                     setDraggedItem({ id: s.cdId, type: 'horario', cdId: s.cdId, dia: null, inicio: null });
@@ -790,14 +862,14 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                         const ficha = esFicha(item);
                         const c = getCourseColor(item.cursoId ?? item.curso_id, cursos);
                         return (
-                            <div key={`${ficha ? 'ficha' : 'act'}-${item.id}`} className={`p-1.5 rounded-[2px] border ${c.border} ${c.bg} text-[10px] leading-tight`}>
+                            <div key={`${ficha ? 'ficha' : 'act'}-${item.id}`} className={`p-1.5 rounded-xs border ${c.border} ${c.bg} text-[10px] leading-tight`}>
                                 <span className={`font-bold ${c.text}`}>{ficha ? `📄 ${item.nombre}` : item.nombre}</span>
                             </div>
                         );
                     })}
 
                     {dia.minerd.map(ev => (
-                        <div key={`minerd-week-${ev.id}`} className="px-1.5 py-1 rounded-[2px] border border-[#d6cfad] bg-[#fbf9ee] text-[9px] font-bold text-[#5c5017] leading-tight">
+                        <div key={`minerd-week-${ev.id}`} className="px-1.5 py-1 rounded-xs border border-[#d6cfad] bg-[#fbf9ee] text-[9px] font-bold text-[#5c5017] leading-tight">
                             <span className="text-[#b8a032]">M</span> {ev.titulo}
                         </div>
                     ))}
@@ -817,7 +889,11 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         setEntryDate(dateIso);
                         setEntryTime(minutesToTime(minutosDesdeY(e.clientY - rect.top)));
-                        setIsHorarioModalOpen(true);
+                        const clickedMin = minutosDesdeY(e.clientY - rect.top);
+                        const tStart = minutesToTime(clickedMin);
+                        const tEnd = minutesToTime(Math.min(clickedMin + 45, 23 * 60 + 59));
+                        setSlotVacioInfo({ dateIso, dia: dia.dia, timeStr: tStart, timeEndStr: tEnd });
+                        setIsSlotVacioModalOpen(true);
                     }}
                     onDragOver={(e) => {
                         e.preventDefault();
@@ -844,13 +920,54 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                     {marcasHora.map(m => (
                         <div
                             key={m}
-                            className="absolute w-full border-b border-dashed border-[#dfe3dc] pointer-events-none"
-                            style={{ top: `${((m - GRID_INI) / 60) * PX_POR_HORA}px` }}
+                            className="absolute w-full border-b border-slate-300 pointer-events-none"
+                            style={{ top: `${getTimePosition(m)}px` }}
                         />
                     ))}
+                    {/* Bloque especial: Acto patrio */}
+                    {intervalosSemana
+                        .filter(i => i.tipo === 'acto_patrio' || i.nombre === 'Acto patrio' || (i.inicio === '08:00' && i.fin === '08:15'))
+                        .map(inter => {
+                            const top = getTimePosition(inter.inicio);
+                            const height = getDurationHeight(inter.inicio, inter.fin);
+                            return (
+                                <div
+                                    key={`acto-${inter.id}`}
+                                    className="absolute left-1 right-1 rounded-md border border-amber-300 bg-amber-100/90 text-amber-950 p-1 overflow-hidden z-10 flex flex-col justify-center items-center shadow-2xs pointer-events-none"
+                                    style={{ top: `${top}px`, height: `${height}px` }}
+                                    title="Acto patrio (08:00 – 08:15)"
+                                >
+                                    <span className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                                        🇩🇴 Acto patrio
+                                    </span>
+                                </div>
+                            );
+                        })
+                    }
+
+                    {/* Bloque especial: Almuerzo */}
+                    {intervalosSemana
+                        .filter(i => i.tipo === 'almuerzo' || i.nombre === 'Almuerzo' || (i.inicio === '12:45' && i.fin === '13:45'))
+                        .map(inter => {
+                            const top = getTimePosition(inter.inicio);
+                            const height = getDurationHeight(inter.inicio, inter.fin);
+                            return (
+                                <div
+                                    key={`almuerzo-${inter.id}`}
+                                    className="absolute left-1 right-1 rounded-md border border-emerald-300 bg-emerald-100/90 text-emerald-950 p-1 overflow-hidden z-10 flex flex-col justify-center items-center shadow-2xs pointer-events-none"
+                                    style={{ top: `${top}px`, height: `${height}px` }}
+                                    title="Almuerzo (12:45 – 01:45)"
+                                >
+                                    <span className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                                        🍱 Almuerzo
+                                    </span>
+                                </div>
+                            );
+                        })
+                    }
 
                     {invalidDropDay === dateIso && (
-                        <div className="absolute top-1 left-1 right-1 z-20 rounded-[2px] border border-[#e5b4b4] bg-[#fdf3f2] px-2 py-1 text-[9px] font-bold text-[#a03a3a] leading-tight pointer-events-none">
+                        <div className="absolute top-1 left-1 right-1 z-20 rounded-xs border border-[#e5b4b4] bg-[#fdf3f2] px-2 py-1 text-[9px] font-bold text-[#a03a3a] leading-tight pointer-events-none">
                             Este curso no tiene clase este día
                         </div>
                     )}
@@ -884,10 +1001,17 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                                     e.stopPropagation();
                                     if (onAddActividad) {
                                         setEntryDate(dateIso);
-                                        setIsModalOpen(true);
+                                        setSelectedCursoAccion({
+                                            cursoId: bloque.cursoId,
+                                            cursoNombre: cursoLabel(bloque.cursoId),
+                                            asignatura: bloque.asignatura,
+                                            inicio: bInicio,
+                                            fin: bFin,
+                                        });
+                                        setIsAccionCursoModalOpen(true);
                                     }
                                 }}
-                                className={`absolute left-1 right-1 rounded-[2px] border ${c.border} ${c.bg} pt-1 pb-2 px-1.5 overflow-hidden z-10 cursor-grab active:cursor-grabbing flex flex-col gap-1 ${enAjuste ? 'ring-1 ring-black/20' : ''}`}
+                                className={`absolute left-1 right-1 rounded-xs border ${c.border} ${c.bg} pt-1 pb-2 px-1.5 overflow-hidden z-10 cursor-grab active:cursor-grabbing flex flex-col gap-1 ${enAjuste ? 'ring-1 ring-black/20' : ''}`}
                                 style={{ top: `${top}px`, height: `${height}px` }}
                                 title={`${cursoLabel(bloque.cursoId)} · ${bloque.asignatura} · ${bInicio}-${bFin}`}
                             >
@@ -929,7 +1053,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
             <div className="border border-[#e6e8e2] rounded-md overflow-hidden bg-white flex flex-col">
                 {/* Header (Días) */}
                 <div className="flex border-b border-[#e6e8e2] bg-[#fafbf8]">
-                    <div className="w-12.5 shrink-0 border-r border-[#e6e8e2]"></div>
+                    <div className="w-28 shrink-0 border-r border-[#e6e8e2] flex items-center justify-center text-[10px] font-extrabold text-[#7a817b] uppercase tracking-wider">Hora</div>
                     <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${DIAS_SEMANA_SEMANA}, minmax(0, 1fr))` }}>
                         {dayNamesSemana.map((d, i) => {
                             const day = addDays(start, i);
@@ -946,7 +1070,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
 
                 {/* All-day Section */}
                 <div className="flex border-b border-[#e6e8e2]/80 bg-[#fafbf8]">
-                    <div className="w-12.5 shrink-0 border-r border-[#e6e8e2] flex items-center justify-center">
+                    <div className="w-28 shrink-0 border-r border-[#e6e8e2] flex items-center justify-center">
                         <span className="text-[9px] text-[#9a9e9b] font-medium tracking-wide" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>TODO EL DÍA</span>
                     </div>
                     <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${DIAS_SEMANA_SEMANA}, minmax(0, 1fr))` }}>
@@ -956,10 +1080,15 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
 
                 {/* Time Grid Scrollable */}
                 <div className="flex bg-white overflow-y-auto max-h-150 relative">
-                    <div className="w-12.5 shrink-0 border-r border-[#e6e8e2] bg-[#fafbf8] relative" style={{ height: `${PX_GRID}px` }}>
+                    <div className="w-28 shrink-0 border-r border-[#e6e8e2] bg-[#fafbf8] relative" style={{ height: `${PX_GRID}px` }}>
                         {marcasHora.map(m => (
-                            <div key={m} className="absolute w-full text-right pr-1.5" style={{ top: `${((m - GRID_INI) / 60) * PX_POR_HORA}px` }}>
-                                <span className="text-[10px] font-medium text-[#a8ada7] tabular-nums">{minutesToTime(m)}</span>
+                            <div key={m} className="absolute w-full text-center px-1 -mt-2.5 pointer-events-none z-10" style={{ top: `${getTimePosition(m)}px` }}>
+                                <span className="text-[10px] font-black text-slate-700 tabular-nums bg-[#fafbf8] px-1.5 py-0.5 rounded shadow-2xs border border-slate-200/60 block truncate">
+                                    {(() => {
+                                        const found = intervalosSemana.find(i => i.inicio === m);
+                                        return found ? formatIntervaloRango(found.inicio, found.fin) : formatHora12h(m);
+                                    })()}
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -1037,6 +1166,21 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                         >
                             Hoy
                         </button>
+
+
+                        {view === 'week' && (
+                            <button
+                                type="button"
+                                onClick={() => setIsConfigHorariosOpen(true)}
+                                className="ml-2 rounded-lg border border-[#dfe3dc] bg-white px-3 py-1.5 text-xs font-semibold text-[#566057] hover:bg-[#f4f6f1] flex items-center gap-1.5"
+                            >
+                                <Settings className="w-3.5 h-3.5 text-slate-500" />
+                                Configurar horarios
+                            </button>
+                        )}
+
+
+
                     </div>
                     <aside className="flex items-center gap-4 text-xs text-[#697169]">
                         <span className="flex items-center gap-2"><i className="w-2 h-2 rounded-full bg-[#689c63]"></i>Actividad</span>
@@ -1157,6 +1301,63 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                     onClose={() => setIsAttendanceReportOpen(false)}
                 />
             )}
+
+            {/* Modal Configurar Horarios */}
+            <ModalConfigurarHorarios
+                show={isConfigHorariosOpen}
+                onClose={() => setIsConfigHorariosOpen(false)}
+                intervalosActuales={intervalosSemana}
+                onSave={handleSaveIntervalosSemana}
+            />
+
+            {/* Modal Opcion Slot Vacio */}
+            {slotVacioInfo && (
+                <ModalOpcionSlotVacio
+                    show={isSlotVacioModalOpen}
+                    onClose={() => setIsSlotVacioModalOpen(false)}
+                    dateIso={slotVacioInfo.dateIso}
+                    timeStr={slotVacioInfo.timeStr}
+                    onSelectClase={() => {
+                        setEntryTime(slotVacioInfo.timeStr);
+                        setIsHorarioModalOpen(true);
+                    }}
+                    onSelectEtiqueta={() => {
+                        setEditingEtiqueta(null);
+                        setIsEtiquetaModalOpen(true);
+                    }}
+                />
+            )}
+
+            {/* Modal Etiqueta Tiempo */}
+            <ModalEtiquetaTiempo
+                show={isEtiquetaModalOpen}
+                onClose={() => setIsEtiquetaModalOpen(false)}
+                initialDia={slotVacioInfo?.dia || 'Lunes'}
+                initialInicio={slotVacioInfo?.timeStr || '10:00'}
+                initialFin={slotVacioInfo?.timeEndStr || '10:45'}
+                existingEtiqueta={editingEtiqueta}
+                onSave={handleSaveEtiqueta}
+                onDelete={handleDeleteEtiqueta}
+            />
+
+            {/* Modal Accion Curso */}
+            {selectedCursoAccion && (
+                <ModalAccionCurso
+                    show={isAccionCursoModalOpen}
+                    onClose={() => setIsAccionCursoModalOpen(false)}
+                    cursoId={selectedCursoAccion.cursoId}
+                    cursoNombre={selectedCursoAccion.cursoNombre}
+                    asignatura={selectedCursoAccion.asignatura}
+                    inicio={selectedCursoAccion.inicio}
+                    fin={selectedCursoAccion.fin}
+                    onIrACurso={(id) => {
+                        useAppStore.getState().setSelectedCursoId(id);
+                        navigate('/curso-detalle');
+                    }}
+                />
+            )}
+
+
             </div>
         </div>
     );

@@ -290,10 +290,60 @@ export function useStudentActions() {
         return null;
     }, [session, state.cursos, state.estudiantes, setGenericToast]);
 
+    const handleReordenarEstudiantePosicion = useCallback(async (estudianteId: number, posicionDestino: number) => {
+        if (!(estudianteId > 0)) return false;
+
+        const est = state.estudiantes.find(e => e.id === estudianteId);
+        if (!est) return false;
+
+        const oldPos = est.numeroLista;
+        const newPos = Number(posicionDestino);
+
+        if (oldPos === newPos) return true;
+
+        const { error } = await supabase.rpc('rpc_reordenar_estudiante_posicion', {
+            p_estudiante_id: estudianteId,
+            p_posicion_destino: newPos
+        });
+
+        if (error) {
+            console.error('[rpc_reordenar_estudiante_posicion] Error:', error);
+            setGenericToast({ message: `Error al reordenar estudiante: ${error.message}`, type: 'error' });
+            setTimeout(() => setGenericToast(null), 5000);
+            return false;
+        }
+
+        // Actualización atómica en el estado local de Zustand
+        setState(s => {
+            const updated = s.estudiantes.map(e => {
+                if (e.cursoId !== est.cursoId || typeof e.numeroLista !== 'number') return e;
+                if (e.id === est.id) {
+                    return { ...e, numeroLista: newPos };
+                }
+                if (oldPos < newPos) {
+                    if (e.numeroLista > oldPos && e.numeroLista <= newPos) {
+                        return { ...e, numeroLista: e.numeroLista - 1 };
+                    }
+                } else if (oldPos > newPos) {
+                    if (e.numeroLista >= newPos && e.numeroLista < oldPos) {
+                        return { ...e, numeroLista: e.numeroLista + 1 };
+                    }
+                }
+                return e;
+            });
+            return { ...s, estudiantes: updated };
+        });
+
+        setGenericToast({ message: `Estudiante movido a la posición ${newPos} correctamente.`, type: 'success' });
+        setTimeout(() => setGenericToast(null), 3000);
+        return true;
+    }, [state.estudiantes, setState, setGenericToast]);
+
     return {
         addEstudiante: handleAddEstudiante,
         updateEstudiante: handleUpdateEstudiante,
         deleteEstudiante: handleDeleteEstudiante,
-        addEstudianteEnPosicion: handleAddEstudianteEnPosicion
+        addEstudianteEnPosicion: handleAddEstudianteEnPosicion,
+        reordenarEstudiantePosicion: handleReordenarEstudiantePosicion
     };
 }

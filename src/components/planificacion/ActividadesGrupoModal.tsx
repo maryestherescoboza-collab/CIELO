@@ -135,7 +135,7 @@ export function ActividadesGrupoModal({ selectedGroupData, onClose }: Props) {
                             Usar actividades en otros cursos
                         </h3>
                         <div className="flex flex-wrap gap-4 items-end">
-                            <div className="flex-1 min-w-[200px]">
+                            <div className="flex-1 min-w-50">
                                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                                     Curso y Asignatura Destino
                                 </label>

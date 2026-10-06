@@ -13,7 +13,7 @@ export default function ActividadesIndex() {
     }, [contextReady, loadActividadesData]);
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-[1400px] mx-auto w-full px-6 py-6 md:px-12 md:py-12 flex-1 flex flex-col">
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-350 mx-auto w-full px-6 py-6 md:px-12 md:py-12 flex-1 flex flex-col">
             <div className="mb-8">
                 <h1 className="text-3xl md:text-4xl font-black text-(--ink) tracking-tight">Actividades</h1>
                 <p className="text-(--ink-soft) mt-2 text-sm md:text-base font-medium max-w-2xl">

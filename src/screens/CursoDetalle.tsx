@@ -23,6 +23,7 @@ interface Props {
     onSaveCurso?: (c: Curso) => void;
     onAddEstudiante?: (cursoId: number, nombre: string, apellido: string, numeroLista?: number) => Promise<any>;
     onAddEstudianteEnPosicion?: (cursoId: number, nombre: string, apellido: string, posicion: number) => Promise<any>;
+    onReordenarEstudiantePosicion?: (estudianteId: number, posicionDestino: number) => Promise<boolean>;
     onUpdateEstudiante?: (id: number, e: Partial<Estudiante>) => void;
     onDeleteEstudiante?: (id: number) => Promise<any>;
     onAddActividad?: (a: Omit<Actividad, 'id'>) => Promise<any>;
@@ -284,6 +285,14 @@ export default function CursoDetalle(props: Props) {
                         loadCursoData(cursoId);
                     }
                     return result;
+                }}
+                onReordenarEstudiante={async (id, pos) => {
+                    if (!props.onReordenarEstudiantePosicion) return false;
+                    const ok = await props.onReordenarEstudiantePosicion(id, pos);
+                    if (ok) {
+                        loadCursoData(cursoId);
+                    }
+                    return ok;
                 }}
                 onDeleteEstudiante={(id) => props.onDeleteEstudiante?.(id)}
                 onSetRubricTarget={setRubricTarget}

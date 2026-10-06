@@ -1,10 +1,11 @@
 import React from 'react';
-import { Plus, Trash2, Target, ClipboardList, BookOpen, UserPlus, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Target, ClipboardList, BookOpen, UserPlus, AlertTriangle, ArrowUpDown } from 'lucide-react';
 import PegarListadoModal from './PegarListadoModal';
 import StudentObservationModal from './StudentObservationModal';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import GradeCell from './GradeCell';
 import InsertarEstudianteModal from './InsertarEstudianteModal';
+import MoverEstudianteModal from './MoverEstudianteModal';
 import ActivityViewTab from './workspace/ActivityViewTab';
 import type { BCKey, Actividad } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
@@ -28,6 +29,7 @@ interface GradeTableProps {
     onToggleBc: (actId: number, bc: BCKey) => void;
     onAddEstudiante: (nombre?: string, apellido?: string, numeroLista?: number) => Promise<any> | void;
     onAddEstudianteEnPosicion?: (nombre: string, apellido: string, posicion: number) => Promise<any>;
+    onReordenarEstudiante?: (id: number, posicionDestino: number) => Promise<any>;
     onDeleteEstudiante?: (id: number) => void;
     onSetRubricTarget: (target: any) => void;
     getGradeClass: (score: number | null) => string;
@@ -56,6 +58,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     onToggleBc,
     onAddEstudiante,
     onAddEstudianteEnPosicion,
+    onReordenarEstudiante,
     onDeleteEstudiante,
     onSetRubricTarget,
     getGradeClass,
@@ -72,6 +75,9 @@ const GradeTable: React.FC<GradeTableProps> = ({
     
     // Estado para modal de insertar estudiante en posición
     const [showInsertar, setShowInsertar] = React.useState(false);
+
+    // Estado para modal de mover estudiante de posición
+    const [estudianteAMover, setEstudianteAMover] = React.useState<{ id: number; displayName: string; numeroLista: number } | null>(null);
 
     // Estado para modal de observación
     const [obsModalEstudianteId, setObsModalEstudianteId] = React.useState<number | null>(null);
@@ -428,15 +434,33 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                                 <span className="text-xs font-bold text-[#5F665E] uppercase tracking-widest truncate px-1">ID: {est.id.toString().slice(-6)}</span>
                                                             )}
                                                         </div>
-                                                        {/* Icono de Observación */}
+                                                        {/* Acciones del estudiante: Reordenar y Observaciones */}
                                                         {!est.isPlaceholder && (
-                                                            <button
-                                                                onClick={() => setObsModalEstudianteId(est.id)}
-                                                                className={`p-1.5 rounded-md transition-colors shrink-0 ${est.observacion ? 'text-amber-500 hover:bg-amber-50' : 'text-[#5F665E]/30 hover:text-[#5F665E] hover:bg-gray-100'}`}
-                                                                title="Observaciones del estudiante"
-                                                            >
-                                                                <BookOpen size={16} />
-                                                            </button>
+                                                            <div className="flex items-center gap-0.5 shrink-0">
+                                                                {onReordenarEstudiante && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setEstudianteAMover({
+                                                                                id: est.id,
+                                                                                displayName: est.displayName,
+                                                                                numeroLista: est.numeroLista || (eIdx + 1)
+                                                                            });
+                                                                        }}
+                                                                        className="p-1 rounded-md text-[#5F665E]/30 hover:text-[#689C63] hover:bg-[#689C63]/10 transition-colors shrink-0"
+                                                                        title="Mover de posición en la lista"
+                                                                    >
+                                                                        <ArrowUpDown size={15} />
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    onClick={() => setObsModalEstudianteId(est.id)}
+                                                                    className={`p-1 rounded-md transition-colors shrink-0 ${est.observacion ? 'text-amber-500 hover:bg-amber-50' : 'text-[#5F665E]/30 hover:text-[#5F665E] hover:bg-gray-100'}`}
+                                                                    title="Observaciones del estudiante"
+                                                                >
+                                                                    <BookOpen size={16} />
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
@@ -626,6 +650,19 @@ const GradeTable: React.FC<GradeTableProps> = ({
                     </p>
                 </div>
             </CieloModal>
+
+            <MoverEstudianteModal
+                show={!!estudianteAMover}
+                onClose={() => setEstudianteAMover(null)}
+                estudiante={estudianteAMover}
+                totalEstudiantes={estudiantesRealesCurso.length}
+                onMover={async (id, pos) => {
+                    if (onReordenarEstudiante) {
+                        return await onReordenarEstudiante(id, pos);
+                    }
+                    return false;
+                }}
+            />
         </div>
     );
 };
