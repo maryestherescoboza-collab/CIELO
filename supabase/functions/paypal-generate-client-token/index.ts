@@ -9,7 +9,7 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 const PAYPAL_CLIENT_ID = Deno.env.get("PAYPAL_CLIENT_ID") as string;
 const PAYPAL_CLIENT_SECRET = Deno.env.get("PAYPAL_CLIENT_SECRET") as string;
-const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com";
+const PAYPAL_API_BASE = "https://api-m.paypal.com";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

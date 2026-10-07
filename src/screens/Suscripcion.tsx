@@ -141,7 +141,11 @@ export default function Suscripcion() {
     name: 'CIELO Docente Anual',
     badge: 'Ahorra 20%',
     subtitle: 'Mismo acceso premium con 15 días gratis, pero a un menor costo.',
-    secondary: 'Compromiso de 12 meses. El cobro lo administra PayPal de forma mensual.',
+    secondary: (
+      <span className="block text-xs not-italic text-zinc-500">
+        <strong className="text-zinc-800 font-bold">Compromiso de 12 meses.</strong> Pagarás una cuota cada mes durante 12 meses. PayPal hará los cobros automáticamente.
+      </span>
+    ),
     features: featuresComunes
   };
 

@@ -16,8 +16,8 @@ const PAYPAL_API_BASE = "https://api-m.paypal.com";
 // Setup Supabase admin client to insert into suscripciones (since it bypasses RLS if needed, though RLS should allow insert for own user. Using service key ensures we can insert before the webhook comes)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-const PLAN_ID_MENSUAL = "P-5S963969E1293252RNKEJQCA";
-const PLAN_ID_ANUAL = "P-94080814BU072521XNKMCYDQ";
+const PLAN_ID_MENSUAL = "P-4131029904627403DNLCUUHA";
+const PLAN_ID_ANUAL = "P-1WC41170AP726083TNLCUWQY";
 
 async function getPayPalAccessToken(): Promise<string> {
   const auth = btoa(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`);
@@ -31,7 +31,23 @@ async function getPayPalAccessToken(): Promise<string> {
   });
 
   if (!response.ok) {
-    throw new Error("No se pudo obtener el token de PayPal");
+    let errObj;
+    try {
+      errObj = await response.json();
+    } catch(e) {
+      errObj = { error_description: await response.text() };
+    }
+    const safeError = {
+      status: response.status,
+      name: errObj.error || 'Unknown',
+      message: errObj.error_description || 'Unknown error',
+      debug_id: errObj.debug_id || 'N/A'
+    };
+    const errorBody = JSON.stringify({
+      error: "PayPal OAuth Error",
+      paypal_error: safeError
+    });
+    throw new Error(`OAUTH_ERROR:${errorBody}`);
   }
 
   const data = await response.json();
@@ -67,12 +83,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Comprobar si el usuario ya tiene una suscripción activa o pendiente (Evitar duplicados)
+    // Comprobar si el usuario ya tiene una suscripción activa (Evitar duplicados)
     const { data: existingSubs, error: subsError } = await supabaseAdmin
       .from('suscripciones')
       .select('estado')
       .eq('user_id', user.id)
-      .in('estado', ['activa', 'pendiente']);
+      .eq('estado', 'activa');
 
     if (subsError) {
       console.error("Error consultando suscripciones existentes:", subsError);
@@ -80,7 +96,7 @@ Deno.serve(async (req) => {
     }
 
     if (existingSubs && existingSubs.length > 0) {
-      return new Response(JSON.stringify({ error: 'Ya tienes una suscripción activa o pendiente. No puedes crear otra.' }), {
+      return new Response(JSON.stringify({ error: 'Ya tienes una suscripción activa. No puedes crear otra.' }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -124,9 +140,27 @@ Deno.serve(async (req) => {
     });
 
     if (!createSubRes.ok) {
-      const errData = await createSubRes.text();
-      console.error("Error creating subscription in PayPal:", errData);
-      throw new Error("Error al comunicarse con PayPal");
+      let errObj;
+      try {
+        errObj = await createSubRes.json();
+      } catch(e) {
+        errObj = { message: await createSubRes.text() };
+      }
+      
+      const safeError = {
+        status: createSubRes.status,
+        name: errObj.name,
+        message: errObj.message,
+        details: errObj.details,
+        debug_id: errObj.debug_id
+      };
+
+      console.error("PayPal Error:", JSON.stringify(safeError, null, 2));
+
+      return new Response(JSON.stringify({ error: 'PayPal API Error', paypal_error: safeError }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     const subData = await createSubRes.json();
@@ -137,6 +171,13 @@ Deno.serve(async (req) => {
     if (!approveLink) {
       throw new Error("PayPal no devolvió una URL de aprobación válida.");
     }
+
+    // Limpiar suscripciones pendientes antiguas del usuario para no acumular basura
+    await supabaseAdmin
+      .from('suscripciones')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('estado', 'pendiente');
 
     // Insertar en la base de datos ANTES de devolver al usuario
     const { error: insertError } = await supabaseAdmin
@@ -161,6 +202,13 @@ Deno.serve(async (req) => {
     
   } catch (error: any) {
     console.error("Function error:", error);
+    if (error.message && error.message.startsWith('OAUTH_ERROR:')) {
+      const jsonStr = error.message.replace('OAUTH_ERROR:', '');
+      return new Response(jsonStr, {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }

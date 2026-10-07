@@ -14,12 +14,12 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const PAYPAL_PLANS: Record<string, { planId: string, amount: string, currency: string }> = {
   "docente_mensual_definitivo": {
-    planId: "P-5S963969E1293252RNKEJQCA",
+    planId: "P-4131029904627403DNLCUUHA",
     amount: "5.00",
     currency: "USD"
   },
   "docente_anual_definitivo": {
-    planId: "P-94080814BU072521XNKMCYDQ",
+    planId: "P-1WC41170AP726083TNLCUWQY",
     amount: "48.00",
     currency: "USD"
   }
