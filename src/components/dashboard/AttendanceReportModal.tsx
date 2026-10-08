@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useAppStore } from '../../store/appStore';
 import { supabase } from '../../lib/supabase';
 import { X } from 'lucide-react';
@@ -34,6 +35,34 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
         if (isOpen && !selectedCursoDocenteId && availableCursoDocentes.length > 0) {
             setSelectedCursoDocenteId(availableCursoDocentes[0].id);
         }
+        
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            const root = document.getElementById('root');
+            if (root) {
+                root.style.overflow = 'hidden';
+                root.style.pointerEvents = 'none';
+            }
+        } else {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+            const root = document.getElementById('root');
+            if (root) {
+                root.style.overflow = '';
+                root.style.pointerEvents = '';
+            }
+        }
+        
+        return () => {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+            const root = document.getElementById('root');
+            if (root) {
+                root.style.overflow = '';
+                root.style.pointerEvents = '';
+            }
+        };
     }, [isOpen, availableCursoDocentes, selectedCursoDocenteId]);
 
     // Fetch monthly data
@@ -167,8 +196,8 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-[#fcfcfa] rounded-2xl shadow-2xl max-w-6xl w-full flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300">
                 <header className="px-6 py-4 border-b border-[#e6e8e2] bg-white flex justify-between items-center shrink-0">
                     <div>
@@ -305,6 +334,7 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
                     </div>
                 </footer>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

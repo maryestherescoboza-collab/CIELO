@@ -18,7 +18,8 @@ const Planificacion = lazyLoad(() => import('./screens/Planificacion'));
 const PlanificacionDiariaEditor = lazyLoad(() => import('./screens/PlanificacionDiariaEditor'));
 const PlanClasesIndex = lazyLoad(() => import('./screens/PlanClases/PlanClasesIndex'));
 const PlanClasesLayout = lazyLoad(() => import('./components/plan-clases/PlanClasesLayout'));
-const SecuenciasIndex = lazyLoad(() => import('./screens/PlanClases/SecuenciasIndex'));
+  const SecuenciasIndex = lazyLoad(() => import('./screens/PlanClases/SecuenciasIndex'));
+  const EspecificacionesCurriculares = lazyLoad(() => import('./screens/PlanClases/Especificaciones'));
 const ActividadesIndex = lazyLoad(() => import('./screens/PlanClases/ActividadesIndex'));
 const Comunidad = lazyLoad(() => import('./screens/Comunidad'));
 const Rubrica = lazyLoad(() => import('./screens/Rubrica'));
@@ -305,6 +306,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           <Route path="actividades" element={<ActividadesIndex />} />
           <Route path="mis-notas" element={<PlanClasesIndex />} />
           <Route path="secuencias" element={<SecuenciasIndex />} />
+          <Route path="especificaciones" element={<EspecificacionesCurriculares />} />
           <Route path="secuencias/:secuenciaId/notas" element={<PlanClasesIndex 
               userName={docenteNombre}
               userAvatarColor={currentUserProfile?.avatarColor}

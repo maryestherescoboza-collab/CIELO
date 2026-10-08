@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { BookOpen, StickyNote, LayoutTemplate, CalendarDays } from 'lucide-react';
+import { BookOpen, StickyNote, LayoutTemplate, CalendarDays, ClipboardList } from 'lucide-react';
 import { usePlanClasesStore } from '../../../store/planClasesStore';
 import { useAppStore } from '../../../store/appStore';
 import { useSupabaseData } from '../../../hooks/useSupabaseData';
+import { useCombinacionesCurriculares } from '../../../hooks/useCombinacionesCurriculares';
 import SidebarSection from './SidebarSection';
 import SidebarNestedSection from './SidebarNestedSection';
 import SidebarItem from './SidebarItem';
@@ -38,7 +39,9 @@ export default function PlanClasesSidebar() {
   const totalPlanificaciones = stateSecuencias.length;
   const totalPlantillasHtml = PLANTILLAS_HTML.length;
   const totalActividades = useAppStore(s => s.state.actividades.length);
-  const totalElementos = totalNotas + totalSecuenciasPc + totalPlanificaciones + totalPlantillasHtml + 1; // +1 for actividades link
+  const combinaciones = useCombinacionesCurriculares();
+  const totalEspecificaciones = combinaciones.length;
+  const totalElementos = totalNotas + totalSecuenciasPc + totalPlanificaciones + totalPlantillasHtml + totalEspecificaciones + 1; // +1 for actividades link
 
   const isNotaActive = (id: string) => notaId === id;
   const isSecuenciaActive = (id: string) => secuenciaId === id && !notaId;
@@ -69,6 +72,23 @@ export default function PlanClasesSidebar() {
 
         {/* Secciones */}
         <div className="flex flex-col gap-3">
+          {/* Especificaciones curriculares */}
+          {totalEspecificaciones > 0 && (
+            <SidebarSection
+              title="Especificaciones"
+              icon={ClipboardList}
+              count={totalEspecificaciones}
+              color="green"
+              defaultOpen={location.pathname.includes('/especificaciones')}
+            >
+              <SidebarItem
+                label="Organizar especificaciones"
+                path="/plan-de-clases/especificaciones"
+                isActive={location.pathname.includes('/especificaciones')}
+              />
+            </SidebarSection>
+          )}
+
           {/* Mis notas */}
           <SidebarSection
             title="Mis fichas"

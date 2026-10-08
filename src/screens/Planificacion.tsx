@@ -149,43 +149,76 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
             const { type, cursoId, html } = event.data;
 
             if (type === 'GET_ESPECIFICACIONES') {
-                const seq = state.secuencias.find(s => s.cursoId === Number(cursoId) && s.titulo.startsWith('Especificaciones Curriculares'));
+                let seq = undefined;
+                if (event.data.seqId && event.data.seqId !== 'new') {
+                    seq = state.secuencias.find(s => s.id === Number(event.data.seqId));
+                } else if (!event.data.seqId) {
+                    seq = state.secuencias.find(s => s.cursoId === Number(cursoId) && s.titulo.startsWith('Especificaciones Curriculares'));
+                }
+                const curso = state.cursos.find(c => c.id === Number(cursoId));
                 const sourceWindow = event.source as Window | null;
+                
                 if (sourceWindow) {
+                    let workedData = null;
+                    if (curso) {
+                        const actividades = state.actividades.filter(a => a.cursoId === Number(cursoId));
+                        const ilCodes = Array.from(new Set(actividades.map(a => a.indicador).filter(Boolean))) as string[];
+                        
+                        if (ilCodes.length > 0) {
+                            const { data: indData } = await supabase
+                                .from('curr_indicadores')
+                                .select('*')
+                                .eq('grado', curso.grado)
+                                .in('codigo', ilCodes);
+                                
+                            if (indData) {
+                                const grouped = indData.reduce((acc, curr) => {
+                                    if (!acc[curr.competencia]) acc[curr.competencia] = [];
+                                    acc[curr.competencia].push(curr.codigo);
+                                    return acc;
+                                }, {} as Record<string, string[]>);
+                                workedData = grouped;
+                            }
+                        }
+                    }
+
                     if (seq) {
-                        sourceWindow.postMessage({ type: 'LOAD_ESPECIFICACIONES', html: seq.contenidoHtml }, event.origin);
+                        sourceWindow.postMessage({ type: 'LOAD_ESPECIFICACIONES', html: seq.contenidoHtml, workedData }, event.origin);
                     } else {
-                        sourceWindow.postMessage({ type: 'LOAD_ESPECIFICACIONES', html: null }, event.origin);
+                        sourceWindow.postMessage({ type: 'LOAD_ESPECIFICACIONES', html: null, workedData }, event.origin);
                     }
                 }
             }
 
             if (type === 'SAVE_ESPECIFICACIONES') {
-                const title = `Especificaciones Curriculares - Curso ${cursoId}`;
-                const matches = state.secuencias.filter(s => s.cursoId === Number(cursoId) && s.titulo.startsWith('Especificaciones Curriculares'));
-
-                if (matches.length > 0) {
-                    const existing = matches[0];
-                    if (onUpdateSecuencia) {
+                const seqId = event.data.seqId;
+                
+                if (seqId && seqId !== 'new') {
+                    const existing = state.secuencias.find(s => s.id === Number(seqId));
+                    if (existing && onUpdateSecuencia) {
                         await onUpdateSecuencia({
                             ...existing,
                             contenidoHtml: html
                         });
                     }
-                    if (matches.length > 1 && onDeleteSecuencia) {
-                        for (let i = 1; i < matches.length; i++) {
-                            await onDeleteSecuencia(matches[i].id);
-                        }
-                    }
                 } else {
+                    // Create new
+                    const timestamp = new Date().getTime().toString().slice(-4);
+                    const title = `Especificaciones Curriculares - ${timestamp}`;
                     if (onAddSecuencia) {
-                        await onAddSecuencia({
+                        const newSeq = await onAddSecuencia({
                             titulo: title,
                             cursoId: Number(cursoId),
                             fechaInicio: new Date().toISOString().split('T')[0],
                             contenidoHtml: html,
                             estado: 'Pendiente'
                         });
+                        // Respond with the new seqId so the window can update its URL if needed, though typically it stays open.
+                        const sourceWindow = event.source as Window | null;
+                        if (sourceWindow && newSeq) {
+                            sourceWindow.postMessage({ type: 'SAVE_SUCCESS', newSeqId: newSeq.id }, event.origin);
+                            return; // early return
+                        }
                     }
                 }
                 const sourceWindow = event.source as Window | null;
@@ -195,10 +228,15 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
             }
 
             if (type === 'DELETE_ESPECIFICACIONES') {
-                const matches = state.secuencias.filter(s => s.cursoId === Number(cursoId) && s.titulo.startsWith('Especificaciones Curriculares'));
-                if (matches.length > 0 && onDeleteSecuencia) {
-                    for (const seq of matches) {
-                        await onDeleteSecuencia(seq.id);
+                const seqId = event.data.seqId;
+                if (seqId && seqId !== 'new' && onDeleteSecuencia) {
+                    await onDeleteSecuencia(Number(seqId));
+                } else if (!seqId) {
+                    const matches = state.secuencias.filter(s => s.cursoId === Number(cursoId) && s.titulo.startsWith('Especificaciones Curriculares'));
+                    if (matches.length > 0 && onDeleteSecuencia) {
+                        for (const s of matches) {
+                            await onDeleteSecuencia(s.id);
+                        }
                     }
                 }
                 const sourceWindow = event.source as Window | null;
@@ -489,7 +527,7 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                             {/* Especificaciones Curriculares */}
                             <button
                                 type="button"
-                                onClick={() => window.open(`/especificaciones.html?cursoId=${cursoSel}`, '_blank')}
+                                onClick={() => window.open(`/especificaciones.html?cursoId=${cursoSel}&seqId=new`, '_blank')}
                                 className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"
                             >
                                 <div className="w-full h-32 flex flex-col items-center justify-center mb-2">
@@ -521,7 +559,11 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                         type="button"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            setViewerSeq(seq);
+                                            if (seq.titulo.startsWith('Especificaciones Curriculares')) {
+                                                window.open(`/especificaciones.html?cursoId=${cursoSel}&seqId=${seq.id}`, '_blank');
+                                            } else {
+                                                setViewerSeq(seq);
+                                            }
                                         }}
                                         className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"
                                     >

@@ -1291,6 +1291,9 @@
         });
 
         function extractCEItems(subjIdx) {
+            if (window.workedData) {
+                return Object.keys(window.workedData);
+            }
             const tables = document.querySelectorAll(`table.comp-table[data-subject="${subjIdx}"]`);
             let items = [];
             tables.forEach(table => {
@@ -1307,6 +1310,11 @@
         }
 
         function extractILItems(subjIdx) {
+            if (window.workedData) {
+                let items = [];
+                Object.values(window.workedData).forEach(arr => items.push(...arr));
+                return items;
+            }
             const tables = document.querySelectorAll(`table.comp-table[data-subject="${subjIdx}"]`);
             let items = [];
             tables.forEach(table => {
@@ -1400,23 +1408,72 @@
         // --- PERSISTENCIA MEDIANTE POSTMESSAGE ---
         const urlParams = new URLSearchParams(window.location.search);
         const cursoId = urlParams.get('cursoId');
+        let seqId = urlParams.get('seqId');
         let originalTemplateHTML = '';
 
         // 1. Al cargar la página, guardar el estado original y solicitar el contenido guardado a la pestaña de origen (opener)
         window.addEventListener('DOMContentLoaded', () => {
             originalTemplateHTML = document.documentElement.innerHTML;
             if (window.opener && cursoId) {
-                window.opener.postMessage({ type: 'GET_ESPECIFICACIONES', cursoId: cursoId }, '*');
+                window.opener.postMessage({ type: 'GET_ESPECIFICACIONES', cursoId: cursoId, seqId: seqId }, '*');
             }
         });
 
         // 2. Escuchar el mensaje con el HTML guardado
         window.addEventListener('message', (event) => {
             if (!event.data || typeof event.data !== 'object') return;
-            const { type, html } = event.data;
+            const { type, html, newSeqId } = event.data;
 
-            if (type === 'LOAD_ESPECIFICACIONES' && html) {
-                document.documentElement.innerHTML = html;
+            if (type === 'LOAD_ESPECIFICACIONES') {
+                if (html) {
+                    document.documentElement.innerHTML = html;
+                }
+
+                if (event.data.workedData) {
+                    window.workedData = event.data.workedData;
+                    // Eliminar las tablas genéricas (la sección general)
+                    document.querySelectorAll('table.comp-table').forEach(tbl => {
+                        const page = tbl.closest('.page');
+                        if (page) page.remove();
+                    });
+
+                    // Generar la nueva estructura basada EXCLUSIVAMENTE en lo trabajado
+                    const container = document.createElement('div');
+                    container.className = 'page custom-comp-page';
+                    
+                    let newHtml = `<div class="subject-title" style="margin-bottom:20px;">Competencias e Indicadores Trabajados</div>`;
+                    newHtml += `<table class="comp-table worked-comp-table" data-subject="0">
+                                  <colgroup>
+                                      <col class="c1" style="width:30%;">
+                                      <col class="c2" style="width:70%;">
+                                  </colgroup>
+                                  <tr class="hdr-col">
+                                      <td>Competencia</td>
+                                      <td>Indicadores de Logro (IL)</td>
+                                  </tr>`;
+
+                    for (const [compCode, ilList] of Object.entries(window.workedData)) {
+                        newHtml += `<tr>
+                                      <td class="ce ce-edit" style="font-weight:bold; vertical-align:middle; text-align:center;">${escapeHtml(compCode)}</td>
+                                      <td class="il il-edit">`;
+                        (ilList as string[]).forEach(il => {
+                            newHtml += `<p>• ${escapeHtml(il)}</p>`;
+                        });
+                        newHtml += `  </td>
+                                    </tr>`;
+                    }
+                    newHtml += `</table>`;
+                    container.innerHTML = newHtml;
+
+                    // Insertarlo al principio del documento (o antes del periodo-table)
+                    const firstRemainingPage = document.querySelector('.page');
+                    if (firstRemainingPage) {
+                        firstRemainingPage.parentNode.insertBefore(container, firstRemainingPage);
+                    } else {
+                        document.body.appendChild(container);
+                    }
+                }
+
                 // Re-inicializar los listeners de pegar en tablas
                 document.querySelectorAll('table.comp-table').forEach(tbl => {
                     tbl.addEventListener('paste', handleCompTablePaste, true);
@@ -1425,6 +1482,11 @@
 
             if (type === 'SAVE_SUCCESS') {
                 alert('Especificaciones Curriculares guardadas exitosamente.');
+                if (newSeqId && seqId !== newSeqId) {
+                    seqId = newSeqId;
+                    const newUrl = window.location.pathname + '?cursoId=' + cursoId + '&seqId=' + seqId;
+                    window.history.replaceState({path: newUrl}, '', newUrl);
+                }
             }
 
             if (type === 'DELETE_SUCCESS') {
@@ -1435,6 +1497,9 @@
                         tbl.addEventListener('paste', handleCompTablePaste, true);
                     });
                 }
+                seqId = 'new';
+                const newUrl = window.location.pathname + '?cursoId=' + cursoId + '&seqId=new';
+                window.history.replaceState({path: newUrl}, '', newUrl);
             }
         });
 
@@ -1457,6 +1522,7 @@
             window.opener.postMessage({
                 type: 'SAVE_ESPECIFICACIONES',
                 cursoId: cursoId,
+                seqId: seqId,
                 html: htmlCompleto
             }, '*');
         }
@@ -1464,6 +1530,9 @@
         // 4. Crear nueva especificación (reiniciar plantilla)
         function crearNueva() {
             if (confirm('¿Desea crear una nueva especificación? Se descartarán los cambios no guardados en el documento actual.')) {
+                seqId = 'new';
+                const newUrl = window.location.pathname + '?cursoId=' + cursoId + '&seqId=new';
+                window.history.replaceState({path: newUrl}, '', newUrl);
                 if (originalTemplateHTML) {
                     document.documentElement.innerHTML = originalTemplateHTML;
                     document.querySelectorAll('table.comp-table').forEach(tbl => {
@@ -1477,7 +1546,7 @@
         function borrar() {
             if (confirm('¿Está seguro de que desea borrar esta especificación de la base de datos? Esta acción no se puede deshacer.')) {
                 if (window.opener && cursoId) {
-                    window.opener.postMessage({ type: 'DELETE_ESPECIFICACIONES', cursoId: cursoId }, '*');
+                    window.opener.postMessage({ type: 'DELETE_ESPECIFICACIONES', cursoId: cursoId, seqId: seqId }, '*');
                 } else {
                     alert('No se pudo conectar con la aplicación principal.');
                 }

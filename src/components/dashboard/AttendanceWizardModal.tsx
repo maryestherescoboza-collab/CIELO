@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useAppStore } from '../../store/appStore';
 import { ChevronRight, ChevronLeft, Check, CalendarDays, X, Search } from 'lucide-react';
@@ -49,7 +50,35 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
             setAttendanceState({});
             setExistingRecordId(null);
             setSearchTerm('');
+            
+            // Restore scroll
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+            const root = document.getElementById('root');
+            if (root) {
+                root.style.overflow = '';
+                root.style.pointerEvents = '';
+            }
+        } else {
+            // Lock scroll globally
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            const root = document.getElementById('root');
+            if (root) {
+                root.style.overflow = 'hidden';
+                root.style.pointerEvents = 'none'; // Prevents scrolling on inner containers behind the modal
+            }
         }
+        
+        return () => {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+            const root = document.getElementById('root');
+            if (root) {
+                root.style.overflow = '';
+                root.style.pointerEvents = '';
+            }
+        };
     }, [isOpen]);
 
     useEffect(() => {
@@ -194,8 +223,8 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
         return new Intl.DateTimeFormat('es-DO', { dateStyle: 'long' }).format(d);
     };
 
-    return (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300">
                 <header className="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
                     <div>
@@ -407,6 +436,7 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
                     )}
                 </footer>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

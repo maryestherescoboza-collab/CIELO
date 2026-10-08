@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Plus, ChevronDown, Loader2, BookOpen, Check, Edit2 } from 'lucide-react';
+import { ArrowRight, Plus, ChevronDown, Loader2, BookOpen, Check, Edit2, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePlanClasesStore } from '../../store/planClasesStore';
 import { useAppStore } from '../../store/appStore';
+import { useEspecificacionesStore } from '../../store/especificacionesStore';
+import { useCombinacionesCurriculares } from '../../hooks/useCombinacionesCurriculares';
+import { configuracionCompleta } from '../../lib/curriculo';
 import type { SecuenciaDB } from '../../types/planClases';
 
 // Componente Tarjeta Editable
@@ -177,13 +180,37 @@ export default function SecuenciasIndex() {
   const cursos = useAppStore((s) => s.state.cursos) || [];
   
   const { secuencias, loadingSecuencias, error, fetchSecuencias, createSecuencia, updateSecuencia } = usePlanClasesStore();
+  const especificaciones = useEspecificacionesStore((s) => s.especificaciones);
+  const fetchEspecificaciones = useEspecificacionesStore((s) => s.fetchEspecificaciones);
+  const combinaciones = useCombinacionesCurriculares();
   const [isCreating, setIsCreating] = useState(false);
+  const [especificacionesCargadas, setEspecificacionesCargadas] = useState(false);
 
   useEffect(() => {
     if (session?.user?.id) {
       fetchSecuencias(session.user.id);
     }
   }, [session?.user?.id, fetchSecuencias]);
+
+  useEffect(() => {
+    let cancelado = false;
+    if (session?.user?.id) {
+      fetchEspecificaciones(session.user.id).then(() => {
+        if (!cancelado) setEspecificacionesCargadas(true);
+      });
+    }
+    return () => {
+      cancelado = true;
+    };
+  }, [session?.user?.id, fetchEspecificaciones]);
+
+  const pendientesEspecificaciones = combinaciones.filter(
+    (c) =>
+      !configuracionCompleta(
+        especificaciones.find((e) => e.curso_id === c.cursoId && e.asignatura === c.asignatura)
+          ?.competencias
+      )
+  ).length;
 
   const handleCreate = async () => {
     const titulo = prompt('Ingresa el título de la nueva secuencia:');
@@ -222,6 +249,38 @@ export default function SecuenciasIndex() {
             </button>
           </div>
         </div>
+
+        {/* ============ ESPECIFICACIONES CURRICULARES (pendientes) ============ */}
+        {especificacionesCargadas &&
+          combinaciones.length > 0 &&
+          pendientesEspecificaciones > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-3xl border border-[#689C63]/30 bg-[#689C63]/5 p-5">
+              <span className="w-11 h-11 rounded-full bg-[#689C63]/15 flex items-center justify-center shrink-0">
+                <ClipboardList size={20} className="text-[#689C63]" />
+              </span>
+              <div className="flex-1 flex flex-col gap-1">
+                <h2 className="text-[15px] font-extrabold text-[#2E3330]">
+                  Organiza tus especificaciones curriculares
+                </h2>
+                <p className="text-[13.5px] text-[#2E3330]/70 leading-snug max-w-2xl">
+                  Registra las competencias, contenidos e indicadores de tus cursos por asignatura
+                  y período para usarlos en tus planes de clase y registros.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="px-2.5 py-1 rounded-full bg-white border border-[#689C63]/30 text-[#689C63] text-[12px] font-bold">
+                  {pendientesEspecificaciones} pendiente
+                  {pendientesEspecificaciones !== 1 ? 's' : ''}
+                </span>
+                <button
+                  onClick={() => navigate('/plan-de-clases/especificaciones')}
+                  className="px-4 h-9 rounded-full bg-[#689C63] text-white font-bold text-[13px] hover:bg-[#5a8a55] transition-colors shadow-sm flex items-center gap-1.5 active:scale-95"
+                >
+                  Comenzar <ArrowRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
 
         {error && (
           <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-bold border border-red-200">
