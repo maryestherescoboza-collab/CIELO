@@ -1,15 +1,19 @@
-import { useState, useMemo, type ElementType } from 'react';
+import { useState, useMemo, useEffect, type ElementType } from 'react';
 import {
     Search, AlertCircle, Bookmark, FileText,
-    ShieldAlert, Trash2, CheckCircle, Printer
+    ShieldAlert, Trash2, CheckCircle, Printer, Pencil
 } from 'lucide-react';
 import type { AppState, Incidencia } from '../types';
 import { CieloPill } from '../components/ui/CieloPill';
 import { generarFichaReferenciaDocx } from '../utils/docxGenerator';
+import { EditarIncidenciaModal } from '../components/incidencias/EditarIncidenciaModal';
+import { FechaPickerCompact } from '../components/incidencias/FechaPickerCompact';
+import { useIncidenciaActions } from '../hooks/useIncidenciaActions';
 interface Props {
     state: AppState;
     onAddIncidencia: (i: Omit<Incidencia, 'id'>) => void;
     onDeleteIncidencia?: (id: number) => void;
+    onUpdateIncidencia?: (id: number, updates: Partial<Omit<Incidencia, 'id'>>) => Promise<{ success: boolean; error?: string }>;
 }
 
 const CATEGORIAS: { key: Incidencia['categoria']; icon: ElementType; label: string; bgColor: string; textColor: string; iconColor: string }[] = [
@@ -70,13 +74,21 @@ const ACCIONES_TAG_CLASSES: Record<string, string> = {
 };
 
 import { useAppStore } from '../store/appStore';
-
-import { useEffect } from 'react';
 import { useSupabaseData } from '../hooks/useSupabaseData';
 
-export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia }: Props) {
+export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia, onUpdateIncidencia }: Props) {
     const session = useAppStore((s) => s.session);
     const { loadIncidenciasData, contextReady } = useSupabaseData(true);
+    const { updateIncidencia: hookUpdateIncidencia } = useIncidenciaActions();
+    const handleUpdateIncidencia = onUpdateIncidencia || hookUpdateIncidencia;
+
+    const getTodayDateString = () => {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
 
     useEffect(() => {
         if (contextReady) {
@@ -95,6 +107,9 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
     const [filtro] = useState('Todas');
     const [buscarHist, setBuscarHist] = useState('');
     const [saved, setSaved] = useState(false);
+    const [fecha, setFecha] = useState<string>(getTodayDateString());
+    const [incidenciaEnEdicion, setIncidenciaEnEdicion] = useState<Incidencia | null>(null);
+    const [savingFechaId, setSavingFechaId] = useState<number | null>(null);
     const sharedCourseIds = useMemo(() => new Set(state.cursos.map(c => c.sharedCourseId).filter(Boolean)), [state.cursos]);
 
     const estudiantesSeleccionados = state.estudiantes.filter((estudiante) => estIds.includes(estudiante.id));
@@ -124,6 +139,8 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
     function handleSubmit() {
         if (!estudiantesSeleccionados.length || !descripcion.trim()) return;
 
+        const fechaIncidencia = fecha.trim() || getTodayDateString();
+
         estudiantesSeleccionados.forEach((estudiante) => {
             onAddIncidencia({
                 estudianteId: estudiante.id,
@@ -132,7 +149,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                 accionesTomadas,
                 acuerdos,
                 gravedad,
-                fecha: new Date().toISOString().split('T')[0],
+                fecha: fechaIncidencia,
             });
         });
 
@@ -140,6 +157,7 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
         setAcuerdos('');
         setAcciones([]);
         setEstIds([]);
+        setFecha(getTodayDateString());
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
     }
@@ -155,7 +173,8 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
             const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
             const nombre = `${est.nombre} ${est.apellido}`;
             return normalize(nombre).includes(normalize(buscarHist));
-        });
+        })
+        .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || b.id - a.id);
 
     return (
         <div className="flex flex-col flex-1 h-full overflow-hidden bg-(--background)">
@@ -280,11 +299,17 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
 
                         <div className="hidden xl:block w-px bg-(--border-soft)/55"></div>
 
-                        {/* Section 3: Detalles del Acontecimiento */}
+                        {/* Section 3: Detalles y Acuerdos */}
                         <section className="flex flex-col gap-2 flex-[1.5]">
-                            <h2 className="text-xs font-black uppercase tracking-[0.15em] text-(--ink-soft) flex items-center gap-1">
-                                <span className="text-[10px]">3.</span> DETALLES
-                            </h2>
+                            <div className="flex items-center justify-between gap-2 min-h-6">
+                                <h2 className="text-xs font-black uppercase tracking-[0.15em] text-(--ink-soft) flex items-center gap-1">
+                                    <span className="text-[10px]">3.</span> DETALLES
+                                </h2>
+                                <FechaPickerCompact
+                                    value={fecha}
+                                    onChange={setFecha}
+                                />
+                            </div>
                             <div className="flex flex-col gap-2 h-full">
                                 <input
                                     className="w-full px-3.5 py-2.5 rounded-xl border border-(--border-soft) focus:border-(--primary) focus:ring-1 focus:ring-(--primary)/50 text-xs font-bold text-(--ink) placeholder:text-(--ink-soft) transition-shadow outline-none flex-1"
@@ -380,8 +405,8 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                         <th className="p-4 text-[10px] font-black text-(--ink-soft) uppercase tracking-widest max-w-55">Descripción</th>
                                         <th className="p-4 text-[10px] font-black text-(--ink-soft) uppercase tracking-widest max-w-37.5">Acuerdos</th>
                                         <th className="p-4 text-[10px] font-black text-(--ink-soft) uppercase tracking-widest">Acciones</th>
-                                        <th className="p-4 text-[10px] font-black text-(--ink-soft) uppercase tracking-widest w-25">Fecha</th>
-                                        <th className="p-4 w-12 text-center"></th>
+                                        <th className="p-4 text-[10px] font-black text-(--ink-soft) uppercase tracking-widest w-32">Fecha</th>
+                                        <th className="p-4 w-24 text-center text-[10px] font-black text-(--ink-soft) uppercase tracking-widest">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-(--border-soft)/50 bg-white">
@@ -438,30 +463,56 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                                                         </div>
                                                     </td>
                                                     <td className="p-4">
-                                                        <span className="text-xs font-bold text-(--ink-soft)">
-                                                            {incidencia.fecha}
-                                                        </span>
+                                                        <FechaPickerCompact
+                                                            value={incidencia.fecha}
+                                                            isSaving={savingFechaId === incidencia.id}
+                                                            disabled={savingFechaId === incidencia.id}
+                                                            onChange={async (newFecha) => {
+                                                                if (!newFecha || newFecha === incidencia.fecha) return;
+                                                                setSavingFechaId(incidencia.id);
+                                                                try {
+                                                                    const res = await handleUpdateIncidencia(incidencia.id, { fecha: newFecha });
+                                                                    if (!res?.success) {
+                                                                        console.error('Error al actualizar fecha:', res?.error);
+                                                                        alert(res?.error || 'No se pudo actualizar la fecha');
+                                                                    }
+                                                                } finally {
+                                                                    setSavingFechaId(null);
+                                                                }
+                                                            }}
+                                                            title="Pulsar para modificar la fecha directamente"
+                                                        />
                                                     </td>
                                                     <td className="p-4 text-center">
                                                         <div className="flex items-center justify-center gap-1">
                                                             <button
+                                                                type="button"
+                                                                onClick={() => setIncidenciaEnEdicion(incidencia)}
+                                                                title="Editar incidencia (fecha, detalles)"
+                                                                className="text-(--ink-soft) hover:text-(--primary) transition-colors p-2 lg:p-1.5 rounded-full hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
+                                                            >
+                                                                <Pencil size={15} />
+                                                            </button>
+                                                            <button
+                                                                type="button"
                                                                 onClick={() => {
                                                                     generarFichaReferenciaDocx(incidencia, state, session);
                                                                 }}
                                                                 title="Descargar ficha de referencia"
-                                                                className="text-(--ink-soft) hover:text-(--primary) transition-colors p-2 lg:p-1 rounded-full hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
+                                                                className="text-(--ink-soft) hover:text-(--primary) transition-colors p-2 lg:p-1.5 rounded-full hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
                                                             >
-                                                                <Printer size={16} />
+                                                                <Printer size={15} />
                                                             </button>
                                                             <button
+                                                                type="button"
                                                                 onClick={() => {
                                                                     if (onDeleteIncidencia && window.confirm('¿Eliminar esta incidencia?')) {
                                                                         onDeleteIncidencia(incidencia.id);
                                                                     }
                                                                 }}
-                                                                className="text-(--ink-soft) hover:text-(--danger) transition-colors p-2 lg:p-1 rounded-full hover:bg-white border border-transparent hover:border-red-200 cursor-pointer"
+                                                                className="text-(--ink-soft) hover:text-(--danger) transition-colors p-2 lg:p-1.5 rounded-full hover:bg-white border border-transparent hover:border-red-200 cursor-pointer"
                                                             >
-                                                                <Trash2 size={16} />
+                                                                <Trash2 size={15} />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -475,6 +526,23 @@ export default function Incidencias({ state, onAddIncidencia, onDeleteIncidencia
                     </div>
                 </main>
             </div>
+
+            {incidenciaEnEdicion && (
+                <EditarIncidenciaModal
+                    isOpen={Boolean(incidenciaEnEdicion)}
+                    onClose={() => setIncidenciaEnEdicion(null)}
+                    incidencia={incidenciaEnEdicion}
+                    estudianteNombre={(() => {
+                        const est = state.estudiantes.find(e => e.id === incidenciaEnEdicion.estudianteId);
+                        return est ? `${est.nombre} ${est.apellido}` : undefined;
+                    })()}
+                    expediente={(() => {
+                        const est = state.estudiantes.find(e => e.id === incidenciaEnEdicion.estudianteId);
+                        return est ? `Expediente #0${est.id}` : undefined;
+                    })()}
+                    onSave={handleUpdateIncidencia}
+                />
+            )}
         </div>
     );
 }

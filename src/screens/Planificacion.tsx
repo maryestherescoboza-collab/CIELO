@@ -11,6 +11,7 @@ import { CieloModal } from '../components/ui/CieloModal';
 import { supabase } from '../lib/supabase';
 
 import { useAppStore } from '../store/appStore';
+import { getValidSecuencia, saveSecuencia } from '../cache/secuenciaCache';
 import RegistroAnecdotico from '../components/RegistroAnecdotico';
 import { ActividadesPorCursoSection } from '../components/planificacion/ActividadesPorCursoSection';
 
@@ -557,12 +558,43 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                     <button
                                         key={seq.id}
                                         type="button"
-                                        onClick={(e) => {
+                                        onClick={async (e) => {
                                             e.preventDefault();
                                             if (seq.titulo.startsWith('Especificaciones Curriculares')) {
                                                 window.open(`/especificaciones.html?cursoId=${cursoSel}&seqId=${seq.id}`, '_blank');
                                             } else {
-                                                setViewerSeq(seq);
+                                                if (seq.contenidoHtml) {
+                                                    setViewerSeq(seq);
+                                                } else {
+                                                    // Chequear caché en memoria
+                                                    const cached = getValidSecuencia(session?.user?.id, seq.cursoId, seq.id);
+                                                    if (cached?.contenidoHtml) {
+                                                        setViewerSeq(cached);
+                                                        return;
+                                                    }
+                                                    // Poner estado preliminar mientras descarga
+                                                    setViewerSeq(seq);
+                                                    const { data } = await supabase
+                                                        .from('secuencias')
+                                                        .select('id, contenido_html, recursos')
+                                                        .eq('id', seq.id)
+                                                        .single();
+                                                    if (data) {
+                                                        const fullSeq: Secuencia = {
+                                                            ...seq,
+                                                            contenidoHtml: data.contenido_html || '',
+                                                            recursos: data.recursos ? (Array.isArray(data.recursos) ? data.recursos : (() => { try { return JSON.parse(data.recursos); } catch { return []; } })()) : seq.recursos
+                                                        };
+                                                        setViewerSeq(fullSeq);
+                                                        if (session?.user?.id) {
+                                                            saveSecuencia(session.user.id, fullSeq);
+                                                        }
+                                                        useAppStore.getState().setAppState(s => ({
+                                                            ...s,
+                                                            secuencias: s.secuencias.map(item => item.id === seq.id ? fullSeq : item)
+                                                        }));
+                                                    }
+                                                }
                                             }
                                         }}
                                         className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"

@@ -22,6 +22,7 @@ import type {
 } from '../types';
 
 import { getAsignaturaNombre } from '../constants/asignaturas';
+import { normalizeArea } from '../utils/academic';
 import { RubricaRow, COMPETENCIAS, NIVEL_FIELDS, toRichHtml } from '../components/RubricaRow';
 import { CieloPill } from '../components/ui/CieloPill';
 import { useTemplateCapture } from '../hooks/useTemplateCapture';
@@ -175,15 +176,13 @@ export default function Rubrica({
             (curso?.sharedCourseId && estudiante.sharedCourseId === curso.sharedCourseId)
         );
         
-        const actSource = (currentCourseRole && currentCourseRole.rol === 'co-docente') 
-            ? actividadesStore.filter(a => a.asignatura === currentCourseRole.asignatura)
-            : actividadesStore;
-            
-        const acts = actSource.filter((actividad) => 
+        const targetAsig = selectedAsignatura || currentCourseRole?.asignatura || curso?.asignatura;
+        const acts = actividadesStore.filter((actividad) => 
             (actividad.cursoId === selectedCursoId || 
              (curso?.sharedCourseId && actividad.sharedCourseId === curso.sharedCourseId)) &&
             (actividad.userId === session?.user?.id || !actividad.userId) &&
-            (!actividad.asignatura || actividad.asignatura === selectedAsignatura) &&
+            Boolean(actividad.asignatura) && 
+            (!targetAsig || normalizeArea(actividad.asignatura) === normalizeArea(targetAsig)) &&
             actividad.periodo === selectedPeriodo
         );
 

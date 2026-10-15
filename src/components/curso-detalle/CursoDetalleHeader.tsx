@@ -8,7 +8,8 @@ import {
     UserMinus,
     Layout,
     Loader2,
-    Check
+    Check,
+    AlertCircle
 } from 'lucide-react';
 import type { Curso } from '../../types';
 import { CieloPill } from '../ui/CieloPill';
@@ -20,6 +21,9 @@ interface CursoDetalleHeaderProps {
     setBuscar: (val: string) => void;
     isDirty: boolean;
     isSaving: boolean;
+    saveStatus?: 'idle' | 'unsaved' | 'saving' | 'saved' | 'error';
+    saveError?: string | null;
+    onRetrySave?: () => void;
     onSave: () => void;
     isFullScreen: boolean;
     onToggleFullScreen: () => void;
@@ -36,6 +40,10 @@ interface CursoDetalleHeaderProps {
     onPeriodoChange: (p: string) => void;
     onAddActividad: () => void;
     isTutor?: boolean;
+    periodLoading?: boolean;
+    periodError?: string | null;
+    academicWarningsCount?: number;
+    onShowWarnings?: () => void;
 }
 
 const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
@@ -44,6 +52,9 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     setBuscar,
     isDirty,
     isSaving,
+    saveStatus = 'idle',
+    saveError,
+    onRetrySave,
     onSave,
     isFullScreen,
     onToggleFullScreen,
@@ -59,7 +70,11 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     selectedPeriodo,
     onPeriodoChange,
     onAddActividad,
-    isTutor = true
+    isTutor = true,
+    periodLoading = false,
+    periodError = null,
+    academicWarningsCount: _academicWarningsCount = 0,
+    onShowWarnings: _onShowWarnings
 }) => {
     return (
         <div className="flex flex-col gap-4 p-5 md:p-6 bg-white border-b border-(--border-soft) shadow-sm relative z-20">
@@ -94,22 +109,45 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         />
                     </div>
 
-                    <CieloPill
-                        as="button"
-                        onClick={onSave}
-                        disabled={!isDirty || isSaving}
-                        variant={isSaving || !isDirty ? 'disabled' : 'primary'}
-                        className={`gap-3 px-4.5 min-h-10 border ${isSaving ? 'bg-attention border-attention text-white cursor-wait' : isDirty ? 'bg-primary border-primary' : 'bg-white text-primary border-(--border-soft) cursor-default'}`}
-                    >
-                        {isSaving ? (
-                            <Loader2 size={16} className="animate-spin" />
-                        ) : isDirty ? (
-                            <Save size={16} />
-                        ) : (
-                            <Check size={16} className="text-primary font-bold" />
+                    <div className="flex flex-col items-end">
+                        <CieloPill
+                            as="button"
+                            onClick={saveStatus === 'error' ? (onRetrySave || onSave) : onSave}
+                            disabled={isSaving || saveStatus === 'saving' || (saveStatus === 'saved' && !isDirty)}
+                            variant={saveStatus === 'error' ? 'danger' : isSaving || saveStatus === 'saving' ? 'disabled' : isDirty ? 'primary' : 'disabled'}
+                            className={`gap-3 px-4.5 min-h-10 border transition-all ${
+                                saveStatus === 'error'
+                                    ? 'bg-rose-600 border-rose-700 text-white cursor-pointer hover:bg-rose-700 shadow-sm'
+                                    : (isSaving || saveStatus === 'saving')
+                                    ? 'bg-attention border-attention text-white cursor-wait'
+                                    : isDirty
+                                    ? 'bg-primary border-primary text-white cursor-pointer hover:bg-primary/90'
+                                    : 'bg-white text-emerald-700 border-emerald-200 cursor-default'
+                            }`}
+                        >
+                            {isSaving || saveStatus === 'saving' ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : saveStatus === 'error' ? (
+                                <AlertCircle size={16} />
+                            ) : isDirty ? (
+                                <Save size={16} />
+                            ) : (
+                                <Check size={16} className="text-emerald-600 font-bold" />
+                            )}
+                            {isSaving || saveStatus === 'saving'
+                                ? 'GUARDANDO...'
+                                : saveStatus === 'error'
+                                ? 'ERROR AL GUARDAR (REINTENTAR)'
+                                : isDirty
+                                ? 'GUARDAR AHORA'
+                                : 'GUARDADO'}
+                        </CieloPill>
+                        {saveError && (
+                            <span className="text-[10px] text-rose-600 font-medium mt-1 truncate max-w-[200px]" title={saveError}>
+                                {saveError}
+                            </span>
                         )}
-                        {isSaving ? 'GUARDANDO...' : isDirty ? 'GUARDAR AHORA' : 'GUARDADO'}
-                    </CieloPill>
+                    </div>
 
                     <button
                         onClick={onToggleFullScreen}
@@ -121,18 +159,31 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-transparent">
-                <div className="flex items-center gap-1 bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
-                    {['P1', 'P2', 'P3', 'P4'].map(p => (
-                        <CieloPill
-                            as="button"
-                            key={p}
-                            variant={selectedPeriodo === p ? 'neutral' : 'ghost'}
-                            onClick={() => onPeriodoChange(p)}
-                            className={`px-4.5 min-h-9 transition-all border ${selectedPeriodo === p ? 'bg-white text-[#2E3330] border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330] border-transparent'}`}
-                        >
-                            {p}
-                        </CieloPill>
-                    ))}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
+                        {['P1', 'P2', 'P3', 'P4'].map(p => (
+                            <CieloPill
+                                as="button"
+                                key={p}
+                                variant={selectedPeriodo === p ? 'neutral' : 'ghost'}
+                                onClick={() => onPeriodoChange(p)}
+                                disabled={periodLoading}
+                                className={`px-4.5 min-h-9 transition-all border ${selectedPeriodo === p ? 'bg-white text-[#2E3330] border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330] border-transparent'}`}
+                            >
+                                {p}
+                            </CieloPill>
+                        ))}
+                    </div>
+                    {periodLoading && (
+                        <span className="flex items-center gap-1.5 text-xs text-[#5F665E] font-medium animate-pulse">
+                            <Loader2 size={14} className="animate-spin text-primary" /> Cargando {selectedPeriodo}...
+                        </span>
+                    )}
+                    {periodError && (
+                        <span className="flex items-center gap-1 text-xs text-rose-600 font-medium">
+                            <AlertCircle size={14} /> {periodError}
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-4">

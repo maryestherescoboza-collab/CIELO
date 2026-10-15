@@ -77,10 +77,11 @@ export function calculateStudentPeriodBC({
     const filteredActs = actividades.filter(a => {
         const isMyAct = a.cursoId === cursoId;
         const isSharedAct = sharedCourseId && a.sharedCourseId === sharedCourseId && mismaInstitucion(a.cursoId);
-        const matchesPeriod = a.periodo === periodo;
+        const matchesPeriod = a.periodo === periodo || (!a.periodo && periodo === 'P1');
         const isNotRec = a.nombre !== 'Recuperación';
-        const matchesAsignatura = !targetAsignatura || a.asignatura === targetAsignatura;
-        const isMine = !currentUserId || a.userId === currentUserId || !a.userId;
+        // Regla obligatoria: Exigir asignatura válida y coincidencia estricta con targetAsignatura
+        const matchesAsignatura = Boolean(a.asignatura) && (!targetAsignatura || normalizeArea(a.asignatura) === normalizeArea(targetAsignatura));
+        const isMine = !currentUserId || a.userId === currentUserId || !a.userId || a.cursoId === cursoId;
 
         if (!(isMyAct || isSharedAct) || !matchesPeriod || !isNotRec || !matchesAsignatura || !isMine) {
             return false;
@@ -103,10 +104,11 @@ export function calculateStudentPeriodBC({
         r.estudianteId === estudianteId &&
         (r.cursoId === cursoId ||
             (sharedCourseId && r.sharedCourseId === sharedCourseId && mismaInstitucion(r.cursoId))) &&
-        (!targetAsignatura || r.asignatura === targetAsignatura) &&
+        Boolean(r.asignatura) &&
+        (!targetAsignatura || normalizeArea(r.asignatura) === normalizeArea(targetAsignatura)) &&
         Number(r.bc) === bcNum &&
         r.periodo === periodo &&
-        (!currentUserId || r.userId === currentUserId || !r.userId)
+        (!currentUserId || r.userId === currentUserId || !r.userId || r.cursoId === cursoId)
     )?.puntaje ?? null;
 
     const final = (rec !== null && (avg === null || avg < 70)) ? rec : avg;

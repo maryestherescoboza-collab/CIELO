@@ -8,6 +8,8 @@ import RecuperacionCotejoModal from '../components/curso-detalle/RecuperacionCot
 import VincularDocentesModal from '../components/curso-detalle/VincularDocentesModal';
 import AgregarActividadModal from '../components/curso-detalle/AgregarActividadModal';
 import ActivityWorkspace from '../components/curso-detalle/workspace/ActivityWorkspace';
+import { CieloModal } from '../components/ui/CieloModal';
+import { AlertTriangle } from 'lucide-react';
 import type { BCKey, Curso, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, CursoDocente, Estudiante } from '../types';
 import { BC_ICONS, BC_COLOR_THEMES } from '../constants/competencias';
 import { PRODUCTO_FINAL_NAME } from '../constants/productoFinal';
@@ -61,7 +63,7 @@ export default function CursoDetalle(props: Props) {
         cd.cursoId === cursoId && 
         cd.userId === currentUserId &&
         (!urlAsignatura || cd.asignatura === urlAsignatura)
-    ) || state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoId && cd.userId === currentUserId);
+    ) || (urlAsignatura ? undefined : state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoId && cd.userId === currentUserId));
 
     const {
         curso,
@@ -78,7 +80,13 @@ export default function CursoDetalle(props: Props) {
         rubricTarget,
         setRubricTarget,
         isSaving,
-        setIsSaving,
+        saveStatus,
+        saveError,
+        saveCalifs,
+        flushSave,
+        retrySave,
+        restoredFromBackupCount,
+        academicWarnings,
         isDragging,
         setIsDragging,
         focusedCell,
@@ -87,7 +95,6 @@ export default function CursoDetalle(props: Props) {
         setIsFullScreen,
         gradeAnimations,
         localCalifs,
-        localRecs,
         localRecCotejo,
         setCotejoCelda,
         saveCotejo,
@@ -101,7 +108,6 @@ export default function CursoDetalle(props: Props) {
         triggerAnimation,
         isDirty,
         isDirtyCotejo,
-        setIsDirty,
         myAsignatura,
         sharedCourseId
     } = useCursoDetalleData({ state, cursoId, currentUserId, currentCourseRole, onSaveCalificaciones: props.onSaveCalificaciones, onSaveRecuperacionCotejo: props.onSaveRecuperacionCotejo });
@@ -109,9 +115,46 @@ export default function CursoDetalle(props: Props) {
     const [showVincular, setShowVincular] = useState(false);
     const [showAgregarActividad, setShowAgregarActividad] = useState(false);
     const [visibleActivityId, setVisibleActivityId] = useState<number | null>(null);
+    const [showWarningsModal, setShowWarningsModal] = useState(false);
+    const [periodLoading, setPeriodLoading] = useState(false);
+    const [periodError, setPeriodError] = useState<string | null>(null);
+
+    const handlePeriodoChange = async (p: string) => {
+        if (p === selectedPeriodo) return;
+        if (isDirty) {
+            try {
+                await flushSave();
+            } catch (err) {
+                console.error("Error guardando antes de cambiar período:", err);
+            }
+        }
+        setSelectedPeriodo(p);
+        setPeriodLoading(true);
+        setPeriodError(null);
+        try {
+            await loadCursoData(cursoId, p);
+        } catch (err: any) {
+            console.error(`Error al cargar datos del período ${p}:`, err);
+            setPeriodError(`No se pudieron sincronizar los datos de ${p}. Conservando datos existentes.`);
+        } finally {
+            setPeriodLoading(false);
+        }
+    };
+
+    const handleBack = async () => {
+        if (isDirty) {
+            const saved = await flushSave();
+            if (!saved) {
+                const proceed = window.confirm(
+                    'No se pudieron confirmar todas las calificaciones en el servidor. Si sales ahora, algunas modificaciones recientes podrían no guardarse. ¿Deseas salir de todas formas?'
+                );
+                if (!proceed) return;
+            }
+        }
+        navigate('/cursos');
+    };
 
     // Candado para evitar creación concurrente por React Strict Mode o doble petición del usuario.
-    // Combinación de curso, período y asignatura para bloquear de forma específica.
     const creatingPFRef = useRef<string | null>(null);
 
     // Auto-crear Producto Final si no existe para este curso+asignatura+periodo
@@ -131,15 +174,13 @@ export default function CursoDetalle(props: Props) {
         if (!exists && props.onAddActividad && creatingPFRef.current !== pfKey) {
             creatingPFRef.current = pfKey;
             
-            // onAddActividad devuelve una promesa. Capturamos errores de restricción UNIQUE silenciosamente
-            // porque el objetivo es asegurar un máximo de 1 registro.
             Promise.resolve(props.onAddActividad({
                 nombre: PRODUCTO_FINAL_NAME,
                 cursoId,
                 sharedCourseId,
                 periodo: selectedPeriodo,
                 asignatura: myAsignatura,
-                bcAsignados: [],
+                bcAsignados: ['BC1'],
                 userId: currentUserId,
                 fecha: new Date().toISOString().split('T')[0],
                 isProductoFinal: true
@@ -148,29 +189,18 @@ export default function CursoDetalle(props: Props) {
                                           err?.message?.includes('duplicate key') || 
                                           err?.message?.includes('unique constraint');
                 if (isUniqueViolation) {
-                    // Silenciamos SOLO conflictos de unicidad (si la base de datos ya lo creó concurrentemente).
                     console.log('[CursoDetalle] Producto Final ya existe (conflicto de unicidad capturado).');
                 } else {
-                    // Re-lanzar cualquier otro error para que siga el flujo normal de manejo de errores
                     throw err;
                 }
             }).finally(() => {
-                // Liberar el candado tras unos milisegundos por seguridad extra
                 setTimeout(() => { creatingPFRef.current = null; }, 1000);
             });
         }
     }, [curso, cursoId, currentUserId, selectedPeriodo, state.actividades, props.onAddActividad, myAsignatura, sharedCourseId]);
 
     const onSave = async () => {
-        setIsSaving(true);
-        try {
-            if (props.onSaveCalificaciones) {
-                await props.onSaveCalificaciones(localCalifs, localRecs, cursoId);
-            }
-            setIsDirty(false);
-        } finally {
-            setIsSaving(false);
-        }
+        await saveCalifs();
     };
 
     const onAddActividad = () => {
@@ -239,10 +269,13 @@ export default function CursoDetalle(props: Props) {
                 setBuscar={setBuscar}
                 isDirty={isDirty || isDirtyCotejo}
                 isSaving={isSaving}
+                saveStatus={saveStatus}
+                saveError={saveError}
+                onRetrySave={retrySave}
                 onSave={onSave}
                 isFullScreen={isFullScreen}
                 onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
-                onBack={() => navigate('/cursos')}
+                onBack={handleBack}
                 showRecoveryOnly={showRecoveryOnly}
                 setShowRecoveryOnly={setShowRecoveryOnly}
                 evalMode={evalMode}
@@ -252,10 +285,28 @@ export default function CursoDetalle(props: Props) {
                 onShowVincular={() => setShowVincular(true)}
                 onShowEliminarEstudiantes={() => { if(confirm('¿ELIMINAR TODOS LOS ESTUDIANTES?')) deleteEstudiantesCurso(cursoId); }}
                 selectedPeriodo={selectedPeriodo}
-                onPeriodoChange={setSelectedPeriodo}
+                onPeriodoChange={handlePeriodoChange}
+                periodLoading={periodLoading}
+                periodError={periodError}
+                academicWarningsCount={academicWarnings.length}
+                onShowWarnings={() => setShowWarningsModal(true)}
                 onAddActividad={onAddActividad}
                 isTutor={!currentCourseRole || currentCourseRole.rol === 'tutor'}
             />
+
+            {restoredFromBackupCount > 0 && (
+                <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2 flex items-center justify-between text-xs text-emerald-800 font-medium">
+                    <span>
+                        ✓ Se recuperaron exitosamente {restoredFromBackupCount} calificación{restoredFromBackupCount > 1 ? 'es' : ''} no guardada{restoredFromBackupCount > 1 ? 's' : ''} de una sesión previa.
+                    </span>
+                    <button
+                        onClick={onSave}
+                        className="px-3 py-1 bg-emerald-600 text-white rounded text-[11px] font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
+                    >
+                        Guardar ahora
+                    </button>
+                </div>
+            )}
 
             <GradeTable 
                 actividades={actividades}
@@ -353,6 +404,67 @@ onSetCelda={setCotejoCelda}
                 onClose={() => setShowAgregarActividad(false)}
                 onConfirm={confirmAgregarActividad}
             />
+
+            {showWarningsModal && (
+                <CieloModal
+                    isOpen={showWarningsModal}
+                    onClose={() => setShowWarningsModal(false)}
+                    title="Control de Integridad Pedagógica"
+                >
+                    <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+                        <p className="text-sm text-[#5F665E]">
+                            Se han detectado situaciones en las actividades que pueden afectar el cómputo de los promedios. Ninguna calificación ha sido eliminada. Puedes revisarlas o corregirlas a continuación:
+                        </p>
+                        {academicWarnings.length === 0 ? (
+                            <p className="text-xs text-emerald-700 bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                                ✓ Todas las actividades evaluadas están correctamente vinculadas y participando en los promedios.
+                            </p>
+                        ) : (
+                            academicWarnings.map((w, idx) => (
+                                <div key={idx} className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl flex items-start justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <h4 className="text-sm font-bold text-amber-900 flex items-center gap-2">
+                                            <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+                                            {w.actividadNombre}
+                                        </h4>
+                                        <p className="text-xs text-amber-800 leading-relaxed">
+                                            {w.mensaje}
+                                        </p>
+                                    </div>
+                                    {w.tipo === 'sin_competencia' && (
+                                        <button
+                                            onClick={() => {
+                                                onToggleBc(w.actividadId, 'BC1');
+                                            }}
+                                            className="shrink-0 px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm cursor-pointer"
+                                        >
+                                            {w.accionTexto}
+                                        </button>
+                                    )}
+                                    {w.tipo === 'periodo_inconsistente' && props.onUpdateActividad && (
+                                        <button
+                                            onClick={() => {
+                                                props.onUpdateActividad?.(w.actividadId, { periodo: selectedPeriodo });
+                                            }}
+                                            className="shrink-0 px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm cursor-pointer"
+                                        >
+                                            Asignar {selectedPeriodo}
+                                        </button>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                        <div className="flex justify-end pt-2">
+                            <button
+                                onClick={() => setShowWarningsModal(false)}
+                                className="px-4 py-2 bg-[#2E3330] text-white text-xs font-bold uppercase tracking-wider rounded-full hover:bg-black transition-all cursor-pointer"
+                            >
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
+                </CieloModal>
+            )}
         </div>
     );
 }

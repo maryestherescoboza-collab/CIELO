@@ -8,17 +8,17 @@ const DIA = 24 * HORA;
 const DAYS = (d: number) => d * DIA;
 
 export const CACHE_TTL_MS: Record<CacheResource, number> = {
-    centro: DAYS(90),        // 3 meses
-    perfil: DAYS(90),        // 3 meses
-    plantillas: DAYS(180),   // 6 meses
-    cursos: DAYS(14),        // 2 semanas
-    actividades: DAYS(120),  // 4 meses
-    calificaciones: DAYS(30),// 1 mes
-    secuencias: DAYS(30),    // 1 mes
+    centro: DAYS(30),        // 1 mes (baja variabilidad)
+    perfil: DAYS(14),        // 2 semanas
+    plantillas: DAYS(30),    // 1 mes
+    cursos: DAYS(7),         // 1 semana
+    secuencias: DAYS(7),     // 1 semana (metadatos)
+    actividades: 1 * HORA,   // 1 hora (datos operativos)
+    calificaciones: 30 * MINUTO, // 30 minutos (alta frecuencia operativa)
 };
 
 /** Umbral de "próxima actualización": se refresca en segundo plano si está dentro de este margen. */
-export const CACHE_STALE_MARGIN_MS = DAYS(1);
+export const CACHE_STALE_MARGIN_MS = 10 * MINUTO;
 
 export interface CacheResourceConfig {
     key: CacheResource;

@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Check, RotateCcw, AlertCircle } from 'lucide
 import type { AppState, CalificacionActividad, RecuperacionBC } from '../types';
 import { PERIODOS_ACADEMICOS } from '../cache/academicCache';
 import { SELLOS_INFO } from '../constants/sellos';
+import { normalizeArea } from '../utils/academic';
 import { useSupabaseData } from '../hooks/useSupabaseData';
 
 type Paso = 'curso' | 'periodo' | 'actividad' | 'captura' | 'final';
@@ -52,9 +53,15 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
 
     const actividadesCurso = useMemo(
         () => actividades
-            .filter(a => a.cursoId === cursoId && a.periodo === periodo && (a.userId === userId || !a.userId))
+            .filter(a => 
+                a.cursoId === cursoId && 
+                a.periodo === periodo && 
+                (a.userId === userId || !a.userId) &&
+                Boolean(a.asignatura) &&
+                (!curso?.asignatura || normalizeArea(a.asignatura) === normalizeArea(curso.asignatura))
+            )
             .sort((a, b) => b.id - a.id),
-        [actividades, cursoId, periodo, userId]
+        [actividades, cursoId, periodo, userId, curso?.asignatura]
     );
 
     const actividad = useMemo(
@@ -184,7 +191,12 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                 <p className="text-[13px] font-bold text-gray-500 mb-3 uppercase tracking-wide">¿Qué período calificarás?</p>
                 <div className="grid grid-cols-2 gap-3">
                     {PERIODOS_ACADEMICOS.map(p => {
-                        const n = actividades.filter(a => a.cursoId === curso.id && a.periodo === p).length;
+                        const n = actividades.filter(a => 
+                            a.cursoId === curso.id && 
+                            a.periodo === p && 
+                            Boolean(a.asignatura) && 
+                            (!curso.asignatura || normalizeArea(a.asignatura) === normalizeArea(curso.asignatura))
+                        ).length;
                         return (
                             <button
                                 key={p}

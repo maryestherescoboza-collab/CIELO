@@ -142,6 +142,7 @@ interface AppRoutesProps {
   reordenarEstudiantePosicion: any;
   addIncidencia: any;
   deleteIncidencia: any;
+  updateIncidencia?: any;
   addSecuencia: any;
   updateSecuencia: any;
   deleteSecuencia: any;
@@ -181,7 +182,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   addActividad, updateActividad, deleteActividad, saveCalificaciones, saveRecuperacionCotejo,
   addCurso, deleteCurso, saveCurso, toggleDocenteCurso, updateDocenteAsignatura, updateDocenteDias,
   addEstudiante, updateEstudiante, deleteEstudiante, addEstudianteEnPosicion, reordenarEstudiantePosicion,
-  addIncidencia, deleteIncidencia,
+  addIncidencia, deleteIncidencia, updateIncidencia,
   addSecuencia, updateSecuencia, deleteSecuencia,
   addPost, reportPost, importResource, deletePost,
   refresh, syncDelete, sendNotification,
@@ -294,7 +295,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/curso-detalle" element={renderCourseDetail()} />
       <Route path="/curso-detalle/:id" element={<CourseDetailRouteWrapper setSelectedCursoId={setSelectedCursoId} renderCourseDetail={renderCourseDetail} />} />
       <Route path="/print-boletines/:cursoId" element={<PrintBoletines state={state} docenteNombre={docenteNombre} />} />
-      <Route path="/incidencias" element={<Incidencias state={state} onAddIncidencia={addIncidencia} onDeleteIncidencia={deleteIncidencia} />} />
+      <Route path="/incidencias" element={<Incidencias state={state} onAddIncidencia={addIncidencia} onDeleteIncidencia={deleteIncidencia} onUpdateIncidencia={updateIncidencia} />} />
       <Route path="/calendario" element={<Calendario onAddActividad={addActividad} />} />
       <Route element={<PlanClasesLayout />}>
         <Route path="/planificacion" element={<Planificacion onAddSecuencia={addSecuencia} onUpdateSecuencia={updateSecuencia} onDeleteSecuencia={deleteSecuencia} />} />

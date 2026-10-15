@@ -39,6 +39,7 @@ import { useProcesarVinculo } from './hooks/useProcesarVinculo';
 import { useShallow } from 'zustand/react/shallow';
 import { analizarRolAcceso } from './utils/autorizacion';
 import { PORTAL_FAMILIA_ENABLED } from './config/features';
+import { normalizeArea } from './utils/academic';
 
 export default function App() {
   useSupabaseAuth();
@@ -122,16 +123,27 @@ export default function App() {
   const visibleActividades = useMemo(() => {
     const isMine = (a: any) => a.userId === session?.user?.id || !a.userId;
     if (!selectedCursoId) return state.actividades.filter(isMine);
+    const targetAsig = currentCourseRole?.asignatura || state.cursos.find((c: any) => c.id === selectedCursoId)?.asignatura;
     const baseFilter = (a: any) => a.cursoId === selectedCursoId && isMine(a);
-    if (!currentCourseRole || currentCourseRole.rol === 'tutor') return state.actividades.filter(baseFilter);
-    return state.actividades.filter((a: any) => baseFilter(a) && a.asignatura === currentCourseRole.asignatura);
-  }, [state.actividades, selectedCursoId, currentCourseRole, session?.user?.id]);
+    if (!targetAsig) return state.actividades.filter(baseFilter);
+    return state.actividades.filter((a: any) => 
+      baseFilter(a) && 
+      Boolean(a.asignatura) && 
+      normalizeArea(a.asignatura) === normalizeArea(targetAsig)
+    );
+  }, [state.actividades, state.cursos, selectedCursoId, currentCourseRole, session?.user?.id]);
 
   const visibleCalificaciones = useMemo(() => {
     const baseFilter = (c: any) => c.cursoId === selectedCursoId;
-    if (!currentCourseRole || currentCourseRole.rol === 'tutor') return state.calificaciones.filter(baseFilter);
-    return state.calificaciones.filter((c: any) => baseFilter(c) && c.asignatura === currentCourseRole.asignatura);
-  }, [state.calificaciones, selectedCursoId, currentCourseRole]);
+    if (!selectedCursoId) return state.calificaciones;
+    const targetAsig = currentCourseRole?.asignatura || state.cursos.find((c: any) => c.id === selectedCursoId)?.asignatura;
+    if (!targetAsig) return state.calificaciones.filter(baseFilter);
+    return state.calificaciones.filter((c: any) => 
+      baseFilter(c) && 
+      Boolean(c.asignatura) && 
+      normalizeArea(c.asignatura) === normalizeArea(targetAsig)
+    );
+  }, [state.calificaciones, state.cursos, selectedCursoId, currentCourseRole]);
 
   const activeInstituto = useMemo(() => {
     if (selectedCursoId) {

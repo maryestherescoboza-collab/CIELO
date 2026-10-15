@@ -8,6 +8,7 @@ import type {
 } from '../types';
 import { calcularResultadoRecuperacion, puntajeActualBC, actividadesParaRecuperacion, totalEvidenciasPorBC } from '../utils/recuperacion';
 import { clearPlantillaCache } from '../cache/plantillaCache';
+import { upsertAcademicRow } from '../cache/academicCache';
 
 export function useEvaluationActions() {
     const state = useAppStore(s => s.state);
@@ -83,6 +84,7 @@ export function useEvaluationActions() {
                             ? s.actividades
                             : [...s.actividades, existingAct]
                     }));
+                    upsertAcademicRow('actividades', existingAct, existingAct.cursoId, existingAct.periodo ?? null, false);
                     return existingAct;
                 }
                 return null;
@@ -112,6 +114,7 @@ export function useEvaluationActions() {
                 producto: actData[0].producto
             };
             setState(s => ({ ...s, actividades: [...s.actividades, newAct] }));
+            upsertAcademicRow('actividades', newAct, newAct.cursoId, newAct.periodo ?? null, false);
             return newAct;
         }
         return null;
@@ -135,7 +138,10 @@ export function useEvaluationActions() {
             return;
         }
 
-        const dbCalifs = califs.map(c => {
+        const validCalifs = califs.filter(c => c.estudianteId > 0 && c.actividadId > 0);
+        const validRecs = recs.filter(r => r.estudianteId > 0);
+
+        const dbCalifs = validCalifs.map(c => {
             const act = state.actividades.find(a => a.id === c.actividadId);
             const student = state.estudiantes.find(e => e.id === c.estudianteId);
             return {
@@ -153,7 +159,7 @@ export function useEvaluationActions() {
             };
         });
 
-        const dbRecs = recs.map(r => {
+        const dbRecs = validRecs.map(r => {
             const student = state.estudiantes.find(e => e.id === r.estudianteId);
             const cursoRec = state.cursos.find(c => c.id === r.cursoId);
             return {
@@ -195,23 +201,31 @@ export function useEvaluationActions() {
                     hint: r.error?.hint,
                     code: r.error?.code
                 }));
+                const firstErr = upsertErrors[0].error;
+                throw new Error(firstErr?.message || 'Error al persistir calificaciones en Supabase');
             }
             console.log('[DEBUG] 6. Supabase responde exitosamente (upsert resuelto).');
             setState(s => {
                 console.log('[DEBUG] 7. Actualizando estado global de Zustand con las recuperaciones...');
                 const nextCalifs = [...s.calificaciones];
-                califs.forEach(newC => {
+                validCalifs.forEach(newC => {
                     const idx = nextCalifs.findIndex(oc => oc.estudianteId === newC.estudianteId && oc.actividadId === newC.actividadId);
                     if (idx !== -1) nextCalifs[idx] = newC; else nextCalifs.push(newC);
                 });
                 const nextRecs = [...s.recuperaciones];
-                recs.forEach(nr => {
+                validRecs.forEach(nr => {
                     const idx = nextRecs.findIndex(or => or.estudianteId === nr.estudianteId && or.cursoId === nr.cursoId && or.bc === nr.bc && or.periodo === nr.periodo && or.asignatura === nr.asignatura);
                     if (idx !== -1) nextRecs[idx] = nr; else nextRecs.push(nr);
                 });
                 return { ...s, calificaciones: nextCalifs, recuperaciones: nextRecs };
             });
+
+            // Write-through a las slices académicas en memoria
+            validCalifs.forEach(c => {
+                upsertAcademicRow('calificaciones', c, cursoId, c.periodo ?? null, false);
+            });
         }
+        return { success: true, count: validCalifs.length };
     }, [session, selectedCursoId, state, setState]);
 
     // ============================================================
@@ -958,11 +972,13 @@ export function useEvaluationActions() {
 
         if (!error) {
             setState(s => ({ ...s, actividades: s.actividades.map(a => a.id === merged.id ? merged : a) }));
+            upsertAcademicRow('actividades', merged, merged.cursoId, merged.periodo ?? null, false);
         }
     }, [session, state.actividades, setState]);
 
     const deleteActividad = useCallback(async (id: number) => {
         // Real physical delete
+        const targetAct = state.actividades.find(a => a.id === id);
         const { data, error } = await supabase.from('actividades').delete().eq('id', id).select();
         
         if (error) {
@@ -978,8 +994,11 @@ export function useEvaluationActions() {
         }
         
         setState(s => ({ ...s, actividades: s.actividades.filter(a => a.id !== id) }));
+        if (targetAct) {
+            upsertAcademicRow('actividades', targetAct, targetAct.cursoId, targetAct.periodo ?? null, true);
+        }
         setGenericToast({ message: 'Actividad eliminada permanentemente', type: 'success' });
-    }, [setState]);
+    }, [state.actividades, setState, setGenericToast]);
 
     const resetSchoolYear = useCallback(async () => {
         if (!session?.user?.id) return;

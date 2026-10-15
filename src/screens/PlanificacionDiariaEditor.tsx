@@ -4,6 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Printer, Sparkles, X, Plus, Paintbrush } from 'lucide-react';
 import type { AppState, Secuencia, Curso } from '../types';
 import { useAppStore } from '../store/appStore';
+import { supabase } from '../lib/supabase';
+import { getValidSecuencia, saveSecuencia } from '../cache/secuenciaCache';
 import { getAIAIProvider, isProviderConfigured, providerDisplayName, saveAIKey } from '../lib/aiConfig';
 import { getPlanificacionDiariaTemplate } from '../templates/planificacion-diaria';
 import {
@@ -224,21 +226,103 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
 
     useEffect(() => {
         if (esPlantilla) return;
-        // If data is loading or empty, wait a bit or check if it exists
-        const found = state.secuencias.find(s => s.id === Number(id));
+        const numId = Number(id);
+        if (!numId) return;
+
+        let isMounted = true;
+        const found = state.secuencias.find(s => s.id === numId);
+
         if (found) {
-            setSeq(found);
             setLocalTitulo(found.titulo);
             setLocalCursoId(found.cursoId);
-            setLoading(false);
-        } else {
-            // If state.secuencias is empty, maybe wait for loading.
-            // But if it's populated and still not found, we stop loading
-            if (state.secuencias.length > 0) {
+
+            // Si ya tiene contenidoHtml, usarlo directamente
+            if (found.contenidoHtml) {
+                setSeq(found);
                 setLoading(false);
+                return;
             }
+
+            // Si no tiene contenidoHtml, intentar leer de secuenciaCache o Supabase bajo demanda
+            const cached = getValidSecuencia(session?.user?.id, found.cursoId, numId);
+            if (cached?.contenidoHtml) {
+                setSeq(cached);
+                setLoading(false);
+                return;
+            }
+
+            // Descarga puntual exclusiva del contenidoHtml de esta secuencia
+            void (async () => {
+                const { data } = await supabase
+                    .from('secuencias')
+                    .select('id, contenido_html, recursos')
+                    .eq('id', numId)
+                    .single();
+
+                if (!isMounted) return;
+
+                const fullSeq: Secuencia = {
+                    ...found,
+                    contenidoHtml: data?.contenido_html || '',
+                    recursos: data?.recursos ? (Array.isArray(data.recursos) ? data.recursos : (() => { try { return JSON.parse(data.recursos); } catch { return []; } })()) : found.recursos
+                };
+
+                setSeq(fullSeq);
+                setLoading(false);
+                if (session?.user?.id) {
+                    saveSecuencia(session.user.id, fullSeq);
+                }
+                useAppStore.getState().setAppState(s => ({
+                    ...s,
+                    secuencias: s.secuencias.map(item => item.id === numId ? fullSeq : item)
+                }));
+            })();
+        } else {
+            // Si no está en state.secuencias, intentar cargarlo directamente de Supabase
+            void (async () => {
+                try {
+                    const { data } = await supabase
+                        .from('secuencias')
+                        .select('*')
+                        .eq('id', numId)
+                        .single();
+
+                    if (!isMounted) return;
+                    if (data) {
+                        const fetchedSeq: Secuencia = {
+                            id: data.id,
+                            titulo: data.titulo,
+                            cursoId: data.curso_id,
+                            fechaInicio: data.fecha_inicio,
+                            contenidoHtml: data.contenido_html || '',
+                            estado: data.estado,
+                            userId: data.user_id,
+                            archivoUrl: data.archivo_url,
+                            archivoNombre: data.archivo_nombre,
+                            archivoSize: data.archivo_size,
+                            archivoTipo: data.archivo_tipo,
+                            archivoFechaCarga: data.archivo_fecha_carga,
+                            recursos: Array.isArray(data.recursos) ? data.recursos : (() => { try { return JSON.parse(data.recursos); } catch { return []; } })()
+                        };
+                        setSeq(fetchedSeq);
+                        setLocalTitulo(fetchedSeq.titulo);
+                        setLocalCursoId(fetchedSeq.cursoId);
+                        if (session?.user?.id) {
+                            saveSecuencia(session.user.id, fetchedSeq);
+                        }
+                    }
+                } finally {
+                    if (isMounted) {
+                        setLoading(false);
+                    }
+                }
+            })();
         }
-    }, [id, state.secuencias, esPlantilla]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [id, state.secuencias, esPlantilla, session?.user?.id]);
 
     useEffect(() => {
         if (!esPlantilla) return;

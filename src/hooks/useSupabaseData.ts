@@ -498,26 +498,8 @@ export function useSupabaseData(skipInit = false) {
             console.log('[DEBUG LOAD] Actualizando estado global de Zustand (Zustand setState) INICIO');
             const startZustand = performance.now();
 
-            // Phase 1.5: Load registros anecdóticos + imágenes for Dashboard
-            const { data: registrosRaw } = await supabase
-                .from('registros_anecdoticos')
-                .select('*')
-                .eq('profile_id', session.user.id)
-                .eq('activo', true)
-                .order('created_at', { ascending: false });
-
-            const registrosAnecdoticos = (registrosRaw || []).map(mapRegistroAnecdotico);
-            const registroIds = registrosAnecdoticos.map(r => r.id);
-
-            let registroImagenes: RegistroImagen[] = [];
-            if (registroIds.length > 0) {
-                const { data: imagenesRaw } = await supabase
-                    .from('registro_imagenes')
-                    .select('*')
-                    .in('registro_id', registroIds);
-                registroImagenes = (imagenesRaw || []).map(mapRegistroImagen);
-            }
-
+            // La carga de registros anecdóticos e imágenes se difiere a loadDashboardData
+            // para no demorar la inicialización del contexto core de la sesión.
             setState(prev => {
                 const mappedDocentes = Array.from(new Map<string, Docente>([
                     ...(perfiles || []).map((p: Record<string, unknown>): [string, Docente] => [p.nombre as string || p.nombre_docente as string, {
@@ -596,8 +578,8 @@ export function useSupabaseData(skipInit = false) {
                     suscripcionActual: resolvedSuscripcionActual,
                     centroRolActual: resolvedCentroRolActual,
                     centros: Array.from(centrosMap.values()),
-                    registrosAnecdoticos,
-                    registroImagenes
+                    registrosAnecdoticos: prev.registrosAnecdoticos,
+                    registroImagenes: prev.registroImagenes
                 };
             });
             console.log(`[DEBUG LOAD] Actualizando estado global de Zustand (Zustand setState) FIN: ${Math.round(performance.now() - startZustand)}ms`);
@@ -796,13 +778,10 @@ export function useSupabaseData(skipInit = false) {
         return () => clearInterval(interval);
     }, [skipInit, session?.user?.id, fetchData]);
 
+    // 3. Setup user-scoped global Realtime subscription (notificaciones + anecdóticos)
     useEffect(() => {
         if (skipInit || !session?.user?.id) return;
 
-        // 3. Setup selective Realtime subscriptions
-        const userChannels: any[] = [];
-
-        // Channel A: User-scoped global events (notifications, anecdóticos, and posts)
         const userGlobalChannelName = `user-global-${session.user.id}`;
         console.log(`[REALTIME] CREATE canal=${userGlobalChannelName}`);
         const userGlobalChannel = supabase.channel(userGlobalChannelName)
@@ -856,32 +835,32 @@ export function useSupabaseData(skipInit = false) {
             })
             .subscribe();
 
-        userChannels.push(userGlobalChannel);
+        return () => {
+            console.log(`[REALTIME] REMOVE canal=${userGlobalChannel.topic}`);
+            supabase.removeChannel(userGlobalChannel);
+        };
+    }, [skipInit, session?.user?.id, setState]);
 
-        // Channel B: Course-specific events (only active if selectedCursoId is set!)
-        let courseChannel: any = null;
-        if (selectedCursoId) {
-            const courseChannelName = `curso-context-${selectedCursoId}`;
-            console.log(`[REALTIME] CREATE canal=${courseChannelName} curso=${selectedCursoId}`);
-            courseChannel = supabase.channel(courseChannelName)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'calificaciones', filter: `curso_id=eq.${selectedCursoId}` }, handleCalificacionRealtime)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_detalle', filter: `curso_id=eq.${selectedCursoId}` }, handleCursoDetalleRealtime)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'actividades', filter: `curso_id=eq.${selectedCursoId}` }, handleActividadesRealtime)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'estudiantes', filter: `curso_id=eq.${selectedCursoId}` }, handleEstudiantesRealtime)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones', filter: `curso_id=eq.${selectedCursoId}` }, handleRecuperacionRealtime)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones_cotejo', filter: `curso_id=eq.${selectedCursoId}` }, handleRecuperacionCotejoRealtime)
-                .subscribe();
-                
-            userChannels.push(courseChannel);
-        }
+    // 4. Setup course-specific Realtime subscription (only active if selectedCursoId is set)
+    useEffect(() => {
+        if (skipInit || !selectedCursoId) return;
+
+        const courseChannelName = `curso-context-${selectedCursoId}`;
+        console.log(`[REALTIME] CREATE canal=${courseChannelName} curso=${selectedCursoId}`);
+        const courseChannel = supabase.channel(courseChannelName)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'calificaciones', filter: `curso_id=eq.${selectedCursoId}` }, handleCalificacionRealtime)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'curso_detalle', filter: `curso_id=eq.${selectedCursoId}` }, handleCursoDetalleRealtime)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'actividades', filter: `curso_id=eq.${selectedCursoId}` }, handleActividadesRealtime)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'estudiantes', filter: `curso_id=eq.${selectedCursoId}` }, handleEstudiantesRealtime)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones', filter: `curso_id=eq.${selectedCursoId}` }, handleRecuperacionRealtime)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'recuperaciones_cotejo', filter: `curso_id=eq.${selectedCursoId}` }, handleRecuperacionCotejoRealtime)
+            .subscribe();
 
         return () => {
-            userChannels.forEach(ch => {
-                console.log(`[REALTIME] REMOVE canal=${ch.topic}`);
-                supabase.removeChannel(ch);
-            });
+            console.log(`[REALTIME] REMOVE canal=${courseChannel.topic}`);
+            supabase.removeChannel(courseChannel);
         };
-    }, [skipInit, session?.user?.id, selectedCursoId, handleCalificacionRealtime, handleCursoDetalleRealtime, handleActividadesRealtime, handleEstudiantesRealtime, handleRecuperacionRealtime, handleRecuperacionCotejoRealtime]);
+    }, [skipInit, selectedCursoId, handleCalificacionRealtime, handleCursoDetalleRealtime, handleActividadesRealtime, handleEstudiantesRealtime, handleRecuperacionRealtime, handleRecuperacionCotejoRealtime]);
 
     const loadDashboardData = useCallback(async () => {
         if (!session?.user?.id) { console.log(`[DIAG][DASH] guard sin-sesion ts=${new Date().toISOString()}`); return; }
@@ -968,29 +947,55 @@ export function useSupabaseData(skipInit = false) {
 
             console.log(`[PLANIFICACION] Dashboard queries (isCentroAdmin: ${isCentroAdmin}, cursos: ${cursosParticipaIds.length})`);
 
+            const currentAppState = useAppStore.getState().state;
+            const tieneCalendarioMinerd = (currentAppState.calendarioMinerd?.length ?? 0) > 0;
+            const tieneEventos = (currentAppState.eventos?.length ?? 0) > 0;
+            const tieneAnecdoticos = (currentAppState.registrosAnecdoticos?.length ?? 0) > 0;
+
+            const tareasInstQuery = userCentroId
+                ? supabase.from('tareas_institucionales').select('*').eq('centro_id', userCentroId)
+                : supabase.from('tareas_institucionales').select('*');
+
+            const anecdoticosQuery = tieneAnecdoticos
+                ? Promise.resolve({ data: null, error: null })
+                : supabase.from('registros_anecdoticos').select('*').eq('profile_id', session.user.id).eq('activo', true).order('created_at', { ascending: false });
+
             const results = await Promise.all([
                 supabase.from('estudiantes').select('*').eq('activo', true).in('curso_id', cursosParticipaIds.length > 0 ? cursosParticipaIds : [-1]),
                 userFilter(activeQuery('actividades')),
                 userOrTutorFilter(activeQuery('calificaciones')),
                 incidenciasQuery,
-                supabase.from('eventos').select('*'),
+                tieneEventos ? Promise.resolve({ data: null, error: null }) : supabase.from('eventos').select('*'),
                 supabase.from('notificaciones').select('*').eq('user_id', session.user.id).eq('leida', false).order('created_at', { ascending: false }),
                 supabase.from('grupos').select('*'),
-                supabase.from('tareas_institucionales').select('*'),
+                tareasInstQuery,
                 supabase.from('tarea_docente').select('*'),
-                supabase.from('calendario_minerd').select('*')
+                tieneCalendarioMinerd ? Promise.resolve({ data: null, error: null }) : supabase.from('calendario_minerd').select('*'),
+                anecdoticosQuery
             ]);
 
             const estudiantes = results[0].data || [];
             const actividades = results[1].data || [];
             const calificaciones = results[2].data || [];
             const incidencias = results[3].data || [];
-            const eventos = results[4].data || [];
+            const eventos = results[4].data;
             const notificaciones = results[5].data || [];
             const grupos = results[6].data || [];
             const tareas = results[7].data || [];
             const tareaAsignaciones = results[8].data || [];
-            const calendarioMinerd = results[9].data || [];
+            const calendarioMinerd = results[9].data;
+            const anecdoticosRaw = results[10].data;
+
+            let registrosAnecdoticos = currentAppState.registrosAnecdoticos;
+            let registroImagenes = currentAppState.registroImagenes;
+            if (Array.isArray(anecdoticosRaw)) {
+                registrosAnecdoticos = anecdoticosRaw.map(mapRegistroAnecdotico);
+                const regIds = registrosAnecdoticos.map(r => r.id);
+                if (regIds.length > 0) {
+                    const { data: imgRaw } = await supabase.from('registro_imagenes').select('*').in('registro_id', regIds);
+                    registroImagenes = (imgRaw || []).map(mapRegistroImagen);
+                }
+            }
 
             const stAntes = useAppStore.getState().state;
             console.log(`[DIAG][DASH] SUPABASE_FETCH user=${session.user.id} isCentroAdmin=${isCentroAdmin} cursosParticipa=${cursosParticipaIds.length} estudiantes=${estudiantes.length} actividades=${actividades.length} calificaciones=${calificaciones.length} incidencias=${incidencias.length} grupos=${grupos.length} ts=${new Date().toISOString()}`);
@@ -1014,27 +1019,31 @@ export function useSupabaseData(skipInit = false) {
                     centroId: (i.centro_id as string) || ''
                 }));
 
-                const mappedEventos = (eventos || []).map((ev: Record<string, unknown>): EventoCalendario => ({
-                    id: ev.id as number,
-                    titulo: ev.titulo as string,
-                    fecha: ev.fecha as string,
-                    tipo: ev.tipo as EventoCalendario['tipo'],
-                    descripcion: (ev.descripcion as string) || undefined,
-                    fechaInicio: (ev.fecha_inicio as string) || undefined,
-                    fechaFin: (ev.fecha_fin as string) || undefined,
-                    updatedAt: (ev.updated_at as string) || undefined,
-                }));
+                const mappedEventos = eventos !== null
+                    ? (eventos || []).map((ev: Record<string, unknown>): EventoCalendario => ({
+                        id: ev.id as number,
+                        titulo: ev.titulo as string,
+                        fecha: ev.fecha as string,
+                        tipo: ev.tipo as EventoCalendario['tipo'],
+                        descripcion: (ev.descripcion as string) || undefined,
+                        fechaInicio: (ev.fecha_inicio as string) || undefined,
+                        fechaFin: (ev.fecha_fin as string) || undefined,
+                        updatedAt: (ev.updated_at as string) || undefined,
+                    }))
+                    : prev.eventos;
 
-                const mappedCalendarioMinerd = (calendarioMinerd || []).map((ev: Record<string, unknown>): EventoCalendario => ({
-                    id: ev.id as number,
-                    titulo: ev.titulo as string,
-                    fecha: ev.fecha_inicio as string,
-                    tipo: ev.tipo as EventoCalendario['tipo'],
-                    descripcion: (ev.descripcion as string) || undefined,
-                    fechaInicio: (ev.fecha_inicio as string) || undefined,
-                    fechaFin: (ev.fecha_fin as string) || undefined,
-                    updatedAt: (ev.updated_at as string) || undefined,
-                }));
+                const mappedCalendarioMinerd = calendarioMinerd !== null
+                    ? (calendarioMinerd || []).map((ev: Record<string, unknown>): EventoCalendario => ({
+                        id: ev.id as number,
+                        titulo: ev.titulo as string,
+                        fecha: ev.fecha_inicio as string,
+                        tipo: ev.tipo as EventoCalendario['tipo'],
+                        descripcion: (ev.descripcion as string) || undefined,
+                        fechaInicio: (ev.fecha_inicio as string) || undefined,
+                        fechaFin: (ev.fecha_fin as string) || undefined,
+                        updatedAt: (ev.updated_at as string) || undefined,
+                    }))
+                    : prev.calendarioMinerd;
 
                 const mappedTareas = (tareas || []).map((t: Record<string, unknown>): TareaInstitucional => ({
                     id: t.id as string,
@@ -1094,7 +1103,9 @@ export function useSupabaseData(skipInit = false) {
                     calendarioMinerd: mappedCalendarioMinerd,
                     tareas: mappedTareas,
                     notificaciones: mappedNotificaciones,
-                    grupos: mappedGrupos
+                    grupos: mappedGrupos,
+                    registrosAnecdoticos,
+                    registroImagenes
                 };
             });
             const st2 = useAppStore.getState().state;
@@ -1168,8 +1179,15 @@ export function useSupabaseData(skipInit = false) {
         }
         if (!skipInit) setLoading(true);
         try {
+            const currentCursosLoaded = useAppStore.getState().loadedCursos;
+            const currentEstudiantesState = useAppStore.getState().state.estudiantes;
+            const cursoYaCargado = currentCursosLoaded.includes(cursoId);
+            const yaTieneEstudiantes = cursoYaCargado && currentEstudiantesState.some(e => e.cursoId === cursoId);
+
             const baseQueries: any[] = [
-                supabase.from('estudiantes').select('*').eq('activo', true).eq('curso_id', cursoId),
+                yaTieneEstudiantes
+                    ? Promise.resolve({ data: null, error: null })
+                    : supabase.from('estudiantes').select('*').eq('activo', true).eq('curso_id', cursoId),
             ];
 
             if (faltantesAct.length > 0) {
@@ -1194,19 +1212,27 @@ export function useSupabaseData(skipInit = false) {
             }
 
             baseQueries.push(
-                supabase.from('recuperaciones').select('*').eq('curso_id', cursoId),
-                supabase.from('curso_detalle').select('*').eq('curso_id', cursoId),
-                supabase.from('recuperaciones_cotejo').select('*').eq('curso_id', cursoId)
+                cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('recuperaciones').select('*').eq('curso_id', cursoId),
+                cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('curso_detalle').select('*').eq('curso_id', cursoId),
+                cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('recuperaciones_cotejo').select('*').eq('curso_id', cursoId)
             );
 
             const results = await Promise.all(baseQueries);
 
-            const estudiantes: any[] = results[0].data || [];
-            const actividades: any[] = results[1].data || [];
-            const calificaciones: any[] = results[2].data || [];
-            const recuperaciones: any[] = results[3].data || [];
-            const cursoDetalle: any[] = results[4].data || [];
-            const recuperacionesCotejo: any[] = results[5].data || [];
+            const actQueryFailed = !!results[1]?.error;
+            const calQueryFailed = !!results[2]?.error;
+            const estQueryFailed = !!results[0]?.error;
+
+            if (actQueryFailed) {
+                console.error(`[DIAG][CURSO] ERROR Supabase al consultar actividades curso=${cursoId}:`, results[1].error);
+            }
+            if (calQueryFailed) {
+                console.error(`[DIAG][CURSO] ERROR Supabase al consultar calificaciones curso=${cursoId}:`, results[2].error);
+            }
+
+            const estudiantes: any[] = (!estQueryFailed && results[0]?.data) ? results[0].data : [];
+            const actividades: any[] = (!actQueryFailed && results[1]?.data) ? results[1].data : [];
+            const calificaciones: any[] = (!calQueryFailed && results[2]?.data) ? results[2].data : [];
 
             const mappedAct = actividades.map((a: Record<string, unknown>) => mapActividad(a, stateCursos));
             const mappedCal = calificaciones.map((c: Record<string, unknown>) => mapCalificacion(c, stateCursos));
@@ -1216,15 +1242,23 @@ export function useSupabaseData(skipInit = false) {
             console.log(`[DIAG][CURSO] STATE_BEFORE_MERGE cursoId=${cursoId} actividadesCurso=${antesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
 
             setState(prev => {
-                const mappedEst = estudiantes.map((e: any) => mapEstudiante(e));
-                const mappedRec = recuperaciones.map((r: any) => mapRecuperacion(r, stateCursos));
-                const mappedDet = cursoDetalle.map((cd: any) => mapCursoDetalle(cd));
-                const mappedRecCotejo = recuperacionesCotejo.map((r: Record<string, unknown>) => mapRecuperacionCotejo(r));
+                const mappedEst = (!estQueryFailed && results[0]?.data) ? results[0].data.map((e: any) => mapEstudiante(e)) : null;
+                const mappedRec = results[3]?.data ? results[3].data.map((r: any) => mapRecuperacion(r, stateCursos)) : null;
+                const mappedDet = results[4]?.data ? results[4].data.map((cd: any) => mapCursoDetalle(cd)) : null;
+                const mappedRecCotejo = results[5]?.data ? results[5].data.map((r: Record<string, unknown>) => mapRecuperacionCotejo(r)) : null;
 
-                const mergedEst = [...prev.estudiantes.filter(e => e.cursoId !== cursoId), ...mappedEst];
-                const mergedRec = [...prev.recuperaciones.filter(r => r.cursoId !== cursoId), ...mappedRec];
-                const mergedDet = [...prev.cursoDetalle.filter(cd => cd.cursoId !== cursoId), ...mappedDet];
-                const mergedRecCotejo = [...prev.recuperacionesCotejo.filter(r => r.cursoId !== cursoId), ...mappedRecCotejo];
+                const mergedEst = mappedEst !== null
+                    ? [...prev.estudiantes.filter(e => e.cursoId !== cursoId), ...mappedEst]
+                    : prev.estudiantes;
+                const mergedRec = mappedRec !== null
+                    ? [...prev.recuperaciones.filter(r => r.cursoId !== cursoId), ...mappedRec]
+                    : prev.recuperaciones;
+                const mergedDet = mappedDet !== null
+                    ? [...prev.cursoDetalle.filter(cd => cd.cursoId !== cursoId), ...mappedDet]
+                    : prev.cursoDetalle;
+                const mergedRecCotejo = mappedRecCotejo !== null
+                    ? [...prev.recuperacionesCotejo.filter(r => r.cursoId !== cursoId), ...mappedRecCotejo]
+                    : prev.recuperacionesCotejo;
 
                 const next: AppState = {
                     ...prev,
@@ -1235,9 +1269,8 @@ export function useSupabaseData(skipInit = false) {
                 };
 
                 // Merge por ID dentro de los períodos descargados: NUNCA se reemplaza
-                // el estado completo del curso con una respuesta parcial. Los períodos
-                // no descargados se conservan intactos.
-                if (faltantesAct.length > 0) {
+                // el estado completo del curso con una respuesta parcial o fallida.
+                if (faltantesAct.length > 0 && !actQueryFailed) {
                     const actSet = new Set(faltantesAct);
                     next.actividades = [
                         ...prev.actividades.filter(a => !(a.cursoId === cursoId && (
@@ -1246,7 +1279,7 @@ export function useSupabaseData(skipInit = false) {
                         ...mappedAct
                     ];
                 }
-                if (faltantesCal.length > 0) {
+                if (faltantesCal.length > 0 && !calQueryFailed) {
                     const calSet = new Set(faltantesCal);
                     next.calificaciones = [
                         ...prev.calificaciones.filter(c => !(c.cursoId === cursoId && c.periodo && calSet.has(c.periodo))),
@@ -1260,28 +1293,33 @@ export function useSupabaseData(skipInit = false) {
             const despuesMerge = useAppStore.getState().state;
             console.log(`[DIAG][CURSO] STATE_AFTER_MERGE cursoId=${cursoId} actividadesCurso=${despuesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${despuesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${despuesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
 
-            // Guardar slices por PERÍODO consultado (datos fuente, idénticos a state).
-            for (const p of faltantesAct) {
-                if (p === NULL_PERIODO_TOKEN) {
-                    saveAcademicSlice(userId, centroId, cursoId, NULL_PERIODO_TOKEN, {
-                        actividades: mappedAct.filter(a => !a.periodo),
-                        calificaciones: [],
+            // Guardar slices por PERÍODO consultado (SOLO si no hubo fallo de consulta).
+            if (!actQueryFailed && !calQueryFailed) {
+                for (const p of faltantesAct) {
+                    if (p === NULL_PERIODO_TOKEN) {
+                        saveAcademicSlice(userId, centroId, cursoId, NULL_PERIODO_TOKEN, {
+                            actividades: mappedAct.filter(a => !a.periodo),
+                            calificaciones: [],
+                        });
+                        continue;
+                    }
+                    const actividadesSlice = mappedAct.filter(a => a.periodo === p);
+                    const calificacionesSlice = faltantesCal.includes(p)
+                        ? mappedCal.filter(c => c.periodo === p)
+                        : (getValidAcademicSlice(userId, centroId, cursoId, p)?.calificaciones ?? []);
+                    saveAcademicSlice(userId, centroId, cursoId, p, {
+                        actividades: actividadesSlice,
+                        calificaciones: calificacionesSlice,
                     });
-                    continue;
                 }
-                const actividadesSlice = mappedAct.filter(a => a.periodo === p);
-                // "calificaciones" solo se reescribe si ese período fue consultado ahora;
-                // de lo contrario se conserva la parte ya válida de la slice existente.
-                const calificacionesSlice = faltantesCal.includes(p)
-                    ? mappedCal.filter(c => c.periodo === p)
-                    : (getValidAcademicSlice(userId, centroId, cursoId, p)?.calificaciones ?? []);
-                saveAcademicSlice(userId, centroId, cursoId, p, {
-                    actividades: actividadesSlice,
-                    calificaciones: calificacionesSlice,
-                });
+            }
+
+            if (actQueryFailed || calQueryFailed) {
+                throw new Error(`Error de red al consultar ${[actQueryFailed ? 'actividades' : '', calQueryFailed ? 'calificaciones' : ''].filter(Boolean).join(' y ')} del curso`);
             }
         } catch (error) {
             console.error(`Error loading Curso data for ${cursoId}:`, error);
+            throw error;
         }
         })();
 
@@ -1566,41 +1604,49 @@ export function useSupabaseData(skipInit = false) {
                 actQuery = actQuery.eq('user_id', session.user.id);
             }
 
-            const results = await Promise.all([
+            const shouldFetchCalendario = state.calendarioMinerd.length === 0;
+            const shouldFetchEventos = state.eventos.length === 0;
+
+            const [actRes, calRes, evRes] = await Promise.all([
                 actQuery,
-                supabase.from('calendario_minerd').select('*'),
-                supabase.from('eventos').select('*')
+                shouldFetchCalendario ? supabase.from('calendario_minerd').select('*') : Promise.resolve({ data: null, error: null }),
+                shouldFetchEventos ? supabase.from('eventos').select('*') : Promise.resolve({ data: null, error: null })
             ]);
 
-            const actividades = results[0].data || [];
-            const calendarioMinerd = results[1].data || [];
-            const eventos = results[2].data || [];
+            const actividades = actRes.data || [];
+            const rawCalendarioMinerd = calRes.data;
+            const rawEventos = evRes.data;
 
             setState(prev => {
                 const mappedAct = actividades.map((a: Record<string, unknown>) => mapActividad(a, prev.cursos));
-                const mappedCalendarioMinerd = (calendarioMinerd || []).map((ev: Record<string, unknown>): EventoCalendario => ({
-                    id: ev.id as number,
-                    titulo: ev.titulo as string,
-                    fecha: ev.fecha_inicio as string,
-                    tipo: ev.tipo as EventoCalendario['tipo'],
-                    descripcion: (ev.descripcion as string) || undefined,
-                    fechaInicio: (ev.fecha_inicio as string) || undefined,
-                    fechaFin: (ev.fecha_fin as string) || undefined,
-                    updatedAt: (ev.updated_at as string) || undefined,
-                }));
-                const mappedEventos = (eventos || []).map((ev: Record<string, unknown>): EventoCalendario => ({
-                    id: ev.id as number,
-                    titulo: ev.titulo as string,
-                    fecha: ev.fecha as string,
-                    tipo: ev.tipo as EventoCalendario['tipo'],
-                    descripcion: (ev.descripcion as string) || undefined,
-                    fechaInicio: (ev.fecha_inicio as string) || undefined,
-                    fechaFin: (ev.fecha_fin as string) || undefined,
-                    updatedAt: (ev.updated_at as string) || undefined,
-                }));
+                const mappedCalendarioMinerd = rawCalendarioMinerd !== null
+                    ? (rawCalendarioMinerd || []).map((ev: Record<string, unknown>): EventoCalendario => ({
+                        id: ev.id as number,
+                        titulo: ev.titulo as string,
+                        fecha: ev.fecha_inicio as string,
+                        tipo: ev.tipo as EventoCalendario['tipo'],
+                        descripcion: (ev.descripcion as string) || undefined,
+                        fechaInicio: (ev.fecha_inicio as string) || undefined,
+                        fechaFin: (ev.fecha_fin as string) || undefined,
+                        updatedAt: (ev.updated_at as string) || undefined,
+                    }))
+                    : prev.calendarioMinerd;
 
-                const existingActMap = new Map(prev.actividades.map(a => [a.id, a]));
-                mappedAct.forEach(a => existingActMap.set(a.id, a));
+                const mappedEventos = rawEventos !== null
+                    ? (rawEventos || []).map((ev: Record<string, unknown>): EventoCalendario => ({
+                        id: ev.id as number,
+                        titulo: ev.titulo as string,
+                        fecha: ev.fecha as string,
+                        tipo: ev.tipo as EventoCalendario['tipo'],
+                        descripcion: (ev.descripcion as string) || undefined,
+                        fechaInicio: (ev.fecha_inicio as string) || undefined,
+                        fechaFin: (ev.fecha_fin as string) || undefined,
+                        updatedAt: (ev.updated_at as string) || undefined,
+                    }))
+                    : prev.eventos;
+
+                const existingActMap = new Map<number, Actividad>(prev.actividades.map(a => [a.id, a]));
+                mappedAct.forEach((a: Actividad) => existingActMap.set(a.id, a));
 
                 return {
                     ...prev,
