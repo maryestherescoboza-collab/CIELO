@@ -239,6 +239,9 @@ interface DraggedItem {
     inicio?: string | null;
 }
 
+/** Control temporal para la vista semanal. Cambiar a true para volver a habilitarla. */
+const MOSTRAR_VISTA_SEMANAL = false;
+
 interface CalendarioProps {
     onAddActividad?: (a: Omit<Actividad, 'id'>) => Promise<any>;
 }
@@ -1101,7 +1104,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
     };
 
     const getPeriodLabel = () => {
-        if (view === 'month') {
+        if (!MOSTRAR_VISTA_SEMANAL || view === 'month') {
             return `${monthNames[cursor.getMonth()][0].toUpperCase()}${monthNames[cursor.getMonth()].slice(1)} ${cursor.getFullYear()}`;
         } else {
             const start = weekStart(cursor);
@@ -1128,6 +1131,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                         <button onClick={() => navigate('/inicio')} className="text-[13px] font-bold text-[#689c63] hover:text-[#578952] flex items-center gap-1.5 drop-shadow-sm">
                             &larr; Inicio
                         </button>
+                        {MOSTRAR_VISTA_SEMANAL && (
                         <div className="border border-[#e6e8e2]/50 bg-white/50 backdrop-blur-md rounded-lg p-0.5 flex gap-0.5 shadow-sm">
                             <button 
                                 onClick={() => setView('month')}
@@ -1142,6 +1146,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                                 Semana
                             </button>
                         </div>
+                        )}
                     </div>
                 </header>
                 <main className="max-w-360 mx-auto w-full px-7 py-4 relative z-10">
@@ -1149,13 +1154,13 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                     <div className="flex items-center gap-2">
                         <button 
                             className="w-8.5 h-8.5 inline-flex items-center justify-center border border-[#e6e8e2] rounded-[9px] bg-white text-[#58625a] hover:bg-[#f4f6f1] transition-colors"
-                            onClick={() => setCursor(view === 'month' ? new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1) : addDays(cursor, -7))}
+                            onClick={() => setCursor((!MOSTRAR_VISTA_SEMANAL || view === 'month') ? new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1) : addDays(cursor, -7))}
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
                         <button 
                             className="w-8.5 h-8.5 inline-flex items-center justify-center border border-[#e6e8e2] rounded-[9px] bg-white text-[#58625a] hover:bg-[#f4f6f1] transition-colors"
-                            onClick={() => setCursor(view === 'month' ? new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1) : addDays(cursor, 7))}
+                            onClick={() => setCursor((!MOSTRAR_VISTA_SEMANAL || view === 'month') ? new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1) : addDays(cursor, 7))}
                         >
                             <ChevronRight className="w-4 h-4" />
                         </button>
@@ -1168,7 +1173,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                         </button>
 
 
-                        {view === 'week' && (
+                        {MOSTRAR_VISTA_SEMANAL && view === 'week' && (
                             <button
                                 type="button"
                                 onClick={() => setIsConfigHorariosOpen(true)}
@@ -1188,7 +1193,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                     </aside>
                 </section>
                 
-                {view === 'month' ? (
+                {(!MOSTRAR_VISTA_SEMANAL || view === 'month') ? (
                     <section className="flex flex-col xl:flex-row gap-5 items-start">
                         <div className="flex-1 w-full border border-[#e6e8e2] rounded-xl overflow-hidden bg-white">
                             <div className="grid grid-cols-7 border-b border-[#e6e8e2] bg-[#fafbf8]">
@@ -1529,7 +1534,7 @@ const CalendarSidePanel: React.FC<{
             <section>
                 <h4 className="text-xs font-bold text-[#7a817b] uppercase tracking-wider mb-3">Asistencia</h4>
                 <button 
-                    onClick={onOpenAttendance} 
+                    onClick={onOpenAttendance} data-guide="btn-pase-de-lista" 
                     className="w-full text-left p-3 rounded-lg border border-black/5 bg-[#fcfcfa] text-sm flex gap-3 items-center hover:border-black/20 hover:bg-white transition-colors"
                 >
                     <div className="w-6 h-6 rounded-full bg-[#e0e9f4] text-[#537bac] flex items-center justify-center font-bold text-xs">✓</div>

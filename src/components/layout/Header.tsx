@@ -176,6 +176,7 @@ const Header: React.FC<HeaderProps> = ({
                             {[
                                 { id: 'crear-curso', label: 'Crear un curso' },
                                 { id: 'crear-actividades-alumnos', label: 'Agregar actividades y alumnos' },
+                                { id: 'pase-de-lista', label: 'Cómo hacer el pase de lista' },
                                 { id: 'evaluar-actividad', label: 'Evaluar una actividad por indicador' },
                                 { id: 'evaluar-rubrica', label: 'Cómo evaluar con rúbrica' },
                                 { id: 'evaluar-cotejo', label: 'Cómo evaluar con cotejo' },

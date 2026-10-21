@@ -278,7 +278,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       </div>
     }>
       <Routes>
-      <Route path="/inicio" element={<Inicio onAddActividad={addActividad} docenteNombre={docenteNombre} onUpdateInstituto={updateInstitutoName} currentCourseRole={currentCourseRole} />} />
+      <Route path="/inicio" element={<Inicio onAddActividad={addActividad} docenteNombre={docenteNombre} onUpdateInstituto={updateInstitutoName} currentCourseRole={currentCourseRole} currentUserProfile={currentUserProfile} />} />
       <Route element={<PremiumGuard />}>
         <Route path="/dashboard" element={<Dashboard docenteNombre={docenteNombre} />} />
       <Route path="/cursos" element={

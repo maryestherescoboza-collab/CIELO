@@ -64,6 +64,62 @@ export const CATALOGO_GUIAS: Guide[] = [
     ]
   },
   {
+    id: 'pase-de-lista',
+    titulo: 'Cómo hacer el pase de lista',
+    steps: [
+      {
+        selector: '.app-bottom-nav button:nth-child(1)',
+        texto: 'Haz clic en «Inicio» para ir al panel principal.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-organizar-calendario"]',
+        texto: 'Haz clic en «Organizar calendario» para abrir el calendario escolar.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-pase-de-lista"]',
+        texto: 'Haz clic en «Pase de lista» para iniciar el registro de asistencia del día.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-curso-asistencia"]',
+        texto: 'Haz clic en la asignatura o curso al que deseas pasar lista.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-continuar-asistencia"]',
+        texto: 'Haz clic en «Continuar» para ver la lista de tus estudiantes.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-estado-estudiante"]',
+        texto: 'Haz un clic sobre el círculo del estudiante para cambiar su estado a Ausente.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-estado-estudiante"]',
+        texto: 'Haz otro clic para cambiar a Tardanza.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-estado-estudiante"]',
+        texto: 'Haz un clic más para cambiar a Excusa (un clic adicional vuelve a Presente).',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-continuar-asistencia"]',
+        texto: 'Haz clic en «Continuar» para revisar el resumen de asistencia.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="btn-guardar-asistencia"]',
+        texto: 'Haz clic en «Guardar asistencia» para confirmar y registrar el pase de lista.',
+        evento: 'click'
+      }
+    ]
+  },
+  {
     id: 'evaluar-actividad',
     titulo: 'Evaluar una actividad por indicador',
     steps: [

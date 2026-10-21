@@ -23,6 +23,7 @@ interface CentroFormData {
   nombre: string;
   distritoEducativo: string;
   telefono: string;
+  codigoCentro?: string;
 }
 
 interface CentroRow {
@@ -372,9 +373,32 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         return;
       }
 
+      const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
       if (modo === 'director' || modo === 'referencia') {
+        if (!centroForm.nombre.trim() || centroForm.nombre.trim().length < 3) {
+          setError('El nombre del centro educativo debe tener al menos 3 caracteres.');
+          setLoading(false);
+          return;
+        }
         if (!centroForm.telefono.trim()) {
           setError('El teléfono del centro educativo es obligatorio.');
+          setLoading(false);
+          return;
+        }
+      } else if (modo === 'propia' || modo === 'codigo' || modo === 'institucional_id') {
+        if (!centroSel || !UUID_REGEX.test(centroSel)) {
+          setError('Debes seleccionar un centro educativo válido de la lista.');
+          setLoading(false);
+          return;
+        }
+        if (modo === 'codigo' && !codigoAcceso.trim()) {
+          setError('Debes ingresar el código de acceso institucional.');
+          setLoading(false);
+          return;
+        }
+        if (modo === 'institucional_id' && !idCentroInput.trim()) {
+          setError('Debes ingresar el ID institucional del centro.');
           setLoading(false);
           return;
         }
@@ -403,10 +427,33 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
             telefono: centroForm.telefono.trim()
           }
         };
-      } else if (modo === 'propia' || modo === 'codigo' || modo === 'referencia' || modo === 'institucional_id') {
+      } else if (modo === 'referencia') {
+        pendingVinculo = {
+          tipo: 'referencia',
+          centro: {
+            nombre: centroForm.nombre.trim(),
+            distrito_educativo: centroForm.distritoEducativo.trim(),
+            telefono: centroForm.telefono.trim()
+          }
+        };
+      } else if (modo === 'centro_existente') {
+        const centroId = centroExistenteInfo?.centro?.id;
+        if (!centroId || !UUID_REGEX.test(centroId)) {
+          setError('No encontramos un centro con ese ID. Verifica el ID e inténtalo nuevamente.');
+          setLoading(false);
+          return;
+        }
+        pendingVinculo = {
+          tipo: 'asignar_admin_centro_existente',
+          centro_id: centroId
+        };
+      } else if (modo === 'propia' || modo === 'codigo' || modo === 'institucional_id') {
         pendingVinculo = {
           tipo: 'unirse',
-          centro_id: centroSel || null
+          centro_id: centroSel,
+          modo,
+          codigo: modo === 'codigo' ? codigoAcceso.trim() : undefined,
+          id_introducida: modo === 'institucional_id' ? idCentroInput.trim() : undefined
         };
       }
 
@@ -477,14 +524,21 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         //   propia     → centro existente: suscripción individual del usuario
         //   referencia → registrar centro como referencia: suscripción individual
         if (authData.session) {
-          await aplicarVinculoRegistro(modo);
+          if (modo === 'referencia') {
+            await aplicarVinculoRegistro('referencia');
+          } else if (modo === 'institucional_id') {
+            await aplicarVinculoRegistro('institucional_id');
+            await aplicarVinculoRegistro('propia');
+          } else {
+            await aplicarVinculoRegistro(modo);
+          }
           setIsSignUp(false);
           resetRegistro();
           onAuthSuccess();
           navigate('/inicio', { state: { freeTrial: true } });
           return;
         }
-        // Requiere confirmación de correo: la intención 'unirse' viaja en metadata.
+        // Requiere confirmación de correo: la intención viaja en metadata.
       }
 
       setNeedsEmailConfirmation(true);
@@ -528,8 +582,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       p_modo: modo,
       p_centro_id: modo === 'propia' ? centroSel || null : null,
       p_codigo: modo === 'codigo' ? codigoAcceso.trim() || null : null,
+      p_codigo_centro: modo === 'referencia' ? (centroForm.codigoCentro?.trim() || null) : null,
       p_nombre_centro: modo === 'referencia' ? centroForm.nombre.trim() || null : null,
-      p_distrito_educativo: modo === 'referencia' ? (centroForm.distritoEducativo.trim() || null) : null,
       p_telefono: modo === 'referencia' ? (centroForm.telefono.trim() || null) : null
     });
     if (error) throw error;
@@ -1432,9 +1486,14 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
-                  <button className="text-xs font-black text-[#3E3838]/40 hover:text-[#3E3838] transition-colors tracking-widest uppercase">
+                  <a 
+                    href="https://wa.link/lhvibv"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-black text-[#3E3838]/40 hover:text-[#3E3838] transition-colors tracking-widest uppercase"
+                  >
                     ¿Necesitas soporte?
-                  </button>
+                  </a>
                 </footer>
               )}
             </>

@@ -39,28 +39,31 @@ interface Incidencia {
   descripcion: string;
 }
 
-export default function PortalEstudiante() {
-  const { sessionToken, asignaturas, selectedPeriodo, setSelectedPeriodo } = usePortal();
+import { SIETE_ASIGNATURAS_OFICIALES, sonMismaAsignatura } from '../../constants/asignaturas';
 
-  const [selectedAsignatura, setSelectedAsignatura] = useState<string>(
-    asignaturas.length > 0 ? asignaturas[0].asignatura : ''
-  );
+export default function PortalEstudiante() {
+  const { 
+    sessionToken, 
+    asignaturas, 
+    selectedPeriodo, 
+    setSelectedPeriodo,
+    selectedAsignatura,
+    estudianteContext 
+  } = usePortal();
+
+  // Si no viene seleccionada en el contexto, tomar la primera con docente o primera de la lista
+  const activeMateria = selectedAsignatura || asignaturas.find(a => a.tiene_docente)?.asignatura || asignaturas[0]?.asignatura || '';
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
   const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
 
-  useEffect(() => {
-    if (asignaturas.length > 0 && !selectedAsignatura) {
-      setSelectedAsignatura(asignaturas[0].asignatura);
-    }
-  }, [asignaturas, selectedAsignatura]);
-
-  const activeAsignaturaConfig = asignaturas.find(a => a.asignatura === selectedAsignatura);
+  const activeAsignaturaConfig = asignaturas.find(a => sonMismaAsignatura(a.asignatura, activeMateria));
+  const activeOficial = SIETE_ASIGNATURAS_OFICIALES.find(o => sonMismaAsignatura(o.nombre, activeMateria));
 
   useEffect(() => {
-    if (!sessionToken || !selectedAsignatura) return;
+    if (!sessionToken || !activeMateria) return;
 
     const fetchDatos = async () => {
       setLoading(true);
@@ -70,12 +73,12 @@ export default function PortalEstudiante() {
           supabase.rpc('portal_get_evidencias', {
             p_session_token: sessionToken,
             p_periodo: selectedPeriodo,
-            p_asignatura: selectedAsignatura
+            p_asignatura: activeMateria
           }),
           supabase.rpc('portal_get_incidencias', {
             p_session_token: sessionToken,
             p_periodo: selectedPeriodo,
-            p_asignatura: selectedAsignatura
+            p_asignatura: activeMateria
           })
         ]);
         
@@ -96,7 +99,7 @@ export default function PortalEstudiante() {
     };
 
     fetchDatos();
-  }, [sessionToken, selectedPeriodo, selectedAsignatura]);
+  }, [sessionToken, selectedPeriodo, activeMateria]);
 
   const bcsData = React.useMemo(() => {
     const bcs = ['BC1', 'BC2', 'BC3', 'BC4'] as const;
@@ -181,37 +184,18 @@ export default function PortalEstudiante() {
       
       <section className="space-y-3.5" data-purpose="student-id-card">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-base font-black text-black">Estudiante</h1>
-              <p className="text-[11px] text-stone-600 font-medium">Portal Gamificado</p>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-[11px] font-bold text-black uppercase tracking-wider">Asignatura Activa</label>
-            <span className="text-[11px] text-black font-bold px-2.5 py-0.5 rounded-full border border-black bg-stone-100">
-              {asignaturas.findIndex(a => a.asignatura === selectedAsignatura) + 1} de {asignaturas.length}
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider font-mono">
+              {[estudianteContext?.grado, estudianteContext?.seccion ? `Sec. ${estudianteContext.seccion}` : null].filter(Boolean).join(' • ') || 'Estudiante'}
             </span>
+            <h1 className="text-base font-black text-black">
+              {[estudianteContext?.nombre, estudianteContext?.apellido].filter(Boolean).join(' ') || 'Estudiante'}
+            </h1>
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
-            {asignaturas.map(a => {
-              const isActive = a.asignatura === selectedAsignatura;
-              return (
-                <button 
-                  key={a.asignatura}
-                  onClick={() => setSelectedAsignatura(a.asignatura)}
-                  className={`px-3.5 py-1.5 rounded-full border text-xs whitespace-nowrap active:scale-95 transition ${
-                    isActive 
-                      ? 'border-black bg-black text-white font-bold' 
-                      : 'border-stone-300 bg-white text-stone-700 font-medium hover:border-black'
-                  }`}
-                >
-                  {a.asignatura}
-                </button>
-              );
-            })}
+          
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-stone-200 bg-stone-50 shadow-xs">
+            <span className="text-xs">{activeOficial?.icono || '📖'}</span>
+            <span className="text-xs font-bold text-stone-900">{activeMateria}</span>
           </div>
         </div>
       </section>

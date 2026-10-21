@@ -17,15 +17,17 @@ import { useDashboardData } from '../hooks/useDashboardData';
 
 import { useSupabaseData } from '../hooks/useSupabaseData';
 import { usePremiumAccess } from '../hooks/usePremiumAccess';
+import { Building2, ArrowRight } from 'lucide-react';
 
 interface Props {
     onAddActividad: (a: Omit<Actividad, 'id'>) => Promise<any>;
     docenteNombre: string;
     onUpdateInstituto: (nombre: string) => void;
     currentCourseRole?: any;
+    currentUserProfile?: any;
 }
 
-export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstituto, currentCourseRole }: Props) {
+export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstituto, currentCourseRole, currentUserProfile }: Props) {
     const state = useAppStore(s => s.state);
     const session = useAppStore(s => s.session);
     const { hasTrial, trialDaysLeft, suscripcionActual } = usePremiumAccess();
@@ -84,6 +86,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
     } = useDashboardData(state, selectedCourseId, session?.user?.id, currentCourseRole);
 
     const proximosEventosMerged = getUpcomingEvents(selectedDate);
+    const sinCentro = Boolean(currentUserProfile && !currentUserProfile.centro_id);
 
     const handleNewActivitySuccess = () => {
         setSaved(true);
@@ -181,6 +184,31 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                     </div>
                 </div>
 
+                {sinCentro && (
+                    <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-950 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-start sm:items-center gap-3.5">
+                            <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-700 shrink-0">
+                                <Building2 size={20} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-amber-950">
+                                    Aún no has vinculado tu centro educativo
+                                </p>
+                                <p className="text-xs text-amber-800/90 mt-0.5">
+                                    Completa tus datos profesionales para asociar tu escuela o liceo y tener todas las funciones disponibles.
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => navigate('/ajustes?tab=profesional')}
+                            className="shrink-0 px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                            <span>Completar datos</span>
+                            <ArrowRight size={14} />
+                        </button>
+                    </div>
+                )}
+
                 <div className="mb-8 opacity-40">
                     <svg width="100%" height="20" viewBox="0 0 800 20" preserveAspectRatio="none">
                         <path d="M0 10 Q 100 5, 200 12 T 400 10 T 600 8 T 800 10" stroke="currentColor" fill="none" strokeWidth="1" strokeDasharray="5,5" className="text-slate-500" />
@@ -230,6 +258,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                             <div className="mt-3 flex justify-end">
                                 <button 
                                     onClick={() => navigate('/calendario')}
+                                    data-guide="btn-organizar-calendario"
                                     className="group flex items-center gap-2 text-[#465a38] hover:text-[#2d3a23] transition-all text-[13px] font-black uppercase tracking-widest bg-transparent p-1"
                                 >
                                     <span>Organizar calendario</span>

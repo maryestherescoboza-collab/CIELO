@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { usePortal, rutaPortal } from './portalContext';
+import { sonMismaAsignatura } from '../../constants/asignaturas';
 
 interface FichaCompartida {
   id: string;
   titulo: string;
   fecha: string;
   curso_id: number;
+  asignatura?: string;
 }
 
 export default function PortalFichas() {
-  const { sessionToken, asignaturas, selectedPeriodo, token } = usePortal();
+  const { sessionToken, asignaturas, selectedPeriodo, token, selectedAsignatura } = usePortal();
 
   const navigate = useNavigate();
 
@@ -19,8 +21,6 @@ export default function PortalFichas() {
   const [error, setError] = useState<string | null>(null);
 
   const [fichasCompartidas, setFichasCompartidas] = useState<FichaCompartida[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -52,17 +52,6 @@ export default function PortalFichas() {
   }, [sessionToken, selectedPeriodo, asignaturas]);
 
 
-
-  const getSubjectIcon = (name: string) => {
-    const l = name.toLowerCase();
-    if (l.includes('lengu')) return '📖';
-    if (l.includes('mat')) return '📐';
-    if (l.includes('cienc')) return '🔬';
-    if (l.includes('hist')) return '⏳';
-    if (l.includes('art')) return '🎨';
-    if (l.includes('ing')) return '🌐';
-    return '📚';
-  };
 
   // Componentes preparados para sustituir posteriormente por assets animados personalizados
   const IconoMisionProducto = () => (
@@ -101,6 +90,20 @@ export default function PortalFichas() {
     </svg>
   );
 
+  const fichasFiltradas = useMemo(() => {
+    return fichasCompartidas.filter((ficha) => {
+      if (selectedAsignatura && ficha.asignatura && !sonMismaAsignatura(ficha.asignatura, selectedAsignatura)) {
+        return false;
+      }
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const titulo = (ficha.titulo || '').toLowerCase();
+        return titulo.includes(term);
+      }
+      return true;
+    });
+  }, [fichasCompartidas, selectedAsignatura, searchTerm]);
+
   return (
     <div className="pt-2 px-5">
       <div className="mb-5">
@@ -112,7 +115,7 @@ export default function PortalFichas() {
           </div>
           <input 
             className="w-full h-11 pl-10 pr-4 bg-white border border-black rounded-lg text-xs placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-black font-normal" 
-            placeholder="Buscar asignaturas o fichas de clase..." 
+            placeholder="Buscar fichas de clase..." 
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
@@ -120,45 +123,28 @@ export default function PortalFichas() {
         </div>
       </div>
 
-      <section className="mb-5">
-        <div className="flex space-x-2 overflow-x-auto custom-scrollbar -mx-1 px-1 py-1">
-          <button 
-            onClick={() => setSelectedSubject(null)}
-            className={`flex-none px-3 py-1.5 border border-black rounded-lg text-xs flex items-center space-x-1.5 transition ${!selectedSubject ? 'bg-black text-white font-bold' : 'bg-white text-black font-semibold hover:bg-neutral-50'}`}
-          >
-            <span className="text-[11px]">📋</span>
-            <span>Todas</span>
-          </button>
-          
-          {asignaturas.map(asig => {
-            const isSelected = selectedSubject === asig.asignatura;
-            return (
-              <button 
-                key={asig.asignatura}
-                onClick={() => setSelectedSubject(asig.asignatura)}
-                className={`flex-none px-3 py-1.5 border border-black rounded-lg text-xs flex items-center space-x-1.5 transition ${isSelected ? 'bg-brand-purple text-black font-bold shadow-sm' : 'bg-white text-black font-semibold hover:bg-neutral-50'}`}
-              >
-                <span className="text-[11px]">{getSubjectIcon(asig.asignatura)}</span>
-                <span className="truncate max-w-25">{asig.asignatura}</span>
-                {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-black ml-1"></span>}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
       <section className="mb-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-black tracking-tight">Fichas de Clase</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-bold text-black tracking-tight">Fichas de Clase</h2>
+            {selectedAsignatura && (
+              <span className="px-2.5 py-0.5 rounded-full border border-stone-200 bg-stone-50 text-[11px] font-bold text-stone-800">
+                {selectedAsignatura}
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] font-bold border border-black px-2.5 py-0.5 rounded-full bg-stone-100 text-black">
+            {fichasFiltradas.length} Ficha{fichasFiltradas.length !== 1 && 's'}
+          </span>
         </div>
         
-        {!loading && !error && fichasCompartidas.length === 0 ? (
+        {!loading && !error && fichasFiltradas.length === 0 ? (
           <div className="text-center py-6 bg-white border border-neutral-200 rounded-xl mb-6">
-             <p className="text-neutral-500 text-sm">No hay fichas compartidas.</p>
+             <p className="text-neutral-500 text-sm">No hay fichas compartidas {selectedAsignatura ? `para ${selectedAsignatura}` : ''}.</p>
           </div>
         ) : (
           <div className="space-y-4 mb-6">
-            {fichasCompartidas.map((ficha) => (
+            {fichasFiltradas.map((ficha) => (
               <article key={`ficha-${ficha.id}`} className="w-full border border-black rounded-xl p-4 bg-white shadow-sm flex flex-col">
                 <div className="mb-4">
                   <div className="flex items-start justify-between gap-2">

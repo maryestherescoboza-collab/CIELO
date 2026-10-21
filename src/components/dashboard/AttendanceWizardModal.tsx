@@ -269,6 +269,7 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
                                             return (
                                                 <button
                                                     key={cd.id}
+                                                    data-guide="btn-curso-asistencia"
                                                     onClick={() => setSelectedCursoDocenteId(cd.id)}
                                                     className={`p-4 rounded-xl border text-left transition-all relative ${selectedCursoDocenteId === cd.id ? 'border-[#689c63] bg-[#689c63]/5 ring-2 ring-[#689c63]/20' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
                                                 >
@@ -317,7 +318,7 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
                                                     />
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => handleToggleAll('P')} className="px-3 py-2 rounded-lg text-xs font-bold border border-[#b5ccb2] bg-[#f3f7ef] text-[#689c63] hover:bg-[#eaf1e5] transition-colors whitespace-nowrap">
+                                                    <button data-guide="btn-todos-presentes" onClick={() => handleToggleAll('P')} className="px-3 py-2 rounded-lg text-xs font-bold border border-[#b5ccb2] bg-[#f3f7ef] text-[#689c63] hover:bg-[#eaf1e5] transition-colors whitespace-nowrap">
                                                         Todos Presentes
                                                     </button>
                                                     <button onClick={() => handleToggleAll('F')} className="px-3 py-2 rounded-lg text-xs font-bold border border-[#eabeb6] bg-[#fcf0ee] text-[#c63d3d] hover:bg-[#fae2df] transition-colors whitespace-nowrap">
@@ -334,6 +335,7 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
                                                     return (
                                                         <div key={st.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 group">
                                                             <button
+                                                                data-guide="btn-estado-estudiante"
                                                                 onClick={() => cycleStudentStatus(st.id)}
                                                                 className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border transition-all shadow-sm font-bold text-sm ${statusColors[status]}`}
                                                                 title="Clic para cambiar estado"
@@ -414,6 +416,7 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
                     
                     {step < 3 ? (
                         <button 
+                            data-guide="btn-continuar-asistencia"
                             onClick={() => setStep(s => s + 1)} 
                             disabled={step === 1 && !selectedCursoDocenteId}
                             className="px-6 py-2.5 rounded-xl font-bold text-white bg-[#689c63] hover:bg-[#578952] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-sm"
@@ -422,6 +425,7 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
                         </button>
                     ) : (
                         <button 
+                            data-guide="btn-guardar-asistencia"
                             onClick={handleSave} 
                             disabled={isSaving}
                             className="px-6 py-2.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2 shadow-sm"

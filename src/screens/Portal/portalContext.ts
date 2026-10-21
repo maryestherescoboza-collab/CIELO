@@ -14,7 +14,29 @@
 
 import { useOutletContext } from 'react-router-dom';
 import type { Dispatch, SetStateAction } from 'react';
-import type { AsignaturaPublicada, Periodo } from './PortalLayout';
+
+export type Periodo = 'P1' | 'P2' | 'P3' | 'P4';
+
+export interface EstudianteContextInfo {
+  estudianteId?: number;
+  nombre: string;
+  apellido?: string;
+  grado?: string;
+  seccion?: string;
+  centro?: string;
+}
+
+export interface AsignaturaPublicada {
+  asignatura: string;
+  tiene_docente?: boolean;
+  total_actividades?: number;
+  mostrar_puntajes?: boolean;
+  mostrar_evidencias?: boolean;
+  mostrar_recursos?: boolean;
+  mostrar_incidencias?: boolean;
+  mostrar_recuperacion?: boolean;
+  published_until?: string | null;
+}
 
 export interface PortalContext {
   /** Acceso del portal, el 3er segmento de la URL. */
@@ -24,6 +46,9 @@ export interface PortalContext {
   asignaturas: AsignaturaPublicada[];
   selectedPeriodo: Periodo;
   setSelectedPeriodo: Dispatch<SetStateAction<Periodo>>;
+  selectedAsignatura: string | null;
+  setSelectedAsignatura: (asig: string | null) => void;
+  estudianteContext: EstudianteContextInfo | null;
 }
 
 /**
@@ -43,6 +68,9 @@ export function usePortal(): PortalContext {
       asignaturas: [],
       selectedPeriodo: 'P1',
       setSelectedPeriodo: () => {},
+      selectedAsignatura: null,
+      setSelectedAsignatura: () => {},
+      estudianteContext: null,
     }
   );
 }

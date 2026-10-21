@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Home, BookOpen, TrendingUp, AlertTriangle, NotebookPen, Users, ClipboardList, SquareCheck, Stamp, User, X, HelpCircle, MoreHorizontal } from 'lucide-react';
+import { Home, BookOpen, TrendingUp, AlertTriangle, NotebookPen, Users, ClipboardList, SquareCheck, Stamp, User, X, MoreHorizontal } from 'lucide-react';
+import { WhatsAppIcon } from '../icons/WhatsAppIcon';
 import type { Screen } from '../../types';
 
-const SUPPORT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfhlDqJnUXMrxOtz8mkE5NWmMz6E33JgwCyd13dLao2_nDtyA/viewform?usp=preview';
+const SUPPORT_URL = 'https://wa.link/lhvibv';
 
 interface BottomNavProps {
     currentScreen: Screen;
@@ -79,11 +80,12 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                 href={SUPPORT_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden lg:flex shrink-0 flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 bg-transparent text-(--ink) hover:bg-(--linen)/40 lg:min-w-18 h-10"
-                aria-label="Soporte - Formulario oficial de CIELO"
+                className="hidden lg:flex shrink-0 flex-col items-center justify-center gap-0.5 px-3.5 py-1 rounded-full transition-all duration-200 bg-transparent text-(--ink) hover:bg-(--linen)/40 lg:min-w-18 h-10 group"
+                aria-label="Soporte por WhatsApp de CIELO"
+                title="Soporte por WhatsApp"
             >
-                <div className="text-(--ink)">
-                    <HelpCircle size={18} />
+                <div className="transition-transform duration-200 group-hover:scale-110 flex items-center justify-center">
+                    <WhatsAppIcon size={19} />
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-(--ink) hidden lg:block">Soporte</span>
             </a>
@@ -124,10 +126,11 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                             href={SUPPORT_URL}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-transparent text-(--ink) hover:bg-(--linen)/40"
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-transparent text-(--ink) hover:bg-(--linen)/40 group"
+                            title="Soporte por WhatsApp"
                         >
-                            <div className="text-(--ink-soft)">
-                                <HelpCircle size={18} />
+                            <div className="shrink-0 transition-transform duration-200 group-hover:scale-110 flex items-center justify-center">
+                                <WhatsAppIcon size={20} />
                             </div>
                             <span className="text-xs font-bold uppercase tracking-wider">Soporte</span>
                         </a>

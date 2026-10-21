@@ -12,6 +12,7 @@ import Privacidad from './screens/legal/Privacidad';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import NotificationsOverlay from './components/NotificationsOverlay';
 import InvitationModal from './components/courses/InvitationModal';
+import { VinculacionCentroModal } from './components/auth/VinculacionCentroModal';
 import { FloatingRubricManager } from './components/FloatingRubricManager';
 import { PresentationProvider } from './contexts/PresentationContext';
 import LoadingMessage from './components/LoadingMessage';
@@ -160,6 +161,19 @@ export default function App() {
     return typeof inst === 'string' ? inst : 'Instituto Central';
   }, [selectedCursoId, state.cursoDocentes, state.cursos, state.perfiles, state.instituto]);
 
+  // Entorno independiente para usuarios con ROL administrativo ('administrador').
+  // Modelo binario: la ÚNICA fuente de verdad es perfiles.rol.
+  const esUsuarioCentro = useMemo(() => {
+    return analizarRolAcceso({ perfil: currentUserProfile })?.rol === 'administrador';
+  }, [currentUserProfile]);
+
+  const necesitaVinculacionCentro = useMemo(() => {
+    if (!session?.user?.id || !authInitialized || loading) return false;
+    if (esUsuarioCentro) return false;
+    if (!currentUserProfile) return false;
+    return !currentUserProfile.centro_id;
+  }, [session?.user?.id, authInitialized, loading, esUsuarioCentro, currentUserProfile]);
+
   const location = useLocation();
   const pathname = location.pathname;
 
@@ -244,17 +258,25 @@ export default function App() {
 
   const isPrintView = pathname.startsWith('/print-boletines');
 
-  // Entorno independiente para usuarios con ROL administrativo ('administrador').
-  // Modelo binario: la ÚNICA fuente de verdad es perfiles.rol. el rol se deduce
-  // EXCLUSIVAMENTE de perfiles.rol === 'administrador'; NUNCA de la presencia
-  // de centro_id y NUNCA de centro_roles. Un rol inválido o ausente se trata
-  // como no administrativo (flujo docente por defecto).
-  const esUsuarioCentro = analizarRolAcceso({ perfil: currentUserProfile })?.rol === 'administrador';
-
   if (esUsuarioCentro) {
     return (
       <ErrorBoundary>
         <CentroPanel onLogout={() => supabase.auth.signOut()} />
+      </ErrorBoundary>
+    );
+  }
+
+  if (necesitaVinculacionCentro && session?.user?.id) {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-[#FBFBFA] flex items-center justify-center p-4 relative">
+          <VinculacionCentroModal
+            userId={session.user.id}
+            currentUserProfile={currentUserProfile}
+            onComplete={() => actions.refresh()}
+            onLogout={() => supabase.auth.signOut()}
+          />
+        </div>
       </ErrorBoundary>
     );
   }

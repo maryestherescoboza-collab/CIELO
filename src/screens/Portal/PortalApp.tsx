@@ -8,6 +8,7 @@ import PortalRuta from './PortalRuta';
 import PortalPortafolio from './PortalPortafolio';
 import PortalDrive from './PortalDrive';
 import PortalRecuperaciones from './PortalRecuperaciones';
+import PortalIncidencias from './PortalIncidencias';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
 import { Loader2 } from 'lucide-react';
 
@@ -58,6 +59,7 @@ export default function PortalApp() {
               nivel. Se entra desde la tarjeta de Drive en el Portafolio. */}
           <Route path="drive" element={<PortalDrive />} />
           <Route path="recuperaciones" element={<PortalRecuperaciones />} />
+          <Route path="incidencias" element={<PortalIncidencias />} />
           <Route path="fichas" element={<PortalFichas />} />
           <Route path="fichas/:id" element={<PortalFichaDetalle />} />
           <Route path="fichas/:id/ruta/:rutaId" element={<PortalRuta />} />
