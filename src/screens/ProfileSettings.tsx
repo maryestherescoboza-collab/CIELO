@@ -8,6 +8,7 @@ import {
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { supabase } from '../lib/supabase';
 import { getGeminiApiKey, saveGeminiApiKey, removeGeminiApiKey, maskApiKey, getOpenAIApiKey, saveOpenAIApiKey, removeOpenAIApiKey, getAIAIProvider, saveAIAIProvider, isProviderConfigured, providerDisplayName, AI_PROVIDERS, type AIProvider } from '../lib/aiConfig';
+import { clearAICircuitBreakers } from '../lib/aiProvider';
 import { useAppStore } from '../store/appStore';
 import { saveCentroCache } from '../cache/centroCache';
 import { useVinculacionInstitucional } from '../hooks/useVinculacionInstitucional';
@@ -1394,6 +1395,7 @@ function IntegrarIATab({ session }: { session: Session | null }) {
 
   const handleGuardar = () => {
     if (!inputKey.trim() || !userId) return;
+    clearAICircuitBreakers(userId);
     saveGeminiApiKey(userId, inputKey);
     setInputKey('');
     refreshApiKey();
@@ -1405,6 +1407,7 @@ function IntegrarIATab({ session }: { session: Session | null }) {
     if (!userId) return;
     if (!window.confirm('¿Eliminar tu API Key de Gemini guardada? Tendrás que ingresarla nuevamente para usar las funciones de IA.')) return;
     removeGeminiApiKey(userId);
+    clearAICircuitBreakers(userId);
     refreshApiKey();
   };
 
@@ -1418,6 +1421,7 @@ function IntegrarIATab({ session }: { session: Session | null }) {
 
   const handleOpenAIGuardar = () => {
     if (!openaiInputKey.trim() || !userId) return;
+    clearAICircuitBreakers(userId);
     saveOpenAIApiKey(userId, openaiInputKey);
     setOpenaiInputKey('');
     refreshOpenAIApiKey();
@@ -1429,6 +1433,7 @@ function IntegrarIATab({ session }: { session: Session | null }) {
     if (!userId) return;
     if (!window.confirm('¿Eliminar tu API Key de OpenAI guardada? Tendrás que ingresarla nuevamente para usar las funciones de IA.')) return;
     removeOpenAIApiKey(userId);
+    clearAICircuitBreakers(userId);
     refreshOpenAIApiKey();
   };
 
@@ -1470,6 +1475,13 @@ function IntegrarIATab({ session }: { session: Session | null }) {
             Configura tu API de {providerDisplayName(provider)} para utilizar esta función.
           </div>
         )}
+
+        <div className="mt-4 flex items-center gap-2.5 rounded-xl bg-blue-50/70 border border-blue-200/70 px-4 py-3 text-xs font-medium text-blue-900 leading-relaxed">
+          <Sparkles size={15} className="text-blue-600 shrink-0" />
+          <span>
+            <strong className="font-bold">Recuperación automática multicanal:</strong> Si tu proveedor preferido experimenta caídas (500/503), sobrecarga temporal o agota su cuota, CIELO se recupera automáticamente mediante el asistente de respaldo en la nube para que tu progreso nunca se interrumpa.
+          </span>
+        </div>
       </div>
 
       <div className="rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-sm p-6">
@@ -1613,6 +1625,26 @@ function IntegrarIATab({ session }: { session: Session | null }) {
           <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="font-semibold text-(--primary) hover:underline">
             Plataforma OpenAI
           </a>. La clave se guarda únicamente en este dispositivo y nunca se muestra completa ni se registra en logs.
+        </p>
+      </div>
+
+      <div className="rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-sm p-6">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="p-2.5 rounded-xl bg-(--linen)/50 text-(--ink) border border-(--border-soft) shadow-sm shrink-0">
+            <Sparkles size={20} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base font-black text-(--ink) tracking-tight">Asistente CIELO (Nube)</h3>
+            <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mt-0.5">
+              Infraestructura en la nube con respaldo automático
+            </p>
+          </div>
+          <span className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest border bg-emerald-50 text-emerald-700 border-emerald-200">
+            <CheckCircle size={12} /> Activo y disponible
+          </span>
+        </div>
+        <p className="text-xs text-(--ink-soft) leading-relaxed">
+          El Asistente CIELO está integrado directamente a través de nuestra infraestructura segura en la nube. Funciona tanto como proveedor principal como red de rescate automática ante saturaciones o agotamiento de cuota de Gemini/OpenAI. No requiere ninguna clave ni configuración manual.
         </p>
       </div>
     </div>

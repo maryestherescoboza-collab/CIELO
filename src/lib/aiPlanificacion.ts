@@ -19,6 +19,8 @@ export interface SugerenciasIA {
     evidencias: string[];
     evaluacion: SugerenciaEvaluacion;
     metacognicion: string[];
+    _fallbackUsed?: boolean;
+    _fallbackProvider?: string;
 }
 
 export interface ContextoPlanificacion {
@@ -28,6 +30,15 @@ export interface ContextoPlanificacion {
     competencias: string;
     intencionPedagogica: string;
     indicadorLogro: string;
+    /** Actividades reales del curso/período que el docente seleccionó como contexto. */
+    actividades?: string[];
+    /** Currículo vigente del período (competencias, indicadores y contenidos). */
+    curriculum?: {
+        periodo?: string;
+        competencias?: string[];
+        indicadores?: string[];
+        contenidos?: string[];
+    };
     sesiones: Array<{
         fecha: string;
         inicio: string;
@@ -153,13 +164,47 @@ export function desarrolloSuficiente(ctx: ContextoPlanificacion): boolean {
     return norm(texto).length >= 50;
 }
 
+/**
+ * Hay material suficiente para pedir sugerencias: el desarrollo escrito, las
+ * actividades reales seleccionadas o el currículo vigente del período.
+ */
+export function contextoSuficiente(ctx: ContextoPlanificacion): boolean {
+    if (desarrolloSuficiente(ctx)) return true;
+    if (ctx.actividades && ctx.actividades.length > 0) return true;
+    const cur = ctx.curriculum;
+    if (!cur) return false;
+    return (
+        (cur.indicadores?.length ?? 0) > 0 ||
+        (cur.contenidos?.length ?? 0) > 0 ||
+        (cur.competencias?.length ?? 0) > 0
+    );
+}
+
 function construirPrompt(ctx: ContextoPlanificacion, contextoAdicional?: string): string {
     const textoContextoAdicional = contextoAdicional 
         ? `\nCONTEXTO ADICIONAL DE LA ACTIVIDAD (Prioridad Alta):\n"${contextoAdicional}"\nOrienta tus sugerencias específicamente a desarrollar y mejorar esta actividad propuesta.\n` 
         : '';
 
-    return `Actúa como asistente pedagógico para docentes de República Dominicana. Analiza EXCLUSIVAMENTE la siguiente planificación de clase ya escrita por el docente y el contexto de la actividad, y sugiere mejoras puntuales. No inventes información que no esté disponible; trabaja con lo proporcionado.
-${textoContextoAdicional}
+    const bloqueActividades = ctx.actividades && ctx.actividades.length > 0
+        ? `\nACTIVIDADES REALES DEL CURSO SELECCIONADAS POR EL DOCENTE (contexto principal):\n${ctx.actividades.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n`
+        : '';
+
+    const bloqueCurr = ctx.curriculum
+        ? [
+            ctx.curriculum.periodo ? `PERÍODO: ${ctx.curriculum.periodo}` : '',
+            ctx.curriculum.competencias && ctx.curriculum.competencias.length > 0
+                ? `COMPETENCIAS ESPECÍFICAS APLICADAS:\n${ctx.curriculum.competencias.map((c) => `- ${c}`).join('\n')}` : '',
+            ctx.curriculum.indicadores && ctx.curriculum.indicadores.length > 0
+                ? `INDICADORES DE LOGRO APLICADOS:\n${ctx.curriculum.indicadores.map((i) => `- ${i}`).join('\n')}` : '',
+            ctx.curriculum.contenidos && ctx.curriculum.contenidos.length > 0
+                ? `CONTENIDOS CLAVES APLICADOS:\n${ctx.curriculum.contenidos.map((c) => `- ${c}`).join('\n')}` : ''
+        ].filter(Boolean).join('\n')
+        : '';
+
+    const bloqueCurriculo = bloqueCurr ? `\nCURRÍCULO APLICADO EN ESTA PLANIFICACIÓN:\n${bloqueCurr}\n` : '';
+
+    return `Actúa como asistente pedagógico para docentes de República Dominicana. Analiza EXCLUSIVAMENTE la siguiente planificación de clase ya escrita por el docente, las actividades reales que él seleccionó y el contexto curricular, y sugiere mejoras puntuales. No inventes información que no esté disponible; trabaja con lo proporcionado.
+${textoContextoAdicional}${bloqueActividades}${bloqueCurriculo}
 PLANIFICACIÓN DEL DOCENTE (fuente principal):
 ${JSON.stringify(ctx, null, 2)}
 
@@ -227,7 +272,9 @@ export async function generarSugerenciasPedagogicas(
             instrumento: typeof data.evaluacion?.instrumento === 'string' ? data.evaluacion.instrumento : '',
             sugerencia: typeof data.evaluacion?.sugerencia === 'string' ? data.evaluacion.sugerencia : ''
         },
-        metacognicion: limpiar(data.metacognicion)
+        metacognicion: limpiar(data.metacognicion),
+        _fallbackUsed: (data as Partial<SugerenciasIA>)._fallbackUsed,
+        _fallbackProvider: (data as Partial<SugerenciasIA>)._fallbackProvider
     };
 
     const hayAlgo = resultado.recursos.length > 0 || resultado.estrategiaInclusiva.length > 0 ||

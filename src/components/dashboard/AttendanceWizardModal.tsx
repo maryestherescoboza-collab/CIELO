@@ -224,7 +224,7 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300">
                 <header className="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
                     <div>

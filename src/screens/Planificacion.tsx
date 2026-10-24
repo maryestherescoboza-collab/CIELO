@@ -144,112 +144,6 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
         }
     }, [state.cursos, cursoSel]);
 
-    useEffect(() => {
-        const handleMessage = async (event: MessageEvent) => {
-            if (!event.data || typeof event.data !== 'object') return;
-            const { type, cursoId, html } = event.data;
-
-            if (type === 'GET_ESPECIFICACIONES') {
-                let seq = undefined;
-                if (event.data.seqId && event.data.seqId !== 'new') {
-                    seq = state.secuencias.find(s => s.id === Number(event.data.seqId));
-                } else if (!event.data.seqId) {
-                    seq = state.secuencias.find(s => s.cursoId === Number(cursoId) && s.titulo.startsWith('Especificaciones Curriculares'));
-                }
-                const curso = state.cursos.find(c => c.id === Number(cursoId));
-                const sourceWindow = event.source as Window | null;
-                
-                if (sourceWindow) {
-                    let workedData = null;
-                    if (curso) {
-                        const actividades = state.actividades.filter(a => a.cursoId === Number(cursoId));
-                        const ilCodes = Array.from(new Set(actividades.map(a => a.indicador).filter(Boolean))) as string[];
-                        
-                        if (ilCodes.length > 0) {
-                            const { data: indData } = await supabase
-                                .from('curr_indicadores')
-                                .select('*')
-                                .eq('grado', curso.grado)
-                                .in('codigo', ilCodes);
-                                
-                            if (indData) {
-                                const grouped = indData.reduce((acc, curr) => {
-                                    if (!acc[curr.competencia]) acc[curr.competencia] = [];
-                                    acc[curr.competencia].push(curr.codigo);
-                                    return acc;
-                                }, {} as Record<string, string[]>);
-                                workedData = grouped;
-                            }
-                        }
-                    }
-
-                    if (seq) {
-                        sourceWindow.postMessage({ type: 'LOAD_ESPECIFICACIONES', html: seq.contenidoHtml, workedData }, event.origin);
-                    } else {
-                        sourceWindow.postMessage({ type: 'LOAD_ESPECIFICACIONES', html: null, workedData }, event.origin);
-                    }
-                }
-            }
-
-            if (type === 'SAVE_ESPECIFICACIONES') {
-                const seqId = event.data.seqId;
-                
-                if (seqId && seqId !== 'new') {
-                    const existing = state.secuencias.find(s => s.id === Number(seqId));
-                    if (existing && onUpdateSecuencia) {
-                        await onUpdateSecuencia({
-                            ...existing,
-                            contenidoHtml: html
-                        });
-                    }
-                } else {
-                    // Create new
-                    const timestamp = new Date().getTime().toString().slice(-4);
-                    const title = `Especificaciones Curriculares - ${timestamp}`;
-                    if (onAddSecuencia) {
-                        const newSeq = await onAddSecuencia({
-                            titulo: title,
-                            cursoId: Number(cursoId),
-                            fechaInicio: new Date().toISOString().split('T')[0],
-                            contenidoHtml: html,
-                            estado: 'Pendiente'
-                        });
-                        // Respond with the new seqId so the window can update its URL if needed, though typically it stays open.
-                        const sourceWindow = event.source as Window | null;
-                        if (sourceWindow && newSeq) {
-                            sourceWindow.postMessage({ type: 'SAVE_SUCCESS', newSeqId: newSeq.id }, event.origin);
-                            return; // early return
-                        }
-                    }
-                }
-                const sourceWindow = event.source as Window | null;
-                if (sourceWindow) {
-                    sourceWindow.postMessage({ type: 'SAVE_SUCCESS' }, event.origin);
-                }
-            }
-
-            if (type === 'DELETE_ESPECIFICACIONES') {
-                const seqId = event.data.seqId;
-                if (seqId && seqId !== 'new' && onDeleteSecuencia) {
-                    await onDeleteSecuencia(Number(seqId));
-                } else if (!seqId) {
-                    const matches = state.secuencias.filter(s => s.cursoId === Number(cursoId) && s.titulo.startsWith('Especificaciones Curriculares'));
-                    if (matches.length > 0 && onDeleteSecuencia) {
-                        for (const s of matches) {
-                            await onDeleteSecuencia(s.id);
-                        }
-                    }
-                }
-                const sourceWindow = event.source as Window | null;
-                if (sourceWindow) {
-                    sourceWindow.postMessage({ type: 'DELETE_SUCCESS' }, event.origin);
-                }
-            }
-        };
-
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, [state.secuencias, onAddSecuencia, onUpdateSecuencia, onDeleteSecuencia]);
     const [showModal, setShowModal] = useState(false);
     const [importStep, setImportStep] = useState<'select-template' | 'template-editor'>('select-template');
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -394,6 +288,12 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
 
     const secuenciasCurso = state.secuencias.filter((secuencia: Secuencia) => secuencia.cursoId === cursoSel && (secuencia.userId === session?.user?.id || !secuencia.userId));
 
+    // Las secuencias legadas de "Especificaciones Curriculares" (popup HTML antiguo) ya no se
+    // muestran en Plantillas: esa configuración vive en la sección independiente de Especificaciones.
+    const secuenciasPlantillas = secuenciasCurso.filter(
+        (seq: Secuencia) => !seq.titulo.startsWith('Especificaciones Curriculares')
+    );
+
     const allRecursos = secuenciasCurso.flatMap(seq => {
         let rec = seq.recursos;
         if (typeof rec === 'string') {
@@ -525,30 +425,8 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                         </h2>
                         
                         <div className="flex overflow-x-auto pb-6 gap-5 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pt-1">
-                            {/* Especificaciones Curriculares */}
-                            <button
-                                type="button"
-                                onClick={() => window.open(`/especificaciones.html?cursoId=${cursoSel}&seqId=new`, '_blank')}
-                                className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"
-                            >
-                                <div className="w-full h-32 flex flex-col items-center justify-center mb-2">
-                                    <img
-                                        src="/especificaciones-icon.png"
-                                        alt=""
-                                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-sm"
-                                        onError={(e) => { e.currentTarget.src = BOOK_ICONS[0]; }}
-                                    />
-                                </div>
-                                <h3 className="text-[10px] font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-left w-full px-0.5 line-clamp-2 leading-snug">
-                                    Especificaciones Curriculares
-                                </h3>
-                                <p className="mt-1 text-[9px] font-bold text-(--primary) text-left uppercase tracking-widest bg-(--primary)/10 px-1.5 py-0.5 rounded-full">
-                                    Interactivo
-                                </p>
-                            </button>
-
                             {/* Resto de secuencias didácticas del curso */}
-                            {secuenciasCurso.map((seq, index) => {
+                            {secuenciasPlantillas.map((seq, index) => {
                                 const curso = state.cursos.find((item) => item.id === seq.cursoId);
                                 const bookIcon = BOOK_ICONS[index % BOOK_ICONS.length];
                                 const filledDots = getDotCount(seq.estado);
@@ -560,40 +438,36 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                         type="button"
                                         onClick={async (e) => {
                                             e.preventDefault();
-                                            if (seq.titulo.startsWith('Especificaciones Curriculares')) {
-                                                window.open(`/especificaciones.html?cursoId=${cursoSel}&seqId=${seq.id}`, '_blank');
+                                            if (seq.contenidoHtml) {
+                                                setViewerSeq(seq);
                                             } else {
-                                                if (seq.contenidoHtml) {
-                                                    setViewerSeq(seq);
-                                                } else {
-                                                    // Chequear caché en memoria
-                                                    const cached = getValidSecuencia(session?.user?.id, seq.cursoId, seq.id);
-                                                    if (cached?.contenidoHtml) {
-                                                        setViewerSeq(cached);
-                                                        return;
+                                                // Chequear caché en memoria
+                                                const cached = getValidSecuencia(session?.user?.id, seq.cursoId, seq.id);
+                                                if (cached?.contenidoHtml) {
+                                                    setViewerSeq(cached);
+                                                    return;
+                                                }
+                                                // Poner estado preliminar mientras descarga
+                                                setViewerSeq(seq);
+                                                const { data } = await supabase
+                                                    .from('secuencias')
+                                                    .select('id, contenido_html, recursos')
+                                                    .eq('id', seq.id)
+                                                    .single();
+                                                if (data) {
+                                                    const fullSeq: Secuencia = {
+                                                        ...seq,
+                                                        contenidoHtml: data.contenido_html || '',
+                                                        recursos: data.recursos ? (Array.isArray(data.recursos) ? data.recursos : (() => { try { return JSON.parse(data.recursos); } catch { return []; } })()) : seq.recursos
+                                                    };
+                                                    setViewerSeq(fullSeq);
+                                                    if (session?.user?.id) {
+                                                        saveSecuencia(session.user.id, fullSeq);
                                                     }
-                                                    // Poner estado preliminar mientras descarga
-                                                    setViewerSeq(seq);
-                                                    const { data } = await supabase
-                                                        .from('secuencias')
-                                                        .select('id, contenido_html, recursos')
-                                                        .eq('id', seq.id)
-                                                        .single();
-                                                    if (data) {
-                                                        const fullSeq: Secuencia = {
-                                                            ...seq,
-                                                            contenidoHtml: data.contenido_html || '',
-                                                            recursos: data.recursos ? (Array.isArray(data.recursos) ? data.recursos : (() => { try { return JSON.parse(data.recursos); } catch { return []; } })()) : seq.recursos
-                                                        };
-                                                        setViewerSeq(fullSeq);
-                                                        if (session?.user?.id) {
-                                                            saveSecuencia(session.user.id, fullSeq);
-                                                        }
-                                                        useAppStore.getState().setAppState(s => ({
-                                                            ...s,
-                                                            secuencias: s.secuencias.map(item => item.id === seq.id ? fullSeq : item)
-                                                        }));
-                                                    }
+                                                    useAppStore.getState().setAppState(s => ({
+                                                        ...s,
+                                                        secuencias: s.secuencias.map(item => item.id === seq.id ? fullSeq : item)
+                                                    }));
                                                 }
                                             }
                                         }}

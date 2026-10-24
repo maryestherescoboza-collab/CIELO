@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Printer, Sparkles, X, Plus, Paintbrush } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, X, Plus, Paintbrush, BookOpen, FileDown } from 'lucide-react';
 import type { AppState, Secuencia, Curso } from '../types';
 import { useAppStore } from '../store/appStore';
 import { supabase } from '../lib/supabase';
@@ -10,14 +10,23 @@ import { getAIAIProvider, isProviderConfigured, providerDisplayName, saveAIKey }
 import { getPlanificacionDiariaTemplate } from '../templates/planificacion-diaria';
 import {
     extraerContextoPlanificacion,
-    desarrolloSuficiente,
+    contextoSuficiente,
     generarSugerenciasPedagogicas,
     asignarIdsDeCeldas,
     celdaRequiereConfirmacion,
     escribirEnCelda,
-    type SugerenciasIA,
-    type CategoriaSugerencia
+    type CategoriaSugerencia as CategoriaSugerenciaType
 } from '../lib/aiPlanificacion';
+import { useCombinacionesCurriculares } from '../hooks/useCombinacionesCurriculares';
+import { useCurriculumPeriodo } from '../hooks/useCurriculumPeriodo';
+import type { ItemCurricular } from '../hooks/useCurriculumPeriodo';
+import { useActividadesPeriodo } from '../hooks/useActividadesPeriodo';
+import { PERIODOS_ACADEMICOS } from '../cache/academicCache';
+import { getAsignaturaNombre } from '../constants/asignaturas';
+import PanelCurricular from '../components/planificacion/PanelCurricular';
+import ModalActividadesContexto from '../components/planificacion/ModalActividadesContexto';
+import { descargarPlanificacionDocx } from '../utils/planificacionDocx';
+import type { CombinacionCurricular } from '../types/especificaciones';
 
 interface Props {
     state: AppState;
@@ -35,8 +44,8 @@ interface SeccionSugerenciasProps {
     items: string[];
     prefijoClave: string;
     insertadas: Set<string>;
-    onInsertar: (clave: string, sugerencia: CategoriaSugerencia) => void;
-    construir: (texto: string) => CategoriaSugerencia;
+    onInsertar: (clave: string, sugerencia: CategoriaSugerenciaType) => void;
+    construir: (texto: string) => CategoriaSugerenciaType;
 }
 
 function SeccionSugerencias({ titulo, items, prefijoClave, insertadas, onInsertar, construir }: SeccionSugerenciasProps) {
@@ -99,6 +108,9 @@ function obtenerCeldaDestino(target: HTMLElement | null): HTMLElement | null {
 
 const CURSOR_BROCHA = 'url("/icons/brocha.svg") 8 25, copy';
 
+/** Texto aplicable sobre una celda (sugerencia de IA o elemento curricular). */
+type SugerenciaAplicable = { tipo: CategoriaSugerenciaType['tipo']; texto: string };
+
 export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, onAddSecuencia }: Props) {
     const { id } = useParams<{ id: string }>();
     const esPlantilla = id === 'plantilla';
@@ -109,23 +121,100 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
     const [localCursoId, setLocalCursoId] = useState<number>(0);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [descargandoWord, setDescargandoWord] = useState(false);
+    const [wordError, setWordError] = useState<string | null>(null);
     const session = useAppStore(s => s.session);
+
+    /* ---------------- Período, currículo y actividades ---------------- */
+    const [periodoSel, setPeriodoSel] = useState<string>('P1');
+    const [asignaturaSel, setAsignaturaSel] = useState<string>('');
+    const [panelCurricular, setPanelCurricular] = useState(false);
+    const [modalActividades, setModalActividades] = useState(false);
+    const [actividadesSeleccionadas, setActividadesSeleccionadas] = useState<Set<number>>(new Set());
+    const [contextoExtra, setContextoExtra] = useState('');
+
+    const combinaciones = useCombinacionesCurriculares();
+
+    /** Cursos realmente vinculados al usuario (curso_docentes ⨝ cursos). */
+    const opcionesCurso = useMemo(() => {
+        if (combinaciones.length > 0) {
+            const mapa = new Map<number, string>();
+            for (const c of combinaciones) {
+                if (!mapa.has(c.cursoId)) {
+                    mapa.set(c.cursoId, `${c.grado} ${c.seccion} • ${c.asignaturaNombre || c.asignatura}`);
+                }
+            }
+            return Array.from(mapa.entries()).map(([id, label]) => ({ id, label }));
+        }
+        return state.cursos.map(c => ({ id: c.id, label: getCursoLabel(c) }));
+    }, [combinaciones, state.cursos]);
+
+    /** Combinaciones (curso + asignatura) del curso seleccionado. */
+    const combinacionesCurso = useMemo(
+        () => combinaciones.filter(c => c.cursoId === localCursoId),
+        [combinaciones, localCursoId]
+    );
+
+    /** Combinación legada: curso propio sin vínculo en `curso_docentes`. */
+    const comboLegado = useMemo<CombinacionCurricular | null>(() => {
+        if (!localCursoId) return null;
+        const curso = state.cursos.find(c => c.id === localCursoId);
+        if (!curso) return null;
+        const asignatura = curso.asignatura || '';
+        return {
+            key: `${curso.id}|${asignatura}`,
+            cursoId: curso.id,
+            cursoDocenteId: null,
+            grado: curso.grado || '',
+            seccion: curso.seccion || '',
+            cursoNombre: curso.nombre || `${curso.grado} ${curso.seccion}`,
+            asignatura,
+            asignaturaNombre: getAsignaturaNombre(asignatura),
+        };
+    }, [localCursoId, state.cursos]);
+
+    const comboActual = useMemo<CombinacionCurricular | null>(() => {
+        if (!localCursoId) return null;
+        const encontrada = combinacionesCurso.find(c => c.asignatura === asignaturaSel) ?? combinacionesCurso[0];
+        return encontrada ?? comboLegado;
+    }, [combinacionesCurso, asignaturaSel, comboLegado, localCursoId]);
+
+    const curriculo = useCurriculumPeriodo(comboActual, periodoSel);
+    const actividadesEstado = useActividadesPeriodo(localCursoId, periodoSel, modalActividades);
+
+    // Al cambiar de curso o período, la selección de actividades deja de ser válida.
+    useEffect(() => {
+        setActividadesSeleccionadas(new Set());
+    }, [localCursoId, periodoSel]);
+
+    // La asignatura se reinicia al cambiar de curso: cada curso puede tener otras.
+    useEffect(() => {
+        setAsignaturaSel('');
+    }, [localCursoId]);
 
     const [panelIA, setPanelIA] = useState(false);
     const [iaCargando, setIaCargando] = useState(false);
     const [iaError, setIaError] = useState<string | null>(null);
-    const [sugerencias, setSugerencias] = useState<SugerenciasIA | null>(null);
+    const [sugerencias, setSugerencias] = useState<Awaited<ReturnType<typeof generarSugerenciasPedagogicas>> | null>(null);
     const [insertadas, setInsertadas] = useState<Set<string>>(new Set());
     const [necesitaKey, setNecesitaKey] = useState(false);
     const [apiKeyInput, setApiKeyInput] = useState('');
-    const [modalContextoOpen, setModalContextoOpen] = useState(false);
-    const [contextoInput, setContextoInput] = useState('');
     const abortRef = useRef<AbortController | null>(null);
     const badgeTimersRef = useRef<Record<string, number>>({});
-    const [brocha, setBrocha] = useState<{ clave: string; sugerencia: CategoriaSugerencia } | null>(null);
+    const [brocha, setBrocha] = useState<{ clave: string; sugerencia: SugerenciaAplicable } | null>(null);
     const [celdaPendiente, setCeldaPendiente] = useState<{ celda: HTMLElement; clave: string; texto: string } | null>(null);
     const celdasBrochaRef = useRef<HTMLElement[]>([]);
     const hoverCellRef = useRef<HTMLElement | null>(null);
+    const workspaceRef = useRef<HTMLDivElement | null>(null);
+
+    // En pantallas estrechas los paneles se apilan sobre el documento: al abrirlos
+    // se带回 el workspace al inicio para que el panel quede a la vista.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (window.innerWidth >= 1280) return;
+        if (!panelCurricular && !panelIA) return;
+        workspaceRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [panelCurricular, panelIA]);
 
     const marcarInsertada = (clave: string) => {
         setInsertadas(prev => new Set(prev).add(clave));
@@ -158,7 +247,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
         setBrocha(null);
     }, []);
 
-    const activarBrocha = (clave: string, sugerencia: CategoriaSugerencia) => {
+    const activarBrocha = (clave: string, sugerencia: SugerenciaAplicable) => {
         setCeldaPendiente(null);
         setBrocha({ clave, sugerencia });
         requestAnimationFrame(() => {
@@ -497,18 +586,47 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
         setTimeout(() => setSaveSuccess(false), 2500);
     };
 
+    /** Texto de las actividades seleccionadas, listo para el prompt. */
+    const lineasActividades = useMemo(() => {
+        const ids = new Set(actividadesSeleccionadas);
+        return actividadesEstado.actividades
+            .filter(a => ids.has(a.id))
+            .map(a => {
+                const partes = [`Actividad: ${a.nombre || 'Sin nombre'}`];
+                if (a.fecha) partes.push(`fecha ${a.fecha}`);
+                if (a.indicador) partes.push(`indicador ${a.indicador}`);
+                if (a.producto) partes.push(`producto ${a.producto}`);
+                if (a.descripcion) partes.push(`descripción: ${a.descripcion}`);
+                return partes.join(' | ');
+            });
+    }, [actividadesEstado.actividades, actividadesSeleccionadas]);
+
+    /** Currículo vigente del período, listo para el prompt (contexto mínimo). */
+    const contextoCurriculo = useMemo(() => ({
+        periodo: periodoSel,
+        competencias: curriculo.datos.competencias
+            .slice(0, 8)
+            .map(c => (c.texto ? `${c.codigo}: ${c.texto}` : c.codigo))
+            .filter(Boolean),
+        indicadores: curriculo.datos.indicadores
+            .slice(0, 12)
+            .map(i => (i.codigo ? `${i.codigo}: ${i.texto}` : i.texto))
+            .filter(Boolean),
+        contenidos: curriculo.datos.contenidos.slice(0, 12).map(c => c.texto).filter(Boolean),
+    }), [curriculo.datos, periodoSel]);
+
     const handleClickSugerir = () => {
         const userId = session?.user?.id;
         if (!userId) { setIaError('Sesión de usuario no válida.'); return; }
         if (!isProviderConfigured(userId, getAIAIProvider(userId))) { setNecesitaKey(true); setPanelIA(true); return; }
-        
-        setContextoInput('');
-        setModalContextoOpen(true);
+
+        setContextoExtra('');
+        setModalActividades(true);
     };
 
     const handleGenerarSugerencias = async (textoContextoAdicional?: string) => {
         if (!seq || iaCargando) return;
-        setModalContextoOpen(false);
+        setModalActividades(false);
         const contenedor = document.getElementById('template-editor-container');
         if (!contenedor) return;
 
@@ -517,8 +635,14 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
 
         if (!isProviderConfigured(userId, getAIAIProvider(userId))) { setNecesitaKey(true); setPanelIA(true); return; }
 
-        const contexto = extraerContextoPlanificacion(contenedor);
-        if (!textoContextoAdicional && !desarrolloSuficiente(contexto)) {
+        const base = extraerContextoPlanificacion(contenedor);
+        const contexto = {
+            ...base,
+            ...(lineasActividades.length > 0 ? { actividades: lineasActividades } : {}),
+            curriculum: contextoCurriculo,
+        };
+
+        if (!textoContextoAdicional && !contextoSuficiente(contexto)) {
             setPanelIA(true);
             setIaError('Escribe primero el desarrollo de tu clase o proporciona un contexto para que la IA pueda analizarlo.');
             return;
@@ -556,11 +680,48 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
         saveAIKey(userId, getAIAIProvider(userId), apiKeyInput);
         setApiKeyInput('');
         setNecesitaKey(false);
-        await handleGenerarSugerencias();
+        // Con la clave lista se abre el selector de actividades: la IA siempre
+        // recibe el contexto real del curso antes de sugerir.
+        setContextoExtra('');
+        setModalActividades(true);
     };
 
-    const handleInsertar = (clave: string, sugerencia: CategoriaSugerencia) => {
+    const handleInsertar = (clave: string, sugerencia: CategoriaSugerenciaType) => {
         activarBrocha(clave, sugerencia);
+    };
+
+    /** Inserta un elemento curricular con el mismo pincel: el docente elige la celda. */
+    const handleInsertarCurricular = (item: ItemCurricular) => {
+        const texto = item.codigo ? `${item.codigo}: ${item.texto}` : item.texto;
+        if (!texto.trim()) return;
+        activarBrocha(item.id, { tipo: 'desarrollo', texto });
+    };
+
+    /** Exporta el documento tal como se ve en el editor (incluye cambios sin guardar). */
+    const handleDescargarWord = async () => {
+        const contenedor = document.getElementById('template-editor-container');
+        if (!contenedor) {
+            setWordError('No se encontró el documento de la planificación.');
+            return;
+        }
+
+        setDescargandoWord(true);
+        setWordError(null);
+        try {
+            const perfil = state.perfiles.find(p => p.userId === session?.user?.id);
+            await descargarPlanificacionDocx(contenedor, {
+                asignatura: comboActual?.asignaturaNombre || comboActual?.asignatura || undefined,
+                curso: comboActual ? `${comboActual.grado} ${comboActual.seccion}`.trim() : undefined,
+                periodo: periodoSel,
+                titulo: localTitulo,
+                docente: perfil?.nombreDocente || undefined,
+                centro: state.centros?.find(c => c.id === perfil?.centro_id)?.nombre || undefined,
+            });
+        } catch (err) {
+            setWordError((err as Error)?.message || 'No se pudo generar el archivo Word.');
+        } finally {
+            setDescargandoWord(false);
+        }
     };
 
     if (loading) {
@@ -590,9 +751,9 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
     }
 
     return (
-        <div className="fixed inset-0 z-100 bg-(--background) flex flex-col w-full h-full">
-            <div className="bg-white border-b border-(--border-soft) px-6 py-4 flex items-center justify-between shrink-0 shadow-sm">
-                <div className="flex items-center gap-4">
+        <div className="fixed inset-0 z-100 bg-(--background) flex flex-col w-full h-full print:static print:z-auto print:h-auto print:min-h-0 print:overflow-visible">
+            <div className="bg-white border-b border-(--border-soft) px-6 py-4 flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-sm">
+                <div className="flex flex-wrap items-center gap-4">
                     <button
                         type="button"
                         onClick={() => navigate('/planificacion')}
@@ -601,10 +762,10 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                     >
                         <ArrowLeft size={16} />
                     </button>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1 w-full sm:w-auto">
                         <label className="text-[10px] font-black uppercase tracking-widest text-(--ink-soft)">Título de la Planificación</label>
                         <input 
-                            className="px-3 py-1.5 text-xs font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-72 transition-colors"
+                            className="px-3 py-1.5 text-xs font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-full sm:w-72 transition-colors"
                             value={localTitulo}
                             onChange={e => setLocalTitulo(e.target.value)}
                             placeholder="Ej. Unidad 1 - Comprensión lectora"
@@ -612,20 +773,56 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                     </div>
                 </div>
 
-                <div className="flex items-center gap-6">
-                    <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto justify-end">
+                    <div className="flex flex-col gap-1 w-full sm:w-auto">
                         <label className="text-[10px] font-black uppercase tracking-widest text-(--ink-soft)">Curso Vinculado</label>
                         <select 
-                            className="px-3 py-1.5 text-xs font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-64 transition-colors cursor-pointer"
+                            className="px-3 py-1.5 text-xs font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-full sm:w-64 transition-colors cursor-pointer"
                             value={localCursoId}
                             onChange={e => setLocalCursoId(Number(e.target.value))}
                         >
                             <option value={0}>Selecciona un curso</option>
-                            {state.cursos.map(c => <option key={c.id} value={c.id}>{getCursoLabel(c)}</option>)}
+                            {opcionesCurso.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                         </select>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    {combinacionesCurso.length > 1 && (
+                        <div className="flex flex-col gap-1 w-full sm:w-auto">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-(--ink-soft)">Asignatura</label>
+                            <select
+                                className="px-3 py-1.5 text-xs font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-full sm:w-40 transition-colors cursor-pointer"
+                                value={comboActual?.asignatura || ''}
+                                onChange={e => setAsignaturaSel(e.target.value)}
+                            >
+                                {combinacionesCurso.map(c => (
+                                    <option key={c.asignatura} value={c.asignatura}>{c.asignaturaNombre || c.asignatura}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col gap-1 w-full sm:w-auto">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-(--ink-soft)">Período</label>
+                        <select
+                            className="px-3 py-1.5 text-xs font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-full sm:w-24 transition-colors cursor-pointer"
+                            value={periodoSel}
+                            onChange={e => setPeriodoSel(e.target.value)}
+                        >
+                            {PERIODOS_ACADEMICOS.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                    </div>
+
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setPanelCurricular(v => !v)}
+                            disabled={!localCursoId}
+                            title="Ver el currículo aplicado en el período"
+                            className={`h-9 px-3 rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm transition-all outline-none flex items-center gap-1.5 disabled:opacity-50 ${panelCurricular ? 'bg-(--primary) text-white' : 'bg-white border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/30'}`}
+                        >
+                            <BookOpen size={14} /> Currículo
+                        </button>
                         <button
                             type="button"
                             onClick={handleClickSugerir}
@@ -637,10 +834,12 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                         </button>
                         <button
                             type="button"
-                            onClick={() => window.print()}
-                            className="h-9 px-4 rounded-xl bg-white border border-(--border-soft) text-(--ink-soft) text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-(--linen)/30 transition-all outline-none flex items-center gap-1.5"
+                            onClick={() => void handleDescargarWord()}
+                            disabled={descargandoWord}
+                            title="Descargar la planificación como documento Word (.docx)"
+                            className="h-9 px-4 rounded-xl bg-white border border-(--border-soft) text-(--ink-soft) text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-(--linen)/30 transition-all outline-none flex items-center gap-1.5 disabled:opacity-50"
                         >
-                            <Printer size={14} /> Imprimir / PDF
+                            <FileDown size={14} /> {descargandoWord ? 'Generando...' : 'Descargar Word'}
                         </button>
                         <button
                             type="button"
@@ -654,16 +853,42 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-(--linen)/20 flex justify-center relative">
-                <div className="w-full max-w-6xl bg-white shadow-sm border border-(--border-soft) p-8 rounded-(--radius-md) shrink-0">
-                    <div 
-                        id="template-editor-container"
-                        className="prose prose-slate max-w-none prose-sm w-full"
-                        dangerouslySetInnerHTML={{ __html: seq.contenidoHtml }}
-                        onClick={handleClicPlantilla}
-                        onMouseOver={handleOverPlantilla}
-                        onMouseLeave={handleLeavePlantilla}
-                    />
+            {/* Espacio de trabajo: columna curricular (izq) + documento + asistente IA (der).
+                Los paneles son columnas en flujo con scroll propio: nunca tapan el documento.
+                En pantallas estrechas se apilan sobre el documento con altura limitada. */}
+            <div ref={workspaceRef} className="flex-1 min-h-0 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden bg-(--linen)/20 relative print:overflow-visible">
+                {panelCurricular && comboActual && (
+                    <div className="order-1 xl:order-1 w-full xl:w-[320px] 2xl:w-[360px] shrink-0 bg-white border-b xl:border-b-0 xl:border-r border-(--border-soft) print:hidden flex flex-col min-h-0 max-h-[26vh] xl:max-h-none">
+                        <PanelCurricular
+                            periodo={periodoSel}
+                            grado={comboActual.grado}
+                            seccion={comboActual.seccion}
+                            asignatura={comboActual.asignaturaNombre || comboActual.asignatura}
+                            cargando={curriculo.cargando}
+                            error={curriculo.error}
+                            tieneEspecificacion={curriculo.datos.tieneEspecificacion}
+                            tienePeriodo={curriculo.datos.tienePeriodo}
+                            competencias={curriculo.datos.competencias}
+                            indicadores={curriculo.datos.indicadores}
+                            contenidos={curriculo.datos.contenidos}
+                            insertados={insertadas}
+                            onInsertar={handleInsertarCurricular}
+                            onCerrar={() => setPanelCurricular(false)}
+                        />
+                    </div>
+                )}
+
+                <div className="order-3 xl:order-2 flex-none xl:flex-1 w-full min-w-0 min-h-0 overflow-visible xl:overflow-y-auto p-4 md:p-8 flex justify-center print:overflow-visible print:p-0">
+                    <div className="w-full max-w-6xl bg-white shadow-sm border border-(--border-soft) p-8 rounded-(--radius-md) print:max-w-none print:border-0 print:shadow-none print:p-0">
+                        <div 
+                            id="template-editor-container"
+                            className="prose prose-slate max-w-none prose-sm w-full"
+                            dangerouslySetInnerHTML={{ __html: seq.contenidoHtml }}
+                            onClick={handleClicPlantilla}
+                            onMouseOver={handleOverPlantilla}
+                            onMouseLeave={handleLeavePlantilla}
+                        />
+                    </div>
                 </div>
 
                 {brocha && !celdaPendiente && (
@@ -707,46 +932,47 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                 )}
 
                 {saveSuccess && (
-                    <div className="fixed bottom-6 right-6 px-4 py-2 bg-emerald-600 text-white rounded-lg shadow-lg text-xs font-bold uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="fixed bottom-6 right-6 z-70 px-4 py-2 bg-emerald-600 text-white rounded-lg shadow-lg text-xs font-bold uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2 duration-300">
                         Cambios guardados correctamente
                     </div>
                 )}
 
-                {/* Modal Contexto IA */}
-                {modalContextoOpen && (
-                    <div className="fixed inset-0 z-110 bg-black/40 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in fade-in zoom-in-95 duration-200">
-                            <h3 className="text-[15px] font-black uppercase tracking-widest text-(--ink) mb-2">Contexto de la actividad</h3>
-                            <p className="text-[12px] text-(--ink-soft) mb-5">
-                                Cuéntale a la IA qué actividad estás desarrollando o qué quieres trabajar. Mientras más contexto proporciones, más específicas serán las sugerencias.
-                            </p>
-                            <textarea
-                                value={contextoInput}
-                                onChange={e => setContextoInput(e.target.value)}
-                                placeholder="Ej: Los estudiantes resolverán un problema de proporcionalidad utilizando situaciones de la vida cotidiana..."
-                                className="w-full h-32 px-4 py-3 text-[13px] border border-(--border-soft) rounded-xl outline-none focus:border-(--primary) resize-none mb-6 text-(--ink) bg-(--linen)/10"
-                                autoFocus
-                            />
-                            <div className="flex gap-3 justify-end">
-                                <button
-                                    onClick={() => setModalContextoOpen(false)}
-                                    className="px-5 py-2.5 rounded-xl border border-(--border-soft) text-[11px] font-black uppercase tracking-widest text-(--ink-soft) hover:bg-(--linen)/30 transition-colors cursor-pointer"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={() => handleGenerarSugerencias(contextoInput.trim())}
-                                    className="px-5 py-2.5 rounded-xl bg-(--primary) text-white text-[11px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
-                                >
-                                    Continuar
-                                </button>
-                            </div>
-                        </div>
+                {wordError && (
+                    <div className="fixed bottom-6 right-6 z-70 max-w-xs px-4 py-3 bg-red-600 text-white rounded-lg shadow-lg text-xs font-bold leading-relaxed animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {wordError}
                     </div>
                 )}
 
+                {/* Modal de actividades reales + contexto para la IA */}
+                {modalActividades && (
+                    <ModalActividadesContexto
+                        periodo={periodoSel}
+                        cursoLabel={comboActual ? `${comboActual.grado} ${comboActual.seccion}` : getCursoLabel(state.cursos.find(c => c.id === localCursoId))}
+                        actividades={actividadesEstado.actividades}
+                        cargando={actividadesEstado.cargando}
+                        error={actividadesEstado.error}
+                        seleccionados={actividadesSeleccionadas}
+                        resumenCurriculo={{
+                            competencias: contextoCurriculo.competencias.length,
+                            indicadores: contextoCurriculo.indicadores.length,
+                            contenidos: contextoCurriculo.contenidos.length,
+                        }}
+                        contexto={contextoExtra}
+                        onContexto={setContextoExtra}
+                        onAlternar={id => setActividadesSeleccionadas(prev => {
+                            const next = new Set(prev);
+                            if (next.has(id)) next.delete(id); else next.add(id);
+                            return next;
+                        })}
+                        onTodas={() => setActividadesSeleccionadas(new Set(actividadesEstado.actividades.map(a => a.id)))}
+                        onNinguna={() => setActividadesSeleccionadas(new Set())}
+                        onConfirmar={() => void handleGenerarSugerencias(contextoExtra.trim())}
+                        onCerrar={() => setModalActividades(false)}
+                    />
+                )}
+
                 {panelIA && (
-                    <aside className="print:hidden fixed right-0 top-0 bottom-0 w-full sm:w-100 z-50 bg-white border-l border-(--border-soft) shadow-2xl flex flex-col">
+                    <aside className="order-2 xl:order-3 w-full xl:w-[340px] 2xl:w-[400px] shrink-0 bg-white border-t xl:border-t-0 xl:border-l border-(--border-soft) print:hidden flex flex-col min-h-0 max-h-[26vh] xl:max-h-none">
                         <div className="px-5 py-4 border-b border-(--border-soft) flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-2">
                                 <Sparkles size={16} className="text-(--primary)" />
@@ -763,6 +989,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                         </div>
 
                         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
                             {necesitaKey && (
                                 <div className="space-y-2.5 p-4 rounded-xl border border-(--border-soft) bg-(--linen)/20">
                                     <p className="text-[11px] font-bold text-(--ink)">Configura tu API Key de {providerDisplayName(getAIAIProvider(session?.user?.id))} para recibir sugerencias.</p>
@@ -790,6 +1017,19 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                                 </div>
                             )}
 
+                            {(lineasActividades.length > 0 || contextoCurriculo.indicadores.length > 0) && (
+                                <div className="p-3 rounded-xl border border-(--border-soft) bg-(--linen)/20 space-y-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-(--ink-soft)">Contexto enviado</p>
+                                    <p className="text-[11px] text-(--ink) leading-relaxed">
+                                        {lineasActividades.length > 0
+                                            ? `${lineasActividades.length} actividad(es) real(es) del curso`
+                                            : 'Sin actividades seleccionadas'}
+                                        {' · '}Currículo {periodoSel}: {contextoCurriculo.indicadores.length} indicador(es),
+                                        {' '}{contextoCurriculo.contenidos.length} contenido(s).
+                                    </p>
+                                </div>
+                            )}
+
                             {iaCargando && (
                                 <div className="flex flex-col items-center justify-center py-12 space-y-3">
                                     <span className="w-8 h-8 border-4 border-(--primary) border-t-transparent rounded-full animate-spin" />
@@ -800,22 +1040,22 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                             {!iaCargando && sugerencias && (
                                 <>
                                     {sugerencias.inicio && sugerencias.inicio.length > 0 && (
-                                        <SeccionSugerencias titulo="Inicio sugerido" items={sugerencias.inicio} prefijoClave="ini" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'inicio', texto: t })} />
+                                        <SeccionSugerencias titulo="Inicio sugerido" items={sugerencias.inicio} prefijoClave="ini" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerenciaType => ({ tipo: 'inicio', texto: t })} />
                                     )}
                                     {sugerencias.desarrollo && sugerencias.desarrollo.length > 0 && (
-                                        <SeccionSugerencias titulo="Desarrollo sugerido" items={sugerencias.desarrollo} prefijoClave="des" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'desarrollo', texto: t })} />
+                                        <SeccionSugerencias titulo="Desarrollo sugerido" items={sugerencias.desarrollo} prefijoClave="des" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerenciaType => ({ tipo: 'desarrollo', texto: t })} />
                                     )}
                                     {sugerencias.cierre && sugerencias.cierre.length > 0 && (
-                                        <SeccionSugerencias titulo="Cierre sugerido" items={sugerencias.cierre} prefijoClave="cie" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'cierre', texto: t })} />
+                                        <SeccionSugerencias titulo="Cierre sugerido" items={sugerencias.cierre} prefijoClave="cie" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerenciaType => ({ tipo: 'cierre', texto: t })} />
                                     )}
                                     {sugerencias.recursos.length > 0 && (
-                                        <SeccionSugerencias titulo="Recursos sugeridos" items={sugerencias.recursos} prefijoClave="rec" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'recursos', texto: t })} />
+                                        <SeccionSugerencias titulo="Recursos sugeridos" items={sugerencias.recursos} prefijoClave="rec" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerenciaType => ({ tipo: 'recursos', texto: t })} />
                                     )}
                                     {sugerencias.estrategiaInclusiva.length > 0 && (
-                                        <SeccionSugerencias titulo="Estrategia inclusiva" items={sugerencias.estrategiaInclusiva} prefijoClave="inc" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'estrategia', texto: t })} />
+                                        <SeccionSugerencias titulo="Estrategia inclusiva" items={sugerencias.estrategiaInclusiva} prefijoClave="inc" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerenciaType => ({ tipo: 'estrategia', texto: t })} />
                                     )}
                                     {sugerencias.evidencias.length > 0 && (
-                                        <SeccionSugerencias titulo="Evidencias del aprendizaje" items={sugerencias.evidencias} prefijoClave="evi" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'evidencia', texto: t })} />
+                                        <SeccionSugerencias titulo="Evidencias del aprendizaje" items={sugerencias.evidencias} prefijoClave="evi" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerenciaType => ({ tipo: 'evidencia', texto: t })} />
                                     )}
                                     {(sugerencias.evaluacion.tecnica || sugerencias.evaluacion.instrumento || sugerencias.evaluacion.sugerencia) && (
                                         <div className="space-y-2">
@@ -834,7 +1074,7 @@ export default function PlanificacionDiariaEditor({ state, onUpdateSecuencia, on
                                         </div>
                                     )}
                                     {sugerencias.metacognicion.length > 0 && (
-                                        <SeccionSugerencias titulo="Metacognición" items={sugerencias.metacognicion} prefijoClave="met" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerencia => ({ tipo: 'metacognicion', texto: t })} />
+                                        <SeccionSugerencias titulo="Metacognición" items={sugerencias.metacognicion} prefijoClave="met" insertadas={insertadas} onInsertar={handleInsertar} construir={(t): CategoriaSugerenciaType => ({ tipo: 'metacognicion', texto: t })} />
                                     )}
                                     <p className="text-[10px] text-(--ink-soft)/70 leading-relaxed pt-2 border-t border-(--border-soft)">
                                         Recomendaciones independientes de tu texto original. Inserta solo lo que consideres útil; tu desarrollo no se modifica automáticamente.

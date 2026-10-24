@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { X, Sparkles, Loader2, AlertCircle, Check } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
-import { getAIAIProvider, isProviderConfigured, providerDisplayName } from '../../lib/aiConfig';
 import { sugerirFichaPedagogica, type ContextoFichaIA } from '../../lib/aiFichas';
 import type { NotaContenido } from '../../types/planClases';
 import { NotaEditor } from './NotaEditor';
@@ -41,11 +40,6 @@ export function ModalSugerirFichaIA({ isOpen, onClose, onSuccess, contextoFicha,
     const handleGenerar = async () => {
         const userId = session?.user?.id;
         if (!userId) { setError('Sesión inválida'); return; }
-        
-        if (!isProviderConfigured(userId, getAIAIProvider(userId))) {
-            setError(`Configura tu API de ${providerDisplayName(getAIAIProvider(userId))} para utilizar esta función.`);
-            return;
-        }
 
         const temaLimpio = temaInput.trim() || undefined;
         const instLimpias = instruccionesInput.trim() || undefined;
@@ -190,8 +184,9 @@ export function ModalSugerirFichaIA({ isOpen, onClose, onSuccess, contextoFicha,
                                 <h4 className="font-bold text-[15px] text-[#2E3330]">Revisa la propuesta de ficha</h4>
                                 <p className="text-[13px] text-[#2E3330]/60 mt-1">Puedes hacer ajustes directamente en el texto antes de guardarla permanentemente.</p>
                                 {(propuestaGenerada as any)._fallbackUsed && (
-                                    <div className="mt-2 text-[11px] font-bold text-[#689C63] bg-[#689C63]/10 px-2 py-1 rounded-md inline-block">
-                                        Se utilizó el proveedor de respaldo.
+                                    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-medium">
+                                        <Sparkles size={12} className="text-amber-600 shrink-0" />
+                                        <span>Generado con el asistente de respaldo</span>
                                     </div>
                                 )}
                             </div>

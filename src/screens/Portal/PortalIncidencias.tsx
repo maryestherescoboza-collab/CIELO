@@ -207,7 +207,7 @@ export default function PortalIncidencias() {
             {selectedAsignatura && (
               <div className="hidden xs:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-stone-200 bg-stone-50 shadow-2xs">
                 <span className="text-xs">{activeOficial?.icono || '📖'}</span>
-                <span className="text-xs font-bold text-stone-800 truncate max-w-[120px]">{selectedAsignatura}</span>
+                <span className="text-xs font-bold text-stone-800 truncate max-w-30">{selectedAsignatura}</span>
               </div>
             )}
             

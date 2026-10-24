@@ -39,6 +39,29 @@ interface CentroExistenteInfo {
   centro: CentroRow | null;
 }
 
+function normalizeAuthError(err: unknown, defaultMessage = 'Ocurrió un error inesperado durante el proceso.'): { message: string; isNetworkError: boolean } {
+  if (!err) return { message: defaultMessage, isNetworkError: false };
+  const rawMsg = err instanceof Error ? err.message : typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : String(err);
+  const lower = rawMsg.toLowerCase();
+
+  if (lower.includes('email not confirmed')) {
+    return { message: 'Debes confirmar tu correo electrónico antes de iniciar sesión.', isNetworkError: false };
+  }
+  if (lower.includes('invalid login credentials') || lower.includes('invalid_credentials')) {
+    return { message: 'Correo o contraseña incorrectos. Por favor verifica tus credenciales.', isNetworkError: false };
+  }
+  if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('gateway timeout') || lower.includes('timeout') || lower.includes('connection refused') || lower.includes('504') || lower.includes('522')) {
+    return { 
+      message: 'No se pudo establecer conexión con el servidor. Verifica tu conexión a internet o intenta nuevamente en unos momentos.',
+      isNetworkError: true 
+    };
+  }
+  if (lower.includes('rate limit') || lower.includes('too many requests')) {
+    return { message: 'Demasiados intentos. Por favor espera unos minutos antes de intentar de nuevo.', isNetworkError: false };
+  }
+  return { message: rawMsg || defaultMessage, isNetworkError: false };
+}
+
 const Auth = ({ onAuthSuccess }: AuthProps) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -48,6 +71,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isNetworkError, setIsNetworkError] = useState(false);
   const [consentimientoAceptado, setConsentimientoAceptado] = useState(false);
 
   // Registro (flujo único)
@@ -141,6 +165,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setNeedsEmailConfirmation(false);
     setRegisteredWithCentro(false);
     setError(null);
+    setIsNetworkError(false);
     if (loginTimeoutRef.current) {
       clearTimeout(loginTimeoutRef.current);
       loginTimeoutRef.current = null;
@@ -161,6 +186,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     }
     setLoading(true);
     setError(null);
+    setIsNetworkError(false);
     setResendSuccess(null);
     setNeedsEmailConfirmation(false);
 
@@ -175,23 +201,11 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       if (error) throw error;
       onAuthSuccess();
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        if (err.message.toLowerCase().includes('email not confirmed') || err.message.includes('Email not confirmed')) {
-          setError('Debes confirmar tu correo electrónico antes de iniciar sesión.');
-          setNeedsEmailConfirmation(true);
-        } else {
-          setError(err.message);
-        }
-      } else if (typeof err === 'object' && err !== null && 'message' in err) {
-        const msg = String((err as any).message);
-        if (msg.toLowerCase().includes('email not confirmed') || msg.includes('Email not confirmed')) {
-          setError('Debes confirmar tu correo electrónico antes de iniciar sesión.');
-          setNeedsEmailConfirmation(true);
-        } else {
-          setError(msg);
-        }
-      } else {
-        setError('Ocurrió un error inesperado durante el proceso.');
+      const normalized = normalizeAuthError(err);
+      setError(normalized.message);
+      setIsNetworkError(normalized.isNetworkError);
+      if (normalized.message.includes('confirmar tu correo')) {
+        setNeedsEmailConfirmation(true);
       }
     } finally {
       if (loginTimeoutRef.current) {
@@ -673,7 +687,9 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       setForgotSuccess('Si existe una cuenta asociada a este correo electrónico, recibirás instrucciones para restablecer tu contraseña.');
     } catch (err: any) {
       console.error("[Auth.tsx] Error capturado en handleForgotPassword:", err);
-      setError(err.message || 'No se pudo enviar la solicitud de recuperación.');
+      const normalized = normalizeAuthError(err, 'No se pudo enviar la solicitud de recuperación.');
+      setError(normalized.message);
+      setIsNetworkError(normalized.isNetworkError);
     } finally {
       setLoading(false);
     }
@@ -722,9 +738,21 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
               </div>
 
               {error && (
-                <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-xs font-bold text-[#D45050] flex items-center gap-2">
-                  <span className="w-1 h-1 bg-[#D45050] rounded-full"></span>
-                  {error}
+                <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-xs font-bold text-[#D45050] flex items-center justify-between gap-3 animate-fade-in">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-1.5 h-1.5 bg-[#D45050] rounded-full shrink-0"></span>
+                    <span className="leading-snug">{error}</span>
+                  </div>
+                  {isNetworkError && (
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={loading}
+                      className="shrink-0 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-[#D45050]/10 hover:bg-[#D45050]/20 text-[#D45050] rounded-lg transition-all active:scale-95 cursor-pointer"
+                    >
+                      Reintentar
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -1399,9 +1427,21 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                 <>
                 <form onSubmit={handleAuth} className="space-y-4">
                   {error && (
-                    <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-xs font-bold text-[#D45050] flex items-center gap-2">
-                      <span className="w-1 h-1 bg-[#D45050] rounded-full"></span>
-                      {error}
+                    <div className="p-3 bg-[#D45050]/5 border border-[#D45050]/15 rounded-xl text-xs font-bold text-[#D45050] flex items-center justify-between gap-3 animate-fade-in">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-1.5 h-1.5 bg-[#D45050] rounded-full shrink-0"></span>
+                        <span className="leading-snug">{error}</span>
+                      </div>
+                      {isNetworkError && (
+                        <button
+                          type="button"
+                          onClick={handleLoginRetry}
+                          disabled={loading}
+                          className="shrink-0 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-[#D45050]/10 hover:bg-[#D45050]/20 text-[#D45050] rounded-lg transition-all active:scale-95 cursor-pointer"
+                        >
+                          Reintentar
+                        </button>
+                      )}
                     </div>
                   )}
 

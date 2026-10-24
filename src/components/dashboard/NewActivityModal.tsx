@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { MessageSquareText, Brain, Puzzle, Microscope } from 'lucide-react';
+import { MessageSquareText, Brain, Puzzle, Microscope, Sparkles } from 'lucide-react';
 import type { AppState, Actividad, BCKey } from '../../types';
 import { COMPETENCIAS_LABEL } from '../../types';
 import { TC_Flux, TC_Genesis, TC_Archive, TC_Echo } from '../icons/TerraCognitaIcons';
 import { CieloModal } from '../ui/CieloModal';
 import { useAppStore } from '../../store/appStore';
-import { getAIAIProvider, isProviderConfigured, providerDisplayName, saveAIKey } from '../../lib/aiConfig';
-import { callAI } from '../../lib/aiProvider';
+import { getAIAIProvider, isProviderConfigured, providerDisplayName, saveAIKey, saveAIAIProvider } from '../../lib/aiConfig';
+import { callAI, clearAICircuitBreakers } from '../../lib/aiProvider';
 import { calculateHash, cleanTechnicalText } from '../../lib/aiPreprocessor';
 import { getCurrentMonthAIUsage, type AIUsageStats } from '../../lib/aiUsage';
 
@@ -74,6 +74,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     
     // AI Usage state
     const [aiUsage, setAiUsage] = useState<AIUsageStats | null>(null);
+    const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
 
     // Fetch AI Usage when modal opens
     useEffect(() => {
@@ -97,6 +98,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         setFlowMode('choice');
         setPastedText('');
         setErrorMsg(null);
+        setFallbackNotice(null);
         setIsProcessing(false);
         setShowApiKeyPrompt(false);
         setTempApiKey('');
@@ -166,10 +168,11 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
 
     const handleSaveApiKey = () => {
         if (!tempApiKey.trim() || !session?.user?.id) return;
+        clearAICircuitBreakers(session.user.id);
         saveAIKey(session.user.id, getAIAIProvider(session.user.id), tempApiKey);
         setShowApiKeyPrompt(false);
         setTempApiKey('');
-        // handleProcessText(); // Deshabilitado temporalmente
+        handleProcessText();
     };
 
     const handleCopyPrompt = async () => {
@@ -261,7 +264,6 @@ Estructura obligatoria:
         }
     };
 
-    // @ts-expect-error unused temporalmente
     const handleProcessText = async () => {
         if (!pastedText.trim() || isProcessing) return;
 
@@ -402,6 +404,7 @@ Estructura obligatoria:
                     };
                 });
 
+                setFallbackNotice((data as any)._fallbackUsed ? ((data as any)._fallbackProvider || 'asistente de respaldo') : null);
                 setExtractedActivities(extracted);
                 setFlowMode('preview');
                 success = true;
@@ -600,12 +603,22 @@ ${pastedText}`;
     const getModalFooter = () => {
         if (showApiKeyPrompt) {
             return (
-                <div className="flex gap-4 w-full">
+                <div className="flex gap-3 w-full">
                     <button 
-                        className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95" 
+                        className="h-10 px-4 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95" 
                         onClick={() => { setShowApiKeyPrompt(false); setTempApiKey(''); }}
                     >
                         Cancelar
+                    </button>
+                    <button 
+                        className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all active:scale-95" 
+                        onClick={() => {
+                            if (session?.user?.id) saveAIAIProvider(session.user.id, 'deepseek');
+                            setShowApiKeyPrompt(false);
+                            handleProcessText();
+                        }}
+                    >
+                        Usar Asistente CIELO
                     </button>
                     <button 
                         className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 ${!tempApiKey.trim() ? 'opacity-50 cursor-not-allowed' : ''}`} 
@@ -995,6 +1008,13 @@ ${pastedText}`;
                                     />
                                 </div>
                             </div>
+
+                            {fallbackNotice && (
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-medium">
+                                    <Sparkles size={14} className="text-amber-600 shrink-0" />
+                                    <span>Actividades generadas con el asistente de respaldo</span>
+                                </div>
+                            )}
 
                             <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm">
                                 <table className="w-full text-left border-collapse bg-white">

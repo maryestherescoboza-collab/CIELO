@@ -22,14 +22,29 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Falta encabezado de autorización' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    )
+      serviceRoleKey,
+      { auth: { persistSession: false } }
+    );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-    if (userError || !user) throw new Error('No autorizado');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: `No autorizado: ${userError?.message || 'Token inválido'}` }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const { text, operation = 'analyze_activities', hash, textoOriginal = '' } = await req.json()
     if (!text) throw new Error('Texto es requerido');
@@ -189,18 +204,22 @@ Estructura obligatoria:
     }
 
     // 4. Guardar Log de Uso
-    await supabaseClient.from('ai_usage_logs').insert({
-      user_id: user.id,
-      provider: 'deepseek',
-      model: 'deepseek-chat',
-      operation: operation,
-      input_tokens: usage.prompt_tokens || 0,
-      output_tokens: outputTokens,
-      total_tokens: usage.total_tokens || 0,
-      cache_hit_tokens: inputHit,
-      cache_miss_tokens: inputMiss,
-      cost: cost
-    });
+    try {
+      await supabaseClient.from('ai_usage_logs').insert({
+        user_id: user.id,
+        provider: 'deepseek',
+        model: 'deepseek-chat',
+        operation: operation,
+        input_tokens: usage.prompt_tokens || 0,
+        output_tokens: outputTokens,
+        total_tokens: usage.total_tokens || 0,
+        cache_hit_tokens: inputHit,
+        cache_miss_tokens: inputMiss,
+        cost: cost
+      });
+    } catch (logErr) {
+      console.warn('[cielo-ai] No se pudo registrar ai_usage_logs:', logErr);
+    }
 
     // 5. Guardar en Biblioteca si tenemos hash y json
     if (hash && parsedJson) {

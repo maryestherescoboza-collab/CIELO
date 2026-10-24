@@ -1,4 +1,4 @@
-import type { BloqueCF, CompetenciaCurricular, FilaContenido, FilaIndicador } from '../types/especificaciones';
+import type { BloqueCF, CompetenciaCurricular, FilaCompetenciaEspecifica, FilaContenido, FilaIndicador } from '../types/especificaciones';
 
 /**
  * Estructura curricular oficial de las 7 Competencias Fundamentales.
@@ -32,15 +32,61 @@ export function crearCompetenciasBase(): CompetenciaCurricular[] {
   }));
 }
 
-/** La configuración base está completa cuando las 7 CF tienen código y descriptor. */
-export function configuracionCompleta(competencias: CompetenciaCurricular[] | null | undefined): boolean {
-  if (!Array.isArray(competencias) || competencias.length !== CF_BASE.length) return false;
-  return competencias.every((c) => c.bloque && c.nombre.trim() && c.codigo.trim() && c.descriptor.trim());
+/**
+ * Paleta CIELO por Competencia Fundamental, usada como acento de los indicadores
+ * de logro dentro de Plan de clases → Especificaciones curriculares.
+ */
+export const COLORES_BLOQUE_CF: Record<BloqueCF, string> = {
+  BC1: '#689C63',
+  BC2: '#537BAC',
+  BC3: '#DEAE4D',
+  BC4: '#EB8847',
+};
+
+/**
+ * Bloque CF a partir de un valor curricular de competencia: acepta el código
+ * («BC1»..«BC4») o el nombre exacto de la Competencia Fundamental (curr_indicadores.competencia).
+ */
+export function bloqueDeCompetencia(valor: unknown): BloqueCF | null {
+  const normalizado = normalizarTexto(valor);
+  if (!normalizado) return null;
+  const codigo = normalizado.match(/^bc\s*([1-4])$/);
+  if (codigo) return `BC${codigo[1]}` as BloqueCF;
+  for (const { bloque, competencias } of BLOQUES_CF) {
+    if (competencias.some((c) => normalizarTexto(c) === normalizado)) return bloque;
+  }
+  return null;
 }
 
-export function normalizarTexto(valor: string | null | undefined): string {
-  if (!valor) return '';
-  return valor
+/**
+ * BC real de un indicador de logro: su relación curricular en el catálogo
+ * (curr_indicadores.competencia), con un respaldo opcional (p. ej. el bloque
+ * de la CE con la que se agrupa) cuando el catálogo no trae el código.
+ */
+export function bloqueDeIndicador(
+  indicador: { competencia?: string | null } | null | undefined,
+  respaldo?: BloqueCF | null
+): BloqueCF | null {
+  return bloqueDeCompetencia(indicador?.competencia) ?? respaldo ?? null;
+}
+
+/** La configuración base está completa cuando al menos una competencia está seleccionada con código y descriptor. */
+export function configuracionCompleta(competencias: CompetenciaCurricular[] | null | undefined): boolean {
+  if (!Array.isArray(competencias) || competencias.length === 0) return false;
+  // Se toleran filas malformadas (null, tipos no string) guardadas en JSON: nunca deben romper el render.
+  return competencias.every(
+    (c) =>
+      !!c &&
+      typeof c === 'object' &&
+      !!c.bloque &&
+      normalizarTexto(c.codigo) !== '' &&
+      normalizarTexto(c.descriptor) !== ''
+  );
+}
+
+export function normalizarTexto(valor: unknown): string {
+  if (valor === null || valor === undefined) return '';
+  return String(valor)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[_-]+/g, ' ')
@@ -51,7 +97,7 @@ export function normalizarTexto(valor: string | null | undefined): string {
 
 /**
  * Clave comparable de asignatura entre el modelo operativo (slug en curso_docentes)
- * y el catálogo curricular (nombre completo en curr_indicadores / curr_contenidos).
+ * y el catálogo curricular (nombre completo en curr_indicadores / curr_contenidos / curr_competencias_especificas).
  * Incluye alias por variantes reales de los seeds ("Inglés" vs "Lenguas Extranjeras (Inglés)").
  */
 export function claveAsignatura(valor: string | null | undefined): string {
@@ -63,11 +109,22 @@ export function claveAsignatura(valor: string | null | undefined): string {
   if (n.includes('artistica')) return 'artistica';
   if (n.includes('naturaleza')) return 'ciencias_naturaleza';
   if (n.includes('sociales')) return 'ciencias_sociales';
+  if (n.includes('espanol') || (n.includes('lengua') && !n.includes('extranjera'))) return 'lengua_espanola';
+  if (n.includes('matematica')) return 'matematica';
+  if (n.includes('fisica') && !n.includes('naturaleza') && !n.includes('quimica')) return 'educacion_fisica';
   return n;
 }
 
 export function claveGrado(valor: string | null | undefined): string {
-  return normalizarTexto(valor).replace(/[^a-z0-9]/g, '');
+  if (!valor) return '';
+  const n = normalizarTexto(valor);
+  const match = n.match(/([1-6])\s*(?:ro|do|to|ero|er|o)?/);
+  if (match) {
+    const num = match[1];
+    const suf = num === '1' ? 'ro' : num === '2' ? 'do' : num === '3' ? 'ro' : 'to';
+    return `${num}${suf}`;
+  }
+  return n.replace(/[^a-z0-9]/g, '');
 }
 
 export function mismaAsignatura(a: string | null | undefined, b: string | null | undefined): boolean {
@@ -81,6 +138,20 @@ export function mismoGrado(a: string | null | undefined, b: string | null | unde
 }
 
 /**
+ * Competencias específicas del catálogo oficial estrictamente para el grado + asignatura indicados.
+ */
+export function filtrarCompetenciasEspecificas(
+  filas: FilaCompetenciaEspecifica[],
+  grado: string,
+  asignatura: string
+): FilaCompetenciaEspecifica[] {
+  if (!Array.isArray(filas)) return [];
+  return filas.filter(
+    (f) => !!f && typeof f === 'object' && mismoGrado(f.grado, grado) && mismaAsignatura(f.asignatura, asignatura)
+  );
+}
+
+/**
  * Indicadores del catálogo estrictamente para el grado + asignatura indicados.
  * El grado se filtra primero (índice curr_ind_grado_asig_comp) y la asignatura se
  * compara con normalización para absorber diferencias de formato.
@@ -90,8 +161,9 @@ export function filtrarIndicadores(
   grado: string,
   asignatura: string
 ): FilaIndicador[] {
+  if (!Array.isArray(filas)) return [];
   return filas.filter(
-    (f) => f.is_active !== false && mismoGrado(f.grado, grado) && mismaAsignatura(f.asignatura, asignatura)
+    (f) => !!f && typeof f === 'object' && f.is_active !== false && mismoGrado(f.grado, grado) && mismaAsignatura(f.asignatura, asignatura)
   );
 }
 
@@ -101,5 +173,8 @@ export function filtrarContenidos(
   grado: string,
   asignatura: string
 ): FilaContenido[] {
-  return filas.filter((f) => mismoGrado(f.grado, grado) && mismaAsignatura(f.asignatura, asignatura));
+  if (!Array.isArray(filas)) return [];
+  return filas.filter(
+    (f) => !!f && typeof f === 'object' && mismoGrado(f.grado, grado) && mismaAsignatura(f.asignatura, asignatura)
+  );
 }

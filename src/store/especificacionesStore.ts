@@ -24,6 +24,8 @@ interface EspecificacionesState {
   ) => Promise<EspecificacionDB | null>;
   getPeriodo: (especificacionId: string, periodo: string) => EspecificacionPeriodoDB | undefined;
   fetchPeriodo: (especificacionId: string, periodo: string) => Promise<EspecificacionPeriodoDB | null>;
+  /** Carga todos los períodos guardados de una especificación (para el resumen final). */
+  fetchPeriodos: (especificacionId: string) => Promise<void>;
   guardarPeriodo: (
     especificacionId: string,
     periodo: string,
@@ -37,6 +39,19 @@ interface EspecificacionesState {
 
 let fetchPromise: Promise<void> | null = null;
 
+const parseJsonArray = <T>(val: unknown): T[] => {
+  if (Array.isArray(val)) return val as T[];
+  if (typeof val === 'string' && val.trim()) {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed as T[];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 const toDB = (row: Record<string, unknown>): EspecificacionDB => ({
   id: row.id as string,
   usuario_id: row.usuario_id as string,
@@ -45,7 +60,7 @@ const toDB = (row: Record<string, unknown>): EspecificacionDB => ({
   grado: row.grado as string,
   seccion: row.seccion as string,
   asignatura: row.asignatura as string,
-  competencias: (row.competencias as CompetenciaCurricular[]) || [],
+  competencias: parseJsonArray<CompetenciaCurricular>(row.competencias),
   periodo_actual: (row.periodo_actual as string | null) ?? null,
   paso_actual: Number(row.paso_actual) || 1,
   creado_en: row.creado_en as string,
@@ -56,9 +71,9 @@ const periodoToDB = (row: Record<string, unknown>): EspecificacionPeriodoDB => (
   id: row.id as string,
   especificacion_id: row.especificacion_id as string,
   periodo: row.periodo as string,
-  competencias_especificas: (row.competencias_especificas as CompetenciaCurricular[]) || [],
-  contenidos: (row.contenidos as EspecificacionPeriodoDB['contenidos']) || [],
-  indicadores: (row.indicadores as EspecificacionPeriodoDB['indicadores']) || [],
+  competencias_especificas: parseJsonArray<CompetenciaCurricular>(row.competencias_especificas),
+  contenidos: parseJsonArray<EspecificacionPeriodoDB['contenidos'][number]>(row.contenidos),
+  indicadores: parseJsonArray<EspecificacionPeriodoDB['indicadores'][number]>(row.indicadores),
   actualizado_en: row.actualizado_en as string,
 });
 
@@ -163,6 +178,25 @@ export const useEspecificacionesStore = create<EspecificacionesState>((set, get)
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
       return null;
+    }
+  },
+
+  fetchPeriodos: async (especificacionId) => {
+    if (!especificacionId) return;
+    try {
+      const { data, error } = await supabase
+        .from('pc_especificacion_periodos')
+        .select('*')
+        .eq('especificacion_id', especificacionId)
+        .order('periodo', { ascending: true });
+      if (error) throw error;
+
+      const filas = (data || []).map((r) => periodoToDB(r as unknown as Record<string, unknown>));
+      set((s) => ({
+        periodos: [...s.periodos.filter((p) => p.especificacion_id !== especificacionId), ...filas],
+      }));
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
     }
   },
 

@@ -81,3 +81,15 @@ export interface FilaContenido {
   asignatura: string;
   contenido: string;
 }
+
+export interface FilaCompetenciaEspecifica {
+  id: string;
+  nivel?: string;
+  grado: string;
+  asignatura: string;
+  bloque: BloqueCF;
+  competencia_fundamental: string;
+  codigo: string;
+  descriptor: string;
+}
+

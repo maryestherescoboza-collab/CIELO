@@ -57,9 +57,9 @@ export function useCombinacionesCurriculares(): CombinacionCurricular[] {
 
     return Array.from(mapa.values()).sort(
       (a, b) =>
-        a.grado.localeCompare(b.grado, 'es', { numeric: true }) ||
-        a.seccion.localeCompare(b.seccion, 'es') ||
-        a.asignaturaNombre.localeCompare(b.asignaturaNombre, 'es')
+        (a.grado || '').localeCompare(b.grado || '', 'es', { numeric: true }) ||
+        (a.seccion || '').localeCompare(b.seccion || '', 'es') ||
+        (a.asignaturaNombre || '').localeCompare(b.asignaturaNombre || '', 'es')
     );
   }, [userId, cursos, cursoDocentes]);
 }

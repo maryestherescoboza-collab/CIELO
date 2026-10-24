@@ -18,6 +18,17 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
     try {
       return await fetch(url, options);
     } catch (err: any) {
+      const isTransient = err instanceof TypeError || String(err?.message || '').toLowerCase().includes('failed to fetch');
+      if (isTransient) {
+        console.warn(`[Supabase API Client] Reintentando petición tras fallo transitorio de red: ${urlStr}`);
+        try {
+          await new Promise(r => setTimeout(r, 800));
+          return await fetch(url, options);
+        } catch (retryErr: any) {
+          console.error(`[Supabase API Client Network Error] Fallo persistente al consultar: ${url}. Mensaje: ${retryErr?.message || retryErr}.`);
+          throw retryErr;
+        }
+      }
       console.error(`[Supabase API Client Network Error] Fallo al consultar: ${url}. Mensaje: ${err?.message || err}.`);
       throw err;
     }
@@ -38,7 +49,19 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
   const timestamp = new Date().toISOString();
 
   try {
-    const res = await fetch(url, options);
+    let res: Response;
+    try {
+      res = await fetch(url, options);
+    } catch (fetchErr: any) {
+      const isTransient = fetchErr instanceof TypeError || String(fetchErr?.message || '').toLowerCase().includes('failed to fetch');
+      if (isTransient) {
+        console.warn(`[Supabase API Client] Reintentando PostgREST tras fallo transitorio: ${urlStr}`);
+        await new Promise(r => setTimeout(r, 800));
+        res = await fetch(url, options);
+      } else {
+        throw fetchErr;
+      }
+    }
     const end = performance.now();
     const duration = Math.round(end - start);
     

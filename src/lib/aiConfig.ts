@@ -3,7 +3,8 @@
 // en logs ni se expone en la UI (solo versión enmascarada).
 
 export const GEMINI_API_VERSION = 'v1beta';
-export const GEMINI_MODEL = 'gemini-3.5-flash';
+export const GEMINI_MODEL = 'gemini-1.5-flash';
+export const GEMINI_FALLBACK_MODELS = ['gemini-2.0-flash', 'gemini-1.5-pro'];
 
 const storageKeyFor = (userId: string) => `gemini_api_key_${userId}`;
 
@@ -72,8 +73,8 @@ export function isOpenAIConfigured(userId?: string | null): boolean {
 // El usuario elige qué proveedor usan las funciones de IA. Se guarda por
 // usuario en localStorage (clave `ai_provider_<userId>`).
 
-export type AIProvider = 'gemini' | 'openai';
-export const AI_PROVIDERS: AIProvider[] = ['gemini', 'openai'];
+export type AIProvider = 'gemini' | 'openai' | 'deepseek';
+export const AI_PROVIDERS: AIProvider[] = ['gemini', 'openai', 'deepseek'];
 export const DEFAULT_AI_PROVIDER: AIProvider = 'gemini';
 
 const providerStorageKeyFor = (userId: string) => `ai_provider_${userId}`;
@@ -82,7 +83,7 @@ export function getAIAIProvider(userId?: string | null): AIProvider {
     if (!userId) return DEFAULT_AI_PROVIDER;
     try {
         const saved = localStorage.getItem(providerStorageKeyFor(userId));
-        return saved === 'gemini' || saved === 'openai' ? saved : DEFAULT_AI_PROVIDER;
+        return saved === 'gemini' || saved === 'openai' || saved === 'deepseek' ? saved : DEFAULT_AI_PROVIDER;
     } catch {
         return DEFAULT_AI_PROVIDER;
     }
@@ -93,18 +94,21 @@ export function saveAIAIProvider(userId: string, provider: AIProvider): void {
 }
 
 export function providerDisplayName(provider: AIProvider): string {
-    return provider === 'openai' ? 'OpenAI' : 'Gemini';
+    if (provider === 'deepseek') return 'Asistente CIELO (Nube)';
+    return provider === 'openai' ? 'OpenAI' : 'Google Gemini';
 }
 
 export function getAIKey(userId?: string | null, provider: AIProvider = getAIAIProvider(userId)): string | null {
+    if (provider === 'deepseek') return 'MANAGED_BY_CIELO';
     return provider === 'openai' ? getOpenAIApiKey(userId) : getGeminiApiKey(userId);
 }
 
 export function saveAIKey(userId: string, provider: AIProvider, apiKey: string): void {
     if (provider === 'openai') saveOpenAIApiKey(userId, apiKey);
-    else saveGeminiApiKey(userId, apiKey);
+    else if (provider === 'gemini') saveGeminiApiKey(userId, apiKey);
 }
 
 export function isProviderConfigured(userId?: string | null, provider: AIProvider = getAIAIProvider(userId)): boolean {
+    if (provider === 'deepseek') return true;
     return !!getAIKey(userId, provider);
 }
