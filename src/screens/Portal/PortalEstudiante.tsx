@@ -64,6 +64,7 @@ export default function PortalEstudiante() {
 
   useEffect(() => {
     if (!sessionToken || !activeMateria) return;
+    const controller = new AbortController();
 
     const fetchDatos = async () => {
       setLoading(true);
@@ -91,14 +92,20 @@ export default function PortalEstudiante() {
         setEvidencias(evidenciasRes.data || []);
         setIncidencias(incidenciasRes.data || []);
       } catch (err: any) {
+        if (controller.signal.aborted) return;
         console.error(err);
         setError(err.message || 'Error al cargar los datos');
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchDatos();
+    return () => {
+      controller.abort();
+    };
   }, [sessionToken, selectedPeriodo, activeMateria]);
 
   const bcsData = React.useMemo(() => {

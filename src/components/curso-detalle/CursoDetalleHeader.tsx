@@ -9,7 +9,8 @@ import {
     Layout,
     Loader2,
     Check,
-    AlertCircle
+    AlertCircle,
+    FileSpreadsheet
 } from 'lucide-react';
 import type { Curso } from '../../types';
 import { CieloPill } from '../ui/CieloPill';
@@ -44,6 +45,8 @@ interface CursoDetalleHeaderProps {
     periodError?: string | null;
     academicWarningsCount?: number;
     onShowWarnings?: () => void;
+    onExportExcel?: () => void;
+    isExporting?: boolean;
 }
 
 const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
@@ -74,7 +77,9 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     periodLoading = false,
     periodError = null,
     academicWarningsCount: _academicWarningsCount = 0,
-    onShowWarnings: _onShowWarnings
+    onShowWarnings: _onShowWarnings,
+    onExportExcel,
+    isExporting = false
 }) => {
     return (
         <div className="flex flex-col gap-4 p-5 md:p-6 bg-white border-b border-(--border-soft) shadow-sm relative z-20">
@@ -108,6 +113,28 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             onChange={(e) => setBuscar(e.target.value)}
                         />
                     </div>
+
+                    {onExportExcel && (
+                        <CieloPill
+                            as="button"
+                            variant="ghost"
+                            onClick={onExportExcel}
+                            disabled={periodLoading || isExporting}
+                            title={`Exportar Registro Académico (${selectedPeriodo}) a Excel`}
+                            className={`gap-2 px-3.5 min-h-10 transition-all border ${
+                                periodLoading || isExporting
+                                    ? 'bg-base-creme border-(--border-soft) text-[#5F665E]/40 cursor-not-allowed opacity-60'
+                                    : 'bg-white border-(--border-soft) text-emerald-800 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-900 shadow-sm cursor-pointer'
+                            }`}
+                        >
+                            {isExporting ? (
+                                <Loader2 size={16} className="animate-spin text-emerald-700" />
+                            ) : (
+                                <FileSpreadsheet size={16} className="text-emerald-700" />
+                            )}
+                            <span className="font-bold text-xs tracking-wider">EXCEL</span>
+                        </CieloPill>
+                    )}
 
                     <div className="flex flex-col items-end">
                         <CieloPill

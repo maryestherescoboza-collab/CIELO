@@ -7,7 +7,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react';
-import { AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, ChevronRight, ClipboardList, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ChevronRight, ChevronUp, ClipboardList, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAppStore } from '../../store/appStore';
 import { useEspecificacionesStore } from '../../store/especificacionesStore';
@@ -18,6 +18,7 @@ import LeyendaCompetenciasCF from '../../components/plan-clases/LeyendaCompetenc
 import {
   COLORES_BLOQUE_CF,
   bloqueDeIndicador,
+  claveGrado,
   configuracionCompleta,
   filtrarCompetenciasEspecificas,
   filtrarContenidos,
@@ -27,6 +28,7 @@ import type {
   BloqueCF,
   CombinacionCurricular,
   CompetenciaCurricular,
+  ContenidoJson,
   FilaCompetenciaEspecifica,
   FilaContenido,
   FilaIndicador,
@@ -78,6 +80,17 @@ export default function EspecificacionesCurriculares() {
   const [competenciasCatalogo, setCompetenciasCatalogo] = useState<FilaCompetenciaEspecifica[]>([]);
   const [ceSeleccionadas, setCeSeleccionadas] = useState<Set<string>>(new Set());
   const [contenidosSel, setContenidosSel] = useState<Set<string>>(new Set());
+  const [contenidosDetalleSel, setContenidosDetalleSel] = useState<
+    Record<
+      string,
+      {
+        conceptos: Set<string>;
+        procedimientos: Set<string>;
+        actitudes_valores: Set<string>;
+      }
+    >
+  >({});
+  const [contenidosExpandidos, setContenidosExpandidos] = useState<Set<string>>(new Set());
   const [indicadoresSel, setIndicadoresSel] = useState<Set<string>>(new Set());
   const [contenidos, setContenidos] = useState<FilaContenido[]>([]);
   const [indicadores, setIndicadores] = useState<FilaIndicador[]>([]);
@@ -178,20 +191,21 @@ export default function EspecificacionesCurriculares() {
       setErrorCatalogo(null);
       try {
         const gradoStr = String(combo.grado || '');
+        const gradoCanonico = claveGrado(combo.grado) || gradoStr;
 
         const [inds, conts, ces] = await Promise.all([
           supabase
             .from('curr_indicadores')
             .select('id, grado, asignatura, competencia, codigo, descripcion, is_active')
-            .eq('grado', gradoStr),
+            .eq('grado', gradoCanonico),
           supabase
             .from('curr_contenidos')
-            .select('id, grado, asignatura, contenido')
-            .eq('grado', gradoStr),
+            .select('id, grado, asignatura, contenido, contenido_json')
+            .eq('grado', gradoCanonico),
           supabase
             .from('curr_competencias_especificas')
             .select('id, nivel, grado, asignatura, bloque, competencia_fundamental, codigo, descriptor')
-            .eq('grado', gradoStr),
+            .eq('grado', gradoCanonico),
         ]);
         if (cancelado) return;
 
@@ -223,10 +237,30 @@ export default function EspecificacionesCurriculares() {
           }
         }
 
+        let contsData: FilaContenido[] = (conts.data as FilaContenido[]) ?? [];
+        if (contsData.length === 0) {
+          const fallbackConts = await supabase
+            .from('curr_contenidos')
+            .select('id, grado, asignatura, contenido, contenido_json');
+          if (!cancelado && fallbackConts.data) {
+            contsData = fallbackConts.data as FilaContenido[];
+          }
+        }
+
+        let indsData: FilaIndicador[] = (inds.data as FilaIndicador[]) ?? [];
+        if (indsData.length === 0) {
+          const fallbackInds = await supabase
+            .from('curr_indicadores')
+            .select('id, grado, asignatura, competencia, codigo, descripcion, is_active');
+          if (!cancelado && fallbackInds.data) {
+            indsData = fallbackInds.data as FilaIndicador[];
+          }
+        }
+
         const cesFiltradas = filtrarCompetenciasEspecificas(cesData, combo.grado, combo.asignatura);
         setCompetenciasCatalogo(cesFiltradas);
-        setIndicadores(filtrarIndicadores((inds.data as FilaIndicador[]) || [], combo.grado, combo.asignatura));
-        setContenidos(filtrarContenidos((conts.data as FilaContenido[]) || [], combo.grado, combo.asignatura));
+        setIndicadores(filtrarIndicadores(indsData, combo.grado, combo.asignatura));
+        setContenidos(filtrarContenidos(contsData, combo.grado, combo.asignatura));
 
         // Sincronizar la selección: se descartan códigos que ya no existen en el
         // catálogo. Nunca se preselecciona nada: la elección es siempre del usuario
@@ -292,7 +326,23 @@ export default function EspecificacionesCurriculares() {
         setCeSeleccionadas(cCodigos);
 
         const conts = Array.isArray(fila?.contenidos) ? fila.contenidos : [];
-        setContenidosSel(new Set(conts.map((c) => (c && typeof c === 'object' ? c.contenido_id : '')).filter(Boolean)));
+        const contIds = new Set<string>();
+        const detalleMap: Record<
+          string,
+          { conceptos: Set<string>; procedimientos: Set<string>; actitudes_valores: Set<string> }
+        > = {};
+        for (const c of conts) {
+          if (c && typeof c === 'object' && c.contenido_id) {
+            contIds.add(c.contenido_id);
+            detalleMap[c.contenido_id] = {
+              conceptos: new Set(Array.isArray(c.conceptos) ? c.conceptos : []),
+              procedimientos: new Set(Array.isArray(c.procedimientos) ? c.procedimientos : []),
+              actitudes_valores: new Set(Array.isArray(c.actitudes_valores) ? c.actitudes_valores : []),
+            };
+          }
+        }
+        setContenidosSel(contIds);
+        setContenidosDetalleSel(detalleMap);
 
         const inds = Array.isArray(fila?.indicadores) ? fila.indicadores : [];
         setIndicadoresSel(new Set(inds.map((i) => (i && typeof i === 'object' ? i.curr_indicador_id : '')).filter(Boolean)));
@@ -321,12 +371,41 @@ export default function EspecificacionesCurriculares() {
       competencias_especificas: competencias,
       contenidos: contenidos
         .filter((c) => contenidosSel.has(c.id))
-        .map((c) => ({ contenido_id: c.id, contenido: c.contenido })),
+        .map((c) => {
+          const detalle = contenidosDetalleSel[c.id];
+          const todosConceptos = Array.isArray(c.contenido_json?.conceptos) ? c.contenido_json.conceptos : [];
+          const todosProcedimientos = Array.isArray(c.contenido_json?.procedimientos)
+            ? c.contenido_json.procedimientos
+            : [];
+          const todasActitudes = Array.isArray(c.contenido_json?.actitudes_valores)
+            ? c.contenido_json.actitudes_valores
+            : Array.isArray(c.contenido_json?.actitudes)
+            ? c.contenido_json.actitudes
+            : [];
+
+          const selConceptos = detalle?.conceptos
+            ? todosConceptos.filter((x) => detalle.conceptos.has(x))
+            : todosConceptos;
+          const selProcedimientos = detalle?.procedimientos
+            ? todosProcedimientos.filter((x) => detalle.procedimientos.has(x))
+            : todosProcedimientos;
+          const selActitudes = detalle?.actitudes_valores
+            ? todasActitudes.filter((x) => detalle.actitudes_valores.has(x))
+            : todasActitudes;
+
+          return {
+            contenido_id: c.id,
+            contenido: c.contenido,
+            conceptos: selConceptos,
+            procedimientos: selProcedimientos,
+            actitudes_valores: selActitudes,
+          };
+        }),
       indicadores: indicadores
         .filter((i) => indicadoresSel.has(i.id))
         .map((i) => ({ curr_indicador_id: i.id, codigo: i.codigo })),
     }),
-    [competencias, contenidos, contenidosSel, indicadores, indicadoresSel]
+    [competencias, contenidos, contenidosSel, contenidosDetalleSel, indicadores, indicadoresSel]
   );
 
   /** Guarda el estado actual (base + selecciones del período) antes de moverse de paso o salir. */
@@ -365,6 +444,8 @@ export default function EspecificacionesCurriculares() {
       setCompetenciasCatalogo([]);
       setCeSeleccionadas(new Set());
       setContenidosSel(new Set());
+      setContenidosDetalleSel({});
+      setContenidosExpandidos(new Set());
       setIndicadoresSel(new Set());
       setPeriodo(periodoGuardado);
       periodoRef.current = periodoGuardado;
@@ -392,6 +473,8 @@ export default function EspecificacionesCurriculares() {
     setCompetenciasCatalogo([]);
     setCeSeleccionadas(new Set());
     setContenidosSel(new Set());
+    setContenidosDetalleSel({});
+    setContenidosExpandidos(new Set());
     setIndicadoresSel(new Set());
     setPeriodo('P1');
     periodoRef.current = 'P1';
@@ -446,6 +529,8 @@ export default function EspecificacionesCurriculares() {
       setCargandoPeriodo(true);
       setCeSeleccionadas(new Set());
       setContenidosSel(new Set());
+      setContenidosDetalleSel({});
+      setContenidosExpandidos(new Set());
       setIndicadoresSel(new Set());
       setAviso(null);
     },
@@ -607,6 +692,150 @@ export default function EspecificacionesCurriculares() {
   const deseleccionarTodasCE = useCallback(() => {
     setAviso(null);
     setCeSeleccionadas(new Set());
+  }, []);
+
+  const obtenerConceptos = (json?: ContenidoJson | null): string[] =>
+    Array.isArray(json?.conceptos) ? json.conceptos : [];
+
+  const obtenerProcedimientos = (json?: ContenidoJson | null): string[] =>
+    Array.isArray(json?.procedimientos) ? json.procedimientos : [];
+
+  const obtenerActitudes = (json?: ContenidoJson | null): string[] => {
+    if (Array.isArray(json?.actitudes_valores)) return json.actitudes_valores;
+    if (Array.isArray(json?.actitudes)) return json.actitudes;
+    return [];
+  };
+
+  const alternarContenido = useCallback(
+    (id: string) => {
+      setAviso(null);
+      setContenidosSel((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) {
+          next.delete(id);
+        } else {
+          next.add(id);
+          setContenidosExpandidos((exp) => new Set(exp).add(id));
+          setContenidosDetalleSel((det) => {
+            if (det[id]) return det;
+            const target = contenidos.find((x) => x.id === id);
+            return {
+              ...det,
+              [id]: {
+                conceptos: new Set(obtenerConceptos(target?.contenido_json)),
+                procedimientos: new Set(obtenerProcedimientos(target?.contenido_json)),
+                actitudes_valores: new Set(obtenerActitudes(target?.contenido_json)),
+              },
+            };
+          });
+        }
+        return next;
+      });
+    },
+    [contenidos]
+  );
+
+  const alternarSubItem = useCallback(
+    (
+      contenidoId: string,
+      tipo: 'conceptos' | 'procedimientos' | 'actitudes_valores',
+      valor: string
+    ) => {
+      setAviso(null);
+      setContenidosSel((prev) => new Set(prev).add(contenidoId));
+      setContenidosDetalleSel((prev) => {
+        const target = contenidos.find((x) => x.id === contenidoId);
+        const actual = prev[contenidoId] ?? {
+          conceptos: new Set(obtenerConceptos(target?.contenido_json)),
+          procedimientos: new Set(obtenerProcedimientos(target?.contenido_json)),
+          actitudes_valores: new Set(obtenerActitudes(target?.contenido_json)),
+        };
+        const subSet = new Set(actual[tipo]);
+        if (subSet.has(valor)) {
+          subSet.delete(valor);
+        } else {
+          subSet.add(valor);
+        }
+        return {
+          ...prev,
+          [contenidoId]: {
+            ...actual,
+            [tipo]: subSet,
+          },
+        };
+      });
+    },
+    [contenidos]
+  );
+
+  const seleccionarTodoDesglose = useCallback(
+    (contenidoId: string) => {
+      setAviso(null);
+      const target = contenidos.find((x) => x.id === contenidoId);
+      if (!target) return;
+      setContenidosSel((prev) => new Set(prev).add(contenidoId));
+      setContenidosDetalleSel((prev) => ({
+        ...prev,
+        [contenidoId]: {
+          conceptos: new Set(obtenerConceptos(target.contenido_json)),
+          procedimientos: new Set(obtenerProcedimientos(target.contenido_json)),
+          actitudes_valores: new Set(obtenerActitudes(target.contenido_json)),
+        },
+      }));
+    },
+    [contenidos]
+  );
+
+  const deseleccionarTodoDesglose = useCallback((contenidoId: string) => {
+    setAviso(null);
+    setContenidosDetalleSel((prev) => ({
+      ...prev,
+      [contenidoId]: {
+        conceptos: new Set(),
+        procedimientos: new Set(),
+        actitudes_valores: new Set(),
+      },
+    }));
+  }, []);
+
+  const alternarExpansionContenido = useCallback((id: string) => {
+    setContenidosExpandidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const seleccionarTodosContenidos = useCallback(() => {
+    setAviso(null);
+    setContenidosSel(new Set(contenidos.map((c) => c.id)));
+    const detalleMap: Record<
+      string,
+      { conceptos: Set<string>; procedimientos: Set<string>; actitudes_valores: Set<string> }
+    > = {};
+    for (const c of contenidos) {
+      detalleMap[c.id] = {
+        conceptos: new Set(obtenerConceptos(c.contenido_json)),
+        procedimientos: new Set(obtenerProcedimientos(c.contenido_json)),
+        actitudes_valores: new Set(obtenerActitudes(c.contenido_json)),
+      };
+    }
+    setContenidosDetalleSel(detalleMap);
+  }, [contenidos]);
+
+  const deseleccionarTodosContenidos = useCallback(() => {
+    setAviso(null);
+    setContenidosSel(new Set());
+    setContenidosDetalleSel({});
+  }, []);
+
+  const expandirTodosContenidos = useCallback(() => {
+    setContenidosExpandidos(new Set(contenidos.map((c) => c.id)));
+  }, [contenidos]);
+
+  const contraerTodosContenidos = useCallback(() => {
+    setContenidosExpandidos(new Set());
   }, []);
 
   const alternar = (setter: Dispatch<SetStateAction<Set<string>>>, id: string) => {
@@ -1031,11 +1260,13 @@ export default function EspecificacionesCurriculares() {
 
         {/* ---------------- PASO 2: Contenidos ---------------- */}
         {paso === 2 && (
-          <div className="flex flex-col gap-3">
-            <p className="text-[14px] text-[#2E3330]/70">
-              Selecciona los contenidos que trabajarás en el período{' '}
-              <strong className="text-[#2E3330]">{periodo}</strong>.
+          <div className="flex flex-col gap-4">
+            <p className="text-[14px] text-[#2E3330]/70 leading-relaxed">
+              Selecciona los contenidos y su desglose (conceptos, procedimientos, actitudes y valores)
+              que trabajarás en el período <strong className="text-[#2E3330]">{periodo}</strong>.
+              Puedes marcar contenidos completos o desplegarlos para seleccionar elementos específicos del JSON.
             </p>
+
             {cargandoCatalogo ? (
               <div className="flex items-center justify-center py-14">
                 <Loader2 size={28} className="animate-spin text-[#689C63]" />
@@ -1048,39 +1279,313 @@ export default function EspecificacionesCurriculares() {
                 </p>
               </div>
             ) : (
-              <ul className="flex flex-col gap-2">
-                {contenidos.map((c) => {
-                  const seleccionado = contenidosSel.has(c.id);
-                  return (
-                    <li key={c.id}>
-                      <button
-                        onClick={() => alternar(setContenidosSel, c.id)}
-                        className={`w-full flex items-center gap-3 text-left rounded-2xl border p-3.5 transition-all ${
-                          seleccionado
-                            ? 'border-[#689C63]/50 bg-[#689C63]/5'
-                            : 'border-[#2E3330]/10 bg-white hover:border-[#2E3330]/20'
-                        }`}
-                      >
-                        <span
-                          className={`w-5 h-5 shrink-0 rounded-md border flex items-center justify-center ${
+              <div className="flex flex-col gap-4">
+                {/* Barra de control y revisión de selección */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-[#2E3330]/3 border border-[#2E3330]/5">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-full bg-[#689C63]/15 text-[#689C63] text-[12px] font-extrabold">
+                      {contenidosSel.size} de {contenidos.length}
+                    </span>
+                    <span className="text-[13px] font-bold text-[#2E3330]/70">
+                      contenidos seleccionados
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={seleccionarTodosContenidos}
+                      className="px-3 h-7 rounded-full bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330] hover:bg-[#689C63]/10 hover:border-[#689C63] hover:text-[#689C63] transition-colors"
+                    >
+                      Seleccionar todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={deseleccionarTodosContenidos}
+                      className="px-3 h-7 rounded-full bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/60 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors"
+                    >
+                      Deseleccionar todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={expandirTodosContenidos}
+                      className="px-3 h-7 rounded-full bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/70 hover:bg-[#2E3330]/5 transition-colors"
+                    >
+                      Expandir todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={contraerTodosContenidos}
+                      className="px-3 h-7 rounded-full bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/70 hover:bg-[#2E3330]/5 transition-colors"
+                    >
+                      Contraer todos
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lista de contenidos con desglose JSON expandible */}
+                <ul className="flex flex-col gap-3">
+                  {contenidos.map((c) => {
+                    const seleccionado = contenidosSel.has(c.id);
+                    const expandido = contenidosExpandidos.has(c.id);
+
+                    const todosConceptos = obtenerConceptos(c.contenido_json);
+                    const todosProcedimientos = obtenerProcedimientos(c.contenido_json);
+                    const todasActitudes = obtenerActitudes(c.contenido_json);
+                    const totalElementos =
+                      todosConceptos.length + todosProcedimientos.length + todasActitudes.length;
+
+                    const detalle = contenidosDetalleSel[c.id];
+                    const selConceptos =
+                      detalle?.conceptos ?? (seleccionado ? new Set(todosConceptos) : new Set());
+                    const selProcedimientos =
+                      detalle?.procedimientos ?? (seleccionado ? new Set(todosProcedimientos) : new Set());
+                    const selActitudes =
+                      detalle?.actitudes_valores ?? (seleccionado ? new Set(todasActitudes) : new Set());
+                    const totalSeleccionados =
+                      selConceptos.size + selProcedimientos.size + selActitudes.size;
+
+                    return (
+                      <li key={c.id}>
+                        <div
+                          className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                             seleccionado
-                              ? 'bg-[#689C63] border-[#689C63]'
-                              : 'border-[#2E3330]/25 bg-white'
+                              ? 'border-[#689C63]/50 bg-white shadow-xs'
+                              : 'border-[#2E3330]/10 bg-white hover:border-[#2E3330]/25'
                           }`}
                         >
-                          {seleccionado && <Check size={13} className="text-white" strokeWidth={3} />}
-                        </span>
-                        <span className="flex-1 text-[14px] font-semibold text-[#2E3330]">
-                          {c.contenido}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                          {/* Cabecera del contenido */}
+                          <div className="p-3.5 flex items-start gap-3">
+                            <button
+                              type="button"
+                              onClick={() => alternarContenido(c.id)}
+                              className="mt-0.5"
+                              title={seleccionado ? 'Deseleccionar contenido' : 'Seleccionar contenido'}
+                            >
+                              <span
+                                className={`w-5 h-5 shrink-0 rounded-md border flex items-center justify-center transition-colors ${
+                                  seleccionado
+                                    ? 'bg-[#689C63] border-[#689C63]'
+                                    : 'border-[#2E3330]/25 bg-white hover:border-[#689C63]'
+                                }`}
+                              >
+                                {seleccionado && <Check size={13} className="text-white" strokeWidth={3} />}
+                              </span>
+                            </button>
+
+                            <div
+                              className="flex-1 min-w-0 cursor-pointer"
+                              onClick={() =>
+                                totalElementos > 0
+                                  ? alternarExpansionContenido(c.id)
+                                  : alternarContenido(c.id)
+                              }
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                {c.contenido_json?.disciplina && (
+                                  <span className="px-2 py-0.5 rounded-full bg-[#2E3330]/5 text-[#2E3330] text-[10px] font-black uppercase tracking-wider">
+                                    {c.contenido_json.disciplina}
+                                  </span>
+                                )}
+                                <span className="font-extrabold text-[14px] text-[#2E3330] leading-snug">
+                                  {c.contenido}
+                                </span>
+                              </div>
+
+                              {totalElementos > 0 && (
+                                <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                      totalSeleccionados === totalElementos && totalElementos > 0
+                                        ? 'bg-[#689C63]/15 text-[#689C63]'
+                                        : totalSeleccionados > 0
+                                        ? 'bg-[#D97706]/15 text-[#D97706]'
+                                        : 'bg-[#2E3330]/5 text-[#2E3330]/50'
+                                    }`}
+                                  >
+                                    {totalSeleccionados === totalElementos && totalElementos > 0
+                                      ? `Desglose completo (${totalElementos})`
+                                      : `${totalSeleccionados} de ${totalElementos} del desglose`}
+                                  </span>
+                                  <span className="text-[11px] font-medium text-[#2E3330]/50">
+                                    {todosConceptos.length} conceptos · {todosProcedimientos.length} procedimientos · {todasActitudes.length} actitudes
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {totalElementos > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => alternarExpansionContenido(c.id)}
+                                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-xl text-[12px] font-bold text-[#2E3330]/65 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors"
+                                title={expandido ? 'Ocultar desglose JSON' : 'Ver desglose JSON'}
+                              >
+                                <span>{expandido ? 'Ocultar' : 'Desglose'}</span>
+                                {expandido ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Desglose JSON expandible */}
+                          {expandido && totalElementos > 0 && (
+                            <div className="border-t border-[#2E3330]/10 bg-[#FAF8F5]/60 p-3.5 flex flex-col gap-4">
+                              {/* Barra de acciones del desglose */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#2E3330]/10 pb-2.5">
+                                <span className="text-[12px] font-extrabold text-[#2E3330]/80">
+                                  Desglose curricular del contenido (JSON):
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => seleccionarTodoDesglose(c.id)}
+                                    className="px-2.5 py-1 rounded-lg bg-white border border-[#2E3330]/15 text-[11px] font-bold text-[#689C63] hover:bg-[#689C63]/10 hover:border-[#689C63] transition-colors"
+                                  >
+                                    Seleccionar todo el desglose
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => deseleccionarTodoDesglose(c.id)}
+                                    className="px-2.5 py-1 rounded-lg bg-white border border-[#2E3330]/15 text-[11px] font-bold text-[#2E3330]/60 hover:bg-[#2E3330]/5 transition-colors"
+                                  >
+                                    Deseleccionar desglose
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* 1. CONCEPTOS */}
+                              {todosConceptos.length > 0 && (
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] text-[11px] font-black uppercase tracking-wider">
+                                      Conceptos ({selConceptos.size} de {todosConceptos.length})
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-1 gap-1.5">
+                                    {todosConceptos.map((cTexto, idx) => {
+                                      const activo = selConceptos.has(cTexto);
+                                      return (
+                                        <button
+                                          key={`${idx}-${cTexto}`}
+                                          type="button"
+                                          onClick={() => alternarSubItem(c.id, 'conceptos', cTexto)}
+                                          className={`w-full flex items-start gap-2.5 text-left rounded-xl p-2.5 text-[13px] transition-all ${
+                                            activo
+                                              ? 'bg-white border border-[#2563EB]/40 shadow-2xs font-medium text-[#1E3A8A]'
+                                              : 'bg-white/80 border border-[#2E3330]/10 text-[#2E3330]/75 hover:border-[#2E3330]/25'
+                                          }`}
+                                        >
+                                          <span
+                                            className={`w-4 h-4 mt-0.5 shrink-0 rounded border flex items-center justify-center transition-colors ${
+                                              activo
+                                                ? 'bg-[#2563EB] border-[#2563EB]'
+                                                : 'border-[#2E3330]/25 bg-white'
+                                            }`}
+                                          >
+                                            {activo && (
+                                              <Check size={11} className="text-white" strokeWidth={3} />
+                                            )}
+                                          </span>
+                                          <span className="flex-1 leading-snug">{cTexto}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 2. PROCEDIMIENTOS */}
+                              {todosProcedimientos.length > 0 && (
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded-full bg-[#0D9488]/10 text-[#0D9488] text-[11px] font-black uppercase tracking-wider">
+                                      Procedimientos ({selProcedimientos.size} de {todosProcedimientos.length})
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-1 gap-1.5">
+                                    {todosProcedimientos.map((pTexto, idx) => {
+                                      const activo = selProcedimientos.has(pTexto);
+                                      return (
+                                        <button
+                                          key={`${idx}-${pTexto}`}
+                                          type="button"
+                                          onClick={() => alternarSubItem(c.id, 'procedimientos', pTexto)}
+                                          className={`w-full flex items-start gap-2.5 text-left rounded-xl p-2.5 text-[13px] transition-all ${
+                                            activo
+                                              ? 'bg-white border border-[#0D9488]/40 shadow-2xs font-medium text-[#134E4A]'
+                                              : 'bg-white/80 border border-[#2E3330]/10 text-[#2E3330]/75 hover:border-[#2E3330]/25'
+                                          }`}
+                                        >
+                                          <span
+                                            className={`w-4 h-4 mt-0.5 shrink-0 rounded border flex items-center justify-center transition-colors ${
+                                              activo
+                                                ? 'bg-[#0D9488] border-[#0D9488]'
+                                                : 'border-[#2E3330]/25 bg-white'
+                                            }`}
+                                          >
+                                            {activo && (
+                                              <Check size={11} className="text-white" strokeWidth={3} />
+                                            )}
+                                          </span>
+                                          <span className="flex-1 leading-snug">{pTexto}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 3. ACTITUDES Y VALORES */}
+                              {todasActitudes.length > 0 && (
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded-full bg-[#D97706]/10 text-[#D97706] text-[11px] font-black uppercase tracking-wider">
+                                      Actitudes y Valores ({selActitudes.size} de {todasActitudes.length})
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-1 gap-1.5">
+                                    {todasActitudes.map((aTexto, idx) => {
+                                      const activo = selActitudes.has(aTexto);
+                                      return (
+                                        <button
+                                          key={`${idx}-${aTexto}`}
+                                          type="button"
+                                          onClick={() => alternarSubItem(c.id, 'actitudes_valores', aTexto)}
+                                          className={`w-full flex items-start gap-2.5 text-left rounded-xl p-2.5 text-[13px] transition-all ${
+                                            activo
+                                              ? 'bg-white border border-[#D97706]/40 shadow-2xs font-medium text-[#78350F]'
+                                              : 'bg-white/80 border border-[#2E3330]/10 text-[#2E3330]/75 hover:border-[#2E3330]/25'
+                                          }`}
+                                        >
+                                          <span
+                                            className={`w-4 h-4 mt-0.5 shrink-0 rounded border flex items-center justify-center transition-colors ${
+                                              activo
+                                                ? 'bg-[#D97706] border-[#D97706]'
+                                                : 'border-[#2E3330]/25 bg-white'
+                                            }`}
+                                          >
+                                            {activo && (
+                                              <Check size={11} className="text-white" strokeWidth={3} />
+                                            )}
+                                          </span>
+                                          <span className="flex-1 leading-snug">{aTexto}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             )}
             <p className="text-[12px] font-semibold text-[#2E3330]/50">
-              {contenidosSel.size} seleccionado{contenidosSel.size !== 1 ? 's' : ''} para {periodo}
+              {contenidosSel.size} contenido{contenidosSel.size !== 1 ? 's' : ''} seleccionado{contenidosSel.size !== 1 ? 's' : ''} para {periodo}
             </p>
           </div>
         )}

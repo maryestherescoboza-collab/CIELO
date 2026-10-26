@@ -354,17 +354,9 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         return sorted;
     }, [state.actividades, state.cursos, cursoId, curso, centroContexto, selectedPeriodo, currentUserId, myAsignatura, currentCourseRole?.rol, localCalifs.length, localRecs.length, sharedCourseId]);
 
-    const enhancedEstudiantes = useMemo(() => {
-        const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const allCourseStudents = useMemo(() => {
         const filtered = state.estudiantes
-            .filter(e => curso ? esEstudianteDelCurso(state.cursos, curso, e, centroContexto) : e.cursoId === cursoId)
-            .filter(e => {
-                if (!buscar) return true;
-                const fullName = `${e.nombre || ''} ${e.apellido || ''}`;
-                return normalize(fullName).includes(normalize(buscar)) ||
-                       normalize(e.nombre || '').includes(normalize(buscar)) ||
-                       normalize(e.apellido || '').includes(normalize(buscar));
-            });
+            .filter(e => curso ? esEstudianteDelCurso(state.cursos, curso, e, centroContexto) : e.cursoId === cursoId);
 
         return filtered.map(est => {
             const bcs: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
@@ -403,7 +395,18 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
 
             return { ...est, bcValues, promTotal, destaca, displayName, calificaciones: califsMap };
         });
-    }, [state.estudiantes, state.cursos, curso, centroContexto, cursoId, buscar, actividades, bcSel, localCalifs, localRecs, selectedPeriodo, myAsignatura, currentUserId]);
+    }, [state.estudiantes, state.cursos, curso, centroContexto, cursoId, actividades, bcSel, localCalifs, localRecs, selectedPeriodo, myAsignatura, currentUserId]);
+
+    const enhancedEstudiantes = useMemo(() => {
+        if (!buscar) return allCourseStudents;
+        const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        return allCourseStudents.filter(e => {
+            const fullName = `${e.nombre || ''} ${e.apellido || ''}`;
+            return normalize(fullName).includes(normalize(buscar)) ||
+                   normalize(e.nombre || '').includes(normalize(buscar)) ||
+                   normalize(e.apellido || '').includes(normalize(buscar));
+        });
+    }, [allCourseStudents, buscar]);
 
     const finalFilteredEstudiantes = useMemo(() => {
         let lista = [...enhancedEstudiantes].sort((a, b) => (a.numeroLista || 0) - (b.numeroLista || 0));
@@ -694,6 +697,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         setBcSel,
         actividades,
         enhancedEstudiantes: finalFilteredEstudiantes,
+        allCourseStudents,
         setCalif,
         setRec,
         triggerAnimation,

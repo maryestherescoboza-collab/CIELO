@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark, Link as LinkIcon, Edit2, MessageSquare, Info, Zap, Gamepad2, Presentation, PenTool, RotateCcw } from 'lucide-react';
 import blueBookIcon from '../assets/book-blue.png';
 import purpleBookIcon from '../assets/book-purple.png';
-import type { Curso, Secuencia, TipoRecurso } from '../types';
+import type { AppState, Curso, Secuencia, TipoRecurso } from '../types';
 
-import { getPlanificacionDiariaTemplate } from '../templates/planificacion-diaria';
+import { getPlanificacionDiariaTemplate, determinarCiclo } from '../templates/planificacion-diaria';
+import { getValidCentro } from '../cache/centroCache';
+import { getValidPerfil } from '../cache/perfilCache';
+import { estudiantesDelCurso } from '../utils/aislamiento';
 import { getPlanRecuperacionTemplate, PERIODOS_RECUPERACION, isPeriodoDisponible } from '../templates/plan-recuperacion';
 import { CieloPill } from '../components/ui/CieloPill';
 import { CieloModal } from '../components/ui/CieloModal';
@@ -54,6 +57,10 @@ interface Props {
     onDeleteSecuencia?: (id: number) => Promise<any> | any;
     readOnly?: boolean;
     initialDatos?: Secuencia;
+    state?: AppState;
+    docenteNombre?: string;
+    currentUserProfile?: any;
+    session?: any;
 }
 
 const BOOK_ICONS = [blueBookIcon, purpleBookIcon];
@@ -77,9 +84,21 @@ function getDotCount(estado: Secuencia['estado']) {
 
 import { useSupabaseData } from '../hooks/useSupabaseData';
 
-export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecuencia, onDeleteSecuencia, readOnly, initialDatos }: Props) {
-    const state = useAppStore((s) => s.state);
-    const session = useAppStore((s) => s.session);
+export default function Planificacion({
+    onAddSecuencia = () => {},
+    onUpdateSecuencia,
+    onDeleteSecuencia,
+    readOnly,
+    initialDatos,
+    state: stateProp,
+    docenteNombre: docenteNombreProp,
+    currentUserProfile: currentUserProfileProp,
+    session: sessionProp
+}: Props) {
+    const stateStore = useAppStore((s) => s.state);
+    const sessionStore = useAppStore((s) => s.session);
+    const state = stateProp || stateStore;
+    const session = sessionProp || sessionStore;
     const loading = useAppStore((s) => s.loading);
     const { loadPlanificacionData, contextReady } = useSupabaseData(true);
 
@@ -925,19 +944,28 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                                       <div className="grid gap-3">
                                       <button
                                           onClick={() => {
-                                                const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
-                                                const centroNombre = session?.user?.user_metadata?.centro_nombre || 'Mi Centro';
-                                                const codigoCentro = session?.user?.user_metadata?.codigo_centro || '';
-                                                const docenteNombre = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente';
-                                                const htmlContent = getPlanificacionDiariaTemplate({
-                                                    centro: centroNombre,
-                                                    codigoCentro,
-                                                    docente: docenteNombre,
-                                                    asignatura: curso?.asignatura || '',
-                                                    grado: curso?.grado || '',
-                                                    seccion: curso?.seccion || '',
-                                                    fecha: form.fechaInicio
-                                                });
+                                                 const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                                 const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
+                                                 const perfilCache = getValidPerfil(session?.user?.id);
+                                                 const userCentroId = miPerfil?.centro_id || perfilCache?.centro_id || state.centroRolActual?.centro_id || curso?.centroId;
+                                                 const centro = miPerfil?.centro || (userCentroId ? getValidCentro(userCentroId) : null) || state.centros?.find(c => c.id === userCentroId);
+                                                 const centroNombre = (currentUserProfileProp?.centro?.nombre || currentUserProfileProp?.institucion || currentUserProfileProp?.instituto || centro?.nombre || (state.instituto && state.instituto !== 'Instituto Central' ? state.instituto : '') || miPerfil?.instituto || miPerfil?.institucion || session?.user?.user_metadata?.centro_nombre || state.instituto || '').trim();
+                                                 const codigoCentro = (currentUserProfileProp?.centro?.codigoCentro || currentUserProfileProp?.centro?.codigo_centro || centro?.codigoCentro || (centro as any)?.codigo_centro || session?.user?.user_metadata?.codigo_centro || '').trim();
+                                                 const telefono = (currentUserProfileProp?.centro?.telefono || currentUserProfileProp?.telefono || centro?.telefono || miPerfil?.telefono || '').trim();
+                                                 const docenteNombre = ((docenteNombreProp && docenteNombreProp !== 'Docente' ? docenteNombreProp : '') || currentUserProfileProp?.nombreDocente || currentUserProfileProp?.nombre || miPerfil?.nombreDocente || perfilCache?.nombre_docente || perfilCache?.nombre || state.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente').trim();
+                                                 const cantEstudiantes = curso ? estudiantesDelCurso(state.cursos, state.estudiantes, curso, userCentroId).length : '';
+                                                 const htmlContent = getPlanificacionDiariaTemplate({
+                                                     centro: centroNombre,
+                                                     codigoCentro,
+                                                     docente: docenteNombre,
+                                                     asignatura: curso?.asignatura || '',
+                                                     grado: curso?.grado || '',
+                                                     seccion: curso?.seccion || '',
+                                                     fecha: form.fechaInicio,
+                                                     cantidadEstudiantes: cantEstudiantes !== '' ? cantEstudiantes : undefined,
+                                                     telefono,
+                                                     ciclo: determinarCiclo(curso?.grado || '')
+                                                 });
                                                 setForm(prev => ({
                                                     ...prev,
                                                     titulo: 'Planificación - ' + (curso?.asignatura || 'Clase'),
@@ -1101,23 +1129,30 @@ export default function Planificacion({ onAddSecuencia = () => {}, onUpdateSecue
                               <button
                                   type="button"
 onClick={() => {
-                                       const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
-                                       const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
-                                       const centroNombre = state.centros?.find(c => c.id === miPerfil?.centro_id)?.nombre || session?.user?.user_metadata?.centro_nombre || 'Mi Centro';
-                                       const codigoCentro = state.centros?.find(c => c.id === miPerfil?.centro_id)?.codigoCentro || session?.user?.user_metadata?.codigo_centro || '';
-                                       const docenteNombre = miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente';
-                                       const params = new URLSearchParams();
-                                       if (form.cursoId) params.set('cursoId', String(form.cursoId));
-                                       if (form.fechaInicio) params.set('fecha', form.fechaInicio);
-                                       if (curso?.asignatura) params.set('asignatura', curso.asignatura);
-                                       if (curso?.grado) params.set('grado', curso.grado);
-                                       if (curso?.seccion) params.set('seccion', curso.seccion);
-                                       params.set('centro', centroNombre);
-                                       params.set('codigo', codigoCentro);
-                                       params.set('docente', docenteNombre);
-                                       const qs = params.toString();
-                                       window.open(`/planificacion-diaria/plantilla${qs ? `?${qs}` : ''}`, '_blank');
-                                       setShowModal(false);
+                                        const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                        const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
+                                        const perfilCache = getValidPerfil(session?.user?.id);
+                                        const userCentroId = miPerfil?.centro_id || perfilCache?.centro_id || state.centroRolActual?.centro_id || curso?.centroId;
+                                        const centro = miPerfil?.centro || (userCentroId ? getValidCentro(userCentroId) : null) || state.centros?.find(c => c.id === userCentroId);
+                                        const centroNombre = (currentUserProfileProp?.centro?.nombre || currentUserProfileProp?.institucion || currentUserProfileProp?.instituto || centro?.nombre || (state.instituto && state.instituto !== 'Instituto Central' ? state.instituto : '') || miPerfil?.instituto || miPerfil?.institucion || session?.user?.user_metadata?.centro_nombre || state.instituto || '').trim();
+                                        const codigoCentro = (currentUserProfileProp?.centro?.codigoCentro || currentUserProfileProp?.centro?.codigo_centro || centro?.codigoCentro || (centro as any)?.codigo_centro || session?.user?.user_metadata?.codigo_centro || '').trim();
+                                        const telefono = (currentUserProfileProp?.centro?.telefono || currentUserProfileProp?.telefono || centro?.telefono || miPerfil?.telefono || '').trim();
+                                        const docenteNombre = ((docenteNombreProp && docenteNombreProp !== 'Docente' ? docenteNombreProp : '') || currentUserProfileProp?.nombreDocente || currentUserProfileProp?.nombre || miPerfil?.nombreDocente || perfilCache?.nombre_docente || perfilCache?.nombre || state.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente').trim();
+                                        const cantEstudiantes = curso ? estudiantesDelCurso(state.cursos, state.estudiantes, curso, userCentroId).length : '';
+                                        const params = new URLSearchParams();
+                                        if (form.cursoId || curso?.id) params.set('cursoId', String(form.cursoId || curso?.id));
+                                        if (form.fechaInicio) params.set('fecha', form.fechaInicio);
+                                        if (curso?.asignatura) params.set('asignatura', curso.asignatura);
+                                        if (curso?.grado) params.set('grado', curso.grado);
+                                        if (curso?.seccion) params.set('seccion', curso.seccion);
+                                        if (centroNombre) params.set('centro', centroNombre);
+                                        if (codigoCentro) params.set('codigo', codigoCentro);
+                                        if (docenteNombre) params.set('docente', docenteNombre);
+                                        if (telefono) params.set('telefono', telefono);
+                                        if (cantEstudiantes !== '') params.set('estudiantes', String(cantEstudiantes));
+                                        const qs = params.toString();
+                                        window.open(`/planificacion-diaria/plantilla${qs ? `?${qs}` : ''}`, '_blank');
+                                        setShowModal(false);
                                    }}
                                   className="px-6 py-2.5 rounded-xl bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-(--linen)/30 transition-all outline-none"
                               >

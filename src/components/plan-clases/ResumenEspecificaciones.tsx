@@ -26,13 +26,20 @@ interface FilaResumen {
   indicadores: ItemIndicador[];
 }
 
+interface ItemContenidoResumen {
+  contenido: string;
+  conceptos: string[];
+  procedimientos: string[];
+  actitudes_valores: string[];
+}
+
 interface PeriodoResumen {
   periodo: string;
   numero: string;
   filas: FilaResumen[];
   /** Indicadores del período cuando no hay CE seleccionada: no existe CE con la que relacionarlos. */
   indicadoresLibres: ItemIndicador[];
-  contenidos: string[];
+  contenidos: ItemContenidoResumen[];
 }
 
 interface ResumenEspecificacionesProps {
@@ -54,19 +61,71 @@ const ordenarPorCodigo = (a: string, b: string) =>
 const CELDA = 'border border-[#2E3330]/25 px-3 py-2 align-top';
 const COLUMNA = `${CELDA} bg-[#EFEFEF] text-[12px] font-extrabold text-[#2E3330]`;
 
-/** Lista ordenada y sin duplicados; si no hay nada, el texto de respaldo. */
-function ListaElementos({ elementos }: { elementos: string[] }) {
+/** Lista de contenidos con su desglose JSON organizado (conceptos, procedimientos y actitudes). */
+function ListaContenidos({ elementos }: { elementos: ItemContenidoResumen[] }) {
   if (elementos.length === 0) {
     return <span className="text-[#2E3330]/50">{SIN_ASOCIADOS}</span>;
   }
   return (
-    <ul className="list-disc pl-4 flex flex-col gap-1.5">
-      {elementos.map((texto, i) => (
-        <li key={`${i}-${texto}`} className="leading-snug text-[#2E3330]/85">
-          {texto}
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-3">
+      {elementos.map((item, idx) => {
+        const tieneDetalles =
+          item.conceptos.length > 0 ||
+          item.procedimientos.length > 0 ||
+          item.actitudes_valores.length > 0;
+
+        return (
+          <div
+            key={`${idx}-${item.contenido}`}
+            className="flex flex-col gap-1.5 border-b border-[#2E3330]/10 pb-2.5 last:border-b-0 last:pb-0"
+          >
+            <span className="font-extrabold text-[#2E3330] leading-snug">
+              {item.contenido}
+            </span>
+            {tieneDetalles && (
+              <div className="pl-2 flex flex-col gap-1.5 text-[12px] mt-0.5">
+                {item.conceptos.length > 0 && (
+                  <div>
+                    <span className="font-black text-[#2563EB] uppercase text-[10px] tracking-wider block">
+                      Conceptos:
+                    </span>
+                    <ul className="list-disc pl-4 text-[#2E3330]/80 flex flex-col gap-0.5 mt-0.5">
+                      {item.conceptos.map((c, i) => (
+                        <li key={i} className="leading-snug">{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {item.procedimientos.length > 0 && (
+                  <div>
+                    <span className="font-black text-[#0D9488] uppercase text-[10px] tracking-wider block mt-1">
+                      Procedimientos:
+                    </span>
+                    <ul className="list-disc pl-4 text-[#2E3330]/80 flex flex-col gap-0.5 mt-0.5">
+                      {item.procedimientos.map((p, i) => (
+                        <li key={i} className="leading-snug">{p}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {item.actitudes_valores.length > 0 && (
+                  <div>
+                    <span className="font-black text-[#D97706] uppercase text-[10px] tracking-wider block mt-1">
+                      Actitudes y Valores:
+                    </span>
+                    <ul className="list-disc pl-4 text-[#2E3330]/80 flex flex-col gap-0.5 mt-0.5">
+                      {item.actitudes_valores.map((a, i) => (
+                        <li key={i} className="leading-snug">{a}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -181,12 +240,18 @@ export default function ResumenEspecificaciones({
       }));
 
       const contenidoVistos = new Set<string>();
-      const contenidos: string[] = [];
+      const contenidos: ItemContenidoResumen[] = [];
       for (const c of p.contenidos || []) {
-        const texto = c && typeof c === 'object' ? (c.contenido || '').trim() : '';
+        if (!c || typeof c !== 'object') continue;
+        const texto = (c.contenido || '').trim();
         if (texto && !contenidoVistos.has(texto)) {
           contenidoVistos.add(texto);
-          contenidos.push(texto);
+          contenidos.push({
+            contenido: texto,
+            conceptos: Array.isArray(c.conceptos) ? c.conceptos : [],
+            procedimientos: Array.isArray(c.procedimientos) ? c.procedimientos : [],
+            actitudes_valores: Array.isArray(c.actitudes_valores) ? c.actitudes_valores : [],
+          });
         }
       }
 
@@ -238,7 +303,7 @@ export default function ResumenEspecificaciones({
                       </td>
                       {idx === 0 && (
                         <td rowSpan={r.filas.length} className={CELDA}>
-                          <ListaElementos elementos={r.contenidos} />
+                          <ListaContenidos elementos={r.contenidos} />
                         </td>
                       )}
                     </tr>
@@ -250,7 +315,7 @@ export default function ResumenEspecificaciones({
                       <ListaIndicadores elementos={r.indicadoresLibres} />
                     </td>
                     <td className={CELDA}>
-                      <ListaElementos elementos={r.contenidos} />
+                      <ListaContenidos elementos={r.contenidos} />
                     </td>
                   </tr>
                 )}

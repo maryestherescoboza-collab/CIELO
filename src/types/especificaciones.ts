@@ -42,10 +42,26 @@ export interface EspecificacionDB {
   actualizado_en: string;
 }
 
+export interface ContenidoJson {
+  bloque?: string;
+  disciplina?: string;
+  conceptos?: string[];
+  procedimientos?: string[];
+  actitudes_valores?: string[];
+  actitudes?: string[];
+  [key: string]: any;
+}
+
 export interface SeleccionContenido {
   /** id de curr_contenidos */
   contenido_id: string;
   contenido: string;
+  /** Conceptos seleccionados del desglose JSON */
+  conceptos?: string[];
+  /** Procedimientos seleccionados del desglose JSON */
+  procedimientos?: string[];
+  /** Actitudes y valores seleccionados del desglose JSON */
+  actitudes_valores?: string[];
 }
 
 export interface SeleccionIndicador {
@@ -80,6 +96,7 @@ export interface FilaContenido {
   grado: string;
   asignatura: string;
   contenido: string;
+  contenido_json?: ContenidoJson | null;
 }
 
 export interface FilaCompetenciaEspecifica {

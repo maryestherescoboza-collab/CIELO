@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { BookOpen, Check, Copy, CopyPlus, Loader2, TriangleAlert, X } from 'lucide-react';
+import { BookOpen, Check, Copy, CopyPlus, Loader2, Sparkles, TriangleAlert, X } from 'lucide-react';
 import { COLORES_BLOQUE_CF } from '../../lib/curriculo';
 import type { ItemCurricular } from '../../hooks/useCurriculumPeriodo';
 
 type Tabla = 'competencias' | 'indicadores' | 'contenidos';
+type FiltroContenido = 'todos' | 'conceptual' | 'procedimental' | 'actitudinal';
 
 interface Props {
     periodo: string;
@@ -17,8 +18,12 @@ interface Props {
     competencias: ItemCurricular[];
     indicadores: ItemCurricular[];
     contenidos: ItemCurricular[];
+    conceptuales?: ItemCurricular[];
+    procedimentales?: ItemCurricular[];
+    actitudinales?: ItemCurricular[];
     insertados: Set<string>;
     onInsertar: (item: ItemCurricular) => void;
+    onInsertarTodoContenidos?: () => void;
     onCerrar: () => void;
 }
 
@@ -40,18 +45,43 @@ export default function PanelCurricular({
     competencias,
     indicadores,
     contenidos,
+    conceptuales,
+    procedimentales,
+    actitudinales,
     insertados,
     onInsertar,
+    onInsertarTodoContenidos,
     onCerrar,
 }: Props) {
     const [tab, setTab] = useState<Tabla>('competencias');
+    const [filtroContenido, setFiltroContenido] = useState<FiltroContenido>('todos');
     const [copiado, setCopiado] = useState<string | null>(null);
+
+    const listaConceptuales = useMemo(
+        () => conceptuales ?? contenidos.filter((c) => c.categoria === 'conceptual'),
+        [conceptuales, contenidos]
+    );
+    const listaProcedimentales = useMemo(
+        () => procedimentales ?? contenidos.filter((c) => c.categoria === 'procedimental'),
+        [procedimentales, contenidos]
+    );
+    const listaActitudinales = useMemo(
+        () => actitudinales ?? contenidos.filter((c) => c.categoria === 'actitudinal'),
+        [actitudinales, contenidos]
+    );
+
+    const contenidosFiltrados = useMemo(() => {
+        if (filtroContenido === 'conceptual') return listaConceptuales;
+        if (filtroContenido === 'procedimental') return listaProcedimentales;
+        if (filtroContenido === 'actitudinal') return listaActitudinales;
+        return contenidos;
+    }, [filtroContenido, listaConceptuales, listaProcedimentales, listaActitudinales, contenidos]);
 
     const items = useMemo(() => {
         if (tab === 'competencias') return competencias;
         if (tab === 'indicadores') return indicadores;
-        return contenidos;
-    }, [tab, competencias, indicadores, contenidos]);
+        return contenidosFiltrados;
+    }, [tab, competencias, indicadores, contenidosFiltrados]);
 
     const indicadoresPorCE = useMemo(() => {
         const mapa = new Map<string, ItemCurricular[]>();
@@ -150,7 +180,7 @@ export default function PanelCurricular({
                     </div>
                 )}
 
-                {!cargando && !error && items.length === 0 && tienePeriodo && (
+                {!cargando && !error && items.length === 0 && tienePeriodo && tab !== 'contenidos' && (
                     <div className="p-5 rounded-xl border border-dashed border-(--border-soft) text-center">
                         <p className="text-[12px] font-black text-(--ink)">Nada en esta sección</p>
                         <p className="text-[11px] text-(--ink-soft) mt-1 leading-relaxed">
@@ -184,7 +214,7 @@ export default function PanelCurricular({
                                 <ul className="mt-2 pl-1 space-y-1">
                                     {hijos.map(ind => (
                                         <li key={ind.id} className="flex items-start gap-2 text-[11px] text-(--ink-soft)">
-                                            <span className="shrink-0 rounded-full bg-white border border-(--border-soft) px-1.5 py-0.5 text-[9px] font-black text-(--ink-soft)">
+                                             <span className="shrink-0 rounded-full bg-white border border-(--border-soft) px-1.5 py-0.5 text-[9px] font-black text-(--ink-soft)">
                                                 {ind.codigo || 'IL'}
                                             </span>
                                             <span className="flex-1 leading-relaxed">{ind.texto}</span>
@@ -214,20 +244,124 @@ export default function PanelCurricular({
                     </div>
                 ))}
 
-                {tab === 'contenidos' && contenidos.map(cont => (
-                    <div key={cont.id} className="p-3 rounded-xl border border-(--border-soft) bg-white">
-                        <div className="flex items-start gap-2">
-                            <p className="flex-1 text-[11px] font-medium leading-relaxed text-(--ink)">{cont.texto}</p>
-                            <Acciones
-                                item={cont}
-                                insertado={insertados.has(cont.id)}
-                                copiado={copiado === cont.id}
-                                onCopiar={copiar}
-                                onInsertar={onInsertar}
-                            />
+                {tab === 'contenidos' && (
+                    <div className="space-y-3">
+                        {onInsertarTodoContenidos && (listaConceptuales.length > 0 || listaProcedimentales.length > 0 || listaActitudinales.length > 0) && (
+                            <button
+                                type="button"
+                                onClick={onInsertarTodoContenidos}
+                                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-(--primary) text-white text-[10.5px] font-black uppercase tracking-wider shadow-sm hover:opacity-90 active:scale-[0.99] transition-all"
+                                title="Llenar automáticamente las tres columnas (Conceptual, Procedimental, Actitudes y valores) en la tabla del documento"
+                            >
+                                <Sparkles size={13} /> Llenar tabla de contenidos
+                            </button>
+                        )}
+
+                        <div className="flex items-center gap-1 p-1 rounded-xl bg-(--linen)/40 border border-(--border-soft) overflow-x-auto">
+                            <button
+                                type="button"
+                                onClick={() => setFiltroContenido('todos')}
+                                className={`flex-1 min-w-[55px] px-2 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all text-center ${
+                                    filtroContenido === 'todos'
+                                        ? 'bg-white text-(--ink) shadow-xs'
+                                        : 'text-(--ink-soft) hover:text-(--ink)'
+                                }`}
+                            >
+                                Todos <span className="opacity-60">{contenidos.length}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFiltroContenido('conceptual')}
+                                className={`flex-1 min-w-[70px] px-2 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all text-center ${
+                                    filtroContenido === 'conceptual'
+                                        ? 'bg-blue-600 text-white shadow-xs'
+                                        : 'text-blue-700 hover:bg-blue-50/80'
+                                }`}
+                            >
+                                Conceptual <span className="opacity-80">{listaConceptuales.length}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFiltroContenido('procedimental')}
+                                className={`flex-1 min-w-[76px] px-2 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all text-center ${
+                                    filtroContenido === 'procedimental'
+                                        ? 'bg-teal-600 text-white shadow-xs'
+                                        : 'text-teal-700 hover:bg-teal-50/80'
+                                }`}
+                            >
+                                Procedimental <span className="opacity-80">{listaProcedimentales.length}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setFiltroContenido('actitudinal')}
+                                className={`flex-1 min-w-[70px] px-2 py-1 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all text-center ${
+                                    filtroContenido === 'actitudinal'
+                                        ? 'bg-amber-600 text-white shadow-xs'
+                                        : 'text-amber-800 hover:bg-amber-50/80'
+                                }`}
+                            >
+                                Actitudes <span className="opacity-80">{listaActitudinales.length}</span>
+                            </button>
                         </div>
+
+                        {contenidosFiltrados.length === 0 ? (
+                            <div className="p-5 rounded-xl border border-dashed border-(--border-soft) text-center">
+                                <p className="text-[12px] font-black text-(--ink)">Sin contenidos en este filtro</p>
+                                <p className="text-[11px] text-(--ink-soft) mt-1 leading-relaxed">
+                                    {filtroContenido === 'conceptual'
+                                        ? 'No hay contenidos conceptuales registrados para este período.'
+                                        : filtroContenido === 'procedimental'
+                                        ? 'No hay contenidos procedimentales registrados para este período.'
+                                        : filtroContenido === 'actitudinal'
+                                        ? 'No hay actitudes y valores registrados para este período.'
+                                        : 'No hay contenidos guardados para el período.'}
+                                </p>
+                            </div>
+                        ) : (
+                            contenidosFiltrados.map((cont) => {
+                                const esConceptual = cont.categoria === 'conceptual';
+                                const esProcedimental = cont.categoria === 'procedimental';
+                                const esActitudinal = cont.categoria === 'actitudinal';
+                                return (
+                                    <div key={cont.id} className="p-3 rounded-xl border border-(--border-soft) bg-white shadow-xs hover:border-(--primary)/30 transition-all space-y-1.5">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                                {esConceptual && (
+                                                    <span className="shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-100 text-blue-700">
+                                                        Conceptual
+                                                    </span>
+                                                )}
+                                                {esProcedimental && (
+                                                    <span className="shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-teal-100 text-teal-700">
+                                                        Procedimental
+                                                    </span>
+                                                )}
+                                                {esActitudinal && (
+                                                    <span className="shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800">
+                                                        Actitudes y valores
+                                                    </span>
+                                                )}
+                                                {cont.contenidoPadre && (
+                                                    <span className="text-[10px] font-bold text-(--ink-soft)/70 truncate max-w-[160px]" title={cont.contenidoPadre}>
+                                                        • {cont.contenidoPadre}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <Acciones
+                                                item={cont}
+                                                insertado={insertados.has(cont.id)}
+                                                copiado={copiado === cont.id}
+                                                onCopiar={copiar}
+                                                onInsertar={onInsertar}
+                                            />
+                                        </div>
+                                        <p className="text-[11px] font-medium leading-relaxed text-(--ink)">{cont.texto}</p>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
-                ))}
+                )}
             </div>
 
             <div className="px-5 py-3 border-t border-(--border-soft) shrink-0">

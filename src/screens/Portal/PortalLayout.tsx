@@ -208,9 +208,8 @@ export default function PortalLayout() {
   const renderUnassignedState = Boolean(selectedAsignatura && !tieneDocenteActivo && currentPath !== 'incidencias');
 
   return (
-    <div className="portal-root flex justify-center items-center min-h-screen py-0 sm:py-6 selection:bg-purple-200 bg-white">
-      <main className="w-full max-w-107.5 min-h-screen sm:min-h-222.5 sm:max-h-235 sm:rounded-[36px] sm:border-2 sm:border-zinc-900 overflow-hidden flex flex-col relative sm:shadow-2xl text-zinc-900 bg-white">
-        
+    <div className="portal-root w-full min-h-screen bg-white selection:bg-purple-200">
+      <main className="w-full min-h-screen flex flex-col relative text-zinc-900 bg-white">
         {/* CABECERA CON BOTÓN « Mis asignaturas » */}
         {selectedAsignatura && !renderUnassignedState ? (
           <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200 px-4 py-2.5 flex items-center justify-between">
@@ -251,7 +250,7 @@ export default function PortalLayout() {
         ) : null}
 
         {/* ÁREA DE CONTENIDO */}
-        <div className={`flex-1 overflow-y-auto custom-scrollbar ${(selectedAsignatura || currentPath === 'incidencias') && !renderUnassignedState ? 'pb-24' : 'pb-6'}`}>
+        <div className={`flex-1 overflow-y-auto custom-scrollbar ${(selectedAsignatura || currentPath === 'incidencias') && !renderUnassignedState ? 'pb-24 sm:pb-28 lg:pb-32' : 'pb-6 lg:pb-8'} w-full max-w-[1600px] mx-auto px-0`}>
           {error ? (
             <div className="p-6 text-center mt-10">
               <p className="text-red-500 font-bold uppercase">Error de conexión</p>
@@ -324,7 +323,7 @@ export default function PortalLayout() {
 
         {/* BARRA INFERIOR DE NAVEGACIÓN: Visible cuando hay una asignatura activa o en Incidencias */}
         {(selectedAsignatura || currentPath === 'incidencias') && !renderUnassignedState && (
-          <nav className="absolute bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E4E3EC] flex items-center justify-around px-1 sm:px-3 z-20">
+          <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E4E3EC] flex items-center justify-around px-1 sm:px-3 md:px-6 lg:px-8 z-40">
             <button 
               onClick={() => handleNavigateTab('estudiante')}
               aria-label="Inicio" 

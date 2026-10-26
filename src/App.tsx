@@ -147,6 +147,12 @@ export default function App() {
   }, [state.calificaciones, state.cursos, selectedCursoId, currentCourseRole]);
 
   const activeInstituto = useMemo(() => {
+    if (currentUserProfile?.centro?.nombre) {
+      return currentUserProfile.centro.nombre;
+    }
+    if (currentUserProfile?.institucion) {
+      return currentUserProfile.institucion;
+    }
     if (selectedCursoId) {
       const tutorRel = state.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.rol === 'tutor');
       const tutorId = tutorRel?.userId || state.cursos.find(c => c.id === selectedCursoId)?.userId;
@@ -158,8 +164,8 @@ export default function App() {
       }
     }
     const inst = state.instituto || 'Instituto Central';
-    return typeof inst === 'string' ? inst : 'Instituto Central';
-  }, [selectedCursoId, state.cursoDocentes, state.cursos, state.perfiles, state.instituto]);
+    return typeof inst === 'string' && inst !== 'Instituto Central' ? inst : (currentUserProfile?.centro?.nombre || inst);
+  }, [selectedCursoId, state.cursoDocentes, state.cursos, state.perfiles, state.instituto, currentUserProfile]);
 
   // Entorno independiente para usuarios con ROL administrativo ('administrador').
   // Modelo binario: la ÚNICA fuente de verdad es perfiles.rol.

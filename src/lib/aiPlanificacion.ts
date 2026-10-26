@@ -55,7 +55,8 @@ export interface ContextoPlanificacion {
 
 // Textos guía de la plantilla: si una celda contiene exactamente uno de estos,
 // el docente aún no escribió nada ahí y debe ignorarse como contexto.
-const PLACEHOLDERS_PLANTILLA: readonly string[] = [
+export const PLACEHOLDERS_PLANTILLA: readonly string[] = [
+    'Escribe el tema o concepto que se abordará (el "qué").',
     'Escribe el tema o concepto matemático que se abordará (el "qué").',
     'Describe el procedimiento o destreza que el estudiante debe aplicar (el "cómo").',
     'Describe la actitud o valor que se busca desarrollar durante la actividad.',

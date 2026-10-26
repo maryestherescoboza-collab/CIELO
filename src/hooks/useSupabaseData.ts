@@ -515,6 +515,7 @@ export function useSupabaseData(skipInit = false) {
                     ...prev,
                     perfiles: mappedPerfiles,
                     nombreDocente: (currentUserProfile?.nombreDocente || '').trim() || prev.nombreDocente,
+                    instituto: currentUserProfile?.centro?.nombre || currentUserProfile?.institucion || prev.instituto,
                     docentes: mappedDocentes,
                     cursos: cachedCursos
                         ? cachedCursos.cursos

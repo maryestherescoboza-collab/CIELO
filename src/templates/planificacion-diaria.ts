@@ -1,14 +1,43 @@
 export interface PlanificacionData {
-  centro: string;
-  codigoCentro: string;
-  docente: string;
-  asignatura: string;
-  grado: string;
-  seccion: string;
-  fecha: string;
+  centro?: string;
+  codigoCentro?: string;
+  docente?: string;
+  asignatura?: string;
+  grado?: string;
+  seccion?: string;
+  fecha?: string;
+  cantidadEstudiantes?: number | string;
+  estudiantesCantidad?: number | string;
+  telefono?: string;
+  ciclo?: string;
+  tiempo?: string;
+  secuencia?: string;
+  semana?: string;
 }
 
-export function getPlanificacionDiariaTemplate(_data: PlanificacionData): string {
+function escapeHtml(str: string | number | undefined | null): string {
+  if (str === undefined || str === null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+export function determinarCiclo(grado?: string): string {
+  if (!grado) return '';
+  const g = grado.toLowerCase();
+  if (g.includes('1') || g.includes('primer') || g.includes('2') || g.includes('segundo') || g.includes('3') || g.includes('tercer')) {
+    return '1er Ciclo';
+  }
+  if (g.includes('4') || g.includes('cuarto') || g.includes('5') || g.includes('quinto') || g.includes('6') || g.includes('sexto')) {
+    return '2do Ciclo';
+  }
+  return '';
+}
+
+export function getPlanificacionDiariaTemplate(data: PlanificacionData): string {
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -83,6 +112,7 @@ export function getPlanificacionDiariaTemplate(_data: PlanificacionData): string
   .editable {
     outline: 1px dashed transparent;
     min-height: 14px;
+    white-space: pre-wrap;
   }
   .editable:hover, .editable:focus {
     outline: 1px dashed #3E6DA3;
@@ -197,39 +227,39 @@ export function getPlanificacionDiariaTemplate(_data: PlanificacionData): string
     </tr>
     <tr>
       <td class="label">Centro educativo</td>
-      <td class="editable" contenteditable="true">\${data.centro}</td>
+      <td class="editable" contenteditable="true" data-field-id="general-centro">${escapeHtml(data.centro)}</td>
       <td class="label">Docente</td>
-      <td class="editable" contenteditable="true">\${data.docente}</td>
+      <td class="editable" contenteditable="true" data-field-id="general-docente">${escapeHtml(data.docente)}</td>
       <td class="label">Fecha</td>
-      <td class="editable" contenteditable="true">\${data.fecha}</td>
+      <td class="editable" contenteditable="true" data-field-id="general-fecha">${escapeHtml(data.fecha)}</td>
     </tr>
     <tr>
       <td class="label">Código del centro:</td>
-      <td class="editable" contenteditable="true">\${data.codigoCentro}</td>
+      <td class="editable" contenteditable="true" data-field-id="general-codigo">${escapeHtml(data.codigoCentro)}</td>
       <td class="label">Cantidad de estudiantes</td>
-      <td class="editable" contenteditable="true" colspan="3"></td>
+      <td class="editable" contenteditable="true" colspan="3" data-field-id="general-estudiantes">${escapeHtml(data.cantidadEstudiantes ?? data.estudiantesCantidad ?? '')}</td>
     </tr>
     <tr>
       <td class="label">Ciclo:</td>
-      <td class="editable" contenteditable="true"></td>
+      <td class="editable" contenteditable="true" data-field-id="general-ciclo">${escapeHtml(data.ciclo || determinarCiclo(data.grado))}</td>
       <td class="label">Asignatura</td>
-      <td class="editable" contenteditable="true">\${data.asignatura}</td>
+      <td class="editable" contenteditable="true" data-field-id="general-asignatura">${escapeHtml(data.asignatura)}</td>
       <td class="label">Teléfono:</td>
-      <td class="editable" contenteditable="true"></td>
+      <td class="editable" contenteditable="true" data-field-id="general-telefono">${escapeHtml(data.telefono)}</td>
     </tr>
     <tr>
       <td class="label">Grado:</td>
-      <td class="editable" contenteditable="true">\${data.grado} \${data.seccion}</td>
+      <td class="editable" contenteditable="true" data-field-id="general-grado">${escapeHtml([data.grado, data.seccion].filter(Boolean).join(' '))}</td>
       <td class="label"></td>
       <td class="editable" contenteditable="true"></td>
       <td class="label">Tiempo</td>
-      <td class="editable" contenteditable="true"></td>
+      <td class="editable" contenteditable="true" data-field-id="general-tiempo">${escapeHtml(data.tiempo)}</td>
     </tr>
     <tr>
       <td class="label">Secuencia</td>
-      <td class="editable" contenteditable="true"></td>
+      <td class="editable" contenteditable="true" data-field-id="general-secuencia">${escapeHtml(data.secuencia)}</td>
       <td class="label">Semana</td>
-      <td class="editable" contenteditable="true" colspan="3"></td>
+      <td class="editable" contenteditable="true" colspan="3" data-field-id="general-semana">${escapeHtml(data.semana)}</td>
     </tr>
   </table>
 
@@ -244,7 +274,7 @@ export function getPlanificacionDiariaTemplate(_data: PlanificacionData): string
       <td class="label-sm" style="width:33.3%;">Actitudes y valores</td>
     </tr>
     <tr>
-      <td class="editable placeholder" contenteditable="true">Escribe el tema o concepto matemático que se abordará (el "qué").</td>
+      <td class="editable placeholder" contenteditable="true">Escribe el tema o concepto que se abordará (el "qué").</td>
       <td class="editable placeholder" contenteditable="true">Describe el procedimiento o destreza que el estudiante debe aplicar (el "cómo").</td>
       <td class="editable placeholder" contenteditable="true">Describe la actitud o valor que se busca desarrollar durante la actividad.</td>
     </tr>

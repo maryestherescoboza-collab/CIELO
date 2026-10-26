@@ -88,9 +88,12 @@ const CalificacionesAnualesRouteWrapper: React.FC<{
 // lógica original; esta carga lazy es aislada y no afecta la ruta /planificacion-diaria/plantilla.
 const PlanificacionDiariaExistenteWrapper: React.FC<{
   state: AppState;
+  docenteNombre?: string;
+  currentUserProfile?: any;
+  session?: any;
   onUpdateSecuencia?: (seq: Secuencia) => Promise<void> | void;
   onAddSecuencia?: (seq: Omit<Secuencia, 'id'>) => Promise<Secuencia | null>;
-}> = ({ state, onUpdateSecuencia, onAddSecuencia }) => {
+}> = ({ state, docenteNombre, currentUserProfile, session, onUpdateSecuencia, onAddSecuencia }) => {
   const { id } = useParams<{ id: string }>();
   const { loadPlanificacionData } = useSupabaseData(true);
 
@@ -103,6 +106,9 @@ const PlanificacionDiariaExistenteWrapper: React.FC<{
   return (
     <PlanificacionDiariaEditor
       state={state}
+      docenteNombre={docenteNombre}
+      currentUserProfile={currentUserProfile}
+      session={session}
       onUpdateSecuencia={onUpdateSecuencia}
       onAddSecuencia={onAddSecuencia}
     />
@@ -298,9 +304,9 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/incidencias" element={<Incidencias state={state} onAddIncidencia={addIncidencia} onDeleteIncidencia={deleteIncidencia} onUpdateIncidencia={updateIncidencia} />} />
       <Route path="/calendario" element={<Calendario onAddActividad={addActividad} />} />
       <Route element={<PlanClasesLayout />}>
-        <Route path="/planificacion" element={<Planificacion onAddSecuencia={addSecuencia} onUpdateSecuencia={updateSecuencia} onDeleteSecuencia={deleteSecuencia} />} />
-        <Route path="/planificacion-diaria/plantilla" element={<PlanificacionDiariaEditor state={state} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
-        <Route path="/planificacion-diaria/:id" element={<PlanificacionDiariaExistenteWrapper state={state} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
+        <Route path="/planificacion" element={<Planificacion state={state} docenteNombre={docenteNombre} currentUserProfile={currentUserProfile} session={session} onAddSecuencia={addSecuencia} onUpdateSecuencia={updateSecuencia} onDeleteSecuencia={deleteSecuencia} />} />
+        <Route path="/planificacion-diaria/plantilla" element={<PlanificacionDiariaEditor state={state} docenteNombre={docenteNombre} currentUserProfile={currentUserProfile} session={session} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
+        <Route path="/planificacion-diaria/:id" element={<PlanificacionDiariaExistenteWrapper state={state} docenteNombre={docenteNombre} currentUserProfile={currentUserProfile} session={session} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />
         
         <Route path="/plan-de-clases">
           <Route index element={<Navigate to="secuencias" replace />} />

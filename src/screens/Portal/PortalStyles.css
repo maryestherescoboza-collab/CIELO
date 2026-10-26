@@ -27,3 +27,17 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+@media (min-width: 1024px) {
+  .portal-root .px-5 {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .portal-root .px-5 {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}

@@ -16,7 +16,9 @@ import { useAppStore } from '../store/appStore';
 import { useEspecificacionesStore } from '../store/especificacionesStore';
 import {
     bloqueDeCompetencia,
+    claveGrado,
     filtrarCompetenciasEspecificas,
+    filtrarContenidos,
     filtrarIndicadores,
     normalizarTexto,
 } from '../lib/curriculo';
@@ -24,8 +26,12 @@ import type {
     BloqueCF,
     CombinacionCurricular,
     FilaCompetenciaEspecifica,
+    FilaContenido,
     FilaIndicador,
+    SeleccionContenido,
 } from '../types/especificaciones';
+
+export type CategoriaContenido = 'conceptual' | 'procedimental' | 'actitudinal' | 'unidad';
 
 export interface ItemCurricular {
     /** Identificador estable del elemento (id de base de datos o código). */
@@ -36,12 +42,19 @@ export interface ItemCurricular {
     bloque: BloqueCF | null;
     /** Código de la competencia específica a la que se relates (indicadores). */
     ceCodigo: string | null;
+    /** Categoría del contenido curricular (conceptual, procedimental, actitudinal o unidad). */
+    categoria?: CategoriaContenido;
+    /** Nombre o título del contenido padre / unidad temática. */
+    contenidoPadre?: string;
 }
 
 export interface CurriculoPeriodo {
     competencias: ItemCurricular[];
     indicadores: ItemCurricular[];
     contenidos: ItemCurricular[];
+    conceptuales: ItemCurricular[];
+    procedimentales: ItemCurricular[];
+    actitudinales: ItemCurricular[];
     /** El docente tiene una especificación guardada para esta combinación. */
     tieneEspecificacion: boolean;
     /** El período concreto tiene selecciones guardadas. */
@@ -52,6 +65,9 @@ const CURRICULO_VACIO: CurriculoPeriodo = {
     competencias: [],
     indicadores: [],
     contenidos: [],
+    conceptuales: [],
+    procedimentales: [],
+    actitudinales: [],
     tieneEspecificacion: false,
     tienePeriodo: false,
 };
@@ -66,9 +82,14 @@ export function useCurriculumPeriodo(
     const fetchEspecificaciones = useEspecificacionesStore((s) => s.fetchEspecificaciones);
     const fetchPeriodo = useEspecificacionesStore((s) => s.fetchPeriodo);
 
-    const [catalogo, setCatalogo] = useState<{ indicadores: FilaIndicador[]; ces: FilaCompetenciaEspecifica[] }>({
+    const [catalogo, setCatalogo] = useState<{
+        indicadores: FilaIndicador[];
+        ces: FilaCompetenciaEspecifica[];
+        conts: FilaContenido[];
+    }>({
         indicadores: [],
         ces: [],
+        conts: [],
     });
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -103,7 +124,7 @@ export function useCurriculumPeriodo(
         return periodos.find((p) => p.especificacion_id === especificacion.id && p.periodo === periodo);
     }, [especificacion, periodo, periodos]);
 
-    // 3) Catálogo real del grado + asignatura (texto de indicadores y color por bloque).
+    // 3) Catálogo real del grado + asignatura (texto de indicadores, color por bloque y contenidos con desglose).
     useEffect(() => {
         if (!combo) return;
         if (cargadoCatalogo === combo.key) return;
@@ -114,15 +135,20 @@ export function useCurriculumPeriodo(
             setError(null);
             try {
                 const gradoStr = String(combo.grado || '');
-                const [inds, ces] = await Promise.all([
+                const gradoCanonico = claveGrado(combo.grado) || gradoStr;
+                const [inds, ces, conts] = await Promise.all([
                     supabase
                         .from('curr_indicadores')
                         .select('id, grado, asignatura, competencia, codigo, descripcion, is_active')
-                        .eq('grado', gradoStr),
+                        .eq('grado', gradoCanonico),
                     supabase
                         .from('curr_competencias_especificas')
                         .select('id, nivel, grado, asignatura, bloque, competencia_fundamental, codigo, descriptor')
-                        .eq('grado', gradoStr),
+                        .eq('grado', gradoCanonico),
+                    supabase
+                        .from('curr_contenidos')
+                        .select('id, grado, asignatura, contenido, contenido_json')
+                        .eq('grado', gradoCanonico),
                 ]);
                 if (cancelado || token !== tokenRef.current) return;
                 if (inds.error) {
@@ -131,13 +157,44 @@ export function useCurriculumPeriodo(
                 if (ces.error) {
                     console.error('[Curriculo] Error consultando curr_competencias_especificas:', ces.error);
                 }
+                if (conts.error) {
+                    console.error('[Curriculo] Error consultando curr_contenidos:', conts.error);
+                }
+
+                let indsData: FilaIndicador[] = (inds.data as FilaIndicador[]) || [];
+                if (indsData.length === 0) {
+                    const fallbackInds = await supabase
+                        .from('curr_indicadores')
+                        .select('id, grado, asignatura, competencia, codigo, descripcion, is_active');
+                    if (!cancelado && fallbackInds.data) {
+                        indsData = fallbackInds.data as FilaIndicador[];
+                    }
+                }
+
+                let cesData: FilaCompetenciaEspecifica[] = (ces.data as FilaCompetenciaEspecifica[]) || [];
+                if (cesData.length === 0) {
+                    const fallbackCes = await supabase
+                        .from('curr_competencias_especificas')
+                        .select('id, nivel, grado, asignatura, bloque, competencia_fundamental, codigo, descriptor');
+                    if (!cancelado && fallbackCes.data) {
+                        cesData = fallbackCes.data as FilaCompetenciaEspecifica[];
+                    }
+                }
+
+                let contsData: FilaContenido[] = (conts.data as FilaContenido[]) || [];
+                if (contsData.length === 0) {
+                    const fallbackConts = await supabase
+                        .from('curr_contenidos')
+                        .select('id, grado, asignatura, contenido, contenido_json');
+                    if (!cancelado && fallbackConts.data) {
+                        contsData = fallbackConts.data as FilaContenido[];
+                    }
+                }
+
                 setCatalogo({
-                    indicadores: filtrarIndicadores((inds.data as FilaIndicador[]) || [], combo.grado, combo.asignatura),
-                    ces: filtrarCompetenciasEspecificas(
-                        (ces.data as FilaCompetenciaEspecifica[]) || [],
-                        combo.grado,
-                        combo.asignatura
-                    ),
+                    indicadores: filtrarIndicadores(indsData, combo.grado, combo.asignatura),
+                    ces: filtrarCompetenciasEspecificas(cesData, combo.grado, combo.asignatura),
+                    conts: filtrarContenidos(contsData, combo.grado, combo.asignatura),
                 });
                 setCargadoCatalogo(combo.key);
             } catch (err) {
@@ -160,6 +217,12 @@ export function useCurriculumPeriodo(
 
         const indicadoresCatalogo = new Map(catalogo.indicadores.map((f) => [f.id, f]));
         const ceCatalogo = new Map(catalogo.ces.map((f) => [f.codigo, f]));
+        const contsCatalogo = new Map<string, FilaContenido>();
+        for (const fc of catalogo.conts) {
+            contsCatalogo.set(fc.id, fc);
+            contsCatalogo.set(normalizarTexto(fc.contenido), fc);
+        }
+
         /** Nombre de la competencia fundamental de cada CE (para el vínculo real). */
         const nombresCE = new Map<string, string>();
 
@@ -167,6 +230,9 @@ export function useCurriculumPeriodo(
         const competencias: ItemCurricular[] = [];
         const indicadores: ItemCurricular[] = [];
         const contenidos: ItemCurricular[] = [];
+        const conceptuales: ItemCurricular[] = [];
+        const procedimentales: ItemCurricular[] = [];
+        const actitudinales: ItemCurricular[] = [];
 
         if (fila) {
             const vistosCE = new Set<string>();
@@ -204,18 +270,114 @@ export function useCurriculumPeriodo(
             }
 
             const vistosCont = new Set<string>();
-            for (const cont of fila.contenidos || []) {
+            for (const cont of (fila.contenidos || []) as SeleccionContenido[]) {
                 if (!cont || typeof cont !== 'object') continue;
-                const texto = (cont.contenido || '').trim();
-                if (!texto || vistosCont.has(texto)) continue;
-                vistosCont.add(texto);
-                contenidos.push({
-                    id: `cont-${cont.contenido_id || texto}`,
-                    codigo: '',
-                    texto,
-                    bloque: null,
-                    ceCodigo: null,
-                });
+                const nombreUnidad = (cont.contenido || '').trim();
+                const catRow =
+                    (cont.contenido_id ? contsCatalogo.get(cont.contenido_id) : undefined) ||
+                    contsCatalogo.get(normalizarTexto(nombreUnidad));
+
+                // 1. Conceptos seleccionados o del catálogo
+                const rawConceptos =
+                    Array.isArray(cont.conceptos) && cont.conceptos.length > 0
+                        ? cont.conceptos
+                        : (catRow?.contenido_json?.conceptos as string[] | undefined) || [];
+
+                // 2. Procedimientos seleccionados o del catálogo
+                const rawProcedimientos =
+                    Array.isArray(cont.procedimientos) && cont.procedimientos.length > 0
+                        ? cont.procedimientos
+                        : (catRow?.contenido_json?.procedimientos as string[] | undefined) || [];
+
+                // 3. Actitudes y valores seleccionados o del catálogo
+                const rawActitudes =
+                    Array.isArray(cont.actitudes_valores) && cont.actitudes_valores.length > 0
+                        ? cont.actitudes_valores
+                        : ((catRow?.contenido_json?.actitudes_valores || catRow?.contenido_json?.actitudes) as
+                              | string[]
+                              | undefined) || [];
+
+                const hayDesglose =
+                    rawConceptos.length > 0 || rawProcedimientos.length > 0 || rawActitudes.length > 0;
+
+                if (hayDesglose) {
+                    rawConceptos.forEach((txt, idx) => {
+                        const limpio = String(txt || '').trim();
+                        if (!limpio) return;
+                        const claveUnica = `conc-${limpio.toLowerCase()}`;
+                        if (vistosCont.has(claveUnica)) return;
+                        vistosCont.add(claveUnica);
+
+                        const item: ItemCurricular = {
+                            id: `cont-c-${cont.contenido_id || 'item'}-${idx}`,
+                            codigo: '',
+                            texto: limpio,
+                            bloque: null,
+                            ceCodigo: null,
+                            categoria: 'conceptual',
+                            contenidoPadre: nombreUnidad,
+                        };
+                        conceptuales.push(item);
+                        contenidos.push(item);
+                    });
+
+                    rawProcedimientos.forEach((txt, idx) => {
+                        const limpio = String(txt || '').trim();
+                        if (!limpio) return;
+                        const claveUnica = `proc-${limpio.toLowerCase()}`;
+                        if (vistosCont.has(claveUnica)) return;
+                        vistosCont.add(claveUnica);
+
+                        const item: ItemCurricular = {
+                            id: `cont-p-${cont.contenido_id || 'item'}-${idx}`,
+                            codigo: '',
+                            texto: limpio,
+                            bloque: null,
+                            ceCodigo: null,
+                            categoria: 'procedimental',
+                            contenidoPadre: nombreUnidad,
+                        };
+                        procedimentales.push(item);
+                        contenidos.push(item);
+                    });
+
+                    rawActitudes.forEach((txt, idx) => {
+                        const limpio = String(txt || '').trim();
+                        if (!limpio) return;
+                        const claveUnica = `act-${limpio.toLowerCase()}`;
+                        if (vistosCont.has(claveUnica)) return;
+                        vistosCont.add(claveUnica);
+
+                        const item: ItemCurricular = {
+                            id: `cont-a-${cont.contenido_id || 'item'}-${idx}`,
+                            codigo: '',
+                            texto: limpio,
+                            bloque: null,
+                            ceCodigo: null,
+                            categoria: 'actitudinal',
+                            contenidoPadre: nombreUnidad,
+                        };
+                        actitudinales.push(item);
+                        contenidos.push(item);
+                    });
+                } else if (nombreUnidad) {
+                    // Sin desglose: el título de la unidad se incluye como conceptual
+                    const claveUnica = `unit-${nombreUnidad.toLowerCase()}`;
+                    if (!vistosCont.has(claveUnica)) {
+                        vistosCont.add(claveUnica);
+                        const item: ItemCurricular = {
+                            id: `cont-${cont.contenido_id || nombreUnidad}`,
+                            codigo: '',
+                            texto: nombreUnidad,
+                            bloque: null,
+                            ceCodigo: null,
+                            categoria: 'conceptual',
+                            contenidoPadre: nombreUnidad,
+                        };
+                        conceptuales.push(item);
+                        contenidos.push(item);
+                    }
+                }
             }
         }
 
@@ -237,6 +399,9 @@ export function useCurriculumPeriodo(
             competencias,
             indicadores,
             contenidos,
+            conceptuales,
+            procedimentales,
+            actitudinales,
             tieneEspecificacion: !!especificacion,
             tienePeriodo: !!fila,
         };

@@ -104,6 +104,7 @@ export default function CursoDetalle(props: Props) {
         setBcSel,
         actividades,
         enhancedEstudiantes,
+        allCourseStudents,
         setCalif,
         triggerAnimation,
         isDirty,
@@ -118,6 +119,25 @@ export default function CursoDetalle(props: Props) {
     const [showWarningsModal, setShowWarningsModal] = useState(false);
     const [periodLoading, setPeriodLoading] = useState(false);
     const [periodError, setPeriodError] = useState<string | null>(null);
+    const [isExportingExcel, setIsExportingExcel] = useState(false);
+
+    const handleExportExcel = async () => {
+        if (periodLoading || isExportingExcel) return;
+        setIsExportingExcel(true);
+        try {
+            const { exportarRegistroAcademicoExcel } = await import('../utils/excelExport');
+            await exportarRegistroAcademicoExcel({
+                curso,
+                periodo: selectedPeriodo,
+                estudiantes: allCourseStudents || enhancedEstudiantes
+            });
+        } catch (error) {
+            console.error('[CursoDetalle] Error exportando registro a Excel:', error);
+            alert('No se pudo generar el archivo Excel. Por favor, intenta de nuevo.');
+        } finally {
+            setIsExportingExcel(false);
+        }
+    };
 
     const handlePeriodoChange = async (p: string) => {
         if (p === selectedPeriodo) return;
@@ -292,6 +312,8 @@ export default function CursoDetalle(props: Props) {
                 onShowWarnings={() => setShowWarningsModal(true)}
                 onAddActividad={onAddActividad}
                 isTutor={!currentCourseRole || currentCourseRole.rol === 'tutor'}
+                onExportExcel={handleExportExcel}
+                isExporting={isExportingExcel}
             />
 
             {restoredFromBackupCount > 0 && (
