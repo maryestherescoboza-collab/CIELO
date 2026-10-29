@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, CheckCircle, X, ClipboardCheck, BookMarked, Loader2, ChevronRight, ChevronLeft, Sparkles, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle, X, ClipboardCheck, BookMarked, Loader2, ChevronRight, ChevronLeft, Sparkles, RefreshCw, FileDown } from 'lucide-react';
 import type { AppState, CriterioCotejo, EvaluacionCotejo, CursoDocente } from '../types';
 import { getAsignaturaNombre } from '../constants/asignaturas';
 import { CieloPill } from '../components/ui/CieloPill';
 import GenerarInstrumentoModal from '../components/evaluacion/GenerarInstrumentoModal';
+import ExportarInstrumentoModal from '../components/evaluacion/ExportarInstrumentoModal';
+import {
+    descargarCotejoDocx,
+    guardarCotejoEnDrive,
+    descargarEvaluacionesPeriodoCotejoDocx,
+    descargarPlantillasCotejoDocx,
+    type PlantillaCotejoItem,
+} from '../utils/instrumentosDocx';
 import { useAppStore } from '../store/appStore';
 import { useRef } from 'react';
 import { useTemplateCapture } from '../hooks/useTemplateCapture';
@@ -65,6 +73,9 @@ export default function Cotejo({
     const [multiEvaluations, setMultiEvaluations] = useState<Record<number, Record<number, number | null>>>({});
     const [activeCell, setActiveCell] = useState<{ critId: number; val: number } | null>(null);
     const [showGenerarModal, setShowGenerarModal] = useState(false);
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [isDownloadingEval, setIsDownloadingEval] = useState(false);
+    const [isDownloadingPlantillas, setIsDownloadingPlantillas] = useState(false);
 
     const session = useAppStore(s => s.session);
     const selectedPeriodo = useAppStore(s => s.selectedPeriodo);
@@ -77,6 +88,7 @@ export default function Cotejo({
 
     const currentCourse = state?.cursos?.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || state?.cursos?.find(c => c.id === selectedCursoId);
     const asignaturaName = getAsignaturaNombre(selectedAsignatura || currentCourseRole?.asignatura) || currentCourse?.asignatura || 'Asignatura';
+    const asignaturaNombre = asignaturaName;
     const courseName = currentCourse?.nombre || 'Curso';
     const captureFileName = `Cotejo - ${asignaturaName} - ${courseName} - ${new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()).replace(/\//g, '-')}.png`;
 
@@ -86,6 +98,215 @@ export default function Cotejo({
             existingFileId: captureFileId,
             onSuccess: setCaptureFileId
         });
+    };
+
+    const userProfile = (state?.perfiles || useAppStore.getState().state.perfiles)?.find(p => p.userId === session?.user?.id) || null;
+
+    const buildEvaluationsForExport = (targetActId: number | null): Record<number, Record<number, number | null>> => {
+        const allEvaluationsMap: Record<number, Record<number, number | null>> = {};
+        const cdList = state?.cursoDetalle || useAppStore.getState().state.cursoDetalle || [];
+
+        sortedEsts.forEach((est) => {
+            const studentRespuestas: Record<number, number | null> = {};
+
+            if (targetActId) {
+                const cd = cdList.find(
+                    item => item.estudianteId === est.id && item.actividadId === targetActId
+                );
+                if (cd?.cotejoData) {
+                    Object.entries(cd.cotejoData).forEach(([k, v]) => {
+                        studentRespuestas[Number(k)] = v as number;
+                    });
+                }
+            }
+
+            if (targetActId === selectedActId && multiEvaluations[est.id]) {
+                Object.entries(multiEvaluations[est.id]).forEach(([k, v]) => {
+                    if (v !== undefined && v !== null) {
+                        studentRespuestas[Number(k)] = v;
+                    }
+                });
+            }
+
+            if (targetActId === selectedActId && est.id === selectedEstId && Object.keys(respuestas).length > 0) {
+                Object.entries(respuestas).forEach(([k, v]) => {
+                    if (v !== undefined && v !== null) {
+                        studentRespuestas[Number(k)] = v;
+                    }
+                });
+            }
+
+            allEvaluationsMap[est.id] = studentRespuestas;
+        });
+
+        return allEvaluationsMap;
+    };
+
+    const handleExportarWord = async (targetActId: number | null) => {
+        const evaluationsMap = buildEvaluationsForExport(targetActId);
+        const actObj = targetActId ? actividades.find(a => a.id === targetActId) : null;
+        const plantillaObj = selectedPlantillaId ? cotejoPlantillas.find(p => p.id === selectedPlantillaId) : null;
+
+        await descargarCotejoDocx({
+            curso: selectedCurso,
+            asignaturaNombre,
+            periodo: selectedPeriodo,
+            actividad: actObj,
+            userProfile,
+            estudiantes: sortedEsts,
+            criterios: localCriterios,
+            niveles: localNiveles,
+            evaluaciones: evaluationsMap,
+            tituloPersonalizado: plantillaObj?.nombre || undefined,
+        });
+    };
+
+    const handleGuardarDrive = async (targetActId: number | null) => {
+        const evaluationsMap = buildEvaluationsForExport(targetActId);
+        const actObj = targetActId ? actividades.find(a => a.id === targetActId) : null;
+        const plantillaObj = selectedPlantillaId ? cotejoPlantillas.find(p => p.id === selectedPlantillaId) : null;
+
+        return await guardarCotejoEnDrive({
+            curso: selectedCurso,
+            asignaturaNombre,
+            periodo: selectedPeriodo,
+            actividad: actObj,
+            userProfile,
+            estudiantes: sortedEsts,
+            criterios: localCriterios,
+            niveles: localNiveles,
+            evaluaciones: evaluationsMap,
+            tituloPersonalizado: plantillaObj?.nombre || undefined,
+        });
+    };
+
+    const handleDescargarEvaluacionesPeriodo = async () => {
+        if (isDownloadingEval) return;
+        setIsDownloadingEval(true);
+        try {
+            const actividadesPeriodo = (state?.actividades || []).filter((actividad) =>
+                (actividad.cursoId === selectedCursoId ||
+                 (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
+                (actividad.userId === session?.user?.id || !actividad.userId) &&
+                (!selectedAsignatura || actividad.asignatura === selectedAsignatura) &&
+                actividad.periodo === selectedPeriodo
+            );
+
+            const actividadesEvaluadas = actividadesPeriodo.map((act) => {
+                const evaluationsMap: Record<number, Record<number, number | null>> = {};
+                const puntajesMap: Record<number, number> = {};
+                const obsMap: Record<number, string> = {};
+
+                sortedEsts.forEach((est) => {
+                    const studentRespuestas: Record<number, number | null> = {};
+
+                    const cd = state?.cursoDetalle.find(
+                        (item) => item.estudianteId === est.id && item.actividadId === act.id
+                    );
+                    if (cd?.cotejoData) {
+                        Object.entries(cd.cotejoData).forEach(([k, v]) => {
+                            studentRespuestas[Number(k)] = v as number;
+                        });
+                        if (cd.puntajeTotal !== null && cd.puntajeTotal !== undefined) {
+                            puntajesMap[est.id] = cd.puntajeTotal;
+                        }
+                        if (cd.observaciones && cd.observaciones.length > 0) {
+                            obsMap[est.id] = Array.isArray(cd.observaciones) ? cd.observaciones.join('; ') : String(cd.observaciones);
+                        }
+                    }
+
+                    if (act.id === selectedActId && multiEvaluations[est.id]) {
+                        Object.entries(multiEvaluations[est.id]).forEach(([k, v]) => {
+                            if (v !== undefined && v !== null) {
+                                studentRespuestas[Number(k)] = v;
+                            }
+                        });
+                    }
+                    if (act.id === selectedActId && est.id === selectedEstId && Object.keys(respuestas).length > 0) {
+                        Object.entries(respuestas).forEach(([k, v]) => {
+                            if (v !== undefined && v !== null) {
+                                studentRespuestas[Number(k)] = v;
+                            }
+                        });
+                    }
+
+                    if (Object.keys(studentRespuestas).length > 0) {
+                        evaluationsMap[est.id] = studentRespuestas;
+                        if (puntajesMap[est.id] === undefined) {
+                            const totalCrit = localCriterios.length || 1;
+                            const logrados = Object.values(studentRespuestas).filter((v) => v === 100).length;
+                            puntajesMap[est.id] = Math.round((logrados / totalCrit) * 100);
+                        }
+                    }
+                });
+
+                return {
+                    actividad: act,
+                    criterios: localCriterios,
+                    niveles: localNiveles,
+                    evaluaciones: evaluationsMap,
+                    puntajes: puntajesMap,
+                    observaciones: obsMap,
+                    hasEvaluations: Object.keys(evaluationsMap).length > 0,
+                };
+            }).filter((item) => item.hasEvaluations);
+
+            if (actividadesEvaluadas.length === 0) {
+                alert(`No se encontraron evaluaciones de lista de cotejo registradas en el período ${selectedPeriodo} para este curso y asignatura.`);
+                return;
+            }
+
+            await descargarEvaluacionesPeriodoCotejoDocx({
+                curso: selectedCurso,
+                asignaturaNombre,
+                periodo: selectedPeriodo,
+                userProfile,
+                estudiantes: sortedEsts,
+                actividadesEvaluadas,
+            });
+        } catch (err) {
+            console.error('Error al exportar evaluaciones:', err);
+            alert('Ocurrió un error al generar el documento de evaluaciones.');
+        } finally {
+            setIsDownloadingEval(false);
+        }
+    };
+
+    const handleDescargarTodasPlantillas = async () => {
+        if (isDownloadingPlantillas) return;
+        setIsDownloadingPlantillas(true);
+        try {
+            const plantillasParaExportar: PlantillaCotejoItem[] = cotejoPlantillas.map((p) => {
+                const data = (p.datos || {}) as Record<string, unknown>;
+                return {
+                    id: p.id,
+                    nombre: p.nombre,
+                    criterios: (data.criterios as CriterioCotejo[]) || localCriterios,
+                    niveles: (data.niveles as Array<{ val: number; label: string; pts: number }>) || localNiveles,
+                };
+            });
+
+            if (plantillasParaExportar.length === 0) {
+                plantillasParaExportar.push({
+                    id: undefined,
+                    nombre: 'Plantilla Base de Lista de Cotejo (Editor)',
+                    criterios: localCriterios,
+                    niveles: localNiveles,
+                });
+            }
+
+            await descargarPlantillasCotejoDocx({
+                curso: selectedCurso,
+                asignaturaNombre,
+                userProfile,
+                plantillas: plantillasParaExportar,
+            });
+        } catch (err) {
+            console.error('Error al exportar plantillas:', err);
+            alert('Ocurrió un error al generar el documento de plantillas.');
+        } finally {
+            setIsDownloadingPlantillas(false);
+        }
     };
 
     useEffect(() => {
@@ -164,7 +385,7 @@ export default function Cotejo({
     const cotejoPlantillas = state?.plantillas.filter(p =>
         p.tipo === 'cotejo' && p.userId === session?.user?.id
     ) || [];
-    const LIMITE_PLANTILLAS = 10;
+    const LIMITE_PLANTILLAS = 40;
     const selectedEst = estudiantes.find(e => e.id === selectedEstId) ?? null;
     const selectedAct = actividades.find(a => a.id === selectedActId) ?? null;
 
@@ -516,6 +737,16 @@ export default function Cotejo({
                                                     </button>
                                                 ))}
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleDescargarEvaluacionesPeriodo}
+                                                disabled={isDownloadingEval}
+                                                className="w-full flex items-center justify-center gap-1.5 mt-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                                                title={`Descargar evaluaciones del período ${selectedPeriodo} en Word`}
+                                            >
+                                                {isDownloadingEval ? <Loader2 size={13} className="animate-spin text-[#689C63]" /> : <FileDown size={13} className="text-[#689C63]" />}
+                                                <span>Descargar evaluaciones ({selectedPeriodo})</span>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -627,6 +858,16 @@ export default function Cotejo({
                                                         </button>
                                                     </div>
                                                 )}
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDescargarTodasPlantillas}
+                                                    disabled={isDownloadingPlantillas}
+                                                    className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                                                    title="Descargar catálogo de plantillas de lista de cotejo en Word"
+                                                >
+                                                    {isDownloadingPlantillas ? <Loader2 size={13} className="animate-spin text-[#2B4C6F]" /> : <BookMarked size={13} className="text-[#2B4C6F]" />}
+                                                    <span>Descargar plantillas</span>
+                                                </button>
                                             </div>
 
                                             <div className="pt-2 border-t border-slate-100">
@@ -761,10 +1002,50 @@ export default function Cotejo({
                     {!readOnly && (
                         <div className="sticky top-0 z-30 bg-(--background)/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
                             <div className="w-full space-y-3">
-                                <div className="px-1 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
+                                <div className="px-1 flex flex-wrap items-center justify-between gap-2.5">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {/* Selector de Período visible para las evaluaciones */}
+                                        <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs" role="radiogroup" aria-label="Periodo de evaluaciones">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Período:</span>
+                                            {(['P1', 'P2', 'P3', 'P4'] as const).map(p => (
+                                                <button
+                                                    key={p}
+                                                    type="button"
+                                                    onClick={() => { setSelectedPeriodo(p); setSelectedActId(null); setSelectedEstId(null); }}
+                                                    className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
+                                                        selectedPeriodo === p
+                                                            ? 'bg-[#689C63] text-white shadow-xs'
+                                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                                    }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ))}
+                                        </div>
 
+                                        {/* Botón Descargar evaluaciones */}
+                                        <button
+                                            type="button"
+                                            onClick={handleDescargarEvaluacionesPeriodo}
+                                            disabled={isDownloadingEval}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#1E293B] bg-white hover:bg-[#689C63]/10 hover:text-[#689C63] border border-slate-200 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                                            title={`Descargar todas las evaluaciones realizadas en ${selectedPeriodo} (.docx)`}
+                                        >
+                                            {isDownloadingEval ? <Loader2 size={13} className="animate-spin text-[#689C63]" /> : <FileDown size={13} className="text-[#689C63]" />}
+                                            <span>Descargar evaluaciones ({selectedPeriodo})</span>
+                                        </button>
 
+                                        {/* Botón Descargar plantillas */}
+                                        <button
+                                            type="button"
+                                            onClick={handleDescargarTodasPlantillas}
+                                            disabled={isDownloadingPlantillas}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#1E293B] bg-white hover:bg-[#2B4C6F]/10 hover:text-[#2B4C6F] border border-slate-200 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                                            title="Descargar únicamente las plantillas guardadas (.docx)"
+                                        >
+                                            {isDownloadingPlantillas ? <Loader2 size={13} className="animate-spin text-[#2B4C6F]" /> : <BookMarked size={13} className="text-[#2B4C6F]" />}
+                                            <span>Descargar plantillas</span>
+                                        </button>
                                     </div>
                                     {selectedAct && (
                                         <CieloPill variant="primary" uppercase className="px-3 bg-white text-(--primary) shadow-sm tracking-[0.16em]">
@@ -821,7 +1102,16 @@ export default function Cotejo({
                         </div>
                     )}
 
-                    <div className="w-full flex justify-end">
+                    <div className="w-full flex items-center justify-end gap-2.5">
+                        <button
+                            type="button"
+                            onClick={() => setShowExportModal(true)}
+                            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#FCFCFA] border border-[#D8D8CE] text-[#2E3330] hover:bg-[#E9E9DB]/50 transition-colors font-semibold text-xs cursor-pointer"
+                            title="Exportar lista de cotejo a Word (.docx) o guardar en Google Drive"
+                        >
+                            <FileDown size={15} className="text-[#537BAC]" />
+                            <span>Exportar Word / Drive</span>
+                        </button>
                         <TemplateCaptureButton 
                             isCapturing={isCapturing} 
                             onClick={handleCapture}
@@ -1048,6 +1338,21 @@ export default function Cotejo({
                 cursoNombre={selectedCurso ? `${selectedCurso.grado} ${selectedCurso.seccion} - ${getAsignaturaNombre(selectedCurso.asignatura)}` : ''}
                 asignatura={state?.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session?.user?.id)?.asignatura ?? null}
                 onAplicarCotejo={aplicarCotejoIA}
+            />
+
+            <ExportarInstrumentoModal
+                isOpen={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                tipo="cotejo"
+                curso={selectedCurso}
+                asignaturaNombre={asignaturaName}
+                periodo={selectedPeriodo}
+                actividades={actividades}
+                selectedActividadId={selectedAct?.id ?? null}
+                userProfile={userProfile}
+                estudiantes={sortedEsts}
+                onExportarWord={handleExportarWord}
+                onGuardarDrive={handleGuardarDrive}
             />
             {captureOverlay}
         </div>

@@ -4,7 +4,7 @@
 --
 -- Objetivos:
 --   1. Índice alineado con los patrones reales de consulta (dueño + tipo).
---   2. Límite de 10 plantillas activas por docente Y tipo, garantizado en la
+--   2. Límite de 40 plantillas activas por docente Y tipo, garantizado en la
 --      base de datos (a prueba de manipulación del frontend y de solicitudes
 --      simultáneas), vía función SECURITY DEFINER + advisory lock.
 --   3. No toca políticas RLS: las vigentes (fix_recursos_comunidad_rls.sql)
@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_plantillas_user_tipo_activas
     WHERE archivado = false;
 
 -- ----------------------------------------------------------------------------
--- 2) FUNCIÓN ATÓMICA DE CREACIÓN con límite 10 por docente y tipo.
+-- 2) FUNCIÓN ATÓMICA DE CREACIÓN con límite 40 por docente y tipo.
 --
 --    ¿Por qué así?
 --    - El patrón COUNT→check→INSERT concurrente permite exceder el límite
@@ -77,8 +77,8 @@ BEGIN
       AND tipo = p_tipo
       AND archivado = false;
 
-    IF v_total >= 10 THEN
-        RAISE EXCEPTION 'LIMITE_PLANTILLAS: alcanzas el máximo de 10 plantillas activas de tipo "%"', p_tipo
+    IF v_total >= 40 THEN
+        RAISE EXCEPTION 'LIMITE_PLANTILLAS: alcanzas el máximo de 40 plantillas activas de tipo "%"', p_tipo
             USING ERRCODE = 'P0001',
                   HINT = 'Elimina o archiva una plantilla antes de crear otra.';
     END IF;

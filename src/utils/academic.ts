@@ -173,8 +173,8 @@ export function getActivityBcPoints({
 
     const pfAct = participatingActs.find(a => !!a.isProductoFinal);
     const pfPuntos = parsePuntosCompetencias(pfAct?.descripcion);
-    const pfAssigned = (pfAct && typeof pfPuntos[bc] === 'number')
-        ? Math.min(100, Math.max(0, pfPuntos[bc]))
+    const pfAssigned = (pfAct && typeof pfPuntos[bc] === 'number' && !isNaN(pfPuntos[bc]) && pfPuntos[bc] > 0)
+        ? Math.min(100, Math.max(1, pfPuntos[bc]))
         : null;
 
     if (pfAssigned !== null) {
@@ -202,8 +202,8 @@ export function computePeriodBCAvg(
 
     const pfAct = filteredActs.find(a => !!a.isProductoFinal);
     const pfPuntos = parsePuntosCompetencias(pfAct?.descripcion);
-    const pfAssigned = (pfAct && typeof pfPuntos[bc] === 'number')
-        ? Math.min(100, Math.max(0, pfPuntos[bc]))
+    const pfAssigned = (pfAct && typeof pfPuntos[bc] === 'number' && !isNaN(pfPuntos[bc]) && pfPuntos[bc] > 0)
+        ? Math.min(100, Math.max(1, pfPuntos[bc]))
         : null;
 
     if (pfAssigned !== null) {
@@ -225,41 +225,72 @@ export function computePeriodBCAvg(
 }
 
 /**
+ * Determina si un Producto Final tiene puntos personalizados explícitamente por el usuario
+ * para una competencia específica o para cualquiera de sus competencias asignadas.
+ */
+export function hasProductoFinalCustomPoints(
+    actividad: Actividad,
+    bcSel?: Record<number, Set<BCKey>>,
+    targetBc?: BCKey
+): boolean {
+    if (!actividad.isProductoFinal) return false;
+    const puntos = parsePuntosCompetencias(actividad.descripcion);
+
+    if (targetBc) {
+        return typeof puntos[targetBc] === 'number' && !isNaN(puntos[targetBc]) && puntos[targetBc] > 0;
+    }
+
+    const assignedBcs = bcSel?.[actividad.id] ?? (actividad.bcAsignados && actividad.bcAsignados.length > 0 ? new Set(actividad.bcAsignados) : new Set<BCKey>(['BC1']));
+    for (const bc of assignedBcs) {
+        if (typeof puntos[bc] === 'number' && !isNaN(puntos[bc]) && puntos[bc] > 0) {
+            return true;
+        }
+    }
+
+    for (const v of Object.values(puntos)) {
+        if (typeof v === 'number' && !isNaN(v) && v > 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Obtiene el puntaje máximo asignado al producto final.
- * 1. Revisa si hay puntos asignados en la descripción de la actividad.
- * 2. Si no hay puntos explícitos, busca el aporte asignado en el sistema (getActivityBcPoints).
- * 3. Si no existe ninguno, retorna 100 como escala por defecto.
+ * 1. Revisa si hay puntos asignados en la descripción de la actividad para las competencias activas.
+ * 2. Si no hay para las activas, revisa si hay algún valor numérico en puntos configurados.
+ * 3. Si el usuario no ha personalizado los puntos, retorna 100 como escala por defecto (actividad normal).
  */
 export function getProductoFinalMaxPoints(
     actividad: Actividad,
-    actividades?: Actividad[],
-    bcSel?: Record<number, Set<BCKey>>
+    _actividades?: Actividad[],
+    bcSel?: Record<number, Set<BCKey>>,
+    targetBc?: BCKey
 ): number {
     const puntos = parsePuntosCompetencias(actividad.descripcion);
+
+    if (targetBc && typeof puntos[targetBc] === 'number' && !isNaN(puntos[targetBc]) && puntos[targetBc] > 0) {
+        return puntos[targetBc];
+    }
+
     const assignedBcs = bcSel?.[actividad.id] ?? (actividad.bcAsignados && actividad.bcAsignados.length > 0 ? new Set(actividad.bcAsignados) : new Set<BCKey>(['BC1']));
     
     // 1. Revisar si hay puntos asignados en la descripción para alguna de las competencias activas
     for (const bc of assignedBcs) {
-        if (typeof puntos[bc] === 'number' && puntos[bc] > 0) {
+        if (typeof puntos[bc] === 'number' && !isNaN(puntos[bc]) && puntos[bc] > 0) {
             return puntos[bc];
         }
     }
 
     // 2. Si hay algún valor numérico en puntos
     for (const v of Object.values(puntos)) {
-        if (typeof v === 'number' && v > 0) {
+        if (typeof v === 'number' && !isNaN(v) && v > 0) {
             return v;
         }
     }
 
-    // 3. Si no hay puntos guardados explícitamente, calcular el aporte asignado
-    if (actividades && actividades.length > 0) {
-        for (const bc of assignedBcs) {
-            const pts = getActivityBcPoints({ actividad, bc, actividades, bcSel });
-            if (pts > 0) return Math.round(pts);
-        }
-    }
-
+    // 3. Comportamiento predeterminado: base 100 normal
     return 100;
 }
 

@@ -3,6 +3,10 @@ import { supabase } from '../../lib/supabase';
 import { Loader2 } from 'lucide-react';
 import { usePortal } from './portalContext';
 import type { Periodo } from './PortalLayout';
+import RetroMicIcon from '../../components/icons/RetroMicIcon';
+import IdeaLightbulbIcon from '../../components/icons/IdeaLightbulbIcon';
+import CursorClickIcon from '../../components/icons/CursorClickIcon';
+import HandshakeHeartIcon from '../../components/icons/HandshakeHeartIcon';
 
 interface Evidencia {
   id: number;
@@ -139,7 +143,7 @@ export default function PortalEstudiante() {
     return results;
   }, [evidencias]);
 
-  const renderCompetencyRing = (title: string, icon: string, value: number | null) => {
+  const renderCompetencyRing = (title: string, icon: string | React.ReactNode, value: number | null) => {
     const radius = 24;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = value !== null ? circumference - (value / 100) * circumference : circumference;
@@ -163,7 +167,11 @@ export default function PortalEstudiante() {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="material-symbols-outlined text-stone-700 text-base leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+            {typeof icon === 'string' ? (
+              <span className="material-symbols-outlined text-stone-700 text-base leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+            ) : (
+              icon
+            )}
             <span className="text-[9px] font-black text-black leading-none mt-0.5">
               {displayValue !== null ? `${displayValue}%` : '--'}
             </span>
@@ -260,10 +268,26 @@ export default function PortalEstudiante() {
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-2 pt-1 pb-1">
-                {renderCompetencyRing('Comunicativa', 'record_voice_over', bcsData.BC1.puntaje)}
-                {renderCompetencyRing('Pensamiento', 'psychology', bcsData.BC2.puntaje)}
-                {renderCompetencyRing('Científica', 'science', bcsData.BC3.puntaje)}
-                {renderCompetencyRing('Ética y Ciudadana', 'balance', bcsData.BC4.puntaje)}
+                {renderCompetencyRing(
+                  'Comunicativa',
+                  <RetroMicIcon className="w-7 h-7 text-stone-700" />,
+                  bcsData.BC1.puntaje
+                )}
+                {renderCompetencyRing(
+                  'Pensamiento',
+                  <IdeaLightbulbIcon className="w-7 h-7 text-stone-700" />,
+                  bcsData.BC2.puntaje
+                )}
+                {renderCompetencyRing(
+                  'Científica',
+                  <CursorClickIcon className="w-7 h-7 text-stone-700" />,
+                  bcsData.BC3.puntaje
+                )}
+                {renderCompetencyRing(
+                  'Ética y Ciudadana',
+                  <HandshakeHeartIcon className="w-7 h-7 text-stone-700" />,
+                  bcsData.BC4.puntaje
+                )}
               </div>
             </div>
           </section>

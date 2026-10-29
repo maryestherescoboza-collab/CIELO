@@ -76,7 +76,8 @@ export function useEvaluationActions() {
                         asignatura: existingRow.asignatura,
                         sharedCourseId: existingRow.shared_course_id,
                         indicador: existingRow.indicador,
-                        producto: existingRow.producto
+                        producto: existingRow.producto,
+                        descripcion: existingRow.descripcion ?? null
                     };
                     setState(s => ({
                         ...s,
@@ -111,7 +112,8 @@ export function useEvaluationActions() {
                 asignatura: actData[0].asignatura,
                 sharedCourseId: actData[0].shared_course_id,
                 indicador: actData[0].indicador,
-                producto: actData[0].producto
+                producto: actData[0].producto,
+                descripcion: actData[0].descripcion ?? null
             };
             setState(s => ({ ...s, actividades: [...s.actividades, newAct] }));
             upsertAcademicRow('actividades', newAct, newAct.cursoId, newAct.periodo ?? null, false);
@@ -800,7 +802,7 @@ export function useEvaluationActions() {
     const savePlantilla = useCallback(async (tipo: 'rubrica' | 'cotejo', nombre: string, datos: Record<string, unknown>): Promise<boolean> => {
         if (!session?.user?.id) return false;
 
-        // El límite de 10 por docente y tipo se garantiza en la base de datos
+        // El límite de 40 por docente y tipo se garantiza en la base de datos
         // mediante la función crear_plantilla (advisory lock anti-carrera).
         const { data, error } = await supabase.rpc('crear_plantilla', {
             p_tipo: tipo,
@@ -810,7 +812,7 @@ export function useEvaluationActions() {
 
         if (error) {
             if (typeof error.message === 'string' && error.message.includes('LIMITE_PLANTILLAS')) {
-                alert(`Límite alcanzado: máximo 10 plantillas de ${tipo}. Elimina una antes de crear otra.`);
+                alert(`Límite alcanzado: máximo 40 plantillas de ${tipo}. Elimina una antes de crear otra.`);
             } else {
                 console.error('[PLANTILLAS] Error creando plantilla:', { message: error.message, details: error.details, hint: error.hint, code: error.code });
                 alert('No se pudo guardar la plantilla. Intente de nuevo.');

@@ -17,6 +17,7 @@ const CIELO_FOLDER = 'CIELO';
 const REGISTRO_FOLDER = 'Registro anecdótico';
 const CAPTURAS_FOLDER = 'Capturas de plantillas';
 const NOTAS_FOLDER = 'Notas de clase';
+const INSTRUMENTOS_FOLDER = 'Instrumentos de evaluación';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
@@ -105,6 +106,11 @@ export async function getCapturasFolderId(token: string): Promise<string> {
 export async function getNotasFolderId(token: string): Promise<string> {
     const rootId = await getRootFolderId(token);
     return ensureChildFolder(token, rootId, NOTAS_FOLDER);
+}
+
+export async function getInstrumentosFolderId(token: string): Promise<string> {
+    const rootId = await getRootFolderId(token);
+    return ensureChildFolder(token, rootId, INSTRUMENTOS_FOLDER);
 }
 
 /**
@@ -200,7 +206,10 @@ export async function uploadToDrive(
     token: string,
     existingFileId?: string
 ): Promise<{ fileId: string; thumbnailLink: string }> {
-    const metadata = existingFileId ? {} : { name: fileName, parents: [folderId] };
+    const metadata: Record<string, unknown> = existingFileId ? {} : { name: fileName, parents: [folderId] };
+    if (blob.type) {
+        metadata.mimeType = blob.type;
+    }
     const method = existingFileId ? 'PATCH' : 'POST';
     const url = existingFileId 
         ? `${UPLOAD_API}/files/${existingFileId}?uploadType=multipart&fields=id,thumbnailLink`
@@ -215,11 +224,22 @@ export async function uploadToDrive(
     if (!res.ok) {
         const errBody = await res.text();
         console.error('[GoogleDrive] Upload error:', res.status, errBody);
-        throw new Error(`Error subiendo imagen a Google Drive (${res.status})`);
+        throw new Error(`Error subiendo archivo a Google Drive (${res.status})`);
     }
 
     const data = await res.json();
     return { fileId: data.id, thumbnailLink: data.thumbnailLink || '' };
+}
+
+export async function uploadDocxToDrive(
+    blob: Blob,
+    fileName: string,
+    token?: string
+): Promise<{ fileId: string; viewUrl: string }> {
+    const activeToken = token || getStoredToken() || (await requestGoogleAccessToken());
+    const folderId = await getInstrumentosFolderId(activeToken);
+    const { fileId } = await uploadToDrive(blob, fileName, folderId, activeToken);
+    return { fileId, viewUrl: getDriveViewUrl(fileId) };
 }
 
 export async function deleteFileFromDrive(fileId: string, token: string): Promise<void> {

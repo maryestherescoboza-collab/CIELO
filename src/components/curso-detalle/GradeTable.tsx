@@ -9,7 +9,7 @@ import MoverEstudianteModal from './MoverEstudianteModal';
 import ActivityViewTab from './workspace/ActivityViewTab';
 import type { BCKey, Actividad } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
-import { getActivityBcPoints, getProductoFinalMaxPoints } from '../../utils/academic';
+import { getActivityBcPoints, getProductoFinalMaxPoints, hasProductoFinalCustomPoints } from '../../utils/academic';
 import { CieloModal } from '../ui/CieloModal';
 interface GradeTableProps {
     actividades: Actividad[];
@@ -467,7 +467,8 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                             }
                                             const act = col.act;
                                             const isProductoFinal = !!act.isProductoFinal;
-                                            const maxPoints = isProductoFinal ? getProductoFinalMaxPoints(act, actividades, bcSel) : 100;
+                                            const hasCustomPFPoints = isProductoFinal && hasProductoFinalCustomPoints(act, bcSel);
+                                            const maxPoints = hasCustomPFPoints ? getProductoFinalMaxPoints(act, actividades, bcSel) : 100;
                                             return (
                                                 <GradeCell 
                                                     key={col.id}
@@ -491,7 +492,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                     getGradeClass={getGradeClass}
                                                     hasLowBc={est.bcValues?.some((v: any) => v.avg !== null && v.avg < 70 && !v.rec) ?? false}
                                                     style={style}
-                                                    isProductoFinal={isProductoFinal}
+                                                    isProductoFinal={hasCustomPFPoints}
                                                     maxPoints={maxPoints}
                                                 />
                                             );

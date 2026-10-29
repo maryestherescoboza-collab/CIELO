@@ -6,6 +6,8 @@ import RecuperacionPerfil from './RecuperacionPerfil';
 import { supabase } from '../../lib/supabase';
 import { QRCodeSVG } from 'qrcode.react';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
+import { FileDown } from 'lucide-react';
+import { exportarInformeCurricularDocx } from '../../utils/informeCurricularDocx';
 
 interface PerfilTabProps {
     est: any;
@@ -39,7 +41,34 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
     const [qrVisible, setQrVisible] = React.useState(false);
     const [qrToken, setQrToken] = React.useState<string | null>(null);
     const [isGeneratingQr, setIsGeneratingQr] = React.useState(false);
+    const [isExportingDocx, setIsExportingDocx] = React.useState(false);
     const qrTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handleDownloadDocx = async () => {
+        try {
+            setIsExportingDocx(true);
+            await exportarInformeCurricularDocx({
+                est,
+                curso,
+                periodo,
+                promedioPeriodo,
+                rankingPeriodo,
+                studentHabilidades,
+                actividadesPeriodo,
+                incidenciasEstudiante,
+                computedBCs,
+                getDescriptorTexts,
+                state,
+                currentAsignatura,
+                isTutor,
+                currentUserId,
+            });
+        } catch (err) {
+            console.error("Error al exportar informe curricular en Word:", err);
+        } finally {
+            setIsExportingDocx(false);
+        }
+    };
 
     React.useEffect(() => {
         return () => {
@@ -281,11 +310,37 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 <div className="flex-1">
                     {/* Header Documento */}
                     <div className="mb-6 relative">
-                        <div className="font-['Space_Grotesk'] text-[36px] font-bold text-[#1B1F2A] leading-[1.15] tracking-tight">
-                            {est.nombre} <span className="bg-[#DB5B48] text-white px-2.5 py-0.5 rounded-[5px] inline-block">{est.apellido}</span>
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                            <div>
+                                <div className="font-['Space_Grotesk'] text-[36px] font-bold text-[#1B1F2A] leading-[1.15] tracking-tight">
+                                    {est.nombre} <span className="bg-[#DB5B48] text-white px-2.5 py-0.5 rounded-[5px] inline-block">{est.apellido}</span>
+                                </div>
+                                <div className="text-[12px] text-[#4E5566] mt-2.5">
+                                    {curso?.grado} {curso?.seccion} • {getAsignaturaNombre(currentAsignatura || curso?.asignatura)}
+                                </div>
+                                <div className="mt-4 text-[17px] font-bold tracking-wide text-[#1B1F2A] font-['Space_Grotesk']">
+                                    Informe curricular
+                                </div>
+                                <div className="text-[11px] text-[#8A8FA0] mt-0.5">
+                                    Período {periodo}
+                                </div>
+                            </div>
+
+                            <div className="no-print flex items-center gap-2 self-start shrink-0">
+                                <button
+                                    onClick={handleDownloadDocx}
+                                    disabled={isExportingDocx}
+                                    className="flex items-center gap-2 px-3.5 py-2 bg-[#1B1F2A] text-white text-[11px] font-bold uppercase rounded-lg hover:bg-[#2e3447] active:scale-95 transition-all shadow-sm disabled:opacity-50 tracking-wider cursor-pointer"
+                                    title="Descargar informe curricular en Word (.docx)"
+                                >
+                                    <FileDown size={14} className="text-[#DB5B48]" />
+                                    <span>{isExportingDocx ? 'Descargando...' : 'Descargar Word'}</span>
+                                </button>
+                            </div>
                         </div>
+
                         {PORTAL_FAMILIA_ENABLED && (
-                            <div className="mt-2 flex flex-col gap-2 relative">
+                            <div className="mt-3 flex flex-col gap-2 relative">
                                 <div className="flex items-center gap-4">
                                     <button onClick={handleGenerateQR} disabled={isGeneratingQr} className="px-3 py-1 bg-[#1B1F2A] text-white text-[10px] font-bold uppercase rounded hover:opacity-80 transition-opacity">
                                         {isGeneratingQr ? 'Generando...' : 'Generar Acceso Familiar'}
@@ -307,15 +362,6 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                 )}
                             </div>
                         )}
-                        <div className="text-[12px] text-[#4E5566] mt-2.5">
-                            {curso?.grado} {curso?.seccion} • {getAsignaturaNombre(currentAsignatura || curso?.asignatura)}
-                        </div>
-                        <div className="mt-4 text-[17px] font-bold tracking-wide text-[#1B1F2A] font-['Space_Grotesk']">
-                            Informe curricular
-                        </div>
-                        <div className="text-[11px] text-[#8A8FA0] mt-0.5">
-                            Período {periodo}
-                        </div>
 
                         <hr className="border-t-2 border-[#1B1F2A] my-4" />
 

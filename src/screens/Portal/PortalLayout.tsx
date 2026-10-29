@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import BackpackIcon from '../../components/icons/BackpackIcon';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
 import { 
   SIETE_ASIGNATURAS_OFICIALES, 
@@ -270,7 +271,7 @@ export default function PortalLayout() {
         ) : null}
 
         {/* ÁREA DE CONTENIDO */}
-        <div className={`flex-1 overflow-y-auto custom-scrollbar ${(selectedAsignatura || currentPath === 'incidencias') && !renderUnassignedState ? 'pb-24 sm:pb-28 lg:pb-32' : 'pb-6 lg:pb-8'} w-full max-w-[1600px] mx-auto px-0`}>
+        <div className={`flex-1 overflow-y-auto custom-scrollbar ${(selectedAsignatura || currentPath === 'incidencias') && !renderUnassignedState ? 'pb-24 sm:pb-28 lg:pb-32' : 'pb-6 lg:pb-8'} w-full max-w-400 mx-auto px-0`}>
           {error ? (
             <div className="p-6 text-center mt-10">
               <p className="text-red-500 font-bold uppercase">Error de conexión</p>
@@ -349,11 +350,11 @@ export default function PortalLayout() {
               aria-label="Inicio" 
               className={`flex-1 flex flex-col items-center justify-center h-full focus:outline-none transition-colors ${currentPath === 'estudiante' || currentPath === '' ? 'text-[#1B1F2A]' : 'text-[#767a76] hover:text-[#1B1F2A]'}`}
             >
-              <div className={`flex flex-col items-center justify-center p-1.5 rounded-xl ${currentPath === 'estudiante' || currentPath === '' ? 'bg-[#F1F1EC]' : ''}`}>
-                <svg className="w-5 h-5 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" strokeLinecap="round" strokeLinejoin="round"></path>
-                </svg>
-                <span className={`text-[10px] mt-0.5 ${currentPath === 'estudiante' || currentPath === '' ? 'font-bold' : 'font-medium'}`}>Inicio</span>
+              <div className="relative -top-3.5 flex flex-col items-center justify-center">
+                <div className={`p-1 rounded-full bg-white transition-all shadow-md active:scale-95 border border-stone-200/90 ${currentPath === 'estudiante' || currentPath === '' ? 'text-[#1B1F2A] ring-2 ring-[#1B1F2A]/20' : 'text-[#767a76]'}`}>
+                  <BackpackIcon className="w-14 h-14 sm:w-16 sm:h-16" withCircle={true} />
+                </div>
+                <span className={`text-[10px] mt-0.5 ${currentPath === 'estudiante' || currentPath === '' ? 'font-bold text-[#1B1F2A]' : 'font-medium text-[#767a76]'}`}>Inicio</span>
               </div>
             </button>
             

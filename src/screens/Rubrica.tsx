@@ -12,6 +12,7 @@ import {
     Save,
     RefreshCw,
     Trash2,
+    FileDown,
 } from 'lucide-react';
 import type {
     DescriptorRubrica,
@@ -27,6 +28,14 @@ import { RubricaRow, COMPETENCIAS, NIVEL_FIELDS, toRichHtml } from '../component
 import { CieloPill } from '../components/ui/CieloPill';
 import { useTemplateCapture } from '../hooks/useTemplateCapture';
 import { TemplateCaptureButton } from '../components/TemplateCaptureButton';
+import ExportarInstrumentoModal from '../components/evaluacion/ExportarInstrumentoModal';
+import {
+    descargarRubricaDocx,
+    guardarRubricaEnDrive,
+    descargarEvaluacionesPeriodoRubricaDocx,
+    descargarPlantillasRubricaDocx,
+    type PlantillaRubricaItem,
+} from '../utils/instrumentosDocx';
 
 interface Props {
     currentCourseRole?: CursoDocente;
@@ -93,6 +102,7 @@ export default function Rubrica({
     const descriptoresRubricaStore = useAppStore(s => s.state.descriptoresRubrica);
     const nivelesPuntajeStore = useAppStore(s => s.state.nivelesPuntaje);
     const cursoDocentesStore = useAppStore(s => s.state.cursoDocentes);
+    const perfilesStore = useAppStore(s => s.state.perfiles);
 
     const addFloatingRubric = useAppStore((s) => s.addFloatingRubric);
     const selectedPeriodo = useAppStore(s => s.selectedPeriodo);
@@ -155,6 +165,9 @@ export default function Rubrica({
     const [comentarios, setComentarios] = useState('');
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [showGenerarModal, setShowGenerarModal] = useState(false);
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [isDownloadingEval, setIsDownloadingEval] = useState(false);
+    const [isDownloadingPlantillas, setIsDownloadingPlantillas] = useState(false);
     const aiSkipNormalizeRef = useRef(false);
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -208,6 +221,7 @@ export default function Rubrica({
 
     const currentCourse = selectedCurso;
     const asignaturaName = getAsignaturaNombre(selectedAsignatura || currentCourseRole?.asignatura) || currentCourse?.asignatura || 'Asignatura';
+    const asignaturaNombre = asignaturaName;
     const courseName = currentCourse?.nombre || 'Curso';
     const captureFileName = `Rubrica - ${asignaturaName} - ${courseName} - ${new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()).replace(/\//g, '-')}.png`;
 
@@ -217,6 +231,210 @@ export default function Rubrica({
             existingFileId: captureFileId,
             onSuccess: setCaptureFileId
         });
+    };
+
+    const userProfile = perfilesStore?.find(p => p.userId === session?.user?.id) || null;
+
+    const buildEvaluationsForExport = (targetActId: number | null): Record<number, Record<string, number>> => {
+        const allEvaluationsMap: Record<number, Record<string, number>> = {};
+        sortedEsts.forEach((est) => {
+            const studentEval: Record<string, number> = {};
+            if (targetActId) {
+                const cd = cursoDetalleStore.find(
+                    item => item.estudianteId === est.id && item.actividadId === targetActId
+                );
+                if (cd?.rubricaData) {
+                    Object.entries(cd.rubricaData).forEach(([k, v]) => {
+                        studentEval[k] = Number(v);
+                    });
+                }
+            }
+            if (targetActId === selectedActId && multiEvaluations[est.id]) {
+                Object.entries(multiEvaluations[est.id]).forEach(([k, v]) => {
+                    if (v !== undefined && v !== null) {
+                        studentEval[k] = Number(v);
+                    }
+                });
+            }
+            if (targetActId === selectedActId && est.id === selectedEstId && Object.keys(selection).length > 0) {
+                Object.entries(selection).forEach(([k, v]) => {
+                    if (v !== undefined && v !== null) {
+                        studentEval[k] = Number(v);
+                    }
+                });
+            }
+            allEvaluationsMap[est.id] = studentEval;
+        });
+        return allEvaluationsMap;
+    };
+
+    const handleExportarWord = async (targetActId: number | null) => {
+        const evaluationsMap = buildEvaluationsForExport(targetActId);
+        const actObj = targetActId ? actividades.find(a => a.id === targetActId) : null;
+        const plantillaObj = selectedPlantillaId ? rubricaPlantillas.find(p => p.id === selectedPlantillaId) : null;
+
+        await descargarRubricaDocx({
+            curso: selectedCurso,
+            asignaturaNombre,
+            periodo: selectedPeriodo,
+            actividad: actObj,
+            userProfile,
+            estudiantes: sortedEsts,
+            descriptores: localDescriptors,
+            niveles: localNiveles,
+            evaluaciones: evaluationsMap,
+            tituloPersonalizado: plantillaObj?.nombre || undefined,
+        });
+    };
+
+    const handleGuardarDrive = async (targetActId: number | null) => {
+        const evaluationsMap = buildEvaluationsForExport(targetActId);
+        const actObj = targetActId ? actividades.find(a => a.id === targetActId) : null;
+        const plantillaObj = selectedPlantillaId ? rubricaPlantillas.find(p => p.id === selectedPlantillaId) : null;
+
+        return await guardarRubricaEnDrive({
+            curso: selectedCurso,
+            asignaturaNombre,
+            periodo: selectedPeriodo,
+            actividad: actObj,
+            userProfile,
+            estudiantes: sortedEsts,
+            descriptores: localDescriptors,
+            niveles: localNiveles,
+            evaluaciones: evaluationsMap,
+            tituloPersonalizado: plantillaObj?.nombre || undefined,
+        });
+    };
+
+    const handleDescargarEvaluacionesPeriodo = async () => {
+        if (isDownloadingEval) return;
+        setIsDownloadingEval(true);
+        try {
+            const targetAsig = selectedAsignatura || currentCourseRole?.asignatura || selectedCurso?.asignatura;
+            const actividadesPeriodo = actividadesStore.filter((actividad) =>
+                (actividad.cursoId === selectedCursoId ||
+                 (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
+                (actividad.userId === session?.user?.id || !actividad.userId) &&
+                Boolean(actividad.asignatura) &&
+                (!targetAsig || normalizeArea(actividad.asignatura) === normalizeArea(targetAsig)) &&
+                actividad.periodo === selectedPeriodo
+            );
+
+            const actividadesEvaluadas = actividadesPeriodo.map((act) => {
+                const evaluationsMap: Record<number, Record<string, number>> = {};
+                const puntajesMap: Record<number, number> = {};
+                const obsMap: Record<number, string> = {};
+
+                sortedEsts.forEach((est) => {
+                    const studentEval: Record<string, number> = {};
+
+                    const cd = cursoDetalleStore.find(
+                        (item) => item.estudianteId === est.id && item.actividadId === act.id
+                    );
+                    if (cd?.rubricaData) {
+                        Object.entries(cd.rubricaData).forEach(([k, v]) => {
+                            studentEval[k] = Number(v);
+                        });
+                        if (cd.puntajeTotal !== null && cd.puntajeTotal !== undefined) {
+                            puntajesMap[est.id] = cd.puntajeTotal;
+                        }
+                        if (cd.observaciones && cd.observaciones.length > 0) {
+                            obsMap[est.id] = Array.isArray(cd.observaciones) ? cd.observaciones.join('; ') : String(cd.observaciones);
+                        }
+                    }
+
+                    if (act.id === selectedActId && multiEvaluations[est.id]) {
+                        Object.entries(multiEvaluations[est.id]).forEach(([k, v]) => {
+                            if (v !== undefined && v !== null) {
+                                studentEval[k] = Number(v);
+                            }
+                        });
+                    }
+                    if (act.id === selectedActId && est.id === selectedEstId && Object.keys(selection).length > 0) {
+                        Object.entries(selection).forEach(([k, v]) => {
+                            if (v !== undefined && v !== null) {
+                                studentEval[k] = Number(v);
+                            }
+                        });
+                    }
+
+                    if (Object.keys(studentEval).length > 0) {
+                        evaluationsMap[est.id] = studentEval;
+                        if (puntajesMap[est.id] === undefined) {
+                            let total = 0;
+                            Object.values(studentEval).forEach((val) => {
+                                const nObj = localNiveles.find((n) => n.nivel === val);
+                                total += nObj?.puntaje || (val === 4 ? 100 : val === 3 ? 85 : val === 2 ? 70 : 60);
+                            });
+                            puntajesMap[est.id] = Math.round(total / (Object.keys(studentEval).length || 1));
+                        }
+                    }
+                });
+
+                return {
+                    actividad: act,
+                    descriptores: localDescriptors,
+                    niveles: localNiveles,
+                    evaluaciones: evaluationsMap,
+                    puntajes: puntajesMap,
+                    observaciones: obsMap,
+                    hasEvaluations: Object.keys(evaluationsMap).length > 0,
+                };
+            }).filter((item) => item.hasEvaluations);
+
+            if (actividadesEvaluadas.length === 0) {
+                alert(`No se encontraron evaluaciones de rúbrica registradas en el período ${selectedPeriodo} para este curso y asignatura.`);
+                return;
+            }
+
+            await descargarEvaluacionesPeriodoRubricaDocx({
+                curso: selectedCurso,
+                asignaturaNombre,
+                periodo: selectedPeriodo,
+                userProfile,
+                estudiantes: sortedEsts,
+                actividadesEvaluadas,
+            });
+        } catch (err) {
+            console.error('Error al exportar evaluaciones:', err);
+            alert('Ocurrió un error al generar el documento de evaluaciones.');
+        } finally {
+            setIsDownloadingEval(false);
+        }
+    };
+
+    const handleDescargarTodasPlantillas = async () => {
+        if (isDownloadingPlantillas) return;
+        setIsDownloadingPlantillas(true);
+        try {
+            const plantillasParaExportar: PlantillaRubricaItem[] = rubricaPlantillas.map((p) => ({
+                id: p.id,
+                nombre: p.nombre,
+                descriptores: (p.datos?.descriptores as DescriptorRubrica[]) || localDescriptors,
+                niveles: (p.datos?.niveles as NivelPuntaje[]) || localNiveles,
+            }));
+
+            if (plantillasParaExportar.length === 0) {
+                plantillasParaExportar.push({
+                    id: undefined,
+                    nombre: 'Plantilla Base de Rúbrica (Editor)',
+                    descriptores: localDescriptors,
+                    niveles: localNiveles,
+                });
+            }
+
+            await descargarPlantillasRubricaDocx({
+                curso: selectedCurso,
+                asignaturaNombre,
+                userProfile,
+                plantillas: plantillasParaExportar,
+            });
+        } catch (err) {
+            console.error('Error al exportar plantillas:', err);
+            alert('Ocurrió un error al generar el documento de plantillas.');
+        } finally {
+            setIsDownloadingPlantillas(false);
+        }
     };
 
     async function handlePaste() {
@@ -309,7 +527,7 @@ export default function Rubrica({
     const richCellRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     // Memoized state is defined above
-    const LIMITE_PLANTILLAS = 10;
+    const LIMITE_PLANTILLAS = 40;
     const selectedEst = estudiantes.find((estudiante) => estudiante.id === selectedEstId) ?? null;
     const selectedAct = actividades.find((actividad) => actividad.id === selectedActId) ?? null;
     const hasTemplates = rubricaPlantillas.length > 0;
@@ -781,6 +999,16 @@ export default function Rubrica({
                                                     </button>
                                                 ))}
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleDescargarEvaluacionesPeriodo}
+                                                disabled={isDownloadingEval}
+                                                className="w-full flex items-center justify-center gap-1.5 mt-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                                                title={`Descargar evaluaciones del período ${selectedPeriodo} en Word`}
+                                            >
+                                                {isDownloadingEval ? <Loader2 size={13} className="animate-spin text-[#689C63]" /> : <FileDown size={13} className="text-[#689C63]" />}
+                                                <span>Descargar evaluaciones ({selectedPeriodo})</span>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -846,6 +1074,16 @@ export default function Rubrica({
                                                         </button>
                                                     </div>
                                                 )}
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDescargarTodasPlantillas}
+                                                    disabled={isDownloadingPlantillas}
+                                                    className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                                                    title="Descargar catálogo de plantillas de rúbrica en Word"
+                                                >
+                                                    {isDownloadingPlantillas ? <Loader2 size={13} className="animate-spin text-[#2B4C6F]" /> : <BookMarked size={13} className="text-[#2B4C6F]" />}
+                                                    <span>Descargar plantillas</span>
+                                                </button>
                                             </div>
 
                                             <div className="pt-2 border-t border-slate-100">
@@ -968,10 +1206,50 @@ export default function Rubrica({
                     {!readOnly && (
                         <div className="sticky top-0 z-30 bg-(--background)/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
                             <div className="w-full space-y-3">
-                                <div className="px-1 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
+                                <div className="px-1 flex flex-wrap items-center justify-between gap-2.5">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {/* Selector de Período visible para las evaluaciones */}
+                                        <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs" role="radiogroup" aria-label="Periodo de evaluaciones">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Período:</span>
+                                            {(['P1', 'P2', 'P3', 'P4'] as const).map(p => (
+                                                <button
+                                                    key={p}
+                                                    type="button"
+                                                    onClick={() => { setSelectedPeriodo(p); setSelectedActId(null); setSelectedEstId(null); }}
+                                                    className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
+                                                        selectedPeriodo === p
+                                                            ? 'bg-[#689C63] text-white shadow-xs'
+                                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                                    }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ))}
+                                        </div>
 
+                                        {/* Botón Descargar evaluaciones */}
+                                        <button
+                                            type="button"
+                                            onClick={handleDescargarEvaluacionesPeriodo}
+                                            disabled={isDownloadingEval}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#1E293B] bg-white hover:bg-[#689C63]/10 hover:text-[#689C63] border border-slate-200 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                                            title={`Descargar todas las evaluaciones realizadas en ${selectedPeriodo} (.docx)`}
+                                        >
+                                            {isDownloadingEval ? <Loader2 size={13} className="animate-spin text-[#689C63]" /> : <FileDown size={13} className="text-[#689C63]" />}
+                                            <span>Descargar evaluaciones ({selectedPeriodo})</span>
+                                        </button>
 
+                                        {/* Botón Descargar plantillas */}
+                                        <button
+                                            type="button"
+                                            onClick={handleDescargarTodasPlantillas}
+                                            disabled={isDownloadingPlantillas}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#1E293B] bg-white hover:bg-[#2B4C6F]/10 hover:text-[#2B4C6F] border border-slate-200 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+                                            title="Descargar únicamente las plantillas guardadas (.docx)"
+                                        >
+                                            {isDownloadingPlantillas ? <Loader2 size={13} className="animate-spin text-[#2B4C6F]" /> : <BookMarked size={13} className="text-[#2B4C6F]" />}
+                                            <span>Descargar plantillas</span>
+                                        </button>
                                     </div>
                                     {selectedAct && (
                                         <CieloPill variant="primary" uppercase className="px-3.5 bg-white text-(--primary) shadow-sm tracking-[0.16em]">
@@ -1029,7 +1307,16 @@ export default function Rubrica({
                         </div>
                     )}
 
-                    <div className="w-full flex justify-end">
+                    <div className="w-full flex items-center justify-end gap-2.5">
+                        <button
+                            type="button"
+                            onClick={() => setShowExportModal(true)}
+                            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#FCFCFA] border border-[#D8D8CE] text-[#2E3330] hover:bg-[#E9E9DB]/50 transition-colors font-semibold text-xs cursor-pointer"
+                            title="Exportar rúbrica a Word (.docx) o guardar en Google Drive"
+                        >
+                            <FileDown size={15} className="text-[#537BAC]" />
+                            <span>Exportar Word / Drive</span>
+                        </button>
                         <TemplateCaptureButton 
                             isCapturing={isCapturing} 
                             onClick={handleCapture}
@@ -1203,6 +1490,21 @@ export default function Rubrica({
                 cursoNombre={selectedCurso ? `${selectedCurso.grado} ${selectedCurso.seccion} - ${getAsignaturaNombre(selectedCurso.asignatura)}` : ''}
                 asignatura={cursoDocentesStore.find((cd: any) => cd.cursoId === selectedCursoId && cd.userId === session?.user?.id)?.asignatura ?? null}
                 onAplicarRubrica={aplicarRubricaIA}
+            />
+
+            <ExportarInstrumentoModal
+                isOpen={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                tipo="rubrica"
+                curso={selectedCurso}
+                asignaturaNombre={asignaturaName}
+                periodo={selectedPeriodo}
+                actividades={actividades}
+                selectedActividadId={selectedAct?.id ?? null}
+                userProfile={userProfile}
+                estudiantes={sortedEsts}
+                onExportarWord={handleExportarWord}
+                onGuardarDrive={handleGuardarDrive}
             />
             {captureOverlay}
         </div>
