@@ -17,6 +17,8 @@ export type ActivityWindowId = 'datos' | 'competencias' | 'recursos' | 'ficha' |
 
 export interface ActivityWorkspaceProps {
     activity: Actividad;
+    actividades?: Actividad[];
+    bcSel?: Record<number, Set<BCKey>>;
     onClose: () => void;
     onUpdateActividad: (id: number, patch: Partial<Actividad>) => void;
     onAddSecuencia?: (s: Omit<Secuencia, 'id'>) => Promise<Secuencia | null>;
@@ -39,6 +41,8 @@ const WINDOW_WIDTHS: Record<ActivityWindowId, number> = {
 // o en FloatingWorkWindow sin rehacer la arquitectura.
 const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
     activity,
+    actividades,
+    bcSel,
     onClose,
     onUpdateActividad,
     onAddSecuencia,
@@ -248,7 +252,8 @@ return {
                     onWindowFocus={(id) => bringToFront(id as ActivityWindowId)}
                     onClose={() => closeWindow('producto-final')}
                     onUpdateActividad={onUpdateActividad}
-                    bcSel={undefined}
+                    bcSel={bcSel}
+                    actividades={actividades}
                 />
             )}
         </div>

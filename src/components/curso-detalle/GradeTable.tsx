@@ -9,6 +9,7 @@ import MoverEstudianteModal from './MoverEstudianteModal';
 import ActivityViewTab from './workspace/ActivityViewTab';
 import type { BCKey, Actividad } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
+import { getActivityBcPoints, getProductoFinalMaxPoints } from '../../utils/academic';
 import { CieloModal } from '../ui/CieloModal';
 interface GradeTableProps {
     actividades: Actividad[];
@@ -186,18 +187,6 @@ const GradeTable: React.FC<GradeTableProps> = ({
         // El listener se registra una vez; los valores frescos se leen vía refs.
     }, []);
 
-    // [VISUAL] Número de actividades que evalúan cada competencia. Se usa solo
-    // para mostrar el aporte relativo (100 / n) de cada actividad por competencia.
-    const bcActivityCounts: Record<BCKey, number> = React.useMemo(() => {
-        const counts: Record<BCKey, number> = { BC1: 0, BC2: 0, BC3: 0, BC4: 0 };
-        actividades.forEach(act => {
-            const selected = bcSel[act.id] ?? new Set(act.bcAsignados);
-            (['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).forEach(bc => {
-                if (selected.has(bc)) counts[bc] += 1;
-            });
-        });
-        return counts;
-    }, [actividades, bcSel]);
 
     const rowVirtualizer = useVirtualizer({
         count: estudiantes.length,
@@ -305,8 +294,8 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                             </div>
                                             <div className="flex justify-center gap-1">
                                                 {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
-                                                    const participa = ((bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc)) && (bcActivityCounts[bc] > 0);
-                                                    const aporte = participa ? 100 / bcActivityCounts[bc] : 0;
+                                                    const participa = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
+                                                    const aporte = getActivityBcPoints({ actividad: act, bc, actividades, bcSel });
                                                     const txt = String(Math.round(aporte));
                                                     return (
                                                         <span key={bc} className="w-7 flex items-baseline justify-center gap-0.5 leading-none">
@@ -477,6 +466,8 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                 );
                                             }
                                             const act = col.act;
+                                            const isProductoFinal = !!act.isProductoFinal;
+                                            const maxPoints = isProductoFinal ? getProductoFinalMaxPoints(act, actividades, bcSel) : 100;
                                             return (
                                                 <GradeCell 
                                                     key={col.id}
@@ -500,6 +491,8 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                     getGradeClass={getGradeClass}
                                                     hasLowBc={est.bcValues?.some((v: any) => v.avg !== null && v.avg < 70 && !v.rec) ?? false}
                                                     style={style}
+                                                    isProductoFinal={isProductoFinal}
+                                                    maxPoints={maxPoints}
                                                 />
                                             );
                                         }
@@ -526,14 +519,24 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                             const v = est.bcValues?.[col.idx];
                                             const needsRec = v && v.avg !== null && v.avg < 70;
                                             const bcNum = (col.idx + 1) as 1 | 2 | 3 | 4;
+                                            const hasEvaluated = v?.rec !== null && v?.rec !== undefined;
                                             return (
                                                 <div 
                                                     key={col.id}
                                                     onClick={() => needsRec && onSetRubricTarget({ estId: est.id, bc: bcNum, bcName: v.bc })} 
                                                     className={`border-r border-(--border-soft) transition-all flex items-center justify-center text-sm font-bold box-border ${needsRec ? 'cursor-pointer bg-white hover:bg-(--background)' : 'bg-base-creme opacity-40 cursor-default'}`}
                                                     style={style}
+                                                    title={needsRec && !hasEvaluated ? 'Pendiente de evaluación de recuperación' : undefined}
                                                 >
-                                                    {v?.rec !== null && v?.rec !== undefined ? <span className={`${v.rec >= 70 ? 'text-emerald-600' : 'text-slate-700'} font-bold`}>{v.rec}</span> : null}
+                                                    {hasEvaluated ? (
+                                                        <span className={`${v.rec >= 70 ? 'text-emerald-600' : 'text-slate-700'} font-bold`}>{v.rec}</span>
+                                                    ) : needsRec ? (
+                                                        <img 
+                                                            src="https://img.icons8.com/stickers/100/error.png" 
+                                                            alt="error" 
+                                                            className="w-5 h-5 object-contain select-none transition-transform hover:scale-110" 
+                                                        />
+                                                    ) : null}
                                                 </div>
                                             );
                                         }

@@ -1,6 +1,7 @@
 import type { AppState, BCKey, Estudiante, Curso } from '../types';
 import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
 import { perteneceAlContextoDelCurso } from './aislamiento';
+import { computePeriodBCAvg } from './academic';
 
 export interface StudentSubjectGrades {
     P1: Record<BCKey, number | null>;
@@ -89,10 +90,9 @@ export function computeStudentGrades(
                         a.bcAsignados?.includes(bc)
                     );
 
-                    const rawScores = periodBCActs
-                        .map(a => qualifications.find(q => q.actividadId === a.id)?.puntaje ?? 0);
-
-                    const avg = periodBCActs.length ? Math.round(rawScores.reduce((sum, val) => sum + val, 0) / periodBCActs.length) : null;
+                    const avg = computePeriodBCAvg(periodBCActs, bc, (actId) => {
+                        return qualifications.find(q => q.actividadId === actId)?.puntaje ?? 0;
+                    });
                     const rec = recoveries.find(r => r.periodo === p && Number(r.bc) === bcNum)?.puntaje ?? null;
 
                     // Apply recovery logic (exact match with system rule)

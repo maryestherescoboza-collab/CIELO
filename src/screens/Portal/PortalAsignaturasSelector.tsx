@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   SIETE_ASIGNATURAS_OFICIALES, 
+  ASIGNATURAS_CATALOGO,
   getMensajeDocenteNoUsaCielo, 
   sonMismaAsignatura,
   type AsignaturaOficial 
@@ -38,12 +39,12 @@ interface PortalFichaItem {
 }
 
 interface PortalEvidenciaItem {
-  id?: string;
-  puntaje?: number | null;
+  id?: string | number;
+  puntaje?: number | string | null;
 }
 
 interface PortalIncidenciaItem {
-  id?: string;
+  id?: string | number;
 }
 
 /**
@@ -70,6 +71,143 @@ const StreakBadge: React.FC<{ racha: number }> = ({ racha }) => {
   );
 };
 
+/**
+ * Mapeo descriptivo e independiente de imágenes de asignaturas en /portal
+ * Las imágenes deben residir en public/portal/asignaturas/
+ */
+export const getRutaImagenAsignatura = (nombre: string): { src: string; fallbackSrc?: string } => {
+  const norm = (nombre || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+  if (norm.includes('lengua') || norm.includes('espanol')) {
+    return {
+      src: '/portal/asignaturas/lengua-espanola.png',
+      fallbackSrc: '/portal/asignaturas/lengua_espanola.png',
+    };
+  }
+  if (norm.includes('matematica') || norm.includes('calculo')) {
+    return {
+      src: '/portal/asignaturas/matematica.png',
+      fallbackSrc: '/portal/asignaturas/matematicas.png',
+    };
+  }
+  if (norm.includes('social') || norm.includes('historia')) {
+    return {
+      src: '/portal/asignaturas/ciencias-sociales.png',
+      fallbackSrc: '/portal/asignaturas/ciencias_sociales.png',
+    };
+  }
+  if (norm.includes('naturaleza') || norm.includes('biolog') || norm.includes('quimic') || (norm.includes('cienc') && norm.includes('fisic'))) {
+    return {
+      src: '/portal/asignaturas/ciencias-naturales.png',
+      fallbackSrc: '/portal/asignaturas/ciencias_naturales.png',
+    };
+  }
+  if (norm.includes('ingl') || norm.includes('english')) {
+    return { src: '/portal/asignaturas/ingles.png' };
+  }
+  if (norm.includes('franc')) {
+    return { src: '/portal/asignaturas/frances.png' };
+  }
+  if (norm.includes('fisica') || norm.includes('deporte')) {
+    return {
+      src: '/portal/asignaturas/educacion-fisica.png',
+      fallbackSrc: '/portal/asignaturas/educacion_fisica.png',
+    };
+  }
+  if (norm.includes('artistic') || norm.includes('arte') || norm.includes('musica')) {
+    return {
+      src: '/portal/asignaturas/educacion-artistica.png',
+      fallbackSrc: '/portal/asignaturas/artistica.png',
+    };
+  }
+  if (norm.includes('formacion') || norm.includes('integral') || norm.includes('religion') || norm.includes('religios')) {
+    return {
+      src: '/portal/asignaturas/formacion-integral.png',
+      fallbackSrc: '/portal/asignaturas/formacion_integral.png',
+    };
+  }
+
+  const slug = norm.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return { src: `/portal/asignaturas/${slug || 'asignatura'}.png` };
+};
+
+/**
+ * Contenedor e imagen de la asignatura:
+ * - Integrada visualmente en la superficie de la carta (mismo fondo #F8F8F9).
+ * - Sin marcos interiores, sin recuadros independientes, sin bordes ni sombras de tarjeta anidada.
+ * - object-fit: contain para mostrar las imágenes completas, ocupando el ancho útil con márgenes mínimos.
+ * - Espacio reservado neutro continuo cuando la imagen no existe aún.
+ */
+const SubjectCardImage: React.FC<{ nombreAsignatura: string }> = ({ nombreAsignatura }) => {
+  const { src, fallbackSrc } = useMemo(
+    () => getRutaImagenAsignatura(nombreAsignatura),
+    [nombreAsignatura]
+  );
+
+  const [currentSrc, setCurrentSrc] = useState<string>(src);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const [hasError, setHasError] = useState<boolean>(false);
+
+  useEffect(() => {
+    setCurrentSrc(src);
+    setIsLoaded(false);
+    setHasError(false);
+  }, [src]);
+
+  const handleError = () => {
+    if (fallbackSrc && currentSrc !== fallbackSrc) {
+      setCurrentSrc(fallbackSrc);
+    } else {
+      setHasError(true);
+    }
+  };
+
+  return (
+    <div 
+      className="relative w-full h-full min-h-[220px] sm:min-h-[250px] max-h-[290px] flex items-center justify-center select-none overflow-hidden"
+    >
+      {!hasError && (
+        <img
+          src={currentSrc}
+          alt={`Imagen de ${nombreAsignatura}`}
+          loading="lazy"
+          onLoad={() => setIsLoaded(true)}
+          onError={handleError}
+          className={`max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-300 ${
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+      )}
+
+      {/* Espacio reservado neutro: continuo con la carta #F8F8F9 */}
+      {(!isLoaded || hasError) && (
+        <div 
+          className="absolute inset-0 flex items-center justify-center text-stone-300"
+          aria-hidden="true"
+        >
+          <svg
+            className="w-10 h-10 text-stone-300/60"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps> = ({
   sessionToken,
   selectedPeriodo = 'P1',
@@ -83,9 +221,9 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
   
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Mapear cada una de las 7 asignaturas con su estado en la base de datos
+  // Mapear cada una de las asignaturas oficiales y sumar cualquier otra con docente (ej. Formación Integral)
   const items = useMemo(() => {
-    return SIETE_ASIGNATURAS_OFICIALES.map((oficial) => {
+    const list: (AsignaturaOficial & { tieneDocente: boolean; totalActividades: number })[] = SIETE_ASIGNATURAS_OFICIALES.map((oficial) => {
       const pub = asignaturas.find((a) => sonMismaAsignatura(a.asignatura, oficial.nombre));
       const tieneDocente = pub ? (pub.tiene_docente ?? true) : false;
       const totalActividades = pub?.total_actividades ?? 0;
@@ -96,6 +234,24 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
         totalActividades,
       };
     });
+
+    asignaturas.forEach((pub) => {
+      if (!list.some((it) => sonMismaAsignatura(it.nombre, pub.asignatura)) && pub.tiene_docente) {
+        const cat = ASIGNATURAS_CATALOGO.find((c) => sonMismaAsignatura(c.nombre, pub.asignatura) || sonMismaAsignatura(c.id, pub.asignatura));
+        list.push({
+          id: cat?.id || pub.asignatura.toLowerCase().replace(/\s+/g, '_'),
+          nombre: pub.asignatura,
+          nombreCorto: pub.asignatura,
+          icono: '📖',
+          color: '#8B5CF6',
+          bgColor: '#F5F3FF',
+          tieneDocente: true,
+          totalActividades: pub.total_actividades ?? 0,
+        });
+      }
+    });
+
+    return list;
   }, [asignaturas]);
 
   // Cargar estadísticas reales de Supabase (Fichas pendientes, Alertas académicas, EXP)
@@ -157,9 +313,12 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
             }
 
             // Calcular EXP (promedio de puntajes de actividades evaluadas)
-            const evaluadas = evList.filter((e): e is PortalEvidenciaItem & { puntaje: number } => typeof e.puntaje === 'number');
+            const evaluadas = evList
+              .map(e => (e.puntaje !== null && e.puntaje !== undefined && !isNaN(Number(e.puntaje))) ? Number(e.puntaje) : null)
+              .filter((p): p is number => p !== null);
+
             const expCalculado = evaluadas.length > 0 
-              ? Math.round(evaluadas.reduce((acc, e) => acc + e.puntaje, 0) / evaluadas.length)
+              ? Math.round(evaluadas.reduce((acc, p) => acc + p, 0) / evaluadas.length)
               : (item.totalActividades > 0 ? 0 : null);
 
             // Alertas (filtrar solo las que no son meros registros neutros)
@@ -203,7 +362,8 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
     setActiveIndex(clamped);
 
     const container = carouselRef.current;
-    const cardWidth = container.offsetWidth > 400 ? 291 : 276;
+    const firstCard = container.querySelector('article');
+    const cardWidth = firstCard ? firstCard.offsetWidth + 16 : (container.offsetWidth > 640 ? 260 : 240);
     container.scrollTo({
       left: clamped * cardWidth,
       behavior: 'smooth',
@@ -214,7 +374,8 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
   const handleScroll = () => {
     if (!carouselRef.current) return;
     const container = carouselRef.current;
-    const cardWidth = container.offsetWidth > 400 ? 291 : 276;
+    const firstCard = container.querySelector('article');
+    const cardWidth = firstCard ? firstCard.offsetWidth + 16 : (container.offsetWidth > 640 ? 260 : 240);
     const current = Math.round(container.scrollLeft / cardWidth);
     if (current !== activeIndex) {
       setActiveIndex(Math.max(0, Math.min(items.length - 1, current)));
@@ -403,88 +564,80 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
                 }}
                 className={`
                   relative shrink-0 select-none cursor-pointer snap-start
-                  w-65 sm:w-68.75 h-93.75 sm:h-98.75
+                  w-[224px] sm:w-[244px] h-[390px] sm:h-[425px]
                   rounded-[22px] border-[2.5px] border-[#1E1E24]
-                  bg-white
-                  shadow-[0_12px_28px_-6px_rgba(27,31,42,0.18),0_4px_10px_-2px_rgba(27,31,42,0.08)]
-                  p-3 flex flex-col justify-between
+                  bg-[#F8F8F9]
+                  shadow-[0_8px_20px_-6px_rgba(27,31,42,0.12)]
+                  p-2.5 sm:p-3 flex flex-col justify-between overflow-hidden
                   transition-all duration-300 active:scale-[0.98]
-                  hover:-translate-y-1 hover:shadow-[0_16px_32px_-4px_rgba(27,31,42,0.25)]
+                  hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(27,31,42,0.2)]
                   ${isCurrent ? 'ring-2 ring-[#1E1E24]/20' : 'opacity-95'}
                 `}
+                style={{ backgroundColor: '#F8F8F9' }}
                 role="button"
                 tabIndex={0}
                 aria-label={`Carta de ${item.nombre}`}
               >
-                {/* Segundo contorno interior sutil: efecto de marco de carta coleccionable */}
-                <div className="absolute inset-1.5 rounded-[17px] border border-[#1E1E24]/15 pointer-events-none" />
-
-                {/* 1. SECCIÓN SUPERIOR: RACHA Y ASIGNATURA */}
-                <div className="relative z-10 space-y-1">
-                  <div className="flex items-center justify-between min-h-6.5">
-                    <StreakBadge racha={stats.racha} />
-                  </div>
-
-                  {/* Nombre de la asignatura */}
-                  <div className="pt-0.5 px-0.5">
-                    <h3 
-                      className={`
-                        font-black text-[#1E1E24] tracking-tight uppercase leading-snug line-clamp-2
-                        ${item.nombre.length > 22 ? 'text-xs sm:text-[13px]' : 'text-sm sm:text-base'}
-                      `}
-                      title={item.nombre}
-                    >
-                      {item.nombre}
-                    </h3>
-                  </div>
+                {/* 1. PRIMERA FILA: RACHA (esquina superior izquierda) + NOMBRE DE LA ASIGNATURA (a la derecha) */}
+                <div className="flex items-center gap-2 min-h-9 w-full shrink-0 px-0.5">
+                  <StreakBadge racha={stats.racha} />
+                  <h3 
+                    className={`
+                      font-black text-[#1E1E24] tracking-tight uppercase leading-snug line-clamp-2 flex-1 min-w-0
+                      ${item.nombre.length > 22 ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-[13px]'}
+                    `}
+                    title={item.nombre}
+                  >
+                    {item.nombre}
+                  </h3>
                 </div>
 
-                {/* 2. ILUSTRACIÓN CENTRAL: Gran marco ilustrado con contorno oscuro */}
-                <div className="relative z-10 my-1 flex-1 min-h-35 max-h-41.25 rounded-xl border-2 border-[#1E1E24] overflow-hidden bg-[#0A0D14] shadow-inner group-hover:brightness-105 transition-all">
-                  {getIlustracionAsignatura(item.nombre)}
+                {/* 2. SEGUNDA SECCIÓN: IMAGEN DE LA ASIGNATURA (Fondo continuo #F8F8F9 y márgenes mínimos) */}
+                <div className="flex-1 w-full flex items-center justify-center my-1 overflow-hidden">
+                  <SubjectCardImage nombreAsignatura={item.nombre} />
                 </div>
 
-                {/* 3. TRES TARJETAS INDIVIDUALES DE ESTADÍSTICAS (Directas en la carta, sin contenedor exterior) */}
-                <div className="relative z-10 pt-1">
-                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                {/* 3. TERCERA SECCIÓN: TRES TARJETAS INDIVIDUALES DE ESTADÍSTICAS */}
+                <div className="relative z-10 pt-0.5 shrink-0">
+                  <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
                     {/* Estadística 1: Fichas Pendientes */}
-                    <div className="relative bg-white rounded-xl border border-[#1E1E24]/20 p-2 sm:p-2.5 h-15.5 sm:h-16.5 flex flex-col justify-between overflow-hidden shadow-2xs group/stat">
-                      <span className="text-[7px] sm:text-[7.5px] font-black tracking-tight uppercase font-mono text-stone-500 leading-[1.1] block pr-1">
+                    <div className="relative bg-white rounded-xl border border-[#1E1E24]/20 p-1.5 sm:p-2 h-14 sm:h-15 flex flex-col justify-between overflow-hidden shadow-2xs group/stat">
+                      <span className="text-[6.5px] sm:text-[7px] font-black tracking-tight uppercase font-mono text-stone-500 leading-[1.05] block pr-0.5">
                         Fichas pendientes
                       </span>
-                      <span className="text-base sm:text-lg font-black font-mono leading-none text-[#1E1E24]">
+                      <span className="text-sm sm:text-base font-black font-mono leading-none text-[#1E1E24]">
                         {stats.fichasPendientes}
                       </span>
                       <img 
                         src="/pergamino.png" 
                         alt="Fichas pendientes" 
-                        className="absolute bottom-1 right-1 w-8 h-8 sm:w-8.5 sm:h-8.5 object-contain drop-shadow-xs pointer-events-none transition-transform group-hover/stat:scale-110" 
+                        className="absolute bottom-0.5 right-0.5 w-7 h-7 sm:w-7.5 sm:h-7.5 object-contain drop-shadow-xs pointer-events-none transition-transform group-hover/stat:scale-110" 
                       />
                     </div>
 
                     {/* Estadística 2: Alertas */}
                     <div className={`
-                      relative rounded-xl border p-2 sm:p-2.5 h-15.5 sm:h-16.5 flex flex-col justify-between overflow-hidden shadow-2xs group/stat transition-colors
+                      relative rounded-xl border p-1.5 sm:p-2 h-14 sm:h-15 flex flex-col justify-between overflow-hidden shadow-2xs group/stat transition-colors
                       ${tieneAlertas 
-                        ? 'bg-rose-50/70 border-rose-300' 
+                        ? 'bg-rose-50/80 border-rose-300' 
                         : 'bg-white border-[#1E1E24]/20'
                       }
                     `}>
-                      <span className={`text-[7px] sm:text-[7.5px] font-black tracking-tight uppercase font-mono leading-[1.1] block pr-1 ${tieneAlertas ? 'text-rose-600' : 'text-stone-500'}`}>
+                      <span className={`text-[6.5px] sm:text-[7px] font-black tracking-tight uppercase font-mono leading-[1.05] block pr-0.5 ${tieneAlertas ? 'text-rose-600' : 'text-stone-500'}`}>
                         Alertas
                       </span>
-                      <span className={`text-base sm:text-lg font-black font-mono leading-none ${tieneAlertas ? 'text-rose-700' : 'text-[#1E1E24]'}`}>
+                      <span className={`text-sm sm:text-base font-black font-mono leading-none ${tieneAlertas ? 'text-rose-700' : 'text-[#1E1E24]'}`}>
                         {stats.alertas}
                       </span>
                       <div className={`
-                        absolute bottom-1 right-1 w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center shadow-xs transition-transform group-hover/stat:scale-110
+                        absolute bottom-0.5 right-0.5 w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full border flex items-center justify-center shadow-xs transition-transform group-hover/stat:scale-110
                         ${tieneAlertas 
                           ? 'bg-rose-100 border-rose-300 text-rose-600' 
                           : 'bg-stone-100 border-[#1E1E24]/15 text-stone-400'
                         }
                       `}>
                         <AlertTriangle 
-                          size={14} 
+                          size={12} 
                           strokeWidth={2.4} 
                           className={tieneAlertas ? 'text-rose-600 animate-pulse' : 'text-stone-500'} 
                         />
@@ -492,17 +645,17 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
                     </div>
 
                     {/* Estadística 3: EXP */}
-                    <div className="relative bg-white rounded-xl border border-[#1E1E24]/20 p-2 sm:p-2.5 h-15.5 sm:h-16.5 flex flex-col justify-between overflow-hidden shadow-2xs group/stat">
-                      <span className="text-[7px] sm:text-[7.5px] font-black tracking-wider uppercase font-mono text-stone-500 leading-[1.1] block pr-1">
+                    <div className="relative bg-white rounded-xl border border-[#1E1E24]/20 p-1.5 sm:p-2 h-14 sm:h-15 flex flex-col justify-between overflow-hidden shadow-2xs group/stat">
+                      <span className="text-[6.5px] sm:text-[7px] font-black tracking-wider uppercase font-mono text-stone-500 leading-[1.05] block pr-0.5">
                         EXP
                       </span>
-                      <span className="text-base sm:text-lg font-black font-mono leading-none text-[#1E1E24]">
+                      <span className="text-sm sm:text-base font-black font-mono leading-none text-[#1E1E24]">
                         {stats.exp !== null ? `${stats.exp}` : '--'}
                       </span>
                       <img 
                         src="/botella.png" 
                         alt="EXP" 
-                        className="absolute bottom-1 right-1 w-8 h-8 sm:w-8.5 sm:h-8.5 object-contain drop-shadow-xs pointer-events-none transition-transform group-hover/stat:scale-110" 
+                        className="absolute bottom-0.5 right-0.5 w-7 h-7 sm:w-7.5 sm:h-7.5 object-contain drop-shadow-xs pointer-events-none transition-transform group-hover/stat:scale-110" 
                       />
                     </div>
                   </div>

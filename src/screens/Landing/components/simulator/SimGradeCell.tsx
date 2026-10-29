@@ -1,5 +1,4 @@
 import React from 'react';
-import FlameIcon from '../../../../components/ui/FlameIcon';
 
 interface GradeCellProps {
     estId: number;
@@ -90,8 +89,16 @@ const GradeCell: React.FC<GradeCellProps> = ({
                 ))}
 
                 {isRecoveryAct ? (
-                    hasLowBc ? (
-                        <FlameIcon size={10} className="text-attention" />
+                    score !== null && score !== undefined ? (
+                        <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)}`}>
+                            {score}
+                        </span>
+                    ) : hasLowBc ? (
+                        <img 
+                            src="https://img.icons8.com/stickers/100/error.png" 
+                            alt="error" 
+                            className="w-5 h-5 object-contain select-none transition-transform hover:scale-110" 
+                        />
                     ) : (
                         <div className="flex flex-col items-center gap-1 opacity-40">
                             <div className="w-3 h-3 rounded-full border-2 bg-[rgba(46,51,48,0.08)] border-transparent" />

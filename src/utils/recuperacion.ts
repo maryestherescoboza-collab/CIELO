@@ -1,11 +1,11 @@
-import type { RecuperacionCotejo, Actividad, CalificacionActividad } from '../types';
+import type { RecuperacionCotejo, Actividad, CalificacionActividad, BCKey } from '../types';
 import { INDICADORES_RECUPERACION } from '../constants/recuperacionCotejo';
+import { computePeriodBCAvg } from './academic';
 
 // ============================================================
 // MÓDULO AISLADO DE RECUPERACIÓN
-// Lógica 100% propia de la Lista de Cotejo de Recuperación.
-// NO depende de academic.ts ni de la lógica de calificaciones
-// normales. NO modifica calificaciones, actividades ni promedios.
+// Lógica propia de la Lista de Cotejo de Recuperación.
+// NO modifica calificaciones, actividades ni promedios.
 //
 // Las actividades SOLO se leen como FILTRO para decidir qué
 // columnas aparecen en la Lista de Cotejo:
@@ -21,7 +21,7 @@ import { INDICADORES_RECUPERACION } from '../constants/recuperacionCotejo';
 // cuánto puede SUMAR al puntaje actual.
 // ============================================================
 
-const BC_KEY: Record<1 | 2 | 3 | 4, string> = { 1: 'BC1', 2: 'BC2', 3: 'BC3', 4: 'BC4' };
+const BC_KEY: Record<1 | 2 | 3 | 4, BCKey> = { 1: 'BC1', 2: 'BC2', 3: 'BC3', 4: 'BC4' };
 
 /**
  * Puntaje ACTUAL del estudiante en un BC (antes de recuperación):
@@ -50,11 +50,10 @@ export function puntajeActualBC(
         return bcs.includes(bcKey);
     });
     if (actsBC.length === 0) return null;
-    const suma = actsBC.reduce((acc, act) => {
-        const cal = calificaciones.find(c => c.estudianteId === estudianteId && c.actividadId === act.id);
-        return acc + (cal?.puntaje ?? 0);
-    }, 0);
-    return Math.round(suma / actsBC.length);
+    return computePeriodBCAvg(actsBC, bcKey, (actId) => {
+        const cal = calificaciones.find(c => c.estudianteId === estudianteId && c.actividadId === actId);
+        return cal?.puntaje ?? 0;
+    });
 }
 
 /**

@@ -79,17 +79,26 @@ export function formatFriendlyDate(dateStr: string): string {
 }
 
 function formatCompetencias(competencias: string[]): string {
+  if (!competencias || competencias.length === 0) return '';
   return competencias
     .map(c => `▪ ${getCompetenciaDisplay(c) || c}`)
     .join('<br>');
 }
 
 export function getPlanRecuperacionTemplate(data: PlanRecuperacionData): string {
-  const studentsRowsHtml = data.estudiantes.map((estudiante) => {
+  const studentsRowsHtml = data.estudiantes.length === 0
+    ? `
+      <tr>
+        <td colspan="4" style="text-align: center; padding: 24px 16px; color: #5F665E; font-size: 12px; font-style: italic;">
+          No hay actividades pendientes de recuperación para este período y asignatura.
+        </td>
+      </tr>
+    `
+    : data.estudiantes.map((estudiante) => {
     const activitiesRowsHtml = estudiante.actividades.map((actividad) => `
       <tr>
         <td contenteditable="true"
-            data-placeholder="Describa la actividad">${actividad.nombre} (Puntaje obtenido: ${actividad.puntajeObtenido})</td>
+            data-placeholder="Describa la actividad">${actividad.nombre}${typeof actividad.puntajeObtenido === 'number' && !isNaN(actividad.puntajeObtenido) ? ` (Puntaje obtenido: ${actividad.puntajeObtenido})` : ''}</td>
         <td contenteditable="true"
             data-placeholder="Competencia asociada">${formatCompetencias(actividad.competencias)}</td>
         <td contenteditable="true"

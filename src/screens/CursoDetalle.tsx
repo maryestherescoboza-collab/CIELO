@@ -383,6 +383,8 @@ export default function CursoDetalle(props: Props) {
                     <ActivityWorkspace
                         key={selectedAct.id}
                         activity={selectedAct}
+                        actividades={actividades}
+                        bcSel={bcSel}
                         onClose={() => setVisibleActivityId(null)}
                         onUpdateActividad={(id, patch) => props.onUpdateActividad?.(id, patch)}
                         onAddSecuencia={props.onAddSecuencia}

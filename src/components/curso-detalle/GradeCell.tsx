@@ -1,6 +1,6 @@
 import React from 'react';
-import FlameIcon from '../ui/FlameIcon';
 import { nextGradeScore } from '../../utils/gradeCycle';
+import { formatGradeScore } from '../../utils/academic';
 
 interface GradeCellProps {
     estId: number;
@@ -17,6 +17,8 @@ interface GradeCellProps {
     getGradeClass: (score: number | null) => string;
     hasLowBc: boolean;
     style?: React.CSSProperties;
+    isProductoFinal?: boolean;
+    maxPoints?: number;
 }
 
 const GradeCell: React.FC<GradeCellProps> = ({
@@ -31,8 +33,18 @@ const GradeCell: React.FC<GradeCellProps> = ({
     onSetGrade,
     getGradeClass,
     hasLowBc,
-    style
+    style,
+    isProductoFinal = false,
+    maxPoints = 100
 }) => {
+    const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+    React.useEffect(() => {
+        if (inputRef.current && document.activeElement !== inputRef.current) {
+            inputRef.current.value = formatGradeScore(score);
+        }
+    }, [score]);
+
     const isInasistencia = score === 0;
     const selloLabel = isInasistencia ? 'Inasistencia' : score === 1 ? '⚠︎ Se negó a\nrealizar ⚠︎' : null;
     const cicloRef = React.useRef<{ seleccion: number; vacio: boolean }>({ seleccion: activePaintColor, vacio: false });
@@ -62,12 +74,12 @@ const GradeCell: React.FC<GradeCellProps> = ({
             style={style}
             onMouseEnter={() => {
                 onInteraction('hover');
-                if (isDragging && !isRecoveryAct && (evalMode === 'pincel' || evalMode === 'numerico')) onSetGrade(activePaintColor);
+                if (isDragging && !isRecoveryAct && !isProductoFinal && (evalMode === 'pincel' || evalMode === 'numerico')) onSetGrade(activePaintColor);
             }}
             onMouseDown={() => {
                 if (isRecoveryAct) return;
                 onInteraction('click');
-                if (evalMode === 'libre') return;
+                if (isProductoFinal || evalMode === 'libre') return;
                 const seleccionCambiada = cicloRef.current.seleccion !== activePaintColor;
                 const nextScore = nextGradeScore(score, activePaintColor, cicloRef.current.vacio && !seleccionCambiada);
                 cicloRef.current = { seleccion: activePaintColor, vacio: nextScore === null };
@@ -118,33 +130,66 @@ const GradeCell: React.FC<GradeCellProps> = ({
                 ))}
 
                 {isRecoveryAct ? (
-                    hasLowBc ? (
-                        <FlameIcon size={16} className="text-attention" />
+                    score !== null && score !== undefined ? (
+                        <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)}`}>
+                            {formatGradeScore(score)}
+                        </span>
+                    ) : hasLowBc ? (
+                        <img 
+                            src="https://img.icons8.com/stickers/100/error.png" 
+                            alt="error" 
+                            className="w-5 h-5 object-contain select-none transition-transform hover:scale-110" 
+                        />
                     ) : (
                         <div className="flex flex-col items-center gap-1 opacity-40">
                             <div className="w-3 h-3 rounded-full border-2 bg-[rgba(46,51,48,0.08)] border-transparent" />
                         </div>
                     )
-                ) : evalMode === 'pincel' ? (
-                    selloLabel !== null ? indicadorSello : (
-                        <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === null ? 'w-2 h-2 bg-[rgba(46,51,48,0.08)]' : score === 100 ? 'w-6 h-6 bg-primary' : score === 85 ? 'w-6 h-6 bg-attention' : score === 70 ? 'w-6 h-6 bg-danger' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : score >= 100 ? 'w-6 h-6 bg-primary' : score >= 85 ? 'w-6 h-6 bg-attention' : score >= 70 ? 'w-6 h-6 bg-danger' : 'w-5 h-5 bg-[#2E3330]'}`} />
-                    )
-                ) : evalMode === 'libre' ? (
+                ) : (isProductoFinal || evalMode === 'libre') ? (
                     <input
+                        ref={inputRef}
                         type="text"
                         inputMode="decimal"
-                        defaultValue={score ?? ''}
+                        defaultValue={formatGradeScore(score)}
+                        onFocus={(e) => e.target.select()}
                         onBlur={(e) => {
                             const raw = e.target.value.trim();
                             if (raw === '') {
                                 onSetGrade(null);
                                 return;
                             }
-                            const num = Number(raw);
-                            if (!isNaN(num)) {
-                                onSetGrade(Math.min(100, Math.max(0, num)));
+                            const normalized = raw.replace(',', '.');
+                            const num = Number(normalized);
+                            if (isNaN(num)) {
+                                e.target.value = score !== null ? formatGradeScore(score) : '';
+                                return;
+                            }
+
+                            if (isProductoFinal) {
+                                const limit = (maxPoints && maxPoints > 0) ? maxPoints : 100;
+                                // Si coincide con la calificación ya convertida y formateada, no se reconvierte
+                                if (score !== null && (raw === formatGradeScore(score) || Math.abs(num - score) < 0.01)) {
+                                    e.target.value = formatGradeScore(score);
+                                    return;
+                                }
+
+                                // Impide introducir valores inferiores a cero o superiores al máximo permitido
+                                if (num < 0 || num > limit) {
+                                    e.target.value = score !== null ? formatGradeScore(score) : '';
+                                    return;
+                                }
+
+                                // Calificación sobre 100 = (Puntos obtenidos ÷ Puntos máximos) × 100
+                                const convertedScore = (num / limit) * 100;
+                                onSetGrade(convertedScore);
+                                e.target.value = formatGradeScore(convertedScore);
                             } else {
-                                e.target.value = score !== null ? String(score) : '';
+                                if (num < 0 || num > 100) {
+                                    e.target.value = score !== null ? formatGradeScore(score) : '';
+                                    return;
+                                }
+                                onSetGrade(num);
+                                e.target.value = formatGradeScore(num);
                             }
                         }}
                         onKeyDown={(e) => {
@@ -153,10 +198,14 @@ const GradeCell: React.FC<GradeCellProps> = ({
                         className={`w-full h-full text-center text-base font-semibold bg-transparent border-none outline-none rounded transition-all focus:ring-2 focus:ring-primary/30 ${getGradeClass(score)}`}
                         placeholder="-"
                     />
+                ) : evalMode === 'pincel' ? (
+                    selloLabel !== null ? indicadorSello : (
+                        <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === null ? 'w-2 h-2 bg-[rgba(46,51,48,0.08)]' : score === 100 ? 'w-6 h-6 bg-primary' : score === 85 ? 'w-6 h-6 bg-attention' : score === 70 ? 'w-6 h-6 bg-danger' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : score >= 100 ? 'w-6 h-6 bg-primary' : score >= 85 ? 'w-6 h-6 bg-attention' : score >= 70 ? 'w-6 h-6 bg-danger' : 'w-5 h-5 bg-[#2E3330]'}`} />
+                    )
                 ) : (
                     selloLabel !== null ? indicadorSello : (
                         <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)} ${score === null ? 'opacity-0' : 'opacity-100'}`}>
-                            {score ?? ''}
+                            {formatGradeScore(score)}
                         </span>
                     )
                 )}

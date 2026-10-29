@@ -91,14 +91,10 @@ export function calculateStudentPeriodBC({
         return assignedBcs.has(bc);
     });
 
-    const rawScores = filteredActs.map(a => {
-        const cal = calificaciones.find(c => c.estudianteId === estudianteId && c.actividadId === a.id);
+    const avg = computePeriodBCAvg(filteredActs, bc, (actId) => {
+        const cal = calificaciones.find(c => c.estudianteId === estudianteId && c.actividadId === actId);
         return cal?.puntaje ?? 0;
     });
-
-    const avg = filteredActs.length 
-        ? Math.round(rawScores.reduce((acc, val) => acc + val, 0) / filteredActs.length)
-        : null;
 
     const rec = recuperaciones.find(r =>
         r.estudianteId === estudianteId &&
@@ -115,4 +111,166 @@ export function calculateStudentPeriodBC({
 
     return { avg, rec, final };
 }
+
+/**
+ * Parsea los puntos por competencia guardados en la descripción de una actividad.
+ */
+export function parsePuntosCompetencias(descripcion?: string | null): Record<string, number> {
+    if (!descripcion) return {};
+    try {
+        const parsed = JSON.parse(descripcion);
+        if (parsed && typeof parsed === 'object') {
+            if (parsed.puntos && typeof parsed.puntos === 'object') {
+                const res: Record<string, number> = {};
+                for (const [k, v] of Object.entries(parsed.puntos)) {
+                    if (typeof v === 'number' && !isNaN(v)) {
+                        res[k] = v;
+                    }
+                }
+                return res;
+            }
+            const res: Record<string, number> = {};
+            for (const [k, v] of Object.entries(parsed)) {
+                if (typeof v === 'number' && !isNaN(v)) {
+                    res[k] = v;
+                }
+            }
+            return res;
+        }
+    } catch {
+        // No es JSON estructurado
+    }
+    return {};
+}
+
+/**
+ * Calcula los puntos (sobre 100) que corresponden a una actividad para una competencia dada.
+ * Si existe un Producto Final con puntos asignados a esa competencia:
+ * - El Producto Final recibe los puntos asignados.
+ * - Las demás actividades se reparten equitativamente los puntos restantes (100 - pfPuntos).
+ * Si no hay puntos personalizados en el Producto Final, se reparte equitativamente 100 / n.
+ */
+export function getActivityBcPoints({
+    actividad,
+    bc,
+    actividades,
+    bcSel,
+}: {
+    actividad: Actividad;
+    bc: BCKey;
+    actividades: Actividad[];
+    bcSel?: Record<number, Set<BCKey>>;
+}): number {
+    const isSel = (act: Actividad) => {
+        const assigned = bcSel?.[act.id] ?? (act.bcAsignados && act.bcAsignados.length > 0 ? new Set(act.bcAsignados) : new Set<BCKey>(['BC1']));
+        return assigned.has(bc);
+    };
+
+    if (!isSel(actividad)) return 0;
+
+    const participatingActs = actividades.filter(isSel);
+    if (participatingActs.length === 0) return 0;
+
+    const pfAct = participatingActs.find(a => !!a.isProductoFinal);
+    const pfPuntos = parsePuntosCompetencias(pfAct?.descripcion);
+    const pfAssigned = (pfAct && typeof pfPuntos[bc] === 'number')
+        ? Math.min(100, Math.max(0, pfPuntos[bc]))
+        : null;
+
+    if (pfAssigned !== null) {
+        if (actividad.isProductoFinal) {
+            return pfAssigned;
+        }
+        const otherActs = participatingActs.filter(a => !a.isProductoFinal);
+        const puntosRestantes = Math.max(0, 100 - pfAssigned);
+        return otherActs.length > 0 ? puntosRestantes / otherActs.length : 0;
+    }
+
+    return 100 / participatingActs.length;
+}
+
+/**
+ * Calcula el promedio de calificaciones de un período para una competencia,
+ * ponderando cada actividad según los puntos asignados respetando el total de 100.
+ */
+export function computePeriodBCAvg(
+    filteredActs: Actividad[],
+    bc: BCKey,
+    getScore: (actId: number) => number
+): number | null {
+    if (filteredActs.length === 0) return null;
+
+    const pfAct = filteredActs.find(a => !!a.isProductoFinal);
+    const pfPuntos = parsePuntosCompetencias(pfAct?.descripcion);
+    const pfAssigned = (pfAct && typeof pfPuntos[bc] === 'number')
+        ? Math.min(100, Math.max(0, pfPuntos[bc]))
+        : null;
+
+    if (pfAssigned !== null) {
+        const otherActs = filteredActs.filter(a => !a.isProductoFinal);
+        const puntosRestantes = Math.max(0, 100 - pfAssigned);
+        const otherWeight = otherActs.length > 0 ? puntosRestantes / otherActs.length : 0;
+
+        const totalScore = filteredActs.reduce((acc, a) => {
+            const score = getScore(a.id);
+            const weight = a.isProductoFinal ? pfAssigned : otherWeight;
+            return acc + (score * (weight / 100));
+        }, 0);
+
+        return Math.round(totalScore);
+    }
+
+    const total = filteredActs.reduce((acc, a) => acc + getScore(a.id), 0);
+    return Math.round(total / filteredActs.length);
+}
+
+/**
+ * Obtiene el puntaje máximo asignado al producto final.
+ * 1. Revisa si hay puntos asignados en la descripción de la actividad.
+ * 2. Si no hay puntos explícitos, busca el aporte asignado en el sistema (getActivityBcPoints).
+ * 3. Si no existe ninguno, retorna 100 como escala por defecto.
+ */
+export function getProductoFinalMaxPoints(
+    actividad: Actividad,
+    actividades?: Actividad[],
+    bcSel?: Record<number, Set<BCKey>>
+): number {
+    const puntos = parsePuntosCompetencias(actividad.descripcion);
+    const assignedBcs = bcSel?.[actividad.id] ?? (actividad.bcAsignados && actividad.bcAsignados.length > 0 ? new Set(actividad.bcAsignados) : new Set<BCKey>(['BC1']));
+    
+    // 1. Revisar si hay puntos asignados en la descripción para alguna de las competencias activas
+    for (const bc of assignedBcs) {
+        if (typeof puntos[bc] === 'number' && puntos[bc] > 0) {
+            return puntos[bc];
+        }
+    }
+
+    // 2. Si hay algún valor numérico en puntos
+    for (const v of Object.values(puntos)) {
+        if (typeof v === 'number' && v > 0) {
+            return v;
+        }
+    }
+
+    // 3. Si no hay puntos guardados explícitamente, calcular el aporte asignado
+    if (actividades && actividades.length > 0) {
+        for (const bc of assignedBcs) {
+            const pts = getActivityBcPoints({ actividad, bc, actividades, bcSel });
+            if (pts > 0) return Math.round(pts);
+        }
+    }
+
+    return 100;
+}
+
+/**
+ * Formatea una calificación numérica mostrando hasta dos decimales solo cuando sea necesario.
+ * Ejemplos: 96.66667 -> "96.67", 50 -> "50", 100 -> "100", 0 -> "0", 96.5 -> "96.5"
+ */
+export function formatGradeScore(score: number | null | undefined): string {
+    if (score === null || score === undefined || isNaN(score)) return '';
+    const rounded = Number(score.toFixed(2));
+    return String(rounded);
+}
+
 

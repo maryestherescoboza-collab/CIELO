@@ -59,7 +59,17 @@ export default function PortalEstudiante() {
   const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
   const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
 
-  const activeAsignaturaConfig = asignaturas.find(a => sonMismaAsignatura(a.asignatura, activeMateria));
+  const activeAsignaturaConfig = asignaturas.find(a => sonMismaAsignatura(a.asignatura, activeMateria)) || {
+    asignatura: activeMateria,
+    tiene_docente: true,
+    total_actividades: evidencias.length,
+    mostrar_puntajes: true,
+    mostrar_evidencias: true,
+    mostrar_recursos: true,
+    mostrar_incidencias: true,
+    mostrar_recuperacion: true,
+    published_until: null,
+  };
   const activeOficial = SIETE_ASIGNATURAS_OFICIALES.find(o => sonMismaAsignatura(o.nombre, activeMateria));
 
   useEffect(() => {
@@ -117,11 +127,11 @@ export default function PortalEstudiante() {
       BC4: { puntaje: null, evidencias: [] }
     };
 
-    const courseActs = evidencias.filter(e => e.puntaje !== null);
+    const courseActs = evidencias.filter(e => e.puntaje !== null && e.puntaje !== undefined && !isNaN(Number(e.puntaje)));
     bcs.forEach(bc => {
       const actsForBc = courseActs.filter(a => a.bcAsignados?.includes(bc));
       if (actsForBc.length > 0) {
-        const sum = actsForBc.reduce((acc, a) => acc + (a.puntaje || 0), 0);
+        const sum = actsForBc.reduce((acc, a) => acc + Number(a.puntaje), 0);
         results[bc].puntaje = Math.round(sum / actsForBc.length);
       }
       results[bc].evidencias = evidencias.filter(a => a.bcAsignados?.includes(bc));

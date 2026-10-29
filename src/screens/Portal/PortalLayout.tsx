@@ -5,6 +5,7 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
 import { 
   SIETE_ASIGNATURAS_OFICIALES, 
+  ASIGNATURAS_CATALOGO,
   sonMismaAsignatura,
   getMensajeDocenteNoUsaCielo
 } from '../../constants/asignaturas';
@@ -118,7 +119,7 @@ export default function PortalLayout() {
               mostrar_puntajes: match.mostrar_puntajes ?? true,
               mostrar_evidencias: match.mostrar_evidencias ?? true,
               mostrar_recursos: match.mostrar_recursos ?? true,
-              mostrar_incidencias: match.mostrar_incidencias ?? false,
+              mostrar_incidencias: match.mostrar_incidencias ?? true,
               mostrar_recuperacion: match.mostrar_recuperacion ?? true,
               published_until: match.published_until,
             };
@@ -130,10 +131,29 @@ export default function PortalLayout() {
             mostrar_puntajes: true,
             mostrar_evidencias: true,
             mostrar_recursos: true,
-            mostrar_incidencias: false,
+            mostrar_incidencias: true,
             mostrar_recuperacion: true,
             published_until: null,
           };
+        });
+
+        // Incluir cualquier otra asignatura de rawList con docente (ej. Formación Integral)
+        rawList.forEach((extra: any) => {
+          if (!mergedList.some((m) => sonMismaAsignatura(m.asignatura, extra.asignatura))) {
+            const catalogoItem = ASIGNATURAS_CATALOGO.find((c) => sonMismaAsignatura(c.id, extra.asignatura) || sonMismaAsignatura(c.nombre, extra.asignatura));
+            const nombreMostrar = catalogoItem ? catalogoItem.nombre : extra.asignatura;
+            mergedList.push({
+              asignatura: nombreMostrar,
+              tiene_docente: true,
+              total_actividades: extra.total_actividades || 0,
+              mostrar_puntajes: extra.mostrar_puntajes ?? true,
+              mostrar_evidencias: extra.mostrar_evidencias ?? true,
+              mostrar_recursos: extra.mostrar_recursos ?? true,
+              mostrar_incidencias: extra.mostrar_incidencias ?? true,
+              mostrar_recuperacion: extra.mostrar_recuperacion ?? true,
+              published_until: extra.published_until,
+            });
+          }
         });
 
         setAsignaturas(mergedList);

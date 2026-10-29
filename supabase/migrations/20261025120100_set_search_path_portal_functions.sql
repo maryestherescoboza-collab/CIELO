@@ -21,7 +21,7 @@ CREATE OR REPLACE FUNCTION public.portal_setup_pin(p_token UUID, p_pin TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
     v_acceso RECORD;
@@ -38,7 +38,7 @@ CREATE OR REPLACE FUNCTION public.portal_login(p_token UUID, p_pin TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
     v_acceso RECORD;
@@ -97,6 +97,32 @@ BEGIN
 END;
 $$;
 
+-- Función auxiliar para emparejar slug ('matematica') con nombres visuales ('Matemática') o variaciones
+CREATE OR REPLACE FUNCTION public.portal_asignaturas_coinciden(p_a TEXT, p_b TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT 
+    p_a IS NOT NULL 
+    AND p_b IS NOT NULL 
+    AND (
+      p_a = p_b
+      OR LOWER(REPLACE(p_a, '_', ' ')) = LOWER(REPLACE(p_b, '_', ' '))
+      OR ((p_a LIKE '%matematica%' OR p_a ILIKE '%matem%') AND (p_b LIKE '%matematica%' OR p_b ILIKE '%matem%'))
+      OR ((p_a LIKE '%lengua%' OR p_a ILIKE '%lengua%') AND (p_b LIKE '%lengua%' OR p_b ILIKE '%lengua%'))
+      OR ((p_a LIKE '%social%' OR p_a ILIKE '%social%') AND (p_b LIKE '%social%' OR p_b ILIKE '%social%'))
+      OR ((p_a LIKE '%naturaleza%' OR p_a ILIKE '%naturaleza%') AND (p_b LIKE '%naturaleza%' OR p_b ILIKE '%naturaleza%'))
+      OR ((p_a LIKE '%ingles%' OR p_a ILIKE '%ingl%') AND (p_b LIKE '%ingles%' OR p_b ILIKE '%ingl%'))
+      OR (
+        (p_a LIKE '%fisica%' OR p_a ILIKE '%f%sica%') AND NOT (p_a LIKE '%naturaleza%' OR p_a ILIKE '%naturaleza%')
+        AND (p_b LIKE '%fisica%' OR p_b ILIKE '%f%sica%') AND NOT (p_b LIKE '%naturaleza%' OR p_b ILIKE '%naturaleza%')
+      )
+      OR ((p_a LIKE '%artistica%' OR p_a ILIKE '%art%stic%') AND (p_b LIKE '%artistica%' OR p_b ILIKE '%art%stic%'))
+      OR ((p_a LIKE '%formacion%' OR p_a ILIKE '%formaci%n%') AND (p_b LIKE '%formacion%' OR p_b ILIKE '%formaci%n%'))
+    );
+$$;
+
 CREATE OR REPLACE FUNCTION public.portal_get_asignaturas(p_session_token UUID, p_periodo TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -114,9 +140,22 @@ BEGIN
     SELECT * INTO v_acceso FROM public.portal_accesos WHERE id = v_sesion.acceso_id AND active = true;
     SELECT c.* INTO v_curso FROM public.estudiantes e JOIN public.cursos c ON c.id = e.curso_id WHERE e.id = v_acceso.estudiante_id;
 
-    WITH student_acts AS (
+    WITH all_student_subjects AS (
+        SELECT DISTINCT COALESCE(NULLIF(c.asignatura, ''), 'otra') as asignatura
+        FROM public.cursos c
+        WHERE c.id = v_curso.id
+           OR (v_curso.shared_course_id IS NOT NULL AND c.shared_course_id = v_curso.shared_course_id)
+           OR (v_curso.centro_id IS NOT NULL AND c.centro_id = v_curso.centro_id AND c.grado = v_curso.grado AND c.seccion = v_curso.seccion)
+        UNION
+        SELECT DISTINCT COALESCE(NULLIF(a.asignatura, ''), c_act.asignatura) as asignatura
+        FROM public.actividades a
+        JOIN public.cursos c_act ON c_act.id = a.curso_id
+        WHERE a.curso_id = v_curso.id OR a.shared_course_id = v_curso.shared_course_id
+    ),
+    period_acts AS (
         SELECT 
-            COALESCE(NULLIF(a.asignatura, ''), c_act.asignatura) as asignatura
+            COALESCE(NULLIF(a.asignatura, ''), c_act.asignatura) as asignatura,
+            COUNT(a.id) as total_actividades
         FROM public.actividades a
         JOIN public.cursos c_act ON c_act.id = a.curso_id
         WHERE a.periodo = p_periodo
@@ -125,23 +164,27 @@ BEGIN
     ),
     published_subjects AS (
         SELECT 
-            sa.asignatura,
+            ss.asignatura,
+            COALESCE(pa.total_actividades, 0) as total_actividades,
             COALESCE(pc.mostrar_puntajes, true) as mostrar_puntajes,
             COALESCE(pc.mostrar_evidencias, true) as mostrar_evidencias,
             COALESCE(pc.mostrar_recursos, true) as mostrar_recursos,
-            COALESCE(pc.mostrar_incidencias, false) as mostrar_incidencias,
+            COALESCE(pc.mostrar_incidencias, true) as mostrar_incidencias,
             COALESCE(pc.mostrar_recuperacion, true) as mostrar_recuperacion,
             pp.published_until,
             COALESCE(pc.portal_activo, true) as portal_activo
-        FROM student_acts sa
+        FROM all_student_subjects ss
+        LEFT JOIN period_acts pa ON public.portal_asignaturas_coinciden(pa.asignatura, ss.asignatura)
         LEFT JOIN public.portal_publicaciones pp ON 
-            pp.asignatura = sa.asignatura AND pp.periodo = p_periodo AND 
+            public.portal_asignaturas_coinciden(pp.asignatura, ss.asignatura) AND pp.periodo = p_periodo AND 
             (pp.curso_id = v_curso.id OR pp.curso_id IN (SELECT id FROM public.cursos WHERE shared_course_id = v_curso.shared_course_id))
         LEFT JOIN public.portal_configuraciones pc ON pc.user_id = pp.published_by
     )
     SELECT jsonb_agg(
         jsonb_build_object(
             'asignatura', ps.asignatura,
+            'tiene_docente', true,
+            'total_actividades', ps.total_actividades,
             'mostrar_puntajes', ps.mostrar_puntajes,
             'mostrar_evidencias', ps.mostrar_evidencias,
             'mostrar_recursos', ps.mostrar_recursos,
@@ -151,7 +194,7 @@ BEGIN
         )
     ) INTO v_resultado
     FROM published_subjects ps
-    WHERE ps.portal_activo = true;
+    WHERE ps.portal_activo = true AND ps.asignatura != 'otra';
 
     RETURN COALESCE(v_resultado, '[]'::jsonb);
 END;
@@ -182,7 +225,7 @@ BEGIN
     INTO v_published_until, v_portal_activo, v_mostrar_evidencias, v_mostrar_puntajes
     FROM public.portal_publicaciones pp
     LEFT JOIN public.portal_configuraciones pc ON pc.user_id = pp.published_by
-    WHERE pp.asignatura = p_asignatura AND pp.periodo = p_periodo 
+    WHERE public.portal_asignaturas_coinciden(pp.asignatura, p_asignatura) AND pp.periodo = p_periodo 
       AND (pp.curso_id = v_curso.id OR pp.curso_id IN (SELECT id FROM public.cursos WHERE shared_course_id = v_curso.shared_course_id))
     LIMIT 1;
 
@@ -200,13 +243,13 @@ BEGIN
             'id', a.id, 'nombre', a.nombre, 'fecha', a.fecha, 'indicador', a.indicador, 'bcAsignados', a.bc_asignados,
             'puntaje', CASE WHEN v_mostrar_puntajes THEN c.puntaje ELSE NULL END,
             'descriptores', CASE WHEN v_mostrar_puntajes THEN c.descriptores ELSE NULL END
-        )
+        ) ORDER BY a.fecha ASC NULLS LAST, a.id ASC
     ) INTO v_resultado
     FROM public.actividades a
     JOIN public.cursos c_act ON c_act.id = a.curso_id
     LEFT JOIN public.calificaciones c ON c.actividad_id = a.id AND c.estudiante_id = v_acceso.estudiante_id
     WHERE a.periodo = p_periodo 
-      AND COALESCE(NULLIF(a.asignatura, ''), c_act.asignatura) = p_asignatura
+      AND public.portal_asignaturas_coinciden(COALESCE(NULLIF(a.asignatura, ''), c_act.asignatura), p_asignatura)
       AND (a.curso_id = v_curso.id OR a.shared_course_id = v_curso.shared_course_id)
       AND (v_published_until IS NULL OR a.created_at <= v_published_until);
 
@@ -234,18 +277,18 @@ BEGIN
     SELECT * INTO v_acceso FROM public.portal_accesos WHERE id = v_sesion.acceso_id AND active = true;
     SELECT c.* INTO v_curso FROM public.estudiantes e JOIN public.cursos c ON c.id = e.curso_id WHERE e.id = v_acceso.estudiante_id;
     
-    SELECT pp.published_until, COALESCE(pc.portal_activo, true), COALESCE(pc.mostrar_incidencias, false)
+    SELECT pp.published_until, COALESCE(pc.portal_activo, true), COALESCE(pc.mostrar_incidencias, true)
     INTO v_published_until, v_portal_activo, v_mostrar_incidencias
     FROM public.portal_publicaciones pp
     LEFT JOIN public.portal_configuraciones pc ON pc.user_id = pp.published_by
-    WHERE pp.asignatura = p_asignatura AND pp.periodo = p_periodo 
+    WHERE public.portal_asignaturas_coinciden(pp.asignatura, p_asignatura) AND pp.periodo = p_periodo 
       AND (pp.curso_id = v_curso.id OR pp.curso_id IN (SELECT id FROM public.cursos WHERE shared_course_id = v_curso.shared_course_id))
     LIMIT 1;
 
     IF NOT FOUND THEN
         v_published_until := NULL;
         v_portal_activo := true;
-        v_mostrar_incidencias := false;
+        v_mostrar_incidencias := true;
     END IF;
 
     IF v_portal_activo = false OR v_mostrar_incidencias = false THEN RETURN '[]'::jsonb; END IF;
@@ -254,7 +297,7 @@ BEGIN
     INTO v_resultado
     FROM public.incidencias i
     WHERE i.estudiante_id = v_acceso.estudiante_id 
-      AND i.categoria = 'Rendimiento académico'
+      AND (i.activo IS NULL OR i.activo = true)
       AND (v_published_until IS NULL OR i.created_at <= v_published_until);
 
     RETURN COALESCE(v_resultado, '[]'::jsonb);
@@ -302,7 +345,7 @@ BEGIN
             COALESCE(pc.portal_activo, true) as portal_activo
         FROM (SELECT asignatura FROM student_acts GROUP BY asignatura) sa
         LEFT JOIN public.portal_publicaciones pp ON 
-            pp.asignatura = sa.asignatura AND pp.periodo = p_periodo AND 
+            public.portal_asignaturas_coinciden(pp.asignatura, sa.asignatura) AND pp.periodo = p_periodo AND 
             (pp.curso_id = v_curso.id OR pp.curso_id IN (SELECT id FROM public.cursos WHERE shared_course_id = v_curso.shared_course_id))
         LEFT JOIN public.portal_configuraciones pc ON pc.user_id = pp.published_by
     ),
@@ -399,7 +442,7 @@ BEGIN
     INTO v_published_until, v_portal_activo, v_mostrar_recuperacion, v_mostrar_puntajes
     FROM public.portal_publicaciones pp
     LEFT JOIN public.portal_configuraciones pc ON pc.user_id = pp.published_by
-    WHERE pp.asignatura = p_asignatura AND pp.periodo = p_periodo 
+    WHERE public.portal_asignaturas_coinciden(pp.asignatura, p_asignatura) AND pp.periodo = p_periodo 
       AND (pp.curso_id = v_curso.id OR pp.curso_id IN (SELECT id FROM public.cursos WHERE shared_course_id = v_curso.shared_course_id))
     LIMIT 1;
 
@@ -413,15 +456,75 @@ BEGIN
     IF v_portal_activo = false OR v_mostrar_recuperacion = false THEN RETURN '[]'::jsonb; END IF;
 
     SELECT jsonb_agg(
-        jsonb_build_object('bc', r.bc, 'puntaje', CASE WHEN v_mostrar_puntajes THEN r.puntaje ELSE NULL END, 'fecha', TO_CHAR(r.created_at, 'DD/MM/YYYY'))
+        jsonb_build_object(
+            'id', r.id,
+            'bc', r.bc,
+            'puntaje', CASE WHEN v_mostrar_puntajes THEN r.puntaje ELSE NULL END,
+            'fecha', TO_CHAR(r.created_at, 'DD/MM/YYYY'),
+            'cotejo', COALESCE(
+                (
+                    SELECT jsonb_agg(
+                        jsonb_build_object(
+                            'id', rc.id,
+                            'indicador', rc.indicador,
+                            'actividad_id', rc.actividad_id
+                        )
+                    )
+                    FROM public.recuperaciones_cotejo rc
+                    WHERE rc.recuperacion_id = r.id
+                       OR (rc.estudiante_id = r.estudiante_id AND rc.bc = r.bc AND rc.periodo = r.periodo AND public.portal_asignaturas_coinciden(rc.asignatura, p_asignatura))
+                ),
+                '[]'::jsonb
+            )
+        )
     ) INTO v_resultado
     FROM public.recuperaciones r
     JOIN public.cursos c_act ON c_act.id = r.curso_id
     WHERE r.estudiante_id = v_acceso.estudiante_id 
       AND r.periodo = p_periodo 
-      AND COALESCE(NULLIF(r.asignatura, ''), c_act.asignatura) = p_asignatura
+      AND public.portal_asignaturas_coinciden(COALESCE(NULLIF(r.asignatura, ''), c_act.asignatura), p_asignatura)
       AND (r.curso_id = v_curso.id OR r.shared_course_id = v_curso.shared_course_id)
       AND (v_published_until IS NULL OR r.created_at <= v_published_until);
+
+    RETURN COALESCE(v_resultado, '[]'::jsonb);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.portal_get_fichas_compartidas(p_session_token UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_sesion RECORD;
+    v_acceso RECORD;
+    v_estudiante RECORD;
+    v_resultado JSONB;
+BEGIN
+    SELECT * INTO v_sesion FROM public.portal_sesiones WHERE session_token = p_session_token AND expires_at > NOW();
+    IF NOT FOUND THEN RETURN jsonb_build_object('error', 'Sesión inválida'); END IF;
+    SELECT * INTO v_acceso FROM public.portal_accesos WHERE id = v_sesion.acceso_id AND active = true;
+
+    SELECT e.*, c.shared_course_id INTO v_estudiante
+    FROM public.estudiantes e
+    JOIN public.cursos c ON c.id = e.curso_id
+    WHERE e.id = v_acceso.estudiante_id;
+
+    SELECT jsonb_agg(
+        jsonb_build_object(
+            'id', pn.id,
+            'titulo', pn.titulo,
+            'fecha', pn.actualizado_en,
+            'curso_id', fc.curso_id,
+            'asignatura', c.asignatura
+        ) ORDER BY pn.actualizado_en DESC
+    ) INTO v_resultado
+    FROM public.ficha_cursos fc
+    JOIN public.pc_notas pn ON pn.id = fc.nota_id
+    JOIN public.cursos c ON c.id = fc.curso_id
+    WHERE fc.curso_id = v_estudiante.curso_id 
+       OR (v_estudiante.shared_course_id IS NOT NULL AND c.shared_course_id = v_estudiante.shared_course_id);
 
     RETURN COALESCE(v_resultado, '[]'::jsonb);
 END;

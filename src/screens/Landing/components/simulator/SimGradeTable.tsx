@@ -259,14 +259,24 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                             const v = est.bcValues?.[col.idx];
                                             const needsRec = v && v.avg !== null && v.avg < 70;
                                             const bcNum = (col.idx + 1) as 1 | 2 | 3 | 4;
+                                            const hasEvaluated = v?.rec !== null && v?.rec !== undefined;
                                             return (
                                                 <div 
                                                     key={col.id}
                                                     onClick={() => needsRec && onSetRubricTarget({ estId: est.id, bc: bcNum, bcName: v.bc })} 
                                                     className={`border-r border-[rgba(46,51,48,0.08)] transition-all flex items-center justify-center text-sm font-bold box-border ${needsRec ? 'cursor-pointer bg-white hover:bg-[#F8F3ED]' : 'bg-[#FDFBF7] opacity-40 cursor-default'}`}
                                                     style={style}
+                                                    title={needsRec && !hasEvaluated ? 'Pendiente de evaluación de recuperación' : undefined}
                                                 >
-                                                    {v?.rec !== null && v?.rec !== undefined ? <span className={`${v.rec >= 70 ? 'text-emerald-600' : 'text-slate-700'} font-bold`}>{v.rec}</span> : null}
+                                                    {hasEvaluated ? (
+                                                        <span className={`${v.rec >= 70 ? 'text-emerald-600' : 'text-slate-700'} font-bold`}>{v.rec}</span>
+                                                    ) : needsRec ? (
+                                                        <img 
+                                                            src="https://img.icons8.com/stickers/100/error.png" 
+                                                            alt="error" 
+                                                            className="w-5 h-5 object-contain select-none transition-transform hover:scale-110" 
+                                                        />
+                                                    ) : null}
                                                 </div>
                                             );
                                         }

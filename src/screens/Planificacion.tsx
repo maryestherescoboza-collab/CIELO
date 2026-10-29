@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark, Link as LinkIcon, Edit2, MessageSquare, Info, Zap, Gamepad2, Presentation, PenTool, RotateCcw } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark, Link as LinkIcon, Edit2, MessageSquare, Info, Zap, Gamepad2, Presentation, PenTool } from 'lucide-react';
 import blueBookIcon from '../assets/book-blue.png';
 import purpleBookIcon from '../assets/book-purple.png';
 import type { AppState, Curso, Secuencia, TipoRecurso } from '../types';
@@ -9,6 +9,10 @@ import { getValidCentro } from '../cache/centroCache';
 import { getValidPerfil } from '../cache/perfilCache';
 import { estudiantesDelCurso } from '../utils/aislamiento';
 import { getPlanRecuperacionTemplate, PERIODOS_RECUPERACION, isPeriodoDisponible } from '../templates/plan-recuperacion';
+import type { EstudianteRecuperar, ActividadRecuperar } from '../templates/plan-recuperacion';
+import { mismaAsignatura } from '../lib/curriculo';
+import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
+import { obtenerDocenteResponsable, obtenerCentroDelCurso } from '../utils/aislamiento';
 import { CieloPill } from '../components/ui/CieloPill';
 import { CieloModal } from '../components/ui/CieloModal';
 import { supabase } from '../lib/supabase';
@@ -16,7 +20,6 @@ import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
 import { getValidSecuencia, saveSecuencia } from '../cache/secuenciaCache';
 import RegistroAnecdotico from '../components/RegistroAnecdotico';
-import { ActividadesPorCursoSection } from '../components/planificacion/ActividadesPorCursoSection';
 
 export function detectResourceType(url: string): TipoRecurso {
     const lowerUrl = url.toLowerCase();
@@ -80,6 +83,135 @@ function getDotCount(estado: Secuencia['estado']) {
     if (estado === 'Completada') return 3;
     if (estado === 'En progreso') return 2;
     return 1;
+}
+
+export function DocumentRecuperacionIcon({ className = "size-6", ...props }: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="1.5"
+            stroke="currentColor"
+            className={className}
+            {...props}
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+            />
+        </svg>
+    );
+}
+
+export function esPlanRecuperacion(seq?: Secuencia | null): boolean {
+    if (!seq) return false;
+    const normalizar = (s?: string | null) =>
+        (s || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+
+    const tituloNorm = normalizar(seq.titulo);
+    if (
+        tituloNorm.includes('recuperac') ||
+        tituloNorm.includes('recup') ||
+        tituloNorm.includes('pirp') ||
+        (tituloNorm.includes('plan') && tituloNorm.includes('individualizad'))
+    ) {
+        return true;
+    }
+
+    const htmlNorm = normalizar(seq.contenidoHtml);
+    if (
+        htmlNorm.includes('recuperac') ||
+        htmlNorm.includes('data-plantilla="plan de recuperacion"') ||
+        htmlNorm.includes("data-plantilla='plan de recuperacion'")
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+export interface GrupoPlanificacion {
+    key: string;
+    cursoId: number;
+    grado: string;
+    seccion: string;
+    cursoLabel: string;
+    asignatura: string;
+    periodo: string;
+    planes: Secuencia[];
+}
+
+function detectarPeriodoPlan(seq: Secuencia, curso?: Curso): string {
+    const matchTitulo = seq.titulo?.match(/\b(P[1-4])\b/i);
+    if (matchTitulo) return matchTitulo[1].toUpperCase();
+
+    if (seq.contenidoHtml) {
+        const matchData = seq.contenidoHtml.match(/data-periodo=["'](P[1-4])["']/i);
+        if (matchData) return matchData[1].toUpperCase();
+    }
+
+    if (curso?.periodo && /^P[1-4]$/i.test(curso.periodo.trim())) {
+        return curso.periodo.trim().toUpperCase();
+    }
+
+    return 'P1';
+}
+
+function detectarAsignaturaPlan(seq: Secuencia, curso?: Curso, cursoDocentes?: any[]): string {
+    if (curso?.asignatura && typeof curso.asignatura === 'string' && curso.asignatura.trim()) {
+        return curso.asignatura.trim();
+    }
+    if (cursoDocentes && Array.isArray(cursoDocentes)) {
+        const cd = cursoDocentes.find((d: any) => (d.curso_id === seq.cursoId || d.cursoId === seq.cursoId) && d.asignatura);
+        if (cd?.asignatura && typeof cd.asignatura === 'string' && cd.asignatura.trim()) {
+            return cd.asignatura.trim();
+        }
+    }
+    const matchTitulo = seq?.titulo?.match(/Planificaci[oó]n\s*-\s*([^-()]+)/i);
+    if (matchTitulo && matchTitulo[1]?.trim() && matchTitulo[1].trim().toLowerCase() !== 'clase') {
+        return matchTitulo[1].trim();
+    }
+    return curso?.nombre || 'General';
+}
+
+function detectarGradoSeccion(curso?: Curso | null): { grado: string; seccion: string; label: string } {
+    const grado = curso?.grado?.trim() || '';
+    const seccion = curso?.seccion?.trim() || '';
+    const label = [grado, seccion].filter(Boolean).join(' ') || curso?.nombre || 'Curso sin asignar';
+    return { grado: grado || 'Sin grado', seccion: seccion || 'Sin sección', label };
+}
+
+function extraerIndicadoresActividad(act: any): string {
+    const list: string[] = [];
+    if (act.indicadores_json) {
+        let jsonItems: any[] = [];
+        if (Array.isArray(act.indicadores_json)) {
+            jsonItems = act.indicadores_json;
+        } else if (typeof act.indicadores_json === 'string') {
+            try { jsonItems = JSON.parse(act.indicadores_json); } catch {}
+        }
+        if (Array.isArray(jsonItems) && jsonItems.length > 0) {
+            jsonItems.forEach(item => {
+                if (typeof item === 'string' && item.trim()) {
+                    list.push(item.trim());
+                } else if (item && typeof item === 'object') {
+                    const desc = item.descripcion || item.texto || item.nombre || item.indicador || item.codigo;
+                    if (desc && typeof desc === 'string' && desc.trim()) {
+                        list.push(desc.trim());
+                    }
+                }
+            });
+        }
+    }
+    if (list.length === 0 && act.indicador && typeof act.indicador === 'string' && act.indicador.trim()) {
+        list.push(act.indicador.trim());
+    }
+    return list.join('<br><br>');
 }
 
 import { useSupabaseData } from '../hooks/useSupabaseData';
@@ -305,13 +437,333 @@ export default function Planificacion({
         setViewerSeq(null);
     }
 
-    const secuenciasCurso = state.secuencias.filter((secuencia: Secuencia) => secuencia.cursoId === cursoSel && (secuencia.userId === session?.user?.id || !secuencia.userId));
+    async function generarContenidoPlanRecuperacion(curso: Curso, periodoRec: 'P1' | 'P2' | 'P3' = 'P1'): Promise<string> {
+        const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
+        const perfilCache = getValidPerfil(session?.user?.id);
 
-    // Las secuencias legadas de "Especificaciones Curriculares" (popup HTML antiguo) ya no se
-    // muestran en Plantillas: esa configuración vive en la sección independiente de Especificaciones.
-    const secuenciasPlantillas = secuenciasCurso.filter(
-        (seq: Secuencia) => !seq.titulo.startsWith('Especificaciones Curriculares')
+        // 1. Centro educativo contextual
+        const userCentroId = curso.centroId || (curso as any).centro_id || miPerfil?.centro_id || perfilCache?.centro_id || state.centroRolActual?.centro_id;
+        let centro = obtenerCentroDelCurso(state.centros, curso) || (userCentroId ? getValidCentro(userCentroId) : null) || state.centros?.find(c => c.id === userCentroId);
+        if (!centro && userCentroId) {
+            const { data: dbCentro } = await supabase.from('centros').select('*').eq('id', userCentroId).single();
+            if (dbCentro) centro = dbCentro;
+        }
+        const centroNombre = (
+            centro?.nombre ||
+            currentUserProfileProp?.centro?.nombre ||
+            currentUserProfileProp?.institucion ||
+            currentUserProfileProp?.instituto ||
+            miPerfil?.instituto ||
+            miPerfil?.institucion ||
+            (state.instituto && state.instituto !== 'Instituto Central' ? state.instituto : '') ||
+            session?.user?.user_metadata?.centro_nombre ||
+            'Mi Centro'
+        ).trim();
+
+        const codigoCentro = (
+            centro?.codigoCentro ||
+            (centro as any)?.codigo_centro ||
+            currentUserProfileProp?.centro?.codigoCentro ||
+            currentUserProfileProp?.centro?.codigo_centro ||
+            session?.user?.user_metadata?.codigo_centro ||
+            ''
+        ).trim();
+
+        // 2. Docente responsable
+        const docenteNombre = (
+            (docenteNombreProp && docenteNombreProp !== 'Docente' ? docenteNombreProp : '') ||
+            obtenerDocenteResponsable(state.perfiles, curso) ||
+            currentUserProfileProp?.nombreDocente ||
+            currentUserProfileProp?.nombre ||
+            miPerfil?.nombreDocente ||
+            perfilCache?.nombre_docente ||
+            perfilCache?.nombre ||
+            state.nombreDocente ||
+            session?.user?.user_metadata?.full_name ||
+            'Docente'
+        ).trim();
+
+        // 3. Asignatura oficial para display y clave de aislamiento
+        const asignaturaTarget = curso.asignatura || '';
+        const asigObj = ASIGNATURAS_CATALOGO.find(a => mismaAsignatura(a.id, asignaturaTarget) || mismaAsignatura(a.nombre, asignaturaTarget));
+        const asignaturaDisplay = asigObj?.nombre || curso.asignatura || 'General';
+
+        const periodoInfo = PERIODOS_RECUPERACION[periodoRec] || PERIODOS_RECUPERACION.P1;
+
+        // 4. Actividades reales del curso estrictamente aisladas por asignatura y periodo
+        const { data: dbActividades } = await supabase
+            .from('actividades')
+            .select('id, nombre, curso_id, asignatura, periodo, bc_asignados, indicador, indicadores_json, producto, descripcion, activo, is_rec')
+            .eq('curso_id', curso.id)
+            .eq('periodo', periodoRec)
+            .eq('activo', true);
+
+        const actividadesCurso = (dbActividades || []).filter(act => {
+            if (act.is_rec || act.nombre === 'Recuperación') return false;
+            if (!act.id) return false;
+            // Aislamiento estricto por asignatura
+            return mismaAsignatura(act.asignatura, asignaturaTarget);
+        });
+
+        const actividadMap = new Map<number, any>();
+        actividadesCurso.forEach(a => actividadMap.set(Number(a.id), a));
+        const actividadIds = Array.from(actividadMap.keys());
+
+        // 5. Calificaciones del curso estrictamente para estas actividades y periodo
+        let calificacionesFiltradas: any[] = [];
+        if (actividadIds.length > 0) {
+            const { data: dbCalificaciones } = await supabase
+                .from('calificaciones')
+                .select('id, estudiante_id, actividad_id, curso_id, periodo, asignatura, puntaje, recuperacion, competencias, activo')
+                .eq('curso_id', curso.id)
+                .eq('periodo', periodoRec)
+                .in('actividad_id', actividadIds);
+
+            calificacionesFiltradas = (dbCalificaciones || []).filter(c => {
+                if (c.activo === false) return false;
+                // Aislamiento por asignatura
+                if (c.asignatura && !mismaAsignatura(c.asignatura, asignaturaTarget)) return false;
+                // Criterio del sistema: puntaje < 70 y sin recuperación aprobada
+                const puntaje = Number(c.puntaje);
+                if (isNaN(puntaje) || puntaje >= 70) return false;
+                if (c.recuperacion !== null && c.recuperacion !== undefined && Number(c.recuperacion) >= 70) return false;
+                return true;
+            });
+        }
+
+        // 6. Estudiantes del curso
+        let estudiantesRaw: any[] = [];
+        const { data: dbEstudiantes } = await supabase
+            .from('estudiantes')
+            .select('*')
+            .eq('curso_id', curso.id)
+            .eq('activo', true)
+            .order('numero_lista', { ascending: true });
+
+        if (dbEstudiantes && dbEstudiantes.length > 0) {
+            estudiantesRaw = dbEstudiantes;
+        } else {
+            estudiantesRaw = state.estudiantes?.filter(e => e.cursoId === curso.id) || [];
+        }
+
+        // 7. Construcción de estudiantes a recuperar con datos reales vinculados por actividad
+        const estudiantes: EstudianteRecuperar[] = (estudiantesRaw || [])
+            .map((e: any) => {
+                const califsEst = calificacionesFiltradas.filter(c => Number(c.estudiante_id) === Number(e.id));
+                if (califsEst.length === 0) return null;
+
+                const actividades: ActividadRecuperar[] = [];
+                for (const calif of califsEst) {
+                    const act = actividadMap.get(Number(calif.actividad_id));
+                    if (!act) continue;
+
+                    // Nombre real de la actividad registrada
+                    const nombreActividad = (act.nombre || '').trim() || 'Actividad evaluativa';
+
+                    // Competencias fundamentales únicamente vinculadas a esta actividad
+                    let competencias: string[] = [];
+                    if (Array.isArray(act.bc_asignados) && act.bc_asignados.length > 0) {
+                        competencias = act.bc_asignados.filter(Boolean);
+                    } else if (Array.isArray(act.bcAsignados) && act.bcAsignados.length > 0) {
+                        competencias = act.bcAsignados.filter(Boolean);
+                    } else if (Array.isArray(calif.competencias) && calif.competencias.length > 0) {
+                        competencias = calif.competencias.filter(Boolean);
+                    }
+
+                    // Indicadores de logro únicamente de esta actividad
+                    const indicadorTexto = extraerIndicadoresActividad(act);
+
+                    // Producto o evidencia establecido en la actividad original
+                    const productoTexto = (act.producto || act.descripcion || '').trim();
+
+                    actividades.push({
+                        nombre: nombreActividad,
+                        competencias,
+                        indicador: indicadorTexto,
+                        producto: productoTexto,
+                        puntajeObtenido: Number(calif.puntaje)
+                    });
+                }
+
+                if (actividades.length === 0) return null;
+
+                return {
+                    nombreCompleto: `${e.nombre || ''} ${e.apellido || ''}`.trim() || 'Estudiante',
+                    curso: `${curso.grado} "${curso.seccion}"`,
+                    actividades
+                };
+            })
+            .filter((e): e is EstudianteRecuperar => e !== null);
+
+        return getPlanRecuperacionTemplate({
+            centro: centroNombre,
+            codigoCentro,
+            docente: docenteNombre,
+            asignatura: asignaturaDisplay,
+            grado: curso.grado || '',
+            seccion: curso.seccion || '',
+            fecha: new Date().toISOString().split('T')[0],
+            periodoRecuperacion: periodoRec,
+            nombrePeriodo: periodoInfo.nombre,
+            estudiantes
+        });
+    }
+
+    async function handleAbrirPlanRecuperacion(curso: Curso, periodoRec: 'P1' | 'P2' | 'P3') {
+        const newTab = window.open('', '_blank');
+        if (newTab) {
+            newTab.document.write(`
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Plan de recuperación pedagógica ${periodoRec}</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 100vh;
+                            background: #FCFCFA;
+                            color: #2E3330;
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                        }
+                        .loader-box {
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            gap: 12px;
+                        }
+                        .spinner {
+                            width: 28px;
+                            height: 28px;
+                            border: 3px solid rgba(46, 51, 48, 0.15);
+                            border-top-color: #BFC9A6;
+                            border-radius: 50%;
+                            animation: spin 0.8s linear infinite;
+                        }
+                        @keyframes spin {
+                            to { transform: rotate(360deg); }
+                        }
+                        p {
+                            font-size: 13px;
+                            font-weight: 600;
+                            letter-spacing: 0.05em;
+                            text-transform: uppercase;
+                            color: #5F665E;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="loader-box">
+                        <div class="spinner"></div>
+                        <p>Cargando plan de recuperación pedagógica...</p>
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+
+        try {
+            const htmlContent = await generarContenidoPlanRecuperacion(curso, periodoRec);
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            if (newTab) {
+                newTab.location.href = url;
+            } else {
+                window.open(url, '_blank');
+            }
+        } catch (err) {
+            console.error('Error al abrir plan de recuperación en nueva pestaña:', err);
+            if (newTab) {
+                newTab.close();
+            }
+            alert('No se pudo abrir el plan de recuperación pedagógica.');
+        }
+    }
+
+    const secuenciasCurso = (state.secuencias || []).filter((secuencia: Secuencia) => 
+        (!cursoSel || cursoSel === 0 || secuencia.cursoId === cursoSel) && 
+        (secuencia.userId === session?.user?.id || !secuencia.userId)
     );
+
+
+    const secuenciasFiltradas = useMemo(() => {
+        const secList = state?.secuencias || [];
+        return secList.filter((secuencia: Secuencia) => 
+            (!cursoSel || cursoSel === 0 || secuencia.cursoId === cursoSel) &&
+            (secuencia.userId === session?.user?.id || !secuencia.userId) &&
+            !(secuencia.titulo && secuencia.titulo.startsWith('Especificaciones Curriculares'))
+        );
+    }, [state?.secuencias, cursoSel, session?.user?.id]);
+
+    const gruposPlanificacion = useMemo<GrupoPlanificacion[]>(() => {
+        const mapa = new Map<string, GrupoPlanificacion>();
+        const cursosList = state?.cursos || [];
+
+        // 1. Inicializar con todos los cursos activos del contexto (según cursoSel)
+        const cursosBase = (!cursoSel || cursoSel === 0) 
+            ? cursosList 
+            : cursosList.filter(c => c && c.id === cursoSel);
+
+        for (const curso of cursosBase) {
+            if (!curso) continue;
+            const { grado, seccion, label } = detectarGradoSeccion(curso);
+            const cd = state?.cursoDocentes?.find((d: any) => (d.curso_id === curso.id || d.cursoId === curso.id) && d.asignatura);
+            const asignatura = (curso.asignatura?.trim() || cd?.asignatura?.trim() || curso.nombre || 'General').trim();
+            const periodo = (curso.periodo && /^P[1-4]$/i.test(curso.periodo.trim())) 
+                ? curso.periodo.trim().toUpperCase() 
+                : 'P1';
+            const key = `${curso.id}|${(asignatura || 'general').toLowerCase()}|${periodo.toLowerCase()}`;
+
+            if (!mapa.has(key)) {
+                mapa.set(key, {
+                    key,
+                    cursoId: curso.id,
+                    grado,
+                    seccion,
+                    cursoLabel: label,
+                    asignatura,
+                    periodo,
+                    planes: []
+                });
+            }
+        }
+
+        // 2. Asociar secuencias existentes
+        for (const seq of secuenciasFiltradas) {
+            if (!seq) continue;
+            const curso = cursosList.find((item) => item && item.id === seq.cursoId);
+            const { grado, seccion, label } = detectarGradoSeccion(curso);
+            const asignatura = (detectarAsignaturaPlan(seq, curso, state?.cursoDocentes) || 'General').trim();
+            const periodo = detectarPeriodoPlan(seq, curso);
+            const key = `${seq.cursoId || 0}|${(asignatura || 'general').toLowerCase()}|${periodo.toLowerCase()}`;
+
+            if (!mapa.has(key)) {
+                mapa.set(key, {
+                    key,
+                    cursoId: seq.cursoId,
+                    grado,
+                    seccion,
+                    cursoLabel: label,
+                    asignatura,
+                    periodo,
+                    planes: []
+                });
+            }
+            mapa.get(key)!.planes.push(seq);
+        }
+
+        return Array.from(mapa.values()).sort((a, b) => {
+            const pComp = a.periodo.localeCompare(b.periodo, 'es', { numeric: true });
+            if (pComp !== 0) return pComp;
+            const cComp = a.cursoLabel.localeCompare(b.cursoLabel, 'es', { numeric: true });
+            if (cComp !== 0) return cComp;
+            return a.asignatura.localeCompare(b.asignatura, 'es');
+        });
+    }, [secuenciasFiltradas, state?.cursos, state?.cursoDocentes, cursoSel]);
 
     const allRecursos = secuenciasCurso.flatMap(seq => {
         let rec = seq.recursos;
@@ -437,93 +889,177 @@ export default function Planificacion({
                         )}
                     </div>
 
-                    {/* SECCIÓN PLANTILLAS */}
+                    {/* SECCIÓN: Planificación diaria y planificación individualizada de recuperación */}
                     <div>
                         <h2 className="text-sm font-black text-(--ink) uppercase tracking-widest mb-3 border-b border-(--border-soft) pb-2 flex justify-between items-end">
-                            <span>Plantillas y Secuencias</span>
+                            <span>Planificación diaria y planificación individualizada de recuperación</span>
                         </h2>
-                        
-                        <div className="flex overflow-x-auto pb-6 gap-5 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pt-1">
-                            {/* Resto de secuencias didácticas del curso */}
-                            {secuenciasPlantillas.map((seq, index) => {
-                                const curso = state.cursos.find((item) => item.id === seq.cursoId);
-                                const bookIcon = BOOK_ICONS[index % BOOK_ICONS.length];
-                                const filledDots = getDotCount(seq.estado);
 
-
-                                return (
-                                    <button
-                                        key={seq.id}
-                                        type="button"
-                                        onClick={async (e) => {
-                                            e.preventDefault();
-                                            if (seq.contenidoHtml) {
-                                                setViewerSeq(seq);
-                                            } else {
-                                                // Chequear caché en memoria
-                                                const cached = getValidSecuencia(session?.user?.id, seq.cursoId, seq.id);
-                                                if (cached?.contenidoHtml) {
-                                                    setViewerSeq(cached);
-                                                    return;
-                                                }
-                                                // Poner estado preliminar mientras descarga
-                                                setViewerSeq(seq);
-                                                const { data } = await supabase
-                                                    .from('secuencias')
-                                                    .select('id, contenido_html, recursos')
-                                                    .eq('id', seq.id)
-                                                    .single();
-                                                if (data) {
-                                                    const fullSeq: Secuencia = {
-                                                        ...seq,
-                                                        contenidoHtml: data.contenido_html || '',
-                                                        recursos: data.recursos ? (Array.isArray(data.recursos) ? data.recursos : (() => { try { return JSON.parse(data.recursos); } catch { return []; } })()) : seq.recursos
-                                                    };
-                                                    setViewerSeq(fullSeq);
-                                                    if (session?.user?.id) {
-                                                        saveSecuencia(session.user.id, fullSeq);
-                                                    }
-                                                    useAppStore.getState().setAppState(s => ({
-                                                        ...s,
-                                                        secuencias: s.secuencias.map(item => item.id === seq.id ? fullSeq : item)
-                                                    }));
-                                                }
-                                            }
-                                        }}
-                                        className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"
-                                    >
-                                        <div className="w-full h-32 flex flex-col items-center justify-center mb-2">
-                                            <img
-                                                src={bookIcon}
-                                                alt=""
-                                                className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-sm"
-                                            />
-                                        </div>
-                                        
-                                        <h3 className="text-[10px] font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-left w-full px-0.5 line-clamp-2 leading-snug" title={seq.titulo}>
-                                            {seq.titulo}
-                                        </h3>
-                                        
-                                        <div className="mt-1 flex flex-col items-start gap-1 w-full">
-                                            <p className="text-[9px] font-bold text-(--ink-soft) uppercase tracking-widest text-left truncate w-full px-0.5">
-                                                {curso?.grado} {curso?.seccion}
-                                            </p>
-                                            <div className="flex items-center gap-1">
-                                                {[0, 1, 2].map((dot) => (
-                                                    <span
-                                                        key={dot}
-                                                        className={`h-1.5 w-1.5 rounded-full ${dot < filledDots ? 'bg-(--primary)' : 'bg-slate-200'}`}
-                                                    />
-                                                ))}
+                        {gruposPlanificacion.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-(--border-soft) bg-white/50">
+                                <div className="w-12 h-12 rounded-full bg-(--linen) flex items-center justify-center text-(--ink-soft) mb-3">
+                                    <BookOpen size={22} />
+                                </div>
+                                <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-1">No hay planificaciones</p>
+                                <p className="text-xs text-(--ink-soft)/70 max-w-sm">
+                                    No se encontraron planes de clase para el contexto académico seleccionado.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-6">
+                                {gruposPlanificacion.map((grupo) => (
+                                    <div key={grupo.key} className="bg-white border border-(--border-soft) rounded-2xl p-4 sm:p-5 shadow-xs">
+                                        {/* Encabezado del contexto académico: Período, Curso (grado), Sección, Asignatura */}
+                                        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 pb-2.5 border-b border-(--border-soft)">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-(--primary)/10 text-(--primary) border border-(--primary)/20">
+                                                    {grupo.periodo}
+                                                </span>
+                                                <span className="text-xs font-black uppercase tracking-wider text-(--ink)">
+                                                    {grupo.cursoLabel}
+                                                </span>
+                                                <span className="text-(--ink-soft)/30 font-bold">•</span>
+                                                <span className="text-xs font-bold uppercase tracking-wider text-(--ink-soft)">
+                                                    {grupo.asignatura}
+                                                </span>
                                             </div>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-(--ink-soft) bg-(--linen)/60 px-2.5 py-0.5 rounded-full">
+                                                {grupo.planes.filter(p => !esPlanRecuperacion(p)).length + 1} {grupo.planes.filter(p => !esPlanRecuperacion(p)).length === 0 ? 'documento' : 'documentos'}
+                                            </span>
                                         </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
+
+                                        {/* Carrusel horizontal de documentos */}
+                                        <div className="flex overflow-x-auto pb-2 gap-5 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pt-1">
+                                            {/* Acceso individual a Plan de recuperación pedagógica P1 */}
+                                            {(() => {
+                                                const curso = state?.cursos?.find(c => c && c.id === grupo.cursoId) || state?.cursos?.[0];
+                                                const tituloRec = 'Plan de recuperación pedagógica P1';
+
+                                                return (
+                                                    <button
+                                                        key={`rec-p1-${grupo.key}`}
+                                                        type="button"
+                                                        onClick={async (e) => {
+                                                            e.preventDefault();
+                                                            if (curso) await handleAbrirPlanRecuperacion(curso, 'P1');
+                                                        }}
+                                                        className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"
+                                                        title={tituloRec}
+                                                    >
+                                                        <div className="w-full h-32 flex flex-col items-center justify-center mb-2">
+                                                            <DocumentRecuperacionIcon className="w-20 h-20 text-(--ink-soft)/60 transition-all duration-300 group-hover:scale-105 group-hover:text-(--ink)" />
+                                                        </div>
+
+                                                        <h3 className="text-[10px] font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-left w-full px-0.5 line-clamp-2 leading-snug">
+                                                            {tituloRec}
+                                                        </h3>
+
+                                                        <div className="mt-1 flex flex-col items-start gap-1 w-full">
+                                                            <p className="text-[9px] font-bold text-(--ink-soft) uppercase tracking-widest text-left truncate w-full px-0.5">
+                                                                {grupo.cursoLabel}
+                                                            </p>
+                                                            <div className="flex items-center justify-between w-full px-0.5">
+                                                                <span className="text-[8px] font-black uppercase tracking-wider text-(--primary)">
+                                                                    P1
+                                                                </span>
+                                                                <span className="text-[7.5px] font-bold uppercase tracking-wider text-(--ink-soft) bg-(--linen)/70 px-1.5 py-0.2 rounded border border-(--border-soft)">
+                                                                    OFICIAL
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })()}
+
+                                            {/* Tarjetas de las demás planificaciones del curso (diarias, etc.) */}
+                                            {grupo.planes.filter(p => !esPlanRecuperacion(p)).map((seq, index) => {
+                                                const bookIcon = BOOK_ICONS[index % BOOK_ICONS.length];
+                                                const filledDots = getDotCount(seq.estado);
+                                                const isRecuperacion = esPlanRecuperacion(seq);
+
+                                                return (
+                                                    <button
+                                                        key={seq.id}
+                                                        type="button"
+                                                        onClick={async (e) => {
+                                                            e.preventDefault();
+                                                            if (seq.contenidoHtml) {
+                                                                setViewerSeq(seq);
+                                                            } else {
+                                                                const cached = getValidSecuencia(session?.user?.id, seq.cursoId, seq.id);
+                                                                if (cached?.contenidoHtml) {
+                                                                    setViewerSeq(cached);
+                                                                    return;
+                                                                }
+                                                                setViewerSeq(seq);
+                                                                const { data } = await supabase
+                                                                    .from('secuencias')
+                                                                    .select('id, contenido_html, recursos')
+                                                                    .eq('id', seq.id)
+                                                                    .single();
+                                                                if (data) {
+                                                                    const fullSeq: Secuencia = {
+                                                                        ...seq,
+                                                                        contenidoHtml: data.contenido_html || '',
+                                                                        recursos: data.recursos ? (Array.isArray(data.recursos) ? data.recursos : (() => { try { return JSON.parse(data.recursos); } catch { return []; } })()) : seq.recursos
+                                                                    };
+                                                                    setViewerSeq(fullSeq);
+                                                                    if (session?.user?.id) {
+                                                                        saveSecuencia(session.user.id, fullSeq);
+                                                                    }
+                                                                    useAppStore.getState().setAppState(s => ({
+                                                                        ...s,
+                                                                        secuencias: s.secuencias.map(item => item.id === seq.id ? fullSeq : item)
+                                                                    }));
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"
+                                                    >
+                                                        <div className="w-full h-32 flex flex-col items-center justify-center mb-2">
+                                                            {isRecuperacion ? (
+                                                                <DocumentRecuperacionIcon className="w-20 h-20 text-(--ink-soft)/60 transition-all duration-300 group-hover:scale-105 group-hover:text-(--ink)" />
+                                                            ) : (
+                                                                <img
+                                                                    src={bookIcon}
+                                                                    alt=""
+                                                                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-sm"
+                                                                />
+                                                            )}
+                                                        </div>
+
+                                                        <h3 className="text-[10px] font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-left w-full px-0.5 line-clamp-2 leading-snug" title={seq.titulo}>
+                                                            {seq.titulo}
+                                                        </h3>
+
+                                                        <div className="mt-1 flex flex-col items-start gap-1 w-full">
+                                                            <p className="text-[9px] font-bold text-(--ink-soft) uppercase tracking-widest text-left truncate w-full px-0.5">
+                                                                {grupo.cursoLabel}
+                                                            </p>
+                                                            <div className="flex items-center justify-between w-full px-0.5">
+                                                                <span className="text-[8px] font-black uppercase tracking-wider text-(--primary)">
+                                                                    {grupo.periodo}
+                                                                </span>
+                                                                <div className="flex items-center gap-1">
+                                                                    {[0, 1, 2].map((dot) => (
+                                                                        <span
+                                                                            key={dot}
+                                                                            className={`h-1.5 w-1.5 rounded-full ${dot < filledDots ? 'bg-(--primary)' : 'bg-slate-200'}`}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
-                    <ActividadesPorCursoSection cursoId={cursoSel} />
                 </div>
             </div>
 
@@ -1015,79 +1551,31 @@ export default function Planificacion({
                                       </div>
 
                                       {/* Botón Plan de Recuperación Pedagógica */}
-                                      <button
-                                          onClick={async () => {
-                                               const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
-                                               if (!curso) return;
+                                       <button
+                                           onClick={async () => {
+                                                const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                                if (!curso) return;
 
-                                               const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
-                                               const centroNombre = state.centros?.find(c => c.id === miPerfil?.centro_id)?.nombre || session?.user?.user_metadata?.centro_nombre || 'Mi Centro';
-                                               const codigoCentro = state.centros?.find(c => c.id === miPerfil?.centro_id)?.codigoCentro || session?.user?.user_metadata?.codigo_centro || '';
-                                               const docenteNombre = miPerfil?.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente';
-
-                                               const periodo = PERIODOS_RECUPERACION[periodoRecuperacion];
-
-                                               const { data: estudiantesRaw } = await supabase
-                                                   .from('estudiantes')
-                                                   .select('*')
-                                                   .eq('curso_id', curso.id)
-                                                   .eq('activo', true);
-
-                                               const { data: calificacionesRaw } = await supabase
-                                                   .from('calificaciones')
-                                                   .select('*')
-                                                   .eq('curso_id', curso.id);
-
-                                               const estudiantes = (estudiantesRaw || []).map((e: any) => {
-                                                   const calEst = (calificacionesRaw || []).filter((c: any) => c.estudiante_id === e.id);
-                                                   const actividades = calEst
-                                                       .filter((c: any) => c.puntaje < 70)
-                                                       .map((c: any) => ({
-                                                           nombre: c.asignatura || 'Actividad',
-                                                           competencias: c.competencias || [],
-                                                           indicador: '',
-                                                           producto: '',
-                                                           puntajeObtenido: c.puntaje || 0
-                                                       }));
-                                                   return {
-                                                       nombreCompleto: `${e.nombre} ${e.apellido}`,
-                                                       curso: `${curso.grado} "${curso.seccion}"`,
-                                                       actividades
-                                                   };
-                                               }).filter((e: any) => e.actividades.length > 0);
-
-                                               const htmlContent = getPlanRecuperacionTemplate({
-                                                   centro: centroNombre,
-                                                   codigoCentro,
-                                                   docente: docenteNombre,
-                                                   asignatura: curso.asignatura || '',
-                                                   grado: curso.grado || '',
-                                                   seccion: curso.seccion || '',
-                                                   fecha: new Date().toISOString().split('T')[0],
-                                                   periodoRecuperacion,
-                                                   nombrePeriodo: periodo.nombre,
-                                                   estudiantes
-                                               });
-
-                                               const blob = new Blob([htmlContent], { type: 'text/html' });
-                                               const url = URL.createObjectURL(blob);
-                                               window.open(url, '_blank');
-                                               setShowModal(false);
-                                           }}
-                                          className="w-full text-left p-4 rounded-xl border border-(--border-soft) bg-white hover:border-herb-garden hover:bg-herb-garden/5 transition-all cursor-pointer group flex items-start gap-3"
-                                      >
-                                          <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-200">
-                                             <RotateCcw size={20} className="text-herb-garden" />
-                                          </div>
-                                          <div>
-                                             <h3 className="text-sm font-black uppercase tracking-wider text-(--ink) group-hover:text-herb-garden transition-colors">
-                                                 Plan de Recuperación Pedagógica
-                                             </h3>
-                                             <p className="mt-1 text-xs font-medium text-(--ink-soft) leading-relaxed">
-                                                 Documento individualizado para la recuperación académica de estudiantes con puntajes menores a 70. Periodo: {PERIODOS_RECUPERACION[periodoRecuperacion].nombre}.
-                                             </p>
-                                          </div>
-                                      </button>
+                                                const htmlContent = await generarContenidoPlanRecuperacion(curso, periodoRecuperacion);
+                                                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                                                const url = URL.createObjectURL(blob);
+                                                window.open(url, '_blank');
+                                                setShowModal(false);
+                                            }}
+                                           className="w-full text-left p-4 rounded-xl border border-(--border-soft) bg-white hover:border-(--primary) hover:bg-(--linen)/30 transition-all cursor-pointer group flex items-start gap-3"
+                                       >
+                                           <div className="w-10 h-10 rounded-lg bg-(--linen) flex items-center justify-center shrink-0 border border-(--border-soft)">
+                                              <DocumentRecuperacionIcon className="size-5 text-(--ink-soft) group-hover:text-(--ink) transition-colors" />
+                                           </div>
+                                           <div>
+                                              <h3 className="text-sm font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors">
+                                                  Plan de Recuperación Pedagógica
+                                              </h3>
+                                              <p className="mt-1 text-xs font-medium text-(--ink-soft) leading-relaxed">
+                                                  Documento individualizado para la recuperación académica de estudiantes con puntajes menores a 70. Periodo: {PERIODOS_RECUPERACION[periodoRecuperacion].nombre}.
+                                              </p>
+                                           </div>
+                                       </button>
                                   </div>
                               </div>
                               </div>
