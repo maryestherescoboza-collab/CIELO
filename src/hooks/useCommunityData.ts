@@ -24,13 +24,23 @@ export function useCommunityData() {
         console.log("[Community] Loading posts...");
 
         try {
+            const userIdsInState = (globalState.perfiles || []).map(p => p.userId).filter(Boolean);
+            let histQuery = supabase.from('historial_colaboradores')
+                .select('usuario_id, publicaciones_realizadas')
+                .gt('publicaciones_realizadas', 0)
+                .order('publicaciones_realizadas', { ascending: false });
+
+            if (userIdsInState.length > 0) {
+                histQuery = histQuery.in('usuario_id', userIdsInState);
+            }
+            histQuery = histQuery.limit(5);
+
             const [postsRes, histRes] = await Promise.all([
                 supabase.from('posts')
                     .select('*, profiles:perfiles(nombre, nombre_docente, avatar_url, bio)')
                     .order('id', { ascending: false })
                     .range(pageNumber * POSTS_PER_PAGE, (pageNumber + 1) * POSTS_PER_PAGE - 1),
-                supabase.from('historial_colaboradores')
-                    .select('*')
+                histQuery
             ]);
 
             if (postsRes.error) throw postsRes.error;
@@ -125,21 +135,17 @@ export function useCommunityData() {
                 };
             });
 
-            // Map top colaboradores based on history
-            const profilesWithHist = (globalState.perfiles || []).map((p: UserProfile): UserProfile => {
-                const hist = (histRes.data || []).find(h => h.usuario_id === p.userId);
-                return {
-                    ...p,
-                    publicacionesRealizadas: hist ? (hist.publicaciones_realizadas as number) : 0
-                };
-            });
-
-            const topColabs = [...profilesWithHist]
-                .filter((usuario) => {
-                    const total = usuario.publicacionesRealizadas;
-                    return typeof total === 'number' && Number.isFinite(total) && total > 0;
+            // Map top colaboradores based on history (ordenados y acotados desde el servidor)
+            const topColabs = (histRes.data || [])
+                .map((h: any) => {
+                    const prof = (globalState.perfiles || []).find(p => p.userId === h.usuario_id);
+                    if (!prof) return null;
+                    return {
+                        ...prof,
+                        publicacionesRealizadas: Number(h.publicaciones_realizadas) || 0
+                    };
                 })
-                .sort((a, b) => (b.publicacionesRealizadas || 0) - (a.publicacionesRealizadas || 0))
+                .filter((usuario): usuario is NonNullable<typeof usuario> => usuario !== null && usuario.publicacionesRealizadas > 0)
                 .slice(0, 5);
 
             const optimisticPosts = (useAppStore.getState().state.posts || []).filter(p =>

@@ -22,6 +22,8 @@ interface GradeCellProps {
 }
 
 const GradeCell: React.FC<GradeCellProps> = ({
+    estId,
+    actId,
     score,
     isRecoveryAct,
     evalMode,
@@ -70,6 +72,10 @@ const GradeCell: React.FC<GradeCellProps> = ({
     return (
         <div
             data-guide="celda-evaluacion"
+            data-est-id={estId}
+            data-act-id={actId}
+            tabIndex={isProductoFinal || evalMode === 'libre' ? -1 : 0}
+            onFocus={() => onInteraction('focus')}
             className={`p-0 border-r border-[rgba(46,51,48,0.08)] relative transition-all group ${isDragging ? 'cursor-none' : 'cursor-pointer'} ${isFocused ? 'ring-2 ring-primary ring-inset z-10' : ''} shrink-0`}
             style={style}
             onMouseEnter={() => {
@@ -148,10 +154,16 @@ const GradeCell: React.FC<GradeCellProps> = ({
                 ) : (isProductoFinal || evalMode === 'libre') ? (
                     <input
                         ref={inputRef}
+                        data-guide="celda-evaluacion-input"
+                        data-est-id={estId}
+                        data-act-id={actId}
                         type="text"
                         inputMode="decimal"
                         defaultValue={formatGradeScore(score)}
-                        onFocus={(e) => e.target.select()}
+                        onFocus={(e) => {
+                            e.target.select();
+                            onInteraction('focus');
+                        }}
                         onBlur={(e) => {
                             const raw = e.target.value.trim();
                             if (raw === '') {

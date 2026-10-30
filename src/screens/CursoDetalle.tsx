@@ -106,6 +106,7 @@ export default function CursoDetalle(props: Props) {
         enhancedEstudiantes,
         allCourseStudents,
         setCalif,
+        setCalifsBatch,
         triggerAnimation,
         isDirty,
         isDirtyCotejo,
@@ -343,6 +344,12 @@ export default function CursoDetalle(props: Props) {
                 onSetGrade={(estId, actId, val) => {
                     setCalif(estId, actId, val);
                     if (val !== null) triggerAnimation(estId, actId, val);
+                }}
+                onSetGradesBatch={(updates) => {
+                    setCalifsBatch(updates);
+                    updates.forEach(u => {
+                        if (u.val !== null) triggerAnimation(u.estId, u.actId, u.val);
+                    });
                 }}
                 onSetFocusedCell={setFocusedCell}
                 onAddActividad={onAddActividad}

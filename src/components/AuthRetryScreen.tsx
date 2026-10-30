@@ -16,7 +16,7 @@ export default function AuthRetryScreen({ onRetry, retrying = false }: AuthRetry
           disabled={retrying}
           className="mt-5 w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 uppercase"
         >
-          Reintentar
+          {retrying ? 'Reintentando...' : 'Reintentar'}
         </button>
       </div>
     </div>

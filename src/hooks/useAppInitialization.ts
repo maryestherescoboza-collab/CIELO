@@ -1,6 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
-
+import { useState, useMemo } from 'react';
 import { usePresence } from './usePresence';
 import type { AppState } from '../types';
 import { obtenerNombreVisible, NOMBRE_NEUTRO } from '../utils/nombres';
@@ -11,21 +9,8 @@ interface Params {
 }
 
 export function useAppInitialization({ state, session }: Params) {
-    useEffect(() => {
-        const userId = session?.user?.id;
-        if (userId) {
-            const updateLastSeen = async () => {
-                await supabase.from('perfiles').upsert({
-                    user_id: userId,
-                    last_seen: new Date().toISOString(),
-                });
-            };
-            updateLastSeen();
-            const interval = setInterval(updateLastSeen, 60000);
-            return () => clearInterval(interval);
-        }
-    }, [session?.user?.id]);
-
+    // La presencia de usuarios conectados se gestiona exclusivamente mediante usePresence (Realtime en memoria).
+    // Se eliminan tanto las escrituras periódicas (setInterval) como el upsert inicial de perfiles.last_seen.
     const currentUserProfile = useMemo(
         () => state.perfiles.find(p => p.userId === session?.user?.id),
         [state.perfiles, session]
@@ -46,8 +31,6 @@ export function useAppInitialization({ state, session }: Params) {
     }), [currentUserProfile?.nombreDocente, DOCENTE, state.perfilAvatarUrl, currentUserProfile?.avatarUrl, state.asignaturas, onlineSince]);
 
     const { onlineUsers } = usePresence(session?.user?.id, presencePayload);
-
-
 
     return {
         DOCENTE,

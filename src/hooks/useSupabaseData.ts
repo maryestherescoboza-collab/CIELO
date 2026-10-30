@@ -1,11 +1,11 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { AppState, Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, Secuencia, EventoCalendario, Docente, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, TareaInstitucional, TareaDocente, Centro } from '../types';
 import { useAppStore } from '../store/appStore';
 import { esRolAdministrador } from '../utils/autorizacion';
 import { normalizarHora } from '../utils/diasSemana';
 import { getValidCentro, saveCentroCache } from '../cache/centroCache';
-import { savePerfilCacheFromRow } from '../cache/perfilCache';
+import { getValidPerfil, savePerfilCacheFromRow, markPerfilRecoveredFromCache, isPerfilRecoveredFromCache, isTemporaryPerfilConnectionError, buildUserProfileFromCache } from '../cache/perfilCache';
 import { getValidCursoCache, saveCursoCache } from '../cache/cursoCache';
 import { getValidPlantillaCache, savePlantillaCache } from '../cache/plantillaCache';
 import { PERIODOS_ACADEMICOS, NULL_PERIODO_TOKEN, hasValidAcademicSlice, getValidAcademicSlice, saveAcademicSlice, upsertAcademicRow } from '../cache/academicCache';
@@ -231,6 +231,45 @@ let fetchDataGeneration = 0;
 // Bloqueo de concurrencia: promesas en curso por cursoId
 const cursoPromises: Record<number, Promise<void>> = {};
 
+// Candado global de concurrencia para fetchData (compartido entre todas las instancias del hook)
+let isGlobalFetching = false;
+
+// Garantiza una única carga inicial automática por sesión autenticada
+let lastInitialBootstrapUserId: string | null = null;
+
+// Estado reactivo global cuando la carga inicial falla y no existe caché válida para recuperar la UI
+let globalInitialLoadError = false;
+const initialLoadErrorListeners = new Set<(val: boolean) => void>();
+function setGlobalInitialLoadError(val: boolean): void {
+    if (globalInitialLoadError === val) return;
+    globalInitialLoadError = val;
+    initialLoadErrorListeners.forEach(fn => fn(val));
+}
+
+function recoverSessionUIFromCache(userId: string): boolean {
+    const cachedPerfil = getValidPerfil(userId);
+    if (!cachedPerfil) return false;
+
+    markPerfilRecoveredFromCache(userId);
+    const cachedCentroId = cachedPerfil.centro_id ?? null;
+    const cachedCentro = getValidCentro(cachedCentroId);
+    const cachedCursos = getValidCursoCache(userId, cachedCentroId);
+    const fallbackProfile = buildUserProfileFromCache(userId, cachedPerfil, cachedCentro ?? undefined);
+
+    useAppStore.getState().setAppState(prev => ({
+        ...prev,
+        perfiles: prev.perfiles.length > 0 ? prev.perfiles : [fallbackProfile],
+        nombreDocente: fallbackProfile.nombreDocente || prev.nombreDocente,
+        instituto: fallbackProfile.instituto || prev.instituto,
+        cursos: cachedCursos ? cachedCursos.cursos : prev.cursos,
+        cursoDocentes: cachedCursos ? cachedCursos.cursoDocentes : prev.cursoDocentes,
+        centros: cachedCentro ? [cachedCentro] : prev.centros,
+        // Separación de recuperación de UI vs autorización: no otorgar rol administrativo activo solo desde caché
+        centroRolActual: undefined,
+    }));
+    return true;
+}
+
 export function useSupabaseData(skipInit = false) {
     const { 
         state, 
@@ -247,6 +286,11 @@ export function useSupabaseData(skipInit = false) {
 
 
     const isFetching = useRef(false);
+    const [initialLoadError, setInitialLoadError] = useState(globalInitialLoadError);
+    useEffect(() => {
+        initialLoadErrorListeners.add(setInitialLoadError);
+        return () => { initialLoadErrorListeners.delete(setInitialLoadError); };
+    }, []);
     const isDashboardFetching = useRef(false);
     const isCalendarioFetching = useRef(false);
     const isActividadesFetching = useRef(false);
@@ -275,15 +319,19 @@ export function useSupabaseData(skipInit = false) {
         const antesFetch = useAppStore.getState().state;
         console.log(`[DIAG][FETCH] start user=${session.user.id} ts=${new Date().toISOString()} STATE_BEFORE perfiles=${antesFetch.perfiles.length} cursos=${antesFetch.cursos.length} estudiantes=${antesFetch.estudiantes.length} actividades=${antesFetch.actividades.length} calificaciones=${antesFetch.calificaciones.length} grupos=${antesFetch.grupos.length} secuencias=${antesFetch.secuencias.length}`);
 
-        if (isFetching.current) {
+        if (isFetching.current || isGlobalFetching) {
             console.log('[DEBUG LOAD] RETURN — fetchData ignorado: ya hay una carga en progreso');
             console.log(`[DIAG][GUARD] fetchData-concurrente-omitido user=${session.user.id} ts=${new Date().toISOString()}`);
             return;
         }
         isFetching.current = true;
+        isGlobalFetching = true;
         
         console.log(`[DEBUG LOAD] setLoading(true) - isSilent: ${isSilent}`);
-        if (!isSilent) setLoading(true);
+        if (!isSilent) {
+            setGlobalInitialLoadError(false);
+            setLoading(true);
+        }
         ++fetchDataGeneration;
         console.log('[PLANIFICACION] inicio carga global por contexto (useSupabaseData)');
         try {
@@ -292,7 +340,7 @@ export function useSupabaseData(skipInit = false) {
             
             const { data: miPerfil, error: miPerfilError } = await supabase
                 .from('perfiles')
-                .select('user_id, nombre, nombre_docente, avatar_color, avatar_url, bio, tipo_institucion, asignaturas, centro_id, rol')
+                .select('user_id, nombre, nombre_docente, telefono, avatar_color, avatar_url, bio, tipo_institucion, asignaturas, centro_id, rol, created_at, trial_extension_activated_at, last_seen')
                 .eq('user_id', session.user.id)
                 .single();
             
@@ -300,6 +348,17 @@ export function useSupabaseData(skipInit = false) {
             
             if (miPerfilError || !miPerfil) {
                 console.error('[DEBUG LOAD] RETURN — no se pudo obtener el perfil del usuario:', miPerfilError);
+                if (isTemporaryPerfilConnectionError(miPerfilError)) {
+                    const recovered = recoverSessionUIFromCache(session.user.id);
+                    if (recovered) {
+                        console.warn('[Supabase fetchData] Falla temporal de conexión al consultar perfiles; interfaz recuperada desde perfilCache local en modo protegido.');
+                        setGlobalInitialLoadError(false);
+                        return;
+                    }
+                }
+                if (useAppStore.getState().state.perfiles.length === 0) {
+                    setGlobalInitialLoadError(true);
+                }
                 return;
             }
             
@@ -324,8 +383,10 @@ export function useSupabaseData(skipInit = false) {
             console.log(`[DIAG][CACHECURSOS] ${cachedCursos ? 'hit' : 'miss'} user=${session.user.id} centro=${userCentroId ?? 'sin-centro'} isSilent=${isSilent} cursos=${cachedCursos?.cursos.length ?? 0} ts=${new Date().toISOString()}`);
 
             let misCursosIds: number[] = [];
+            let misCursosDocentePrefetched: { data: any; error: any } | null = null;
             if (cachedCursos === null) {
-                const misCursosDocenteResult = await supabase.from('curso_docentes').select('curso_id').eq('docente_id', session.user.id).eq('activo', true);
+                const misCursosDocenteResult = await supabase.from('curso_docentes').select('*').eq('docente_id', session.user.id).eq('activo', true);
+                misCursosDocentePrefetched = misCursosDocenteResult;
                 const misCursosDocente = misCursosDocenteResult.data;
                 console.log(`[DEBUG LOAD] consultando mis cursos FIN: ${Math.round(performance.now() - startCursos)}ms`, { error: misCursosDocenteResult.error });
                 misCursosIds = (misCursosDocente || []).map(cd => cd.curso_id);
@@ -342,7 +403,9 @@ export function useSupabaseData(skipInit = false) {
                 cursosQuery = misCursosIds.length > 0
                     ? supabase.from('cursos').select('*').or(`user_id.eq.${session.user.id},id.in.(${misCursosIds.join(',')})`)
                     : supabase.from('cursos').select('*').eq('user_id', session.user.id);
-                cursoDocentesQuery = supabase.from('curso_docentes').select('*').eq('docente_id', session.user.id).eq('activo', true);
+                cursoDocentesQuery = misCursosDocentePrefetched
+                    ? Promise.resolve(misCursosDocentePrefetched)
+                    : supabase.from('curso_docentes').select('*').eq('docente_id', session.user.id).eq('activo', true);
             }
 
             const suscripcionesQuery = userCentroId
@@ -351,7 +414,7 @@ export function useSupabaseData(skipInit = false) {
 
             const perfilesQuery = userCentroId
                 ? supabase.from('perfiles').select('*').eq('centro_id', userCentroId)
-                : supabase.from('perfiles').select('*').eq('user_id', session.user.id);
+                : Promise.resolve({ data: [miPerfil], error: null });
 
             // Caché persistente del registro del centro: si existe una entrada válida
             // para el centro actual, se evita la consulta duplicada a la tabla `centros`.
@@ -373,14 +436,18 @@ export function useSupabaseData(skipInit = false) {
             ]);
             console.log(`[DEBUG LOAD] Phase 1 FIN: ${Math.round(performance.now() - startPhase1)}ms`);
 
-            const fase1Fallidas = ['perfiles'].filter((_, idx) => !!phase1[idx].error);
-            if (fase1Fallidas.length > 0) {
-                console.log(`[DEBUG LOAD] RETURN — fase 1 falló (crítico): ${fase1Fallidas.join(', ')}`);
-                console.warn(`[Supabase fetchData] Perfiles no disponible (${fase1Fallidas.join(', ')}). Se conserva el estado actual.`);
+            // Verificación de error en consulta de perfiles de centro (Fase 1)
+            if (false) {
+                console.log('[DEBUG LOAD] Fase 1 perfiles fallback a miPerfil');
+                console.warn('[Supabase fetchData] Perfiles de centro no disponible.');
                 return;
             }
 
-            const perfiles = phase1[0].data;
+            if (phase1[0].error) {
+                console.warn('[Supabase fetchData] Consulta grupal de perfiles falló; se continúa con el perfil propio verificado en Paso 1.');
+            }
+
+            const perfiles = phase1[0].error ? [miPerfil] : phase1[0].data;
             const centroRoles = phase1[1].data;
             const cursos = phase1[2].data;
             const cursoDocentes = phase1[3].data;
@@ -597,13 +664,22 @@ export function useSupabaseData(skipInit = false) {
                 });
             }
             
+            setGlobalInitialLoadError(false);
             addLoadedModule('core');
         } catch (error) {
             console.error('[DEBUG LOAD] Error fetching data from Supabase:', error);
             console.error('[PLANIFICACION] error', error);
+            if (useAppStore.getState().state.perfiles.length === 0) {
+                if (isTemporaryPerfilConnectionError(error) && recoverSessionUIFromCache(session.user.id)) {
+                    setGlobalInitialLoadError(false);
+                } else {
+                    setGlobalInitialLoadError(true);
+                }
+            }
         } finally {
             console.log('[DEBUG LOAD] FINALLY EJECUTADO');
             isFetching.current = false;
+            isGlobalFetching = false;
             console.log(`[DEBUG LOAD] setLoading(false) - isSilent: ${isSilent}`);
             if (!isSilent) setLoading(false);
             console.log('[DEBUG LOAD] fetchData TERMINÓ');
@@ -766,18 +842,61 @@ export function useSupabaseData(skipInit = false) {
     useEffect(() => {
         if (skipInit || !session?.user?.id) return;
 
-        // 1. Initial Load of context
+        // 1. Initial Load of context (una sola carga inicial automática por sesión autenticada)
+        if (lastInitialBootstrapUserId === session.user.id) return;
+        lastInitialBootstrapUserId = session.user.id;
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [skipInit, session?.user?.id]); // solo depender de cambios de usuario reales
 
     useEffect(() => {
+        if (!session?.user?.id) {
+            lastInitialBootstrapUserId = null;
+            setGlobalInitialLoadError(false);
+        }
+    }, [session?.user?.id]);
+
+    const fetchDataRef = useRef(fetchData);
+    fetchDataRef.current = fetchData;
+
+    useEffect(() => {
         if (skipInit || !session?.user?.id) return;
         
-        // 2. Setup standard backup interval (15 minutes)
-        const interval = setInterval(() => fetchData(true), 900000);
-        return () => clearInterval(interval);
-    }, [skipInit, session?.user?.id, fetchData]);
+        // 2. Setup standard backup interval (15 minutes) con pausa en segundo plano
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+        let lastFetchTime = Date.now();
+
+        const triggerFetchIfDue = () => {
+            if (document.hidden) return;
+            const now = Date.now();
+            if (now - lastFetchTime >= 900000) {
+                lastFetchTime = now;
+                fetchDataRef.current(true);
+            }
+        };
+
+        const intervalCallback = () => {
+            if (!document.hidden) {
+                lastFetchTime = Date.now();
+                fetchDataRef.current(true);
+            }
+        };
+
+        intervalId = setInterval(intervalCallback, 900000);
+
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                triggerFetchIfDue();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [skipInit, session?.user?.id]);
 
     // 3. Setup user-scoped global Realtime subscription (notificaciones + anecdóticos)
     useEffect(() => {
@@ -955,7 +1074,13 @@ export function useSupabaseData(skipInit = false) {
 
             const tareasInstQuery = userCentroId
                 ? supabase.from('tareas_institucionales').select('*').eq('centro_id', userCentroId)
-                : supabase.from('tareas_institucionales').select('*');
+                : Promise.resolve({ data: [], error: null });
+
+            const tareaDocenteQuery = isCentroAdmin && userCentroId
+                ? supabase.from('tarea_docente').select('*')
+                : userCentroId
+                    ? supabase.from('tarea_docente').select('*').eq('docente_id', session.user.id)
+                    : Promise.resolve({ data: [], error: null });
 
             const anecdoticosQuery = tieneAnecdoticos
                 ? Promise.resolve({ data: null, error: null })
@@ -970,7 +1095,7 @@ export function useSupabaseData(skipInit = false) {
                 supabase.from('notificaciones').select('*').eq('user_id', session.user.id).eq('leida', false).order('created_at', { ascending: false }),
                 supabase.from('grupos').select('*'),
                 tareasInstQuery,
-                supabase.from('tarea_docente').select('*'),
+                tareaDocenteQuery,
                 tieneCalendarioMinerd ? Promise.resolve({ data: null, error: null }) : supabase.from('calendario_minerd').select('*'),
                 anecdoticosQuery
             ]);
@@ -1537,6 +1662,11 @@ export function useSupabaseData(skipInit = false) {
             (dbData as Record<string, unknown>).user_id = session.user.id;
         }
 
+        if (isPerfilRecoveredFromCache(session.user.id)) {
+            console.warn(`[Supabase sync] Escritura en '${table}' bloqueada: el perfil actual proviene de caché de recuperación sin verificación activa en Supabase.`);
+            useAppStore.getState().setGenericToast({ message: 'Conexión en recuperación: sincroniza antes de guardar cambios.', type: 'error' });
+            return;
+        }
         const { error } = await supabase.from(table).upsert(dbData);
         if (error) console.error('Error syncing upsert to ' + table + ':', error);
     }, [session]);
@@ -1544,6 +1674,11 @@ export function useSupabaseData(skipInit = false) {
     const syncDelete = useCallback(async (table: string, idOrFilter: number | string | Record<string, unknown>) => {
         if (!session?.user?.id) return;
 
+        if (isPerfilRecoveredFromCache(session.user.id)) {
+            console.warn(`[Supabase sync] Eliminación en '${table}' bloqueada: el perfil actual proviene de caché de recuperación sin verificación activa en Supabase.`);
+            useAppStore.getState().setGenericToast({ message: 'Conexión en recuperación: sincroniza antes de guardar cambios.', type: 'error' });
+            return;
+        }
         // Logical soft-delete: set activo = false instead of physical DELETE
         let query = supabase.from(table).update({ activo: false });
 
@@ -1829,6 +1964,7 @@ export function useSupabaseData(skipInit = false) {
         loading,
         session,
         contextReady,
+        initialLoadError,
         syncUpsert,
         syncDelete,
         refresh: fetchData,

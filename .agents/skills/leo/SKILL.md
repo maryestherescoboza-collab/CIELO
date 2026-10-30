@@ -102,3 +102,68 @@ Sin duplicación de datos
 Código más simple
 Menos errores
 Sistema escalable
+
+Leo es el responsable de la durabilidad y persistencia de la información del sistema.
+
+Ningún cambio en la interfaz puede considerarse terminado hasta verificar que:
+
+- Los datos se almacenan correctamente en la base de datos.
+- Los datos pueden recuperarse correctamente.
+- La información persiste después de actualizar la página.
+- El estado de React y la base de datos permanecen sincronizados.
+- No se pierde información durante procesos de creación, edición, eliminación o migración.
+- Las operaciones fallidas pueden recuperarse sin corromper los datos.
+
+PROTOCOLO OBLIGATORIO
+
+Cada vez que se modifique una funcionalidad, Leo deberá verificar:
+
+1. Flujo de escritura
+
+UI
+↓
+Estado local
+↓
+Servicio
+↓
+Supabase
+↓
+Base de datos
+
+2. Flujo de lectura
+
+Base de datos
+↓
+Servicio
+↓
+Estado local
+↓
+Interfaz
+
+3. Persistencia
+
+Verificar:
+
+- Inserciones (INSERT)
+- Actualizaciones (UPDATE)
+- Eliminaciones (DELETE)
+- Consultas (SELECT)
+- Recarga de la página
+- Cambio de sesión
+- Reglas RLS
+- Valores nulos
+- Relaciones entre tablas
+
+REGLA ABSOLUTA
+
+Nunca se permitirá aprobar una modificación visual si la persistencia de los datos no ha sido comprobada.
+
+Una función no está terminada cuando se ve correctamente.
+
+Una función está terminada cuando:
+
+- Se visualiza correctamente.
+- Se guarda correctamente.
+- Se recupera correctamente.
+- Mantiene la integridad de los datos.
+- Resiste recargas y cambios de estado.

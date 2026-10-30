@@ -7,7 +7,7 @@ import { ConsentimientoLegal } from '../components/legal/ConsentimientoLegal';
 import AuthRetryScreen from '../components/AuthRetryScreen';
 
 interface AuthProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess?: () => void;
 }
 
 const PENDING_CENTRO_KEY = 'pendingCentroCIELO';
@@ -50,7 +50,7 @@ function normalizeAuthError(err: unknown, defaultMessage = 'Ocurrió un error in
   if (lower.includes('invalid login credentials') || lower.includes('invalid_credentials')) {
     return { message: 'Correo o contraseña incorrectos. Por favor verifica tus credenciales.', isNetworkError: false };
   }
-  if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('gateway timeout') || lower.includes('timeout') || lower.includes('connection refused') || lower.includes('504') || lower.includes('522')) {
+  if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('gateway timeout') || lower.includes('timeout') || lower.includes('connection refused') || lower.includes('502') || lower.includes('503') || lower.includes('504') || lower.includes('522') || lower.includes('524')) {
     return { 
       message: 'No se pudo establecer conexión con el servidor. Verifica tu conexión a internet o intenta nuevamente en unos momentos.',
       isNetworkError: true 
@@ -199,7 +199,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
-      onAuthSuccess();
+      // El cambio de sesión en onAuthStateChange ya dispara la única carga inicial en useSupabaseData.
     } catch (err: unknown) {
       const normalized = normalizeAuthError(err);
       setError(normalized.message);
@@ -496,7 +496,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           setRegisteredWithCentro(true);
           setIsSignUp(false);
           resetRegistro();
-          onAuthSuccess();
+          onAuthSuccess?.();
           navigate('/suscripcion/institucional');
           return;
         }
@@ -519,7 +519,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           setModoRegistroFinalizado('existente');
           setIsSignUp(false);
           resetRegistro();
-          onAuthSuccess();
+          onAuthSuccess?.();
           navigate('/suscripcion/institucional');
           return;
         }
@@ -548,7 +548,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           }
           setIsSignUp(false);
           resetRegistro();
-          onAuthSuccess();
+          onAuthSuccess?.();
           navigate('/inicio', { state: { freeTrial: true } });
           return;
         }
@@ -862,7 +862,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                         onClick={() => { 
                           setIsSignUp(false); 
                           resetRegistro(); 
-                          onAuthSuccess(); 
+                          onAuthSuccess?.(); 
                           navigate('/suscripcion/institucional');
                         }}
                         className="w-full py-3 bg-[#689C63] hover:bg-[#689C63]/90 text-white rounded-xl font-black text-xs tracking-widest shadow-sm transition-all active:scale-[0.98] uppercase"

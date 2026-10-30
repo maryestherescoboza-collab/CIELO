@@ -500,6 +500,52 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         scheduleDebounce();
     }, [state.actividades, cursoId, sharedCourseId, currentUserId, myAsignatura, selectedPeriodo, scheduleDebounce, getNextTimestamp]);
 
+    const setCalifsBatch = useCallback((updates: Array<{ estId: number, actId: number, val: number | null }>) => {
+        if (!updates || updates.length === 0) return;
+        setIsDirty(true);
+        setSaveStatus('unsaved');
+        setSaveError(null);
+
+        setLocalCalifs(prev => {
+            const map = new Map<string, CalificacionActividad>();
+            prev.forEach(c => map.set(`${c.estudianteId}_${c.actividadId}`, c));
+
+            updates.forEach(({ estId, actId, val }) => {
+                if (estId <= 0 || actId <= 0) return;
+                const key = `${estId}_${actId}`;
+                const act = state.actividades.find(a => a.id === actId);
+                const existing = map.get(key);
+                const updatedCalif: CalificacionActividad = existing
+                    ? { ...existing, puntaje: val }
+                    : {
+                        estudianteId: estId,
+                        actividadId: actId,
+                        puntaje: val,
+                        recuperacion: null,
+                        cursoId: cursoId,
+                        sharedCourseId: sharedCourseId,
+                        userId: currentUserId!,
+                        asignatura: act?.asignatura || myAsignatura,
+                        periodo: act?.periodo || selectedPeriodo || 'P1',
+                        competencias: (act?.bcAsignados && act.bcAsignados.length > 0) ? act.bcAsignados : ['BC1'],
+                        descriptores: []
+                    };
+                map.set(key, updatedCalif);
+                pendingCalifsRef.current.set(key, { calif: updatedCalif, timestamp: getNextTimestamp() });
+            });
+
+            // Almacenamiento seguro de emergencia
+            try {
+                const pendingList = Array.from(pendingCalifsRef.current.values()).map(x => x.calif);
+                sessionStorage.setItem(`cielo_pending_califs_${cursoId}`, JSON.stringify(pendingList));
+            } catch (_) {}
+
+            return Array.from(map.values());
+        });
+
+        scheduleDebounce();
+    }, [state.actividades, cursoId, sharedCourseId, currentUserId, myAsignatura, selectedPeriodo, scheduleDebounce, getNextTimestamp]);
+
     const setRec = useCallback((estId: number, bc: 1 | 2 | 3 | 4, val: number | null) => {
         if (estId <= 0) return;
         setIsDirty(true);
@@ -699,6 +745,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         enhancedEstudiantes: finalFilteredEstudiantes,
         allCourseStudents,
         setCalif,
+        setCalifsBatch,
         setRec,
         triggerAnimation,
         isDirty,

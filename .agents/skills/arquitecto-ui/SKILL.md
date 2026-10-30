@@ -13,17 +13,6 @@ Diseñar, auditar y optimizar interfaces UI/UX en aplicaciones educativas SaaS, 
 - Detecta saturación y ruido visual
 - Identifica problemas de distribución y densidad
 
-## 2. Sistema de diseño (OBLIGATORIO)
-### 🎨 Color System
-- **Primario:** `#D03817` (Rojo Tierra)
-- **Secundario:** `#0F753D` (Verde Bosque)
-- **Base:** `#FEF0E7` (Crema Suave)
-- **Oscuro:** `#28303A` (Gris Profundo)
-- **Reglas:**
-  - Color = función, no decoración.
-  - Máximo 2 colores activos por vista.
-  - Fondos siempre suaves.
-
 ## 3. Tipografía (Estilo Notion)
 - **H1:** 28–32px / semibold
 - **H2:** 20–24px / medium

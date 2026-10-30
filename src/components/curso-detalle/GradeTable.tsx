@@ -22,6 +22,7 @@ interface GradeTableProps {
     focusedCell: { estId: number, actId: number } | null;
     gradeAnimations: any[];
     onSetGrade: (estId: number, actId: number, val: number | null) => void;
+    onSetGradesBatch?: (updates: Array<{ estId: number, actId: number, val: number | null }>) => void;
     onSetFocusedCell: (cell: { estId: number, actId: number } | null) => void;
     onAddActividad: () => void;
     onUpdateActividad: (id: number, act: Partial<Actividad>) => void;
@@ -51,6 +52,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     focusedCell,
     gradeAnimations,
     onSetGrade,
+    onSetGradesBatch,
     onSetFocusedCell,
     onAddActividad,
     onUpdateActividad,
@@ -107,18 +109,33 @@ const GradeTable: React.FC<GradeTableProps> = ({
     // de persistencia y fila enfocada) sin depender de cierres obsoletos.
     const displayEstudiantesRef = React.useRef(estudiantes);
     displayEstudiantesRef.current = estudiantes;
+    const actividadesRef = React.useRef(actividades);
+    actividadesRef.current = actividades;
+    const bcSelRef = React.useRef(bcSel);
+    bcSelRef.current = bcSel;
     const onUpdateEstudianteRef = React.useRef(onUpdateEstudiante);
     onUpdateEstudianteRef.current = onUpdateEstudiante;
     const onAddEstudianteRef = React.useRef(onAddEstudiante);
     onAddEstudianteRef.current = onAddEstudiante;
+    const onSetGradeRef = React.useRef(onSetGrade);
+    onSetGradeRef.current = onSetGrade;
+    const onSetGradesBatchRef = React.useRef(onSetGradesBatch);
+    onSetGradesBatchRef.current = onSetGradesBatch;
     const realesPorNumeroRef = React.useRef(realesPorNumero);
     realesPorNumeroRef.current = realesPorNumero;
     const focusedRowIndexRef = React.useRef<number | null>(null);
+    const focusedGradeCellRef = React.useRef<{ estId: number; actId: number } | null>(null);
+    focusedGradeCellRef.current = focusedCell;
 
     React.useEffect(() => {
         const handleStudentPaste = async (e: ClipboardEvent) => {
+            // Si el usuario tiene una celda de evaluación seleccionada, este evento corresponde a calificaciones
+            if (focusedGradeCellRef.current !== null) {
+                return;
+            }
+
             const activeEl = document.activeElement;
-            // Ignorar si el usuario está pegando explícitamente en otro campo de texto (ej. nombre de actividad)
+            // Ignorar si el usuario está pegando explícitamente en otro campo de texto (ej. nombre de actividad o calificación)
             if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
                 if (activeEl.getAttribute('data-guide') !== 'celda-estudiante') {
                     return;
@@ -185,6 +202,193 @@ const GradeTable: React.FC<GradeTableProps> = ({
         document.addEventListener('paste', handleStudentPaste);
         return () => document.removeEventListener('paste', handleStudentPaste);
         // El listener se registra una vez; los valores frescos se leen vía refs.
+    }, []);
+
+    // Handler global de pegado masivo de calificaciones desde Excel / Hojas de cálculo
+    React.useEffect(() => {
+        const handleGradePaste = async (e: ClipboardEvent) => {
+            const activeEl = document.activeElement;
+
+            // 1. Verificar si el usuario está enfocado en otro campo que no sea de evaluación
+            if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                const guide = activeEl.getAttribute('data-guide');
+                // Si está en el nombre de un estudiante, lo procesa handleStudentPaste
+                if (guide === 'celda-estudiante') return;
+                // Si es cualquier otro input que no sea celda de calificación, no intervenir
+                if (guide !== 'celda-evaluacion-input') return;
+            }
+
+            // 2. Determinar la celda de evaluación inicial
+            let startEstId: number | null = null;
+            let startActId: number | null = null;
+
+            if (activeEl?.getAttribute('data-guide') === 'celda-evaluacion-input') {
+                const estAttr = activeEl.getAttribute('data-est-id');
+                const actAttr = activeEl.getAttribute('data-act-id');
+                if (estAttr && actAttr) {
+                    startEstId = Number(estAttr);
+                    startActId = Number(actAttr);
+                }
+            }
+
+            if (!startEstId || !startActId) {
+                const cell = focusedGradeCellRef.current;
+                if (cell) {
+                    startEstId = cell.estId;
+                    startActId = cell.actId;
+                }
+            }
+
+            // Si no hay celda de evaluación seleccionada, este evento no nos corresponde
+            if (!startEstId || !startActId) return;
+
+            const text = e.clipboardData?.getData('text/plain') || e.clipboardData?.getData('text');
+            if (!text) return;
+
+            e.preventDefault();
+            if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                (activeEl as HTMLElement).blur();
+            }
+
+            // Normalizar texto eliminando saltos finales y separando filas
+            const cleanText = text.replace(/[\r\n]+$/, '');
+            const rawLines = cleanText.split(/\r?\n/).map(l => l.trimEnd());
+            if (rawLines.length === 0) return;
+
+            // Detección de fila de cabecera si el docente copió títulos de actividades o encabezados de Excel
+            let linesOffset = 0;
+            const firstRowCells = rawLines[0].split('\t').map(c => c.trim().toLowerCase());
+            const hasHeaderKeyword = firstRowCells.some(c => 
+                /(?:actividad|calificaci[oó]n|nota|puntaje|puntos|score|evaluaci[oó]n)/i.test(c)
+            );
+            if (hasHeaderKeyword && rawLines.length > 1) {
+                const secondRowCells = rawLines[1].split('\t');
+                const secondRowHasNumber = secondRowCells.some(c => {
+                    const norm = c.trim().replace(',', '.');
+                    return !isNaN(Number(norm)) && norm !== '';
+                });
+                if (secondRowHasNumber) {
+                    linesOffset = 1;
+                }
+            }
+
+            const dataLines = rawLines.slice(linesOffset);
+            if (dataLines.length === 0) return;
+
+            const currentStudents = displayEstudiantesRef.current;
+            const currentActs = actividadesRef.current;
+            const currentBcSel = bcSelRef.current;
+
+            // Encontrar índice de fila y columna inicial
+            const startRowIdx = currentStudents.findIndex(est => est.id === startEstId);
+            const startColIdx = currentActs.findIndex(act => act.id === startActId);
+
+            if (startRowIdx === -1 || startColIdx === -1) return;
+
+            const validUpdates: Array<{ estId: number; actId: number; val: number | null }> = [];
+            const errores: Array<{ estudiante: string; actividad: string; valor: string; motivo: string }> = [];
+
+            for (let r = 0; r < dataLines.length; r++) {
+                const targetEstIndex = startRowIdx + r;
+                if (targetEstIndex >= currentStudents.length) break; // Excede la lista disponible
+
+                const targetEst = currentStudents[targetEstIndex];
+                // Si la posición está vacía (placeholder), se omite sin alterar
+                if (targetEst.isPlaceholder || targetEst.id <= 0) continue;
+
+                const cells = dataLines[r].split('\t');
+
+                for (let c = 0; c < cells.length; c++) {
+                    const targetActIndex = startColIdx + c;
+                    if (targetActIndex >= currentActs.length) break; // Excede las actividades disponibles
+
+                    const targetAct = currentActs[targetActIndex];
+                    if (targetAct.nombre === 'Recuperación') continue;
+
+                    const cellRaw = cells[c]?.trim() ?? '';
+                    const estNombre = targetEst.displayName || `Estudiante ${targetEst.numeroLista || targetEstIndex + 1}`;
+                    const actNombre = targetAct.nombre;
+
+                    // Celda vacía o guión: borrar calificación (null)
+                    if (cellRaw === '' || cellRaw === '-') {
+                        validUpdates.push({
+                            estId: targetEst.id,
+                            actId: targetAct.id,
+                            val: null,
+                        });
+                        continue;
+                    }
+
+                    const normalized = cellRaw.replace(',', '.');
+                    const num = Number(normalized);
+
+                    if (isNaN(num)) {
+                        errores.push({
+                            estudiante: estNombre,
+                            actividad: actNombre,
+                            valor: cellRaw,
+                            motivo: 'No es un número válido',
+                        });
+                        continue;
+                    }
+
+                    const isProductoFinal = !!targetAct.isProductoFinal;
+                    const hasCustomPFPoints = isProductoFinal && hasProductoFinalCustomPoints(targetAct, currentBcSel);
+                    const maxPoints = hasCustomPFPoints 
+                        ? getProductoFinalMaxPoints(targetAct, currentActs, currentBcSel) 
+                        : 100;
+                    const limit = (maxPoints && maxPoints > 0) ? maxPoints : 100;
+
+                    if (num < 0 || num > limit) {
+                        errores.push({
+                            estudiante: estNombre,
+                            actividad: actNombre,
+                            valor: cellRaw,
+                            motivo: `Fuera del rango permitido (0 a ${limit}${hasCustomPFPoints ? ' pts' : ''})`,
+                        });
+                        continue;
+                    }
+
+                    // En Producto Final con puntos personalizados, convertir a escala 100
+                    const scoreToSave = hasCustomPFPoints ? (num / limit) * 100 : num;
+
+                    validUpdates.push({
+                        estId: targetEst.id,
+                        actId: targetAct.id,
+                        val: scoreToSave,
+                    });
+                }
+            }
+
+            // Aplicar actualizaciones válidas en bloque
+            if (validUpdates.length > 0) {
+                if (onSetGradesBatchRef.current) {
+                    onSetGradesBatchRef.current(validUpdates);
+                } else {
+                    validUpdates.forEach(u => onSetGradeRef.current(u.estId, u.actId, u.val));
+                }
+            }
+
+            // Informar claramente si hubo celdas que no se pudieron aplicar
+            if (errores.length > 0) {
+                const maxMostrar = 10;
+                const detalle = errores.slice(0, maxMostrar)
+                    .map(err => `• ${err.estudiante} en "${err.actividad}": "${err.valor}" (${err.motivo})`)
+                    .join('\n');
+                const masErrores = errores.length > maxMostrar 
+                    ? `\n... y ${errores.length - maxMostrar} celda(s) adicional(es) con error.` 
+                    : '';
+
+                if (validUpdates.length > 0) {
+                    alert(`Pegado parcial completado:\n\nSe aplicaron correctamente ${validUpdates.length} calificación(es).\n\nLas siguientes ${errores.length} celda(s) no se pudieron aplicar y conservaron su valor anterior:\n${detalle}${masErrores}`);
+                } else {
+                    alert(`No se pudo aplicar ninguna calificación debido a valores inválidos:\n\n${detalle}${masErrores}`);
+                }
+            }
+        };
+
+        document.addEventListener('paste', handleGradePaste);
+        return () => document.removeEventListener('paste', handleGradePaste);
     }, []);
 
 
@@ -381,7 +585,11 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                                 data-guide="celda-estudiante"
                                                                 defaultValue={est.displayName}
                                                                 placeholder={est.isPlaceholder ? 'Posición vacía…' : undefined}
-                                                                onFocus={() => { focusedRowIndexRef.current = eIdx; }}
+                                                                onFocus={() => { 
+                                                                    focusedRowIndexRef.current = eIdx; 
+                                                                    focusedGradeCellRef.current = null;
+                                                                    onSetFocusedCell(null);
+                                                                }}
                                                                 onBlur={(e) => {
                                                                     const val = e.target.value.trim();
                                                                     if (val && val !== est.displayName) {
@@ -482,11 +690,12 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                     activePaintColor={activePaintColor}
                                                     animations={gradeAnimations.filter(a => a.estId === est.id && a.actId === act.id)}
                                                     onInteraction={(type) => {
-                                                        if (type === 'focus') {
+                                                        if (type === 'focus' || type === 'click') {
                                                             focusedRowIndexRef.current = eIdx;
-                                                            onSetFocusedCell({ estId: est.id, actId: act.id });
+                                                            const cell = { estId: est.id, actId: act.id };
+                                                            focusedGradeCellRef.current = cell;
+                                                            onSetFocusedCell(cell);
                                                         }
-                                                        if (type === 'hover' && !isDragging) onSetFocusedCell(null);
                                                     }}
                                                     onSetGrade={(val) => onSetGrade(est.id, act.id, val)}
                                                     getGradeClass={getGradeClass}

@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import './index.css';
 import Layout from './components/Layout';
@@ -16,6 +16,8 @@ import { VinculacionCentroModal } from './components/auth/VinculacionCentroModal
 import { FloatingRubricManager } from './components/FloatingRubricManager';
 import { PresentationProvider } from './contexts/PresentationContext';
 import LoadingMessage from './components/LoadingMessage';
+import AuthRetryScreen from './components/AuthRetryScreen';
+import { isPerfilRecoveredFromCache } from './cache/perfilCache';
 import { useSupabaseData } from './hooks/useSupabaseData';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { supabase } from './lib/supabase';
@@ -88,6 +90,54 @@ export default function App() {
   usePendingVinculo(session, () => actions.refresh());
   useProcesarVinculo(session, () => actions.refresh());
 
+  const [initialLoadTimedOut, setInitialLoadTimedOut] = useState(false);
+  const [retryingInitialLoad, setRetryingInitialLoad] = useState(false);
+  const initialTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const waitingInitialBoot = !authInitialized || (!!session && state.perfiles.length === 0 && (loading || !actions.initialLoadError));
+    if (!waitingInitialBoot || state.perfiles.length > 0) {
+      if (initialTimeoutRef.current) {
+        clearTimeout(initialTimeoutRef.current);
+        initialTimeoutRef.current = null;
+      }
+      if (state.perfiles.length > 0 || (!session && authInitialized)) {
+        setInitialLoadTimedOut(false);
+        setRetryingInitialLoad(false);
+      }
+      return;
+    }
+
+    if (!initialTimeoutRef.current) {
+      initialTimeoutRef.current = setTimeout(() => {
+        initialTimeoutRef.current = null;
+        setInitialLoadTimedOut(true);
+      }, 15000);
+    }
+
+    return () => {
+      if (initialTimeoutRef.current) {
+        clearTimeout(initialTimeoutRef.current);
+        initialTimeoutRef.current = null;
+      }
+    };
+  }, [authInitialized, session, state.perfiles.length, loading, actions.initialLoadError]);
+
+  const handleRetryInitialLoad = async () => {
+    setRetryingInitialLoad(true);
+    setInitialLoadTimedOut(false);
+    try {
+      if (!authInitialized) {
+        const { data } = await supabase.auth.getSession();
+        useAppStore.getState().setSession(data?.session ?? null);
+        useAppStore.getState().setAuthInitialized(true);
+      }
+      await actions.refresh();
+    } finally {
+      setRetryingInitialLoad(false);
+    }
+  };
+
   const bootstrappedRef = useRef(false);
   useEffect(() => {
     if (!session || !authInitialized || loading) return;
@@ -97,7 +147,7 @@ export default function App() {
     }
     if (bootstrappedRef.current) return;
     bootstrappedRef.current = true;
-    actions.refresh();
+    // La carga inicial única por sesión la ejecuta automáticamente useSupabaseData al detectar session.user.id.
   }, [session, authInitialized, loading, state.perfiles.length, actions.refresh]);
 
   const currentCourseRole = useMemo(() => {
@@ -175,6 +225,7 @@ export default function App() {
 
   const necesitaVinculacionCentro = useMemo(() => {
     if (!session?.user?.id || !authInitialized || loading) return false;
+    if (isPerfilRecoveredFromCache(session.user.id)) return false;
     if (esUsuarioCentro) return false;
     if (!currentUserProfile) return false;
     return !currentUserProfile.centro_id;
@@ -194,6 +245,9 @@ export default function App() {
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-(--paper)">
       <img src={logo} alt="Logo" className="app-logo w-44 h-44 mb-8 animate-pulse" />
       <LoadingMessage />
+      {(actions.initialLoadError || initialLoadTimedOut) && (
+        <AuthRetryScreen onRetry={handleRetryInitialLoad} retrying={loading || retryingInitialLoad} />
+      )}
     </div>
   );
 
@@ -201,12 +255,18 @@ export default function App() {
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-(--paper)">
       <img src={logo} alt="Logo" className="app-logo w-44 h-44 mb-8 animate-pulse" />
       <LoadingMessage />
+      {(actions.initialLoadError || initialLoadTimedOut) && (
+        <AuthRetryScreen onRetry={handleRetryInitialLoad} retrying={loading || retryingInitialLoad} />
+      )}
     </div>
   );
   if (session && authInitialized && !loading && state.perfiles.length === 0) return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-(--paper)">
       <img src={logo} alt="Logo" className="app-logo w-44 h-44 mb-8 animate-pulse" />
       <LoadingMessage />
+      {(actions.initialLoadError || initialLoadTimedOut) && (
+        <AuthRetryScreen onRetry={handleRetryInitialLoad} retrying={loading || retryingInitialLoad} />
+      )}
     </div>
   );
   if (pathname === '/confirmar' || pathname === '/auth/confirm') {
