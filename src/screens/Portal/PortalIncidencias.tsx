@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { usePortal } from './portalContext';
-import { 
-  ShieldAlert, 
-  Bookmark, 
-  AlertCircle, 
-  FileText, 
-  CheckCircle2, 
-  Calendar, 
-  Loader2, 
-  RefreshCw, 
+import { fetchWithPortalCache, getPortalCache } from '../../cache/portalCache';
+import {
+  ShieldAlert,
+  Bookmark,
+  AlertCircle,
+  FileText,
+  CheckCircle2,
+  Calendar,
+  Loader2,
+  RefreshCw,
   ShieldCheck,
   Tag
 } from 'lucide-react';
@@ -62,15 +63,15 @@ const CATEGORIAS_CONFIG: Record<string, { icon: React.ElementType; label: string
 const GRAVEDAD_CONFIG: Record<string, { label: string; className: string }> = {
   leve: {
     label: 'Primera Vez',
-    className: 'bg-stone-100 text-stone-700 border-stone-200',
+    className: 'bg-[#BFC9A6]/25 text-[#4E5540] border-[#BFC9A6]',
   },
   moderada: {
     label: 'Recurrente',
-    className: 'bg-amber-50 text-amber-800 border-amber-200',
+    className: 'bg-[#DEAE4D]/20 text-[#8C6415] border-[#DEAE4D]/40',
   },
   grave: {
     label: 'Persistente',
-    className: 'bg-rose-50 text-rose-700 border-rose-200',
+    className: 'bg-[#DB5B48]/15 text-[#DB5B48] border-[#DB5B48]/35',
   },
 };
 
@@ -117,39 +118,36 @@ export default function PortalIncidencias() {
     if (isRefresh) {
       setRefreshing(true);
     } else {
-      // Intentar leer de caché de sesión para navegación fluida
-      try {
-        const cached = sessionStorage.getItem(`portal_incidencias_${sessionToken}`);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed)) {
-            setIncidencias(parsed);
-            setLoading(false);
-          }
-        }
-      } catch {
-        // Ignorar fallos de caché
+      const cached = getPortalCache<PortalIncidencia[]>(
+        sessionToken,
+        'estudiante_incidencias',
+        'all'
+      );
+      if (Array.isArray(cached)) {
+        setIncidencias(cached);
+        setLoading(false);
+        return;
       }
     }
 
     setError(null);
     try {
-      const { data, error: rpcError } = await supabase.rpc('portal_get_estudiante_incidencias', {
-        p_session_token: sessionToken,
-      });
+      const lista = await fetchWithPortalCache(
+        sessionToken,
+        'estudiante_incidencias',
+        'all',
+        async () => {
+          const { data, error: rpcError } = await supabase.rpc('portal_get_estudiante_incidencias', {
+            p_session_token: sessionToken,
+          });
+          if (rpcError) throw rpcError;
+          if (data && data.error) throw new Error(data.error);
+          return (Array.isArray(data) ? data : []) as PortalIncidencia[];
+        },
+        { forceRefresh: isRefresh }
+      );
 
-      if (rpcError) throw rpcError;
-      if (data && data.error) throw new Error(data.error);
-
-      const lista: PortalIncidencia[] = Array.isArray(data) ? data : [];
       setIncidencias(lista);
-
-      // Guardar en caché asociada únicamente al token de sesión actual
-      try {
-        sessionStorage.setItem(`portal_incidencias_${sessionToken}`, JSON.stringify(lista));
-      } catch {
-        // Ignorar límites de almacenamiento
-      }
     } catch (err: any) {
       console.error('Error al cargar incidencias del estudiante:', err);
       setError(err.message || 'No fue posible cargar tus incidencias.');
@@ -190,7 +188,7 @@ export default function PortalIncidencias() {
 
   return (
     <div className="px-4 sm:px-5 pt-4 pb-28 space-y-5 animate-in fade-in duration-200">
-      
+
       {/* 1. CABECERA DE IDENTIFICACIÓN DEL ESTUDIANTE */}
       <section className="space-y-3" data-purpose="student-header">
         <div className="flex items-start justify-between gap-3">
@@ -210,7 +208,7 @@ export default function PortalIncidencias() {
                 <span className="text-xs font-bold text-stone-800 truncate max-w-30">{selectedAsignatura}</span>
               </div>
             )}
-            
+
             <button
               onClick={() => cargarIncidencias(true)}
               disabled={loading || refreshing}
@@ -250,8 +248,8 @@ export default function PortalIncidencias() {
                 onClick={() => setFiltroCategoria(cat)}
                 className={`
                   inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shrink-0
-                  ${isSelected 
-                    ? 'bg-[#1E1E24] text-white shadow-xs scale-[1.02]' 
+                  ${isSelected
+                    ? 'bg-[#1E1E24] text-white shadow-xs scale-[1.02]'
                     : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900'}
                 `}
               >
@@ -287,21 +285,21 @@ export default function PortalIncidencias() {
         </div>
       ) : incidencias.length === 0 ? (
         /* ESTADO VACÍO CUANDO NO HAY INCIDENCIAS REGISTRADAS */
-        <div className="bg-white border border-stone-200 rounded-3xl p-8 text-center space-y-4 shadow-xs max-w-md mx-auto my-6">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 mx-auto flex items-center justify-center">
-            <ShieldCheck size={32} strokeWidth={2} />
+        <div className="bg-[#FCFCFA] border border-[#BFC9A6]/70 rounded-2xl p-7 sm:p-8 text-center space-y-4 max-w-md mx-auto my-6">
+          <div className="w-14 h-14 rounded-2xl bg-[#BFC9A6]/25 border border-[#BFC9A6]/75 text-[#689C63] mx-auto flex items-center justify-center">
+            <ShieldCheck size={28} strokeWidth={1.85} />
           </div>
           <div className="space-y-1.5">
-            <h3 className="text-base font-black text-stone-900">
+            <h3 className="text-base font-bold text-[#2E3330] tracking-tight">
               No tienes incidencias registradas
             </h3>
-            <p className="text-xs text-stone-500 leading-relaxed max-w-xs mx-auto">
+            <p className="text-xs text-[#5F665E] leading-relaxed max-w-xs mx-auto">
               Tu historial de convivencia y seguimiento formativo se encuentra al día y sin registros pendientes.
             </p>
           </div>
-          <div className="pt-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold rounded-full">
-              <CheckCircle2 size={13} />
+          <div className="pt-1.5">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-[#BFC9A6]/25 text-[#689C63] border border-[#BFC9A6]/80 text-[11px] font-semibold rounded-full">
+              <CheckCircle2 size={13} className="text-[#689C63] shrink-0" />
               <span>Expediente al día</span>
             </span>
           </div>

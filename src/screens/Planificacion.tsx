@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark, Link as LinkIcon, Edit2, MessageSquare, Info, Zap, Gamepad2, Presentation, PenTool } from 'lucide-react';
 import blueBookIcon from '../assets/book-blue.png';
 import purpleBookIcon from '../assets/book-purple.png';
@@ -321,6 +322,36 @@ export default function Planificacion({
         archivoFechaCarga: undefined
     });
     const [viewerSeq, setViewerSeq] = useState<Secuencia | null>(null);
+    const [searchParams] = useSearchParams();
+    const seccionParam = searchParams.get('seccion');
+    const periodoParam = searchParams.get('periodo');
+    const cursoIdParam = searchParams.get('cursoId');
+    const esModoRecuperacion = seccionParam === 'recuperacion' || (periodoParam === 'P1' && searchParams.has('seccion'));
+    const seccionRecuperacionRef = useRef<HTMLDivElement>(null);
+    
+    useEffect(() => {
+        if (cursoIdParam) {
+            const cId = Number(cursoIdParam);
+            if (!isNaN(cId) && state.cursos.some(c => c.id === cId)) {
+                setCursoSel(cId);
+            }
+        }
+    }, [cursoIdParam, state.cursos]);
+
+    useEffect(() => {
+        if (periodoParam === 'P1' || periodoParam === 'P2' || periodoParam === 'P3') {
+            setPeriodoRecuperacion(periodoParam);
+        }
+    }, [periodoParam]);
+
+    useEffect(() => {
+        if (esModoRecuperacion && seccionRecuperacionRef.current) {
+            const timer = setTimeout(() => {
+                seccionRecuperacionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 200);
+            return () => clearTimeout(timer);
+        }
+    }, [esModoRecuperacion]);
     const [periodoRecuperacion, setPeriodoRecuperacion] = useState<'P1' | 'P2' | 'P3'>('P1');
 
     const [isAddingRecurso, setIsAddingRecurso] = useState(false);
@@ -684,7 +715,7 @@ export default function Planificacion({
         }
     }
 
-    const secuenciasCurso = (state.secuencias || []).filter((secuencia: Secuencia) => 
+        const secuenciasCurso = (state.secuencias || []).filter((secuencia: Secuencia) => 
         (!cursoSel || cursoSel === 0 || secuencia.cursoId === cursoSel) && 
         (secuencia.userId === session?.user?.id || !secuencia.userId)
     );
@@ -891,7 +922,7 @@ export default function Planificacion({
 
                     {/* SECCIÓN: Planificación diaria y planificación individualizada de recuperación */}
                     <div>
-                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-widest mb-3 border-b border-(--border-soft) pb-2 flex justify-between items-end">
+                        <h2 id="seccion-recuperacion" ref={seccionRecuperacionRef} className="text-sm font-black text-(--ink) uppercase tracking-widest mb-3 border-b border-(--border-soft) pb-2 flex justify-between items-end">
                             <span>Planificación diaria y planificación individualizada de recuperación</span>
                         </h2>
 
@@ -938,12 +969,13 @@ export default function Planificacion({
                                                 return (
                                                     <button
                                                         key={`rec-p1-${grupo.key}`}
+                                                        data-guide="tarjeta-plan-recuperacion-p1"
                                                         type="button"
                                                         onClick={async (e) => {
                                                             e.preventDefault();
                                                             if (curso) await handleAbrirPlanRecuperacion(curso, 'P1');
                                                         }}
-                                                        className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"
+                                                        className={`relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1 ${esModoRecuperacion ? "ring-2 ring-(--primary) ring-offset-2 rounded-xl p-1 bg-(--primary)/10 shadow-sm" : ""}`}
                                                         title={tituloRec}
                                                     >
                                                         <div className="w-full h-32 flex flex-col items-center justify-center mb-2">

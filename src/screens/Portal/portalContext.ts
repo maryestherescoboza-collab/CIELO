@@ -17,6 +17,17 @@ import type { Dispatch, SetStateAction } from 'react';
 
 export type Periodo = 'P1' | 'P2' | 'P3' | 'P4';
 
+export interface PortalConfig {
+  seccion_inicio: boolean;
+  seccion_portafolio: boolean;
+  seccion_recuperacion: boolean;
+  seccion_incidencias: boolean;
+  seccion_fichas: boolean;
+  inicio_mostrar_evidencias: boolean;
+  inicio_mostrar_incidencias: boolean;
+  periodos_visibles: Periodo[];
+}
+
 export interface EstudianteContextInfo {
   estudianteId?: number;
   nombre: string;
@@ -49,6 +60,7 @@ export interface PortalContext {
   selectedAsignatura: string | null;
   setSelectedAsignatura: (asig: string | null) => void;
   estudianteContext: EstudianteContextInfo | null;
+  portalConfig: PortalConfig | null;
 }
 
 /**
@@ -71,6 +83,7 @@ export function usePortal(): PortalContext {
       selectedAsignatura: null,
       setSelectedAsignatura: () => {},
       estudianteContext: null,
+      portalConfig: null,
     }
   );
 }

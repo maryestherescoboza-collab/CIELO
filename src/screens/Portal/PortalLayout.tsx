@@ -1,36 +1,53 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Loader2, ArrowLeft } from 'lucide-react';
-import BackpackIcon from '../../components/icons/BackpackIcon';
+import {
+  Loader2,
+  ArrowLeft,
+  House,
+  FolderOpen,
+  Target,
+  ClipboardList,
+  Files,
+  Frown
+} from 'lucide-react';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
-import { 
-  SIETE_ASIGNATURAS_OFICIALES, 
+import {
+  SIETE_ASIGNATURAS_OFICIALES,
   ASIGNATURAS_CATALOGO,
   sonMismaAsignatura,
   getMensajeDocenteNoUsaCielo
 } from '../../constants/asignaturas';
-import { 
-  PortalAsignaturasSelector 
+import {
+  PortalAsignaturasSelector
 } from './PortalAsignaturasSelector';
-import { getIlustracionAsignatura } from './PortalCardIllustrations';
-import type { 
-  AsignaturaPublicada, 
+import type {
+  AsignaturaPublicada,
   EstudianteContextInfo,
-  Periodo
+  Periodo,
+  PortalConfig
 } from './portalContext';
 
 export type { AsignaturaPublicada, Periodo };
 
+const PORTAL_NAV_TABS = [
+  { key: 'estudiante', label: 'Inicio', icon: House, color: '#689C63', bgActive: 'bg-[#689C63]/12', borderActive: 'border-[#689C63]', textActive: 'text-[#689C63]', dotActive: 'bg-[#689C63]', ringActive: 'ring-[#689C63]/15' },
+  { key: 'portafolio', label: 'Portafolio', icon: FolderOpen, color: '#537BAC', bgActive: 'bg-[#537BAC]/12', borderActive: 'border-[#537BAC]', textActive: 'text-[#537BAC]', dotActive: 'bg-[#537BAC]', ringActive: 'ring-[#537BAC]/15' },
+  { key: 'recuperaciones', label: 'Recuperación', icon: Target, color: '#EB8847', bgActive: 'bg-[#EB8847]/12', borderActive: 'border-[#EB8847]', textActive: 'text-[#EB8847]', dotActive: 'bg-[#EB8847]', ringActive: 'ring-[#EB8847]/15' },
+  { key: 'incidencias', label: 'Incidencias', icon: ClipboardList, color: '#DB5B48', bgActive: 'bg-[#DB5B48]/12', borderActive: 'border-[#DB5B48]', textActive: 'text-[#DB5B48]', dotActive: 'bg-[#DB5B48]', ringActive: 'ring-[#DB5B48]/15' },
+  { key: 'fichas', label: 'Fichas', icon: Files, color: '#DEAE4D', bgActive: 'bg-[#DEAE4D]/15', borderActive: 'border-[#DEAE4D]', textActive: 'text-[#996B1E]', dotActive: 'bg-[#DEAE4D]', ringActive: 'ring-[#DEAE4D]/20' },
+] as const;
+
 export default function PortalLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const token = location.pathname.split('/')[2]; 
+  const token = location.pathname.split('/')[2];
   const [sessionToken, setSessionToken] = useState<string | null>(null);
-  
+
   const [selectedPeriodo, setSelectedPeriodo] = useState<Periodo>('P1');
   const [asignaturas, setAsignaturas] = useState<AsignaturaPublicada[]>([]);
   const [estudianteContext, setEstudianteContext] = useState<EstudianteContextInfo | null>(null);
+  const [portalConfig, setPortalConfig] = useState<PortalConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,12 +115,23 @@ export default function PortalLayout() {
           });
         }
 
+          if (contextData.portal_config) {
+            setPortalConfig(contextData.portal_config);
+            if (
+              Array.isArray(contextData.portal_config.periodos_visibles) &&
+              contextData.portal_config.periodos_visibles.length > 0 &&
+              !contextData.portal_config.periodos_visibles.includes(selectedPeriodo)
+            ) {
+              setSelectedPeriodo(contextData.portal_config.periodos_visibles[0]);
+            }
+          }
+
         // 2. Obtener estado de las asignaturas
         const { data: asigData, error: rpcError } = await supabase.rpc('portal_get_asignaturas', {
           p_session_token: sessionToken,
           p_periodo: selectedPeriodo
         });
-        
+
         if (rpcError) throw rpcError;
         if (asigData && asigData.error) throw new Error(asigData.error);
 
@@ -174,14 +202,48 @@ export default function PortalLayout() {
   }, [sessionToken, selectedPeriodo, token, navigate]);
 
   // Manejar selección de asignatura
+  
+  // Pestañas visibles según la configuración del docente
+  const visibleNavTabs = useMemo(() => {
+    if (!portalConfig) return PORTAL_NAV_TABS;
+    return PORTAL_NAV_TABS.filter((tab) => {
+      if (tab.key === 'estudiante') return portalConfig.seccion_inicio !== false;
+      if (tab.key === 'portafolio') return portalConfig.seccion_portafolio !== false;
+      if (tab.key === 'recuperaciones') return portalConfig.seccion_recuperacion !== false;
+      if (tab.key === 'incidencias') return portalConfig.seccion_incidencias !== false;
+      if (tab.key === 'fichas') return portalConfig.seccion_fichas !== false;
+      return true;
+    });
+  }, [portalConfig]);
+
+  // Protección de rutas: Si el estudiante intenta acceder por URL directa a una sección deshabilitada
+  useEffect(() => {
+    if (!portalConfig || loading) return;
+
+    const currentTab = location.pathname.split('/')[3] || 'estudiante';
+    let isCurrentDisabled = false;
+
+    if (currentTab === 'estudiante' && portalConfig.seccion_inicio === false) isCurrentDisabled = true;
+    if (currentTab === 'portafolio' && portalConfig.seccion_portafolio === false) isCurrentDisabled = true;
+    if (currentTab === 'recuperaciones' && portalConfig.seccion_recuperacion === false) isCurrentDisabled = true;
+    if (currentTab === 'incidencias' && portalConfig.seccion_incidencias === false) isCurrentDisabled = true;
+    if (currentTab === 'fichas' && portalConfig.seccion_fichas === false) isCurrentDisabled = true;
+
+    if (isCurrentDisabled && visibleNavTabs.length > 0) {
+      const firstEnabled = visibleNavTabs[0]?.key;
+      const query = selectedAsignatura ? `?materia=${encodeURIComponent(selectedAsignatura)}` : '';
+      navigate(`/portal/${token}/${firstEnabled}${query}`, { replace: true });
+    }
+  }, [portalConfig, location.pathname, loading, visibleNavTabs, selectedAsignatura, token, navigate]);
+
   const handleSelectAsignatura = useCallback((materia: string) => {
     setSelectedAsignaturaState(materia);
     sessionStorage.setItem('portal_materia_' + token, materia);
 
     const currentSegments = location.pathname.split('/');
     const currentTab = currentSegments[3] || 'estudiante';
-    const targetTab = ['estudiante', 'portafolio', 'recuperaciones', 'incidencias', 'fichas', 'drive'].includes(currentTab) 
-      ? currentTab 
+    const targetTab = ['estudiante', 'portafolio', 'recuperaciones', 'incidencias', 'fichas', 'drive'].includes(currentTab)
+      ? currentTab
       : 'estudiante';
 
     navigate(`/portal/${token}/${targetTab}?materia=${encodeURIComponent(materia)}`);
@@ -229,20 +291,20 @@ export default function PortalLayout() {
   const renderUnassignedState = Boolean(selectedAsignatura && !tieneDocenteActivo && currentPath !== 'incidencias');
 
   return (
-    <div className="portal-root w-full min-h-screen bg-white selection:bg-purple-200">
-      <main className="w-full min-h-screen flex flex-col relative text-zinc-900 bg-white">
+    <div className="portal-root w-full min-h-screen bg-[#FCFCFA] selection:bg-[#BFC9A6]/40">
+      <main className="w-full min-h-screen flex flex-col relative text-[#1B1F2A] bg-[#FCFCFA]">
         {/* CABECERA CON BOTÓN « Mis asignaturas » */}
         {selectedAsignatura && !renderUnassignedState ? (
-          <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200 px-4 py-2.5 flex items-center justify-between">
+          <header className="sticky top-0 z-30 bg-[#FCFCFA]/95 backdrop-blur-md border-b border-[#E4E3EC] px-4 py-2.5 flex items-center justify-between">
             <button
               onClick={handleDeselectAsignatura}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 active:scale-95 rounded-full transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#1B1F2A] bg-[#BFC9A6]/20 hover:bg-[#BFC9A6]/35 active:scale-95 rounded-full transition-all border border-[#BFC9A6]/40"
               title="Volver a la selección de asignaturas"
             >
               <ArrowLeft size={13} className="text-stone-600" />
               <span>Mis asignaturas</span>
             </button>
-            
+
             <div className="flex items-center gap-1.5 px-3 py-1 bg-stone-50 border border-stone-200 rounded-full max-w-[55%]">
               <span className="text-xs shrink-0">{activeOficial?.icono || '📖'}</span>
               <span className="text-xs font-bold text-stone-900 truncate">
@@ -260,7 +322,7 @@ export default function PortalLayout() {
               <ArrowLeft size={13} className="text-stone-600" />
               <span>Mis asignaturas</span>
             </button>
-            
+
             <div className="flex items-center gap-1.5 px-3 py-1 bg-stone-50 border border-stone-200 rounded-full">
               <span className="text-xs shrink-0">🚩</span>
               <span className="text-xs font-bold text-stone-900">
@@ -297,23 +359,30 @@ export default function PortalLayout() {
                   <span>Mis asignaturas</span>
                 </button>
 
-                <div className="bg-white border-2 border-[#1E1E24] rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-md max-w-sm mx-auto">
-                  <div className="w-28 h-28 mx-auto rounded-2xl border-2 border-[#1E1E24] overflow-hidden shadow-sm">
-                    {getIlustracionAsignatura(selectedAsignatura || '', "w-full h-full object-cover")}
-                  </div>
+                <div className="relative max-w-sm mx-auto">
+                  {/* Sombra rayada diagonal artesanal tipo grabado */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute top-1.5 left-1.5 -right-2 -bottom-2 rounded-3xl pointer-events-none portal-hatched-shadow"
+                  />
+                  <div className="relative z-10 bg-white border-[2.5px] border-[#1E1E24] rounded-3xl p-6 sm:p-8 text-center space-y-5">
+                    <div className="flex items-center justify-center py-2">
+                      <Frown className="w-16 h-16 text-[#1E1E24]" strokeWidth={1.8} />
+                    </div>
 
-                  <div className="space-y-2">
-                    <span className="inline-block text-[11px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full border border-stone-300 bg-stone-100 text-stone-700">
-                      {selectedAsignatura}
-                    </span>
+                    <div className="space-y-2">
+                      <span className="inline-block text-[11px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full border border-stone-300 bg-stone-100 text-stone-700">
+                        {selectedAsignatura}
+                      </span>
 
-                    <h2 className="text-base sm:text-lg font-black text-stone-900 leading-snug px-2">
-                      «{getMensajeDocenteNoUsaCielo(selectedAsignatura || '')}»
-                    </h2>
+                      <h2 className="text-base sm:text-lg font-black text-stone-900 leading-snug px-2">
+                        «{getMensajeDocenteNoUsaCielo(selectedAsignatura || '')}»
+                      </h2>
 
-                    <p className="text-xs text-stone-600 leading-relaxed max-w-sm mx-auto pt-1">
-                      Tan pronto como tu docente comience a registrar evaluaciones y actividades en la plataforma, podrás consultar aquí su progreso, calificaciones y portafolio.
-                    </p>
+                      <p className="text-xs text-stone-600 leading-relaxed max-w-sm mx-auto pt-1">
+                        Tan pronto como tu docente comience a registrar evaluaciones y actividades en la plataforma, podrás consultar aquí su progreso, calificaciones y portafolio.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -338,77 +407,57 @@ export default function PortalLayout() {
               selectedAsignatura,
               setSelectedAsignatura: handleSelectAsignatura,
               estudianteContext,
+              portalConfig,
             }} />
           )}
         </div>
 
         {/* BARRA INFERIOR DE NAVEGACIÓN: Visible cuando hay una asignatura activa o en Incidencias */}
         {(selectedAsignatura || currentPath === 'incidencias') && !renderUnassignedState && (
-          <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E4E3EC] flex items-center justify-around px-1 sm:px-3 md:px-6 lg:px-8 z-40">
-            <button 
-              onClick={() => handleNavigateTab('estudiante')}
-              aria-label="Inicio" 
-              className={`flex-1 flex flex-col items-center justify-center h-full focus:outline-none transition-colors ${currentPath === 'estudiante' || currentPath === '' ? 'text-[#1B1F2A]' : 'text-[#767a76] hover:text-[#1B1F2A]'}`}
-            >
-              <div className="relative -top-3.5 flex flex-col items-center justify-center">
-                <div className={`p-1 rounded-full bg-white transition-all shadow-md active:scale-95 border border-stone-200/90 ${currentPath === 'estudiante' || currentPath === '' ? 'text-[#1B1F2A] ring-2 ring-[#1B1F2A]/20' : 'text-[#767a76]'}`}>
-                  <BackpackIcon className="w-14 h-14 sm:w-16 sm:h-16" withCircle={true} />
-                </div>
-                <span className={`text-[10px] mt-0.5 ${currentPath === 'estudiante' || currentPath === '' ? 'font-bold text-[#1B1F2A]' : 'font-medium text-[#767a76]'}`}>Inicio</span>
-              </div>
-            </button>
-            
-            <button 
-              onClick={() => handleNavigateTab('portafolio')}
-              aria-label="Portafolio" 
-              className={`flex-1 flex flex-col items-center justify-center h-full focus:outline-none transition-colors ${currentPath === 'portafolio' ? 'text-[#1B1F2A]' : 'text-[#767a76] hover:text-[#1B1F2A]'}`}
-            >
-              <div className={`flex flex-col items-center justify-center p-1.5 rounded-xl ${currentPath === 'portafolio' ? 'bg-[#F1F1EC]' : ''}`}>
-                <svg className="w-5 h-5 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H6.911a2.25 2.25 0 00-2.15 1.588L2.35 13.177a2.25 2.25 0 00-.1.661z" strokeLinecap="round" strokeLinejoin="round"></path>
-                </svg>
-                <span className={`text-[10px] mt-0.5 ${currentPath === 'portafolio' ? 'font-bold' : 'font-medium'}`}>Portafolio</span>
-              </div>
-            </button>
+          <nav
+            aria-label="Menú de navegación del portal"
+            className="fixed bottom-0 left-0 right-0 h-16 sm:h-18 bg-[#FCFCFA]/95 backdrop-blur-md border-t border-[#E4E3EC] flex items-center justify-around px-1 sm:px-4 md:px-6 z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.03)]"
+          >
+            {visibleNavTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = tab.key === 'estudiante'
+                ? (currentPath === 'estudiante' || currentPath === '')
+                : currentPath === tab.key;
 
-            <button 
-              onClick={() => handleNavigateTab('recuperaciones')}
-              aria-label="Recuperaciones" 
-              className={`flex-1 flex flex-col items-center justify-center h-full focus:outline-none transition-colors ${currentPath === 'recuperaciones' ? 'text-[#1B1F2A]' : 'text-[#767a76] hover:text-[#1B1F2A]'}`}
-            >
-              <div className={`flex flex-col items-center justify-center p-1.5 rounded-xl ${currentPath === 'recuperaciones' ? 'bg-[#F1F1EC]' : ''}`}>
-                <svg className="w-5 h-5 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                </svg>
-                <span className={`text-[10px] mt-0.5 ${currentPath === 'recuperaciones' ? 'font-bold' : 'font-medium'}`}>Recuperación</span>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => handleNavigateTab('incidencias')}
-              aria-label="Incidencias" 
-              className={`flex-1 flex flex-col items-center justify-center h-full focus:outline-none transition-colors ${currentPath === 'incidencias' ? 'text-[#1B1F2A]' : 'text-[#767a76] hover:text-[#1B1F2A]'}`}
-            >
-              <div className={`flex flex-col items-center justify-center p-1.5 rounded-xl ${currentPath === 'incidencias' ? 'bg-[#F1F1EC]' : ''}`}>
-                <svg className="w-5 h-5 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
-                </svg>
-                <span className={`text-[10px] mt-0.5 ${currentPath === 'incidencias' ? 'font-bold' : 'font-medium'}`}>Incidencias</span>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => handleNavigateTab('fichas')}
-              aria-label="Fichas" 
-              className={`flex-1 flex flex-col items-center justify-center h-full focus:outline-none transition-colors ${currentPath === 'fichas' ? 'text-[#1B1F2A]' : 'text-[#767a76] hover:text-[#1B1F2A]'}`}
-            >
-              <div className={`flex flex-col items-center justify-center p-1.5 rounded-xl ${currentPath === 'fichas' ? 'bg-[#F1F1EC]' : ''}`}>
-                <svg className="w-5 h-5 stroke-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                </svg>
-                <span className={`text-[10px] mt-0.5 ${currentPath === 'fichas' ? 'font-bold' : 'font-medium'}`}>Fichas</span>
-              </div>
-            </button>
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => handleNavigateTab(tab.key)}
+                  aria-label={tab.label}
+                  aria-current={isActive ? 'page' : undefined}
+                  className="flex-1 flex flex-col items-center justify-center h-full py-1 focus:outline-none transition-all group active:scale-95"
+                >
+                  <div
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 ${isActive
+                        ? `${tab.bgActive} border-2 ${tab.borderActive} ${tab.textActive} shadow-xs ring-2 ${tab.ringActive} -translate-y-0.5`
+                        : 'bg-white border border-[#E4E3EC] text-[#5F665E] group-hover:text-[#1B1F2A] group-hover:border-[#BFC9A6] group-hover:bg-[#FCFCFA] shadow-2xs'
+                      }`}
+                  >
+                    <Icon
+                      className="w-4.5 h-4.5 sm:w-5 sm:h-5 transition-transform group-hover:scale-105"
+                      strokeWidth={isActive ? 2.2 : 1.9}
+                    />
+                  </div>
+                  <span
+                    className={`text-[10px] sm:text-[11px] mt-1 transition-colors leading-none tracking-tight ${isActive
+                        ? 'font-bold text-[#1B1F2A]'
+                        : 'font-medium text-[#767a76] group-hover:text-[#1B1F2A]'
+                      }`}
+                  >
+                    {tab.label}
+                  </span>
+                  <span
+                    className={`w-1 h-1 rounded-full mt-0.5 transition-all ${isActive ? `${tab.dotActive} scale-100 opacity-100` : 'bg-transparent scale-0 opacity-0'
+                      }`}
+                  />
+                </button>
+              );
+            })}
           </nav>
         )}
 

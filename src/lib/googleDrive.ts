@@ -178,6 +178,15 @@ export function getStoredToken(): string | null {
 export function clearStoredToken() {
     cachedAccessToken = null;
     tokenExpiresAt = 0;
+    thumbnailMetadataCache.clear();
+    for (const blobUrl of thumbnailBlobCache.values()) {
+        try {
+            URL.revokeObjectURL(blobUrl);
+        } catch {
+            // Ignorar errores al revocar ObjectURL
+        }
+    }
+    thumbnailBlobCache.clear();
 }
 
 export async function isDriveConnected(): Promise<boolean> {

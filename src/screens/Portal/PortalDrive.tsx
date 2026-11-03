@@ -239,7 +239,7 @@ const PortalDrive: React.FC = () => {
                 </div>
             ) : !estado?.conectado ? (
                 <section className="border border-[#E4E3EC] rounded-2xl p-5">
-                    <Cloud size={22} strokeWidth={1.5} className="text-[#1B1F2A] mb-3" />
+                    <Cloud size={22} strokeWidth={1.5} className="text-[#537BAC] mb-3" />
                     <h2 className="text-sm font-black text-[#1B1F2A]">Conecta tu Google Drive</h2>
                     <p className="text-xs text-[#4E5566] mt-2 leading-relaxed">
                         Vas a autorizar a CIELO para ver y organizar los archivos de tu Drive. Al conectar
@@ -248,7 +248,7 @@ const PortalDrive: React.FC = () => {
                     <button
                         onClick={conectar}
                         disabled={fase !== null}
-                        className="mt-4 w-full h-11 rounded-full bg-[#1B1F2A] text-white text-xs font-bold hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50"
+                        className="mt-4 w-full h-11 rounded-full bg-[#537BAC] hover:bg-[#43648C] text-white text-xs font-bold active:scale-[0.99] transition-all disabled:opacity-50 shadow-xs"
                     >
                         {fase === 'conectando' ? (
                             <span className="flex items-center justify-center gap-2">
@@ -285,8 +285,8 @@ const PortalDrive: React.FC = () => {
                     </section>
 
                     {necesitaReconectar ? (
-                        <section className="mt-3 p-4 bg-[#FDF6E3] border border-[#EBD9A6] rounded-2xl">
-                            <p className="text-xs font-bold text-[#8A6D1F]">
+                        <section className="mt-3 p-4 bg-[#DEAE4D]/15 border border-[#DEAE4D]/40 rounded-2xl">
+                            <p className="text-xs font-bold text-[#8C6415]">
                                 Tu sesion de Drive expiro al recargar la pagina.
                             </p>
                             <button

@@ -3,6 +3,7 @@ import { useParams, useOutletContext, Navigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Loader2 } from 'lucide-react';
 import type { AsignaturaPublicada } from './PortalLayout';
+import { sonMismaAsignatura } from '../../constants/asignaturas';
 
 interface Evidencia {
   id: number;
@@ -55,7 +56,7 @@ export default function PortalAsignatura() {
   const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
 
   // Configuración de la asignatura actual
-  const config = asignaturas.find(a => a.asignatura === decodedAsignatura);
+  const config = asignaturas.find(a => sonMismaAsignatura(a.asignatura, decodedAsignatura));
 
   useEffect(() => {
     if (!sessionToken || !decodedAsignatura || !config) return;

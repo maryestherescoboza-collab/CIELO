@@ -215,14 +215,14 @@ export default function Estudiante() {
 
     if (!est) {
         return (
-            <div className="flex flex-col items-center justify-start p-12 w-full min-h-screen bg-[#EFEFEC]">
+            <div className="flex flex-col items-center justify-start p-4 sm:p-8 w-full min-h-screen bg-[#EFEFEC]">
                 <div className="w-full max-w-4xl">
                     <EstudianteSubnav activa="fichas" onCambiar={setSubseccion} />
-                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-4">
-                    <h2 className="text-2xl font-black text-(--ink) mb-2 font-['Space_Grotesk']">Módulo Estudiante</h2>
-                    <p className="text-(--ink-soft) mb-8 font-medium">Selecciona un estudiante para acceder a su perfil, calificaciones y portal familiar.</p>
+                    <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-sm border border-slate-200 mt-4">
+                    <h2 className="text-xl sm:text-2xl font-black text-(--ink) mb-2 font-['Space_Grotesk']">Módulo Estudiante</h2>
+                    <p className="text-(--ink-soft) mb-6 sm:mb-8 font-medium">Selecciona un estudiante para acceder a su perfil, calificaciones y portal familiar.</p>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         {state.estudiantes?.map((e: Estudiante) => {
                             const c = state.cursos?.find(c => c.id === e.cursoId);
                             return (
@@ -232,9 +232,9 @@ export default function Estudiante() {
                                         setSelectedEstudianteId(e.id);
                                         navigate(`/estudiante/${e.id}`);
                                     }} 
-                                    className="flex flex-col items-start p-4 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all text-left group"
+                                    className="flex flex-col items-start justify-center min-h-16 p-4 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 hover:border-slate-300 active:scale-[0.99] transition-all text-left group"
                                 >
-                                    <span className="font-bold text-slate-800 group-hover:text-primary transition-colors text-sm">
+                                    <span className="font-bold text-slate-800 group-hover:text-primary transition-colors text-sm break-words">
                                         {e.nombre} {e.apellido}
                                     </span>
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
@@ -321,7 +321,7 @@ export default function Estudiante() {
                     }
                 ` }} />
                 
-                <div className="flex flex-row gap-6 items-start justify-center min-w-max">
+                <div className="estudiante-sheet-row flex flex-row gap-6 items-start justify-center min-w-max">
                     {activeTab === 'Perfil' && (
                         <PerfilTab 
                             est={est}
@@ -342,12 +342,12 @@ export default function Estudiante() {
                     {activeTab === 'Evaluación' && isTutor && (
                         <div className="a4-page w-[210mm] min-h-[297mm] bg-white shadow-[0_1px_3px_rgba(30,30,25,.08),0_10px_28px_rgba(30,30,25,.10)] p-[20mm] flex flex-col shrink-0">
                             <div className="space-y-6 animate-in fade-in duration-500">
-                                <div className="flex justify-between items-center border-b pb-5 border-[#E4E3EC]">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b pb-5 border-[#E4E3EC]">
                                     <div>
-                                        <h2 className="text-xl font-black text-[#1B1F2A] tracking-tight font-['Space_Grotesk']">REGISTRO ANUAL</h2>
-                                        <p className="text-xs font-bold text-[#4E5566] uppercase tracking-widest mt-1">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
+                                        <h2 className="text-lg sm:text-xl font-black text-[#1B1F2A] tracking-tight font-['Space_Grotesk']">REGISTRO ANUAL</h2>
+                                        <p className="text-xs font-bold text-[#4E5566] uppercase tracking-widest mt-1 break-words">{est.nombre} {est.apellido} • {curso?.grado} {curso?.seccion}</p>
                                     </div>
-                                    <button onClick={() => window.print()} className="no-print flex items-center gap-2 px-4.5 py-2 min-h-9 leading-none bg-[#689C63] text-white rounded-full font-semibold text-xs hover:opacity-90 active:scale-95 transition-all uppercase tracking-[0.08em] shadow-sm">
+                                    <button onClick={() => window.print()} className="no-print flex w-full sm:w-auto items-center justify-center gap-2 px-4.5 py-2 min-h-10 leading-none bg-[#689C63] text-white rounded-full font-semibold text-xs hover:opacity-90 active:scale-95 transition-all uppercase tracking-[0.08em] shadow-sm">
                                         <Printer size={15} /> Imprimir
                                     </button>
                                 </div>

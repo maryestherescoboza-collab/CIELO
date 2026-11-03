@@ -3,11 +3,14 @@ import { getAsignaturaNombre } from '../../constants/asignaturas';
 import type { Skill, AppState, Competencia, DescriptorRubrica, CriterioCotejo } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
 import RecuperacionPerfil from './RecuperacionPerfil';
-import { supabase } from '../../lib/supabase';
 import { QRCodeSVG } from 'qrcode.react';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
-import { FileDown } from 'lucide-react';
-import { exportarInformeCurricularDocx } from '../../utils/informeCurricularDocx';
+import { FileDown, QrCode, ExternalLink, Copy, Check, X, Loader2 } from 'lucide-react';
+import {
+    exportarInformeCurricularPdf,
+    obtenerPortalAccessTokenEstudiante,
+    construirUrlPortalEstudiante,
+} from '../../utils/informeCurricularPdf';
 
 interface PerfilTabProps {
     est: any;
@@ -38,16 +41,45 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
     isTutor = false,
     currentUserId
 }) => {
-    const [qrVisible, setQrVisible] = React.useState(false);
-    const [qrToken, setQrToken] = React.useState<string | null>(null);
+    const [qrModalOpen, setQrModalOpen] = React.useState(false);
+    const [qrAccessByStudent, setQrAccessByStudent] = React.useState<Record<number, string>>({});
     const [isGeneratingQr, setIsGeneratingQr] = React.useState(false);
-    const [isExportingDocx, setIsExportingDocx] = React.useState(false);
-    const qrTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [qrError, setQrError] = React.useState<string | null>(null);
+    const [copiedLink, setCopiedLink] = React.useState(false);
+    const [isExportingPdf, setIsExportingPdf] = React.useState(false);
 
-    const handleDownloadDocx = async () => {
+    const currentStudentId = Number(est?.id);
+    const activeQrToken =
+        Number.isFinite(currentStudentId) && currentStudentId > 0
+            ? (qrAccessByStudent[currentStudentId] ?? null)
+            : null;
+    const portalUrl = activeQrToken ? construirUrlPortalEstudiante(activeQrToken) : null;
+
+    React.useEffect(() => {
+        setQrModalOpen(false);
+        setQrError(null);
+        setCopiedLink(false);
+    }, [est?.id]);
+
+    React.useEffect(() => {
+        if (!qrModalOpen) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setQrModalOpen(false);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [qrModalOpen]);
+
+    const saveStudentToken = React.useCallback((studentId: number, token: string) => {
+        if (!Number.isFinite(studentId) || studentId <= 0 || !token.trim()) return;
+        setQrAccessByStudent(prev => (prev[studentId] === token.trim() ? prev : { ...prev, [studentId]: token.trim() }));
+    }, []);
+
+    const handleDownloadPdf = async () => {
+        const studentIdAtStart = Number(est?.id);
         try {
-            setIsExportingDocx(true);
-            await exportarInformeCurricularDocx({
+            setIsExportingPdf(true);
+            await exportarInformeCurricularPdf({
                 est,
                 curso,
                 periodo,
@@ -62,63 +94,59 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                 currentAsignatura,
                 isTutor,
                 currentUserId,
+                portalAccessToken: activeQrToken,
+                onTokenResolved: (resolvedToken) => saveStudentToken(studentIdAtStart, resolvedToken),
             });
         } catch (err) {
-            console.error("Error al exportar informe curricular en Word:", err);
+            console.error("Error al exportar informe curricular en PDF:", err);
         } finally {
-            setIsExportingDocx(false);
+            setIsExportingPdf(false);
         }
     };
 
-    React.useEffect(() => {
-        return () => {
-            if (qrTimerRef.current) clearTimeout(qrTimerRef.current);
-        };
-    }, []);
-
     const handleGenerateQR = async () => {
-        if (!PORTAL_FAMILIA_ENABLED) return;
-        
-        if (qrTimerRef.current) {
-            clearTimeout(qrTimerRef.current);
+        if (!PORTAL_FAMILIA_ENABLED || !est?.id) return;
+
+        const targetStudentId = Number(est.id);
+        setQrError(null);
+        setCopiedLink(false);
+        setQrModalOpen(true);
+
+        if (qrAccessByStudent[targetStudentId]) {
+            return;
         }
 
-        if (!qrToken) {
-            setIsGeneratingQr(true);
-            try {
-                const { data: existingData, error: fetchError } = await supabase
-                    .from('portal_accesos')
-                    .select('access_token')
-                    .eq('estudiante_id', est.id)
-                    .single();
+        setIsGeneratingQr(true);
+        try {
+            const resolvedToken = await obtenerPortalAccessTokenEstudiante(
+                est,
+                curso,
+                state,
+                qrAccessByStudent[targetStudentId] ?? null
+            );
 
-                if (existingData && existingData.access_token) {
-                    setQrToken(existingData.access_token);
-                } else if (fetchError && fetchError.code === 'PGRST116') {
-                    const cursoReal = curso || state.cursos.find(c => c.id === est.curso_id || c.id === est.cursoId);
-                    const centroId = cursoReal?.centro_id || state.centros?.[0]?.id;
-                    const { data: newAccess } = await supabase
-                        .from('portal_accesos')
-                        .insert({
-                            estudiante_id: est.id,
-                            centro_id: centroId
-                        })
-                        .select('access_token')
-                        .single();
-                        
-                    if (newAccess) setQrToken(newAccess.access_token);
-                }
-            } catch (err) {
-                console.error("Error generating QR:", err);
-            } finally {
-                setIsGeneratingQr(false);
+            if (resolvedToken) {
+                saveStudentToken(targetStudentId, resolvedToken);
+            } else {
+                setQrError('No se pudo obtener el acceso individual del estudiante. Inténtalo nuevamente.');
             }
+        } catch (err) {
+            console.error("Error generating QR:", err);
+            setQrError('Ocurrió un error al generar el acceso familiar.');
+        } finally {
+            setIsGeneratingQr(false);
         }
+    };
 
-        setQrVisible(true);
-        qrTimerRef.current = setTimeout(() => {
-            setQrVisible(false);
-        }, 5000);
+    const handleCopyPortalUrl = async () => {
+        if (!portalUrl) return;
+        try {
+            await navigator.clipboard.writeText(portalUrl);
+            setCopiedLink(true);
+            setTimeout(() => setCopiedLink(false), 2000);
+        } catch {
+            // Fallback silencioso
+        }
     };
 
     // Helper to get descriptors dynamically based on evaluation type
@@ -312,7 +340,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                     <div className="mb-6 relative">
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                             <div>
-                                <div className="font-['Space_Grotesk'] text-[36px] font-bold text-[#1B1F2A] leading-[1.15] tracking-tight">
+                                <div className="font-['Space_Grotesk'] text-[30px] sm:text-[36px] font-bold text-[#1B1F2A] leading-[1.1] sm:leading-[1.15] tracking-tight break-words">
                                     {est.nombre} <span className="bg-[#DB5B48] text-white px-2.5 py-0.5 rounded-[5px] inline-block">{est.apellido}</span>
                                 </div>
                                 <div className="text-[12px] text-[#4E5566] mt-2.5">
@@ -326,37 +354,153 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                 </div>
                             </div>
 
-                            <div className="no-print flex items-center gap-2 self-start shrink-0">
+                            <div className="no-print flex items-center gap-2 self-stretch sm:self-start shrink-0">
                                 <button
-                                    onClick={handleDownloadDocx}
-                                    disabled={isExportingDocx}
-                                    className="flex items-center gap-2 px-3.5 py-2 bg-[#1B1F2A] text-white text-[11px] font-bold uppercase rounded-lg hover:bg-[#2e3447] active:scale-95 transition-all shadow-sm disabled:opacity-50 tracking-wider cursor-pointer"
-                                    title="Descargar informe curricular en Word (.docx)"
+                                    onClick={handleDownloadPdf}
+                                    disabled={isExportingPdf}
+                                    className="flex w-full sm:w-auto min-h-11 items-center justify-center gap-2 px-4 py-2 bg-[#1B1F2A] text-white text-[11px] font-bold uppercase rounded-lg hover:bg-[#2e3447] active:scale-95 transition-all shadow-sm disabled:opacity-50 tracking-wider cursor-pointer"
+                                    title="Descargar informe curricular en PDF (.pdf)"
                                 >
                                     <FileDown size={14} className="text-[#DB5B48]" />
-                                    <span>{isExportingDocx ? 'Descargando...' : 'Descargar Word'}</span>
+                                    <span>{isExportingPdf ? 'Descargando...' : 'Descargar PDF'}</span>
                                 </button>
                             </div>
                         </div>
 
                         {PORTAL_FAMILIA_ENABLED && (
-                            <div className="mt-3 flex flex-col gap-2 relative">
-                                <div className="flex items-center gap-4">
-                                    <button onClick={handleGenerateQR} disabled={isGeneratingQr} className="px-3 py-1 bg-[#1B1F2A] text-white text-[10px] font-bold uppercase rounded hover:opacity-80 transition-opacity">
-                                        {isGeneratingQr ? 'Generando...' : 'Generar Acceso Familiar'}
+                            <div className="no-print mt-3 flex flex-col gap-2">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateQR}
+                                        disabled={isGeneratingQr}
+                                        className="min-h-10 px-3.5 py-1.5 bg-[#1B1F2A] text-white text-[10px] font-bold uppercase rounded-lg hover:bg-[#2e3447] active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                                    >
+                                        <QrCode size={13} className="text-[#DB5B48]" />
+                                        <span>{isGeneratingQr && !qrModalOpen ? 'Generando...' : 'Generar Acceso Familiar'}</span>
                                     </button>
                                 </div>
-                                {qrVisible && qrToken && (
-                                    <div className="bg-white p-3 shadow-lg border border-slate-200 rounded-lg animate-in fade-in duration-200 absolute top-full left-0 mt-2 z-20 flex gap-4 items-center">
-                                        <QRCodeSVG value={`${window.location.origin}/portal/${qrToken}`} size={80} />
-                                        <div className="flex flex-col gap-2">
-                                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Enlace de acceso</div>
-                                            <div className="flex items-center gap-2">
-                                                <input type="text" readOnly value={`${window.location.origin}/portal/${qrToken}`} className="text-xs p-1.5 border border-slate-200 rounded bg-slate-50 w-64 text-slate-600 font-mono focus:outline-none" />
-                                                <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/portal/${qrToken}`)} className="px-2 py-1.5 bg-slate-200 text-slate-700 text-[10px] font-bold uppercase rounded hover:bg-slate-300">
-                                                    Copiar
-                                                </button>
+
+                                {qrModalOpen && (
+                                    <div
+                                        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+                                        onClick={() => setQrModalOpen(false)}
+                                        role="dialog"
+                                        aria-modal="true"
+                                        aria-labelledby="modal-qr-estudiante-titulo"
+                                    >
+                                        <div
+                                            className="w-full max-w-sm sm:max-w-md max-h-[92vh] overflow-y-auto bg-white rounded-2xl sm:rounded-3xl border border-(--border-unificado) shadow-lg px-5 py-6 sm:px-7 sm:py-7 text-center relative"
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={() => setQrModalOpen(false)}
+                                                className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-(--ink-soft) hover:text-(--ink) hover:bg-(--linen)/70 transition-colors cursor-pointer"
+                                                aria-label="Cerrar ventana"
+                                            >
+                                                <X size={16} />
+                                            </button>
+
+                                            <div className="pr-6 sm:pr-0">
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-(--ink-soft) mb-1">
+                                                    Portal del estudiante · CIELO
+                                                </p>
+                                                <h3
+                                                    id="modal-qr-estudiante-titulo"
+                                                    className="text-lg sm:text-xl font-bold text-(--ink) tracking-tight leading-snug"
+                                                >
+                                                    {est.nombre} {est.apellido}
+                                                </h3>
+                                                <p className="text-xs text-(--ink-soft) mt-0.5">
+                                                    {curso?.grado} {curso?.seccion} • {getAsignaturaNombre(currentAsignatura || curso?.asignatura)}
+                                                </p>
                                             </div>
+
+                                            <div className="mt-5 mb-4 flex flex-col items-center justify-center">
+                                                {isGeneratingQr && !portalUrl ? (
+                                                    <div className="w-48 h-48 sm:w-52 sm:h-52 rounded-2xl bg-(--linen)/40 border border-(--border-unificado) flex flex-col items-center justify-center gap-2.5 p-4">
+                                                        <Loader2 size={26} className="animate-spin text-(--ink-soft)" />
+                                                        <span className="text-xs font-medium text-(--ink-soft)">
+                                                            Generando código QR...
+                                                        </span>
+                                                    </div>
+                                                ) : portalUrl ? (
+                                                    <>
+                                                        <a
+                                                            href={portalUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            title={`Abrir el portal de ${est.nombre} ${est.apellido || ''} en una nueva pestaña`}
+                                                            className="group inline-flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-(--border-unificado) hover:border-(--ink) shadow-xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-(--ink)/20"
+                                                        >
+                                                            <QRCodeSVG
+                                                                value={portalUrl}
+                                                                size={184}
+                                                                level="M"
+                                                                marginSize={2}
+                                                                bgColor="#FFFFFF"
+                                                                fgColor="#000000"
+                                                                className="w-40 h-40 sm:w-46 sm:h-46"
+                                                            />
+                                                            <span className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-semibold text-(--ink-soft) group-hover:text-(--ink) transition-colors">
+                                                                <span>Haz clic en el QR para abrir el portal</span>
+                                                                <ExternalLink size={12} />
+                                                            </span>
+                                                        </a>
+                                                        <p className="text-xs text-(--ink-soft) mt-3 leading-relaxed max-w-xs">
+                                                            Escanea este código desde un teléfono o haz clic sobre él para acceder al portal individual del estudiante.
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    <div className="w-full rounded-xl bg-(--linen)/50 border border-(--border-unificado) p-4">
+                                                        <p className="text-xs text-(--ink) font-medium mb-3">
+                                                            {qrError || 'No se pudo cargar el código QR de este estudiante.'}
+                                                        </p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleGenerateQR}
+                                                            className="px-4 py-2 bg-(--ink) text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+                                                        >
+                                                            Reintentar
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {portalUrl && (
+                                                <div className="mt-4 pt-4 border-t border-(--border-unificado) text-left">
+                                                    <label className="block text-[10px] font-bold text-(--ink-soft) uppercase tracking-widest mb-1.5">
+                                                        Enlace directo del estudiante
+                                                    </label>
+                                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                                        <input
+                                                            type="text"
+                                                            readOnly
+                                                            value={portalUrl}
+                                                            onFocus={e => e.currentTarget.select()}
+                                                            className="text-xs px-3 py-2 border border-(--border-unificado) rounded-xl bg-(--bg-main) w-full min-w-0 text-(--ink) font-mono focus:outline-none"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleCopyPortalUrl}
+                                                            className="min-h-9 px-3.5 py-2 bg-(--linen) hover:bg-(--linen)/80 text-(--ink) text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                                                        >
+                                                            {copiedLink ? (
+                                                                <>
+                                                                    <Check size={13} className="text-[#689C63]" />
+                                                                    <span>Copiado</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Copy size={13} />
+                                                                    <span>Copiar</span>
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -365,7 +509,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
 
                         <hr className="border-t-2 border-[#1B1F2A] my-4" />
 
-                        <div className="flex gap-12">
+                        <div className="grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-x-12 sm:gap-y-4">
                             <div>
                                 <div className="text-[10px] text-[#8A8FA0] tracking-wide">Promedio</div>
                                 <span className="font-['Space_Grotesk'] text-[21px] font-bold mt-1 text-[#537BAC] inline-block">{promedioPeriodo}%</span>
@@ -408,7 +552,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                             <div className="inline-block text-[9px] font-bold tracking-wide text-white px-1.5 py-0.5 rounded" style={{ background: comp.bg }}>
                                                 {comp.id}
                                             </div>
-                                            <div className="text-[10.8px] text-[#4E5566] mt-1 leading-[1.3] font-medium">
+                                            <div className="text-[11.5px] sm:text-[10.8px] text-[#4E5566] mt-1 leading-[1.3] font-medium">
                                                 {comp.label}
                                             </div>
                                         </div>
@@ -469,8 +613,8 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                     else if (act.bcAsignados?.includes('BC4')) bgColor = '#FCF3F2'; // etica bg
 
                                     return (
-                                        <div key={act.id} className="grid grid-cols-[66px_16px_1fr] gap-0 mb-3 break-inside-avoid">
-                                            <div className="text-[9.5px] tracking-wide text-[#8A8FA0] uppercase font-bold text-right pr-2.5 pt-3.5 whitespace-pre-line leading-tight">
+                                        <div key={act.id} className="grid grid-cols-[54px_14px_1fr] sm:grid-cols-[66px_16px_1fr] gap-0 mb-3 break-inside-avoid">
+                                            <div className="text-[10px] sm:text-[9.5px] tracking-wide text-[#8A8FA0] uppercase font-bold text-right pr-2 sm:pr-2.5 pt-3.5 whitespace-pre-line leading-tight">
                                                 {formattedDate}
                                             </div>
                                             <div className="relative">
@@ -478,9 +622,9 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                                 <div className="absolute left-0.5 top-4.5 w-2.75 h-0.5 bg-[#DB5B48]"></div>
                                             </div>
                                             <div className="p-3 rounded-[3px]" style={{ background: bgColor }}>
-                                                <div className="flex justify-between items-baseline gap-3">
-                                                    <div className="font-['Space_Grotesk'] text-[14.5px] font-bold text-[#1B1F2A]">{act.nombre}</div>
-                                                    <div className="font-['Space_Grotesk'] text-[13.5px] font-bold text-[#DB5B48]">{isEvaluated ? `${score} %` : 'Pendiente'}</div>
+                                                <div className="flex flex-wrap justify-between items-baseline gap-x-3 gap-y-1">
+                                                    <div className="font-['Space_Grotesk'] text-[14.5px] font-bold text-[#1B1F2A] break-words">{act.nombre}</div>
+                                                    <div className="font-['Space_Grotesk'] text-[13.5px] font-bold text-[#DB5B48] shrink-0">{isEvaluated ? `${score} %` : 'Pendiente'}</div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-1.5 mt-2">
                                                     {(act.bcAsignados || []).map((bc: string) => {
@@ -514,7 +658,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                     </div>
                 </div>
 
-                <div className="mt-8 pt-3 border-t border-[#EFEEF4] flex justify-between items-center text-[#8A8FA0] text-[9.5px]">
+                <div className="mt-8 pt-3 border-t border-[#EFEEF4] flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center text-[#8A8FA0] text-[9.5px]">
                     <span>Informe curricular · {est.nombre} {est.apellido} · {getAsignaturaNombre(currentAsignatura || curso?.asignatura)}</span>
                     <span>1 / 2</span>
                 </div>
@@ -537,8 +681,8 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                     const [yyyy, mm, dd] = inc.fecha.split('-');
                                     const formattedDate = dd ? `${dd} ${['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mm)-1]}\n${yyyy}` : inc.fecha;
                                     return (
-                                        <div key={index} className="grid grid-cols-[66px_16px_1fr] gap-0 mb-3 break-inside-avoid">
-                                            <div className="text-[9.5px] tracking-wide text-[#8A8FA0] uppercase font-bold text-right pr-2.5 pt-3.5 whitespace-pre-line leading-tight">
+                                        <div key={index} className="grid grid-cols-[54px_14px_1fr] sm:grid-cols-[66px_16px_1fr] gap-0 mb-3 break-inside-avoid">
+                                            <div className="text-[10px] sm:text-[9.5px] tracking-wide text-[#8A8FA0] uppercase font-bold text-right pr-2 sm:pr-2.5 pt-3.5 whitespace-pre-line leading-tight">
                                                 {formattedDate}
                                             </div>
                                             <div className="relative">
@@ -571,7 +715,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                     </div>
                 </div>
 
-                <div className="mt-8 pt-3 border-t border-[#EFEEF4] flex justify-between items-center text-[#8A8FA0] text-[9.5px]">
+                <div className="mt-8 pt-3 border-t border-[#EFEEF4] flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center text-[#8A8FA0] text-[9.5px]">
                     <span>Informe curricular · {est.nombre} {est.apellido} · {getAsignaturaNombre(currentAsignatura || curso?.asignatura)}</span>
                     <span>2 / 2</span>
                 </div>

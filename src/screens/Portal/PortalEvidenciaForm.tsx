@@ -8,6 +8,7 @@ import { rutaPortal } from './portalContext';
 import type { ActividadParaEvidencia } from '../../types/evidencias';
 import { useGooglePicker, type PickerResult } from '../../hooks/useGooglePicker';
 import { requestGoogleAccessToken } from '../../lib/googleDrive';
+import { sonMismaAsignatura } from '../../constants/asignaturas';
 
 /**
  * "Agregar evidencia" del Portal del estudiante.
@@ -43,6 +44,7 @@ interface Props {
     token: string;
     actividades: ActividadParaEvidencia[];
     actividadInicial?: number | null;
+    selectedAsignatura?: string | null;
     onCerrar: () => void;
     onGuardada: () => void;
 }
@@ -52,10 +54,24 @@ const PortalEvidenciaForm: React.FC<Props> = ({
     token,
     actividades,
     actividadInicial,
+    selectedAsignatura,
     onCerrar,
     onGuardada,
 }) => {
-    const [actividadId, setActividadId] = useState<number | null>(actividadInicial ?? null);
+    const actividadesFiltradas = useMemo(() => {
+        if (!selectedAsignatura) return actividades;
+        return actividades.filter(a => Boolean(a.asignatura && sonMismaAsignatura(a.asignatura, selectedAsignatura)));
+    }, [actividades, selectedAsignatura]);
+
+    const [actividadId, setActividadId] = useState<number | null>(() => {
+        if (!actividadInicial) return null;
+        if (!selectedAsignatura) return actividadInicial;
+        const match = actividades.find(a => a.actividad_id === actividadInicial);
+        if (match && match.asignatura && sonMismaAsignatura(match.asignatura, selectedAsignatura)) {
+            return actividadInicial;
+        }
+        return null;
+    });
     const [origen, setOrigen] = useState<Origen>('storage');
     const [nombre, setNombre] = useState('');
     const [archivo, setArchivo] = useState<File | null>(null);
@@ -90,7 +106,7 @@ const PortalEvidenciaForm: React.FC<Props> = ({
         [drive, carpetaElegida]
     );
 
-    const actividad = actividades.find(a => a.actividad_id === actividadId) ?? null;
+    const actividad = actividadesFiltradas.find(a => a.actividad_id === actividadId) ?? null;
 
     useEffect(() => {
         if (actividad?.asignatura && drive?.carpetas) {
@@ -143,18 +159,20 @@ const PortalEvidenciaForm: React.FC<Props> = ({
     };
 
     const puedeGuardar =
-        Boolean(actividadId && nombre.trim() && (origen === 'storage' ? archivo : elegido)) && !guardando;
+        Boolean(actividadId && actividad && nombre.trim() && (origen === 'storage' ? archivo : elegido)) && !guardando;
 
     const guardar = async () => {
         if (!puedeGuardar || !actividadId) return;
         setGuardando(true);
         setError(null);
         try {
+            const asigFinal = selectedAsignatura || actividad?.asignatura || null;
             if (origen === 'storage' && archivo) {
                 await evidenciasApiPortal.crear(sessionToken, {
                     actividadId,
                     nombre: nombre.trim(),
                     archivo,
+                    asignatura: asigFinal,
                 });
             } else if (origen === 'drive' && elegido) {
                 await evidenciasApiPortal.crearDesdeDrive(sessionToken, {
@@ -166,6 +184,7 @@ const PortalEvidenciaForm: React.FC<Props> = ({
                     tamanoBytes: null, // Picker usually doesn't return exact size bytes easily without another API call
                     thumbnailUrl: elegido.thumbnailUrl ?? null,
                     driveCarpetaId: carpeta?.id ?? null,
+                    asignatura: asigFinal,
                 });
             }
             onGuardada();
@@ -203,7 +222,7 @@ const PortalEvidenciaForm: React.FC<Props> = ({
                         className="w-full h-11 px-3 rounded-xl border border-[#D8D7E0] bg-white text-sm text-[#1B1F2A] focus:border-[#1B1F2A] focus:outline-none"
                     >
                         <option value="">Selecciona una actividad...</option>
-                        {actividades.map((a) => (
+                        {actividadesFiltradas.map((a) => (
                             <option key={a.actividad_id} value={a.actividad_id}>
                                 {a.actividad}
                                 {a.ficha ? ` - ${a.ficha}` : ''}
@@ -257,7 +276,7 @@ const PortalEvidenciaForm: React.FC<Props> = ({
                                     onClick={() => setOrigen(o.k)}
                                     className={`flex-1 h-10 px-3 rounded-full border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
                                         activo
-                                            ? 'bg-[#1B1F2A] text-white border-[#1B1F2A]'
+                                            ? 'bg-[#537BAC] text-white border-[#537BAC]'
                                             : 'bg-white text-[#4E5566] border-[#D8D7E0] hover:bg-[#F1F1EC]'
                                     }`}
                                 >
@@ -283,10 +302,10 @@ const PortalEvidenciaForm: React.FC<Props> = ({
                                 seleccionar(e.dataTransfer.files?.[0] ?? null);
                             }}
                             className={`w-full rounded-2xl border-2 border-dashed py-8 flex flex-col items-center gap-2 transition-colors ${
-                                arrastrando ? 'border-[#1B1F2A] bg-[#F1F1EC]' : 'border-[#D8D7E0] hover:bg-[#FAFAF7]'
+                                arrastrando ? 'border-[#537BAC] bg-[#537BAC]/10' : 'border-[#D8D7E0] hover:bg-[#FCFCFA]'
                             }`}
                         >
-                            <Upload size={22} strokeWidth={1.5} className="text-[#4E5566]" />
+                            <Upload size={22} strokeWidth={1.5} className="text-[#537BAC]" />
                             <span className="text-sm font-bold text-[#1B1F2A]">Elige o arrastra tu archivo</span>
                             <span className="text-[11px] text-[#767a76]">Hasta {MAX_MB} MB</span>
                         </button>
@@ -422,7 +441,7 @@ const PortalEvidenciaForm: React.FC<Props> = ({
                         type="button"
                         onClick={guardar}
                         disabled={!puedeGuardar}
-                        className="flex-1 h-11 rounded-full bg-[#1B1F2A] text-white text-sm font-bold hover:opacity-90 disabled:opacity-30 flex items-center justify-center gap-2"
+                        className="flex-1 h-11 rounded-full bg-[#689C63] hover:bg-[#588554] text-white text-sm font-bold disabled:opacity-30 flex items-center justify-center gap-2 shadow-xs transition-colors"
                     >
                         {guardando ? <Loader2 size={15} className="animate-spin" /> : null}
                         {guardando ? 'Guardando' : 'Guardar evidencia'}

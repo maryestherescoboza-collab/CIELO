@@ -216,7 +216,7 @@ const EvidenciasBandeja: React.FC = () => {
                     </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex w-full sm:w-auto flex-wrap items-center gap-2">
                     <select
                         value={cursoId ?? ''}
                         onChange={(e) => {
@@ -225,7 +225,7 @@ const EvidenciasBandeja: React.FC = () => {
                             const c = cursos.find(x => x.curso_id === v);
                             setAsignatura(c?.asignaturas[0] ?? null);
                         }}
-                        className="h-10 px-3 rounded-full border border-[#D8D7E0] bg-white text-xs font-bold text-[#1B1F2A] focus:border-[#1B1F2A] focus:outline-none"
+                        className="min-h-11 w-full sm:w-auto px-3 rounded-full border border-[#D8D7E0] bg-white text-xs font-bold text-[#1B1F2A] focus:border-[#1B1F2A] focus:outline-none"
                     >
                         {cursos.map(c => (
                             <option key={c.curso_id} value={c.curso_id}>
@@ -238,7 +238,7 @@ const EvidenciasBandeja: React.FC = () => {
                         <select
                             value={asignatura ?? ''}
                             onChange={(e) => setAsignatura(e.target.value || null)}
-                            className="h-10 px-3 rounded-full border border-[#D8D7E0] bg-white text-xs font-bold text-[#1B1F2A] focus:border-[#1B1F2A] focus:outline-none"
+                            className="min-h-11 w-full sm:w-auto px-3 rounded-full border border-[#D8D7E0] bg-white text-xs font-bold text-[#1B1F2A] focus:border-[#1B1F2A] focus:outline-none"
                         >
                             {curso.asignaturas.map(a => (
                                 <option key={a} value={a}>{a}</option>
@@ -246,12 +246,13 @@ const EvidenciasBandeja: React.FC = () => {
                         </select>
                     ) : null}
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex w-full sm:w-auto items-center justify-between sm:justify-start gap-1">
                         {PERIODOS.map(p => (
                             <button
                                 key={p}
                                 onClick={() => setPeriodo(prev => (prev === p ? null : p))}
-                                className={`px-2.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
+                                aria-pressed={periodo === p}
+                                className={`min-h-10 min-w-10 px-2.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
                                     periodo === p ? 'bg-[#1B1F2A] text-white' : 'text-[#4E5566] hover:bg-[#E4E3EC]'
                                 }`}
                             >
@@ -263,12 +264,12 @@ const EvidenciasBandeja: React.FC = () => {
             </div>
 
             {/* Filtros de estado */}
-            <div className="flex gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-6">
                 {FILTROS.map(f => (
                     <button
                         key={f.k}
                         onClick={() => setFiltro(f.k)}
-                        className={`px-3.5 py-1.5 rounded-full border text-xs font-bold transition-colors ${
+                        className={`min-h-10 px-4 py-1.5 rounded-full border text-xs font-bold transition-colors ${
                             filtro === f.k
                                 ? 'bg-[#1B1F2A] text-white border-[#1B1F2A]'
                                 : 'bg-white text-[#4E5566] border-[#D8D7E0] hover:bg-[#F1F1EC]'
@@ -308,7 +309,7 @@ const EvidenciasBandeja: React.FC = () => {
                 <div className="space-y-8">
                     {grupos.map(grupo => (
                         <section key={grupo.actividad_id}>
-                            <div className="flex items-baseline justify-between gap-3 mb-3 pb-2 border-b border-[#E4E3EC]">
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5 mb-3 pb-2 border-b border-[#E4E3EC]">
                                 <div className="min-w-0">
                                     <h2 className="text-sm font-black text-[#1B1F2A] truncate">{grupo.actividad}</h2>
                                     <p className="text-[11px] text-[#767a76] truncate">
@@ -384,7 +385,7 @@ const EvidenciasBandeja: React.FC = () => {
                             <button
                                 onClick={cerrar}
                                 aria-label="Cerrar"
-                                className="w-8 h-8 rounded-full border border-[#E4E3EC] flex items-center justify-center text-[#4E5566] hover:bg-[#F1F1EC] shrink-0"
+                                className="w-10 h-10 rounded-full border border-[#E4E3EC] flex items-center justify-center text-[#4E5566] hover:bg-[#F1F1EC] shrink-0"
                             >
                                 <X size={16} />
                             </button>

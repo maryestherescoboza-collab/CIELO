@@ -13,6 +13,7 @@
  */
 
 import { supabase } from './supabase';
+import { fetchWithPortalCache, invalidatePortalRutaCache } from '../cache/portalCache';
 import type {
     ActividadDocente,
     ActividadExistente,
@@ -345,26 +346,42 @@ export const rutaApiDocente = {
    ═════════════════════════════════════════════════════════════════════════ */
 
 export const rutaApiPortal = {
-    async listar(sessionToken: string, notaId: string): Promise<ResumenRutaEstudiante[]> {
-        const { data, error } = await supabase.rpc('portal_ruta_listar', {
-            p_session_token: sessionToken,
-            p_nota_id: notaId,
-        });
-        if (error) throw error;
-        const err = mensajeDeError(data, 'No se pudieron cargar las rutas');
-        if (err) throw new Error(err);
-        return (data as ResumenRutaEstudiante[]) ?? [];
+    async listar(sessionToken: string, notaId: string, options?: { forceRefresh?: boolean }): Promise<ResumenRutaEstudiante[]> {
+        return fetchWithPortalCache<ResumenRutaEstudiante[]>(
+            sessionToken,
+            'ficha_rutas',
+            notaId,
+            async () => {
+                const { data, error } = await supabase.rpc('portal_ruta_listar', {
+                    p_session_token: sessionToken,
+                    p_nota_id: notaId,
+                });
+                if (error) throw error;
+                const err = mensajeDeError(data, 'No se pudieron cargar las rutas');
+                if (err) throw new Error(err);
+                return (data as ResumenRutaEstudiante[]) ?? [];
+            },
+            { forceRefresh: options?.forceRefresh }
+        );
     },
 
-    async obtener(sessionToken: string, rutaId: string): Promise<RutaEstudiante> {
-        const { data, error } = await supabase.rpc('portal_ruta_obtener', {
-            p_session_token: sessionToken,
-            p_ruta_id: rutaId,
-        });
-        if (error) throw error;
-        const err = mensajeDeError(data, 'No se pudo cargar la ruta');
-        if (err) throw new Error(err);
-        return desenrollar<RutaEstudiante>(data, 'No se pudo cargar esta ruta de aprendizaje.');
+    async obtener(sessionToken: string, rutaId: string, options?: { forceRefresh?: boolean }): Promise<RutaEstudiante> {
+        return fetchWithPortalCache<RutaEstudiante>(
+            sessionToken,
+            'ruta_detalle',
+            rutaId,
+            async () => {
+                const { data, error } = await supabase.rpc('portal_ruta_obtener', {
+                    p_session_token: sessionToken,
+                    p_ruta_id: rutaId,
+                });
+                if (error) throw error;
+                const err = mensajeDeError(data, 'No se pudo cargar la ruta');
+                if (err) throw new Error(err);
+                return desenrollar<RutaEstudiante>(data, 'No se pudo cargar esta ruta de aprendizaje.');
+            },
+            { forceRefresh: options?.forceRefresh }
+        );
     },
 
     /**
@@ -376,6 +393,8 @@ export const rutaApiPortal = {
         preguntaId: string,
         respuesta: RespuestaRuta,
         duracionSegundos?: number,
+        rutaId?: string,
+        notaId?: string,
     ): Promise<VeredictoIntento> {
         const { data, error } = await supabase.rpc('portal_ruta_registrar_intento', {
             p_session_token: sessionToken,
@@ -384,7 +403,11 @@ export const rutaApiPortal = {
             p_duracion_segundos: duracionSegundos ?? null,
         });
         if (error) throw error;
-        return desenrollar<VeredictoIntento>(data, 'No se pudo registrar el intento');
+        const veredicto = desenrollar<VeredictoIntento>(data, 'No se pudo registrar el intento');
+        if (veredicto.actividad_completada || veredicto.correcto) {
+            invalidatePortalRutaCache(sessionToken, rutaId ?? '', notaId);
+        }
+        return veredicto;
     },
 
     async progreso(sessionToken: string, rutaId: string): Promise<ProgresoRuta> {

@@ -36,7 +36,7 @@ const EstudianteSubnav: React.FC<Props> = ({ activa, onCambiar }) => (
                     key={s.k}
                     onClick={() => onCambiar(s.k)}
                     aria-current={activa === s.k ? 'page' : undefined}
-                    className={`px-3 py-2 text-[11.5px] transition-colors border-b-2 -mb-px ${
+                    className={`min-h-11 px-4 sm:px-3 py-2 text-xs sm:text-[11.5px] transition-colors border-b-2 -mb-px ${
                         activa === s.k
                             ? 'border-[#1B1F2A] text-[#1B1F2A] font-bold'
                             : 'border-transparent text-[#767a76] hover:text-[#1B1F2A]'

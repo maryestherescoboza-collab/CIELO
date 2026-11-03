@@ -673,7 +673,13 @@ export const IlusEducacionArtistica: React.FC<IllustrationProps> = ({ className 
  */
 export const getIlustracionAsignatura = (nombre: string, className = "w-full h-full") => {
   const norm = (nombre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  if (norm.includes('lengua') || norm.includes('espanol')) {
+
+  // 1. Inglés (prioritario antes de 'lengua' para evitar colisión con 'Lenguas Extranjeras')
+  if (norm.includes('ingl') || norm.includes('english')) {
+    return <IlusIngles className={className} />;
+  }
+  // 2. Lengua Española / Español (excluyendo expresamente lenguas extranjeras)
+  if ((norm.includes('lengua') || norm.includes('espanol')) && !norm.includes('extranjer') && !norm.includes('franc')) {
     return <IlusLenguaEspanola className={className} />;
   }
   if (norm.includes('matematica') || norm.includes('calculo')) {
@@ -682,13 +688,10 @@ export const getIlustracionAsignatura = (nombre: string, className = "w-full h-f
   if (norm.includes('social') || norm.includes('historia')) {
     return <IlusCienciasSociales className={className} />;
   }
-  if (norm.includes('naturaleza') || norm.includes('biolog') || norm.includes('quimic') || norm.includes('fisic') && norm.includes('cienc')) {
+  if (norm.includes('naturaleza') || norm.includes('biolog') || norm.includes('quimic') || (norm.includes('fisic') && norm.includes('cienc'))) {
     return <IlusCienciasNaturaleza className={className} />;
   }
-  if (norm.includes('ingl') || norm.includes('extranjer') || norm.includes('english')) {
-    return <IlusIngles className={className} />;
-  }
-  if (norm.includes('fisica') || norm.includes('deporte')) {
+  if ((norm.includes('fisica') || norm.includes('deporte')) && !norm.includes('naturaleza')) {
     return <IlusEducacionFisica className={className} />;
   }
   if (norm.includes('artistic') || norm.includes('arte') || norm.includes('musica')) {

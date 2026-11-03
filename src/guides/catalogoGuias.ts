@@ -12,6 +12,27 @@ export interface Guide {
 
 export const CATALOGO_GUIAS: Guide[] = [
   {
+    id: 'plan-recuperacion-p1',
+    titulo: 'Plan de recuperación P1',
+    steps: [
+      {
+        selector: '#btn-alertas-header',
+        texto: 'Haz clic en «Alertas» para abrir las notificaciones y avisos del P1.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="alerta-recuperacion-p1"]',
+        texto: 'Haz clic en el aviso «¡Plan de recuperación del P1 listo!» para ir a tu módulo de planificación.',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="tarjeta-plan-recuperacion-p1"]',
+        texto: 'Haz clic en «Plan de recuperación pedagógica P1» para abrir y consultar el documento oficial.',
+        evento: 'click'
+      }
+    ]
+  },
+  {
     id: 'crear-curso',
     titulo: 'Crear un curso',
     steps: [

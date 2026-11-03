@@ -22,11 +22,15 @@ const AnnualGradesTable: React.FC<AnnualGradesTableProps> = ({
     }, [allSubjects]);
 
     return (
-        <div className="overflow-x-auto no-scrollbar border border-[rgba(46,51,48,0.08)] rounded-[16px] bg-white overflow-hidden">
-            <table className="w-full text-center border-collapse min-w-375">
-                <thead>
-                    <tr className="bg-(--background) text-[#2E3330] font-black uppercase text-xs tracking-wider">
-                        <th rowSpan={3} className="w-70 px-6 text-left border-b-2 border-[rgba(46,51,48,0.08)]">ASIGNATURAS</th>
+        <>
+            <p className="lg:hidden print:hidden mb-2 text-[11px] font-bold uppercase tracking-widest text-[#767a76]">
+                Desliza horizontalmente para ver todos los períodos
+            </p>
+            <div className="annual-grades-scroll overflow-x-auto no-scrollbar border border-[rgba(46,51,48,0.08)] rounded-[16px] bg-white">
+                <table className="annual-grades-table w-full text-center border-collapse min-w-375">
+                    <thead>
+                        <tr className="bg-(--background) text-[#2E3330] font-black uppercase text-xs tracking-wider">
+                            <th rowSpan={3} className="annual-grades-sticky w-36 sm:w-70 px-3 sm:px-6 text-left border-b-2 border-[rgba(46,51,48,0.08)]">ASIGNATURAS</th>
                         <th colSpan={16} className="py-3 border-b-2 border-r border-[rgba(46,51,48,0.08)]">COMPETENCIAS FUNDAMENTALES</th>
                         <th rowSpan={3} className="bg-(--linen)/40 border-x-2 border-[rgba(46,51,48,0.08)] px-2">PROMEDIO GRUPO DE<br/>COMPETENCIAS ESPECÍFICAS</th>
                         <th rowSpan={3} className="border-r border-[rgba(46,51,48,0.08)] px-2">CALIFICACIÓN<br/>COMPLETIVA</th>
@@ -63,16 +67,17 @@ const AnnualGradesTable: React.FC<AnnualGradesTableProps> = ({
 
                         return (
                             <tr key={subject.id} className="hover:bg-(--background) transition-colors border-b border-[rgba(46,51,48,0.08)]">
-                                <td className="text-left px-6 font-bold text-[14px] text-[#2E3330] border-r border-[rgba(46,51,48,0.08)] bg-white py-4">
+                                <td className="annual-grades-sticky text-left px-3 sm:px-6 font-bold text-[12px] sm:text-[14px] text-[#2E3330] border-r border-[rgba(46,51,48,0.08)] bg-white py-4">
                                     {subject.nombre}
                                 </td>
                                 {renderGradesCellsForSubject(subName)}
                             </tr>
                         );
                     })}
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
+        </>
     );
 };
 

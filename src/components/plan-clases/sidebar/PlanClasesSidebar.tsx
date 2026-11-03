@@ -13,7 +13,7 @@ const PLANTILLAS_HTML = [
   {
     id: 'plan-recuperacion',
     titulo: 'Plan de Recuperación',
-    path: '/planificacion',
+    path: '/planificacion?seccion=recuperacion&periodo=P1',
   },
 ];
 
@@ -185,7 +185,7 @@ export default function PlanClasesSidebar() {
                 key={plantilla.id}
                 label={plantilla.titulo}
                 path={plantilla.path}
-                isActive={location.pathname === plantilla.path}
+                isActive={(location.pathname + location.search) === plantilla.path || (location.pathname === '/planificacion' && location.search.includes('seccion=recuperacion'))}
               />
             ))}
           </SidebarSection>

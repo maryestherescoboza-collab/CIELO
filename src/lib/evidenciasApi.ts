@@ -16,6 +16,14 @@
  */
 
 import { supabase } from './supabase';
+import {
+    canonicalAsignaturaKey,
+    fetchWithPortalCache,
+    getCachedSignedUrl,
+    invalidatePortalPortafolioCache,
+    removeCachedSignedUrl,
+    setCachedSignedUrl,
+} from '../cache/portalCache';
 import type {
     ActividadParaEvidencia,
     CursoConEvidencias,
@@ -24,6 +32,9 @@ import type {
 } from '../types/evidencias';
 
 export const EVIDENCIAS_BUCKET = 'evidencias';
+export const MAX_IMAGE_DIMENSION = 1600;
+export const MAX_THUMB_DIMENSION = 160;
+export const MAX_PROCESSED_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB máximo para imágenes procesadas
 
 /** Toda RPC devuelve JSONB y reporta el fallo dentro del propio payload. */
 function desenrollar<T>(data: unknown, fallback: string): T {
@@ -49,31 +60,219 @@ function limpiarNombre(nombre: string): string {
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
+   COMPRESIÓN DE IMÁGENES EN CLIENTE (WEBP <= 1600PX, <= 5MB + MINIATURA)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+export interface ImagenProcesadaEvidencia {
+    archivo: File;
+    thumbnailDataUrl: string | null;
+}
+
+const archivosYaProcesados = new WeakMap<File, ImagenProcesadaEvidencia>();
+
+function esImagenProcesableEnCanvas(file: File): boolean {
+    const mime = (file.type || '').toLowerCase();
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    // Excluir GIF (puede ser animado) y SVG (vectorial)
+    if (mime === 'image/gif' || mime === 'image/svg+xml' || ext === 'gif' || ext === 'svg') {
+        return false;
+    }
+    if (mime.startsWith('image/')) return true;
+    return ['jpg', 'jpeg', 'png', 'webp', 'bmp'].includes(ext);
+}
+
+function cargarImagenElemento(file: File): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(img);
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error('No se pudo decodificar la imagen seleccionada.'));
+        };
+        img.src = objectUrl;
+    });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
+    return new Promise((resolve) => {
+        canvas.toBlob((blob) => resolve(blob), type, quality);
+    });
+}
+
+/**
+ * Si el archivo es una imagen:
+ * 1. Redimensiona proporcionalmente con máximo aproximado de 1600 px en su lado mayor.
+ * 2. Convierte y comprime a WebP en el cliente.
+ * 3. Verifica que el resultado procesado no supere los 5 MB.
+ * 4. Genera una miniatura WebP ligera (~160 px) para evitar descargar la imagen
+ *    original cuando solo se muestran miniaturas en el portafolio.
+ */
+export async function procesarArchivoParaEvidencia(file: File): Promise<ImagenProcesadaEvidencia> {
+    const yaProcesado = archivosYaProcesados.get(file);
+    if (yaProcesado) {
+        return yaProcesado;
+    }
+
+    if (!esImagenProcesableEnCanvas(file)) {
+        if (file.type.startsWith('image/') && file.size > MAX_PROCESSED_IMAGE_BYTES) {
+            throw new Error('La imagen supera el límite permitido de 5 MB.');
+        }
+        const sinProcesar: ImagenProcesadaEvidencia = { archivo: file, thumbnailDataUrl: null };
+        archivosYaProcesados.set(file, sinProcesar);
+        return sinProcesar;
+    }
+
+    const img = await cargarImagenElemento(file);
+    const naturalWidth = img.naturalWidth || img.width;
+    const naturalHeight = img.naturalHeight || img.height;
+
+    if (!naturalWidth || !naturalHeight) {
+        if (file.size > MAX_PROCESSED_IMAGE_BYTES) {
+            throw new Error('La imagen procesada supera el límite de 5 MB.');
+        }
+        return { archivo: file, thumbnailDataUrl: null };
+    }
+
+    // 1. Dimensiones de imagen principal (máx 1600 px)
+    const maxSide = Math.max(naturalWidth, naturalHeight);
+    const scale = maxSide > MAX_IMAGE_DIMENSION ? MAX_IMAGE_DIMENSION / maxSide : 1;
+    const targetWidth = Math.max(1, Math.round(naturalWidth * scale));
+    const targetHeight = Math.max(1, Math.round(naturalHeight * scale));
+
+    const mainCanvas = document.createElement('canvas');
+    mainCanvas.width = targetWidth;
+    mainCanvas.height = targetHeight;
+    const mainCtx = mainCanvas.getContext('2d');
+    if (!mainCtx) {
+        if (file.size > MAX_PROCESSED_IMAGE_BYTES) {
+            throw new Error('La imagen supera el límite de 5 MB.');
+        }
+        return { archivo: file, thumbnailDataUrl: null };
+    }
+    mainCtx.imageSmoothingEnabled = true;
+    mainCtx.imageSmoothingQuality = 'high';
+    mainCtx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+    // Probar calidades decrecientes hasta cumplir <= 5 MB
+    const qualities = [0.82, 0.72, 0.6, 0.48];
+    let finalBlob: Blob | null = null;
+    for (const q of qualities) {
+        const candidate = await canvasToBlob(mainCanvas, 'image/webp', q);
+        if (candidate) {
+            finalBlob = candidate;
+            if (candidate.size <= MAX_PROCESSED_IMAGE_BYTES) {
+                break;
+            }
+        }
+    }
+
+    if (!finalBlob) {
+        if (file.size > MAX_PROCESSED_IMAGE_BYTES) {
+            throw new Error('La imagen supera el límite de 5 MB.');
+        }
+        return { archivo: file, thumbnailDataUrl: null };
+    }
+
+    if (finalBlob.size > MAX_PROCESSED_IMAGE_BYTES) {
+        throw new Error('La imagen procesada supera el límite máximo de 5 MB. Intenta con una imagen más liviana.');
+    }
+
+    // 2. Generar miniatura para el portafolio (máx 160 px, WebP)
+    let thumbnailDataUrl: string | null = null;
+    try {
+        const thumbScale = maxSide > MAX_THUMB_DIMENSION ? MAX_THUMB_DIMENSION / maxSide : 1;
+        const thumbWidth = Math.max(1, Math.round(naturalWidth * thumbScale));
+        const thumbHeight = Math.max(1, Math.round(naturalHeight * thumbScale));
+        const thumbCanvas = document.createElement('canvas');
+        thumbCanvas.width = thumbWidth;
+        thumbCanvas.height = thumbHeight;
+        const thumbCtx = thumbCanvas.getContext('2d');
+        if (thumbCtx) {
+            thumbCtx.imageSmoothingEnabled = true;
+            thumbCtx.imageSmoothingQuality = 'medium';
+            thumbCtx.drawImage(mainCanvas, 0, 0, thumbWidth, thumbHeight);
+            const dataUrl = thumbCanvas.toDataURL('image/webp', 0.68);
+            if (dataUrl && dataUrl.startsWith('data:image/webp') && dataUrl.length < 32000) {
+                thumbnailDataUrl = dataUrl;
+            }
+        }
+    } catch {
+        thumbnailDataUrl = null;
+    }
+
+    const baseName = file.name.replace(/\.[^.]+$/, '') || 'evidencia';
+    const processedFile = new File([finalBlob], `${baseName}.webp`, {
+        type: 'image/webp',
+        lastModified: Date.now(),
+    });
+
+    const resultado: ImagenProcesadaEvidencia = {
+        archivo: processedFile,
+        thumbnailDataUrl,
+    };
+
+    archivosYaProcesados.set(file, resultado);
+    archivosYaProcesados.set(processedFile, resultado);
+
+    return resultado;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
    LADO PORTAL — el estudiante y su Portafolio
    ═════════════════════════════════════════════════════════════════════════ */
 
 export const evidenciasApiPortal = {
-    async listar(sessionToken: string): Promise<EvidenciaPortafolio[]> {
-        const { data, error } = await supabase.rpc('portal_listar_evidencias', {
-            p_session_token: sessionToken,
-        });
-        if (error) throw error;
-        const msg = mensajeDeError(data, 'No se pudieron cargar tus evidencias');
-        if (msg) throw new Error(msg);
-        return desenrollar<EvidenciaPortafolio[]>(data, 'Respuesta vacia del portafolio');
+    async listar(
+        sessionToken: string,
+        options?: { forceRefresh?: boolean; asignatura?: string }
+    ): Promise<EvidenciaPortafolio[]> {
+        const subKey = options?.asignatura ? canonicalAsignaturaKey(options.asignatura) : 'all';
+        return fetchWithPortalCache<EvidenciaPortafolio[]>(
+            sessionToken,
+            'portafolio_evidencias',
+            subKey,
+            async () => {
+                const { data, error } = await supabase.rpc('portal_listar_evidencias', {
+                    p_session_token: sessionToken,
+                    p_asignatura: options?.asignatura || null,
+                });
+                if (error) throw error;
+                const msg = mensajeDeError(data, 'No se pudieron cargar tus evidencias');
+                if (msg) throw new Error(msg);
+                return desenrollar<EvidenciaPortafolio[]>(data, 'Respuesta vacia del portafolio');
+            },
+            { forceRefresh: options?.forceRefresh }
+        );
     },
 
-    async listarActividades(sessionToken: string): Promise<ActividadParaEvidencia[]> {
-        const { data, error } = await supabase.rpc('portal_listar_actividades_para_evidencia', {
-            p_session_token: sessionToken,
-        });
-        if (error) throw error;
-        const msg = mensajeDeError(data, 'No se pudieron cargar tus actividades');
-        if (msg) throw new Error(msg);
-        return desenrollar<ActividadParaEvidencia[]>(data, 'Respuesta vacia de actividades');
+    async listarActividades(
+        sessionToken: string,
+        options?: { forceRefresh?: boolean; asignatura?: string }
+    ): Promise<ActividadParaEvidencia[]> {
+        const subKey = options?.asignatura ? canonicalAsignaturaKey(options.asignatura) : 'all';
+        return fetchWithPortalCache<ActividadParaEvidencia[]>(
+            sessionToken,
+            'portafolio_actividades',
+            subKey,
+            async () => {
+                const { data, error } = await supabase.rpc('portal_listar_actividades_para_evidencia', {
+                    p_session_token: sessionToken,
+                    p_asignatura: options?.asignatura || null,
+                });
+                if (error) throw error;
+                const msg = mensajeDeError(data, 'No se pudieron cargar tus actividades');
+                if (msg) throw new Error(msg);
+                return desenrollar<ActividadParaEvidencia[]>(data, 'Respuesta vacia de actividades');
+            },
+            { forceRefresh: options?.forceRefresh }
+        );
     },
 
-    /** Sube el archivo primero y registra la fila despues. */
+    /** Procesa/comprime la imagen si corresponde, sube el archivo y registra la fila. */
     async crear(
         sessionToken: string,
         entrada: {
@@ -81,13 +280,21 @@ export const evidenciasApiPortal = {
             nombre: string;
             descripcion?: string | null;
             archivo: File;
+            thumbnailUrl?: string | null;
+            asignatura?: string | null;
         }
     ): Promise<{ id: number }> {
-        const path = `${crypto.randomUUID()}.${limpiarNombre(entrada.archivo.name.split('.').pop() || 'bin')}`;
+        const procesado = await procesarArchivoParaEvidencia(entrada.archivo);
+        const archivoFinal = procesado.archivo;
+        const thumbnailFinal = entrada.thumbnailUrl ?? procesado.thumbnailDataUrl ?? null;
+
+        const extRaw = limpiarNombre(archivoFinal.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const ext = (extRaw || 'bin').slice(0, 5);
+        const path = `${crypto.randomUUID()}.${ext}`;
 
         const { error: uploadError } = await supabase.storage
             .from(EVIDENCIAS_BUCKET)
-            .upload(path, entrada.archivo, { upsert: false, contentType: entrada.archivo.type || undefined });
+            .upload(path, archivoFinal, { upsert: false, contentType: archivoFinal.type || undefined });
         if (uploadError) throw new Error(`No se pudo subir el archivo: ${uploadError.message}`);
 
         const { data, error } = await supabase.rpc('portal_crear_evidencia', {
@@ -96,17 +303,24 @@ export const evidenciasApiPortal = {
             p_nombre: entrada.nombre.trim(),
             p_origen: 'storage',
             p_storage_path: path,
-            p_mime_type: entrada.archivo.type || null,
-            p_tamano_bytes: entrada.archivo.size || null,
+            p_mime_type: archivoFinal.type || null,
+            p_tamano_bytes: archivoFinal.size || null,
+            p_thumbnail_url: thumbnailFinal,
             p_descripcion: entrada.descripcion?.trim() || null,
+            p_asignatura: entrada.asignatura || null,
         });
-        if (error) throw error;
+        if (error) {
+            await supabase.storage.from(EVIDENCIAS_BUCKET).remove([path]);
+            throw error;
+        }
         const msg = mensajeDeError(data, 'No se pudo guardar la evidencia');
         if (msg) {
             // La fila fallo: el binario ya no tiene dueño y ocuparia el bucket.
             await supabase.storage.from(EVIDENCIAS_BUCKET).remove([path]);
             throw new Error(msg);
         }
+
+        invalidatePortalPortafolioCache(sessionToken);
         return desenrollar<{ id: number }>(data, 'La evidencia se guardo sin identificador');
     },
 
@@ -116,12 +330,6 @@ export const evidenciasApiPortal = {
      * No se sube nada: el binario no pasa por Supabase. Se registra la
      * referencia y el `drive_carpeta_id` de la carpeta de la que salio, que la
      * RPC valida contra el session_token.
-     *
-     * `drive_file_id` y `drive_url` los entrega la API de Google con el token del
-     * propio alumno. La `thumbnail_url` que devuelve Drive es un enlace con
-     * credencial que caduca en unas horas, asi que se guarda como dato de
-     * referencia y la UI la refresca contra la API cuando puede; no se usa como
-     * unica fuente de verdad.
      */
     async crearDesdeDrive(
         sessionToken: string,
@@ -135,6 +343,7 @@ export const evidenciasApiPortal = {
             tamanoBytes: number | null;
             thumbnailUrl: string | null;
             driveCarpetaId: number | null;
+            asignatura?: string | null;
         }
     ): Promise<{ id: number }> {
         const { data, error } = await supabase.rpc('portal_crear_evidencia', {
@@ -149,10 +358,13 @@ export const evidenciasApiPortal = {
             p_thumbnail_url: entrada.thumbnailUrl,
             p_descripcion: entrada.descripcion?.trim() || null,
             p_drive_carpeta_id: entrada.driveCarpetaId,
+            p_asignatura: entrada.asignatura || null,
         });
         if (error) throw error;
         const msg = mensajeDeError(data, 'No se pudo guardar la evidencia');
         if (msg) throw new Error(msg);
+
+        invalidatePortalPortafolioCache(sessionToken);
         return desenrollar<{ id: number }>(data, 'La evidencia se guardo sin identificador');
     },
 
@@ -168,8 +380,11 @@ export const evidenciasApiPortal = {
 
         const path = (data as { storage_path?: string | null } | null)?.storage_path;
         if (path) {
+            removeCachedSignedUrl(path);
             await supabase.storage.from(EVIDENCIAS_BUCKET).remove([path]);
         }
+
+        invalidatePortalPortafolioCache(sessionToken);
     },
 };
 
@@ -233,14 +448,6 @@ export interface DescriptorEvidencia {
     icono: 'imagen' | 'video' | 'pdf' | 'documento' | 'audio' | 'otro';
 }
 
-/**
- * Que se puede previsualizar sin dependencias.
- *
- * No se mete pdf.js ni un visor externo: la app no tiene esas librerias y
- * anadirlas por esto seria una migracion de peso. El PDF se abre con "Abrir
- * archivo" y su miniatura es el icono, que es justo el comportamiento que
- * espera un docente revisando 20 entregas en fila.
- */
 export function descriptorEvidencia(mime: string | null, nombre: string | null): DescriptorEvidencia {
     const m = (mime || '').toLowerCase();
     if (m.startsWith('image/')) return { clase: 'imagen', etiqueta: 'Imagen', icono: 'imagen' };
@@ -262,58 +469,66 @@ export function descriptorEvidencia(mime: string | null, nombre: string | null):
     return { clase: 'otro', etiqueta: 'Archivo', icono: 'otro' };
 }
 
-/**
- * URL de una evidencia de Google Drive.
- *
- * Las de Drive son enlaces del propio Drive y se usan tal cual. Las de CIELO
- * Storage SIEMPRE pasan por `resolverUrls` de abajo: el bucket es privado, asi
- * que una URL publica no resolveria nada.
- */
 export function urlDriveEvidencia(ev: { origen: string; drive_url: string | null }): string | null {
     return ev.origen === 'drive' && ev.drive_url ? ev.drive_url : null;
 }
 
 /**
- * Firma las rutas de CIELO Storage y devuelve `idEvidencia -> url`.
- *
- * El bucket es privado y el Portal no tiene JWT, asi que no hay URL publica: la
- * unica via es una signed URL de corta duracion, que la politica SELECT del
- * bucket permite porque la ruta con uuid es la credencial. Se firman todas en
- * una sola pasada para no lanzar una peticion por miniatura.
- *
- * Un fallo aqui no debe tumbar la pantalla: la evidencia se sigue listando con
- * su icono y "Abrir archivo" sigue funcionando con la ruta cruda.
+ * Firma las rutas de CIELO Storage en UNA SOLA operación por lote (`createSignedUrls`)
+ * y reutiliza enlaces firmados vigentes en caché para evitar solicitudes repetidas.
  */
-export async function resolverUrls<T extends { id: number; origen: string; storage_path: string | null; drive_url: string | null }>(
-    evidencias: T[]
-): Promise<Map<number, string>> {
+export async function resolverUrls<
+    T extends { id: number; origen: string; storage_path: string | null; drive_url: string | null }
+>(evidencias: T[]): Promise<Map<number, string>> {
     const resultado = new Map<number, string>();
+    const pathsToSign = new Set<string>();
+    const pathToIds = new Map<string, number[]>();
 
-    await Promise.all(
-        evidencias.map(async (ev) => {
-            if (ev.origen === 'drive') {
-                if (ev.drive_url) resultado.set(ev.id, ev.drive_url);
-                return;
-            }
-            if (!ev.storage_path) return;
+    for (const ev of evidencias) {
+        if (ev.origen === 'drive') {
+            if (ev.drive_url) resultado.set(ev.id, ev.drive_url);
+            continue;
+        }
+        if (!ev.storage_path) continue;
+
+        const cachedUrl = getCachedSignedUrl(ev.storage_path);
+        if (cachedUrl) {
+            resultado.set(ev.id, cachedUrl);
+            continue;
+        }
+
+        pathsToSign.add(ev.storage_path);
+        const list = pathToIds.get(ev.storage_path) ?? [];
+        list.push(ev.id);
+        pathToIds.set(ev.storage_path, list);
+    }
+
+    const uniquePaths = Array.from(pathsToSign);
+    if (uniquePaths.length > 0) {
+        try {
             const { data, error } = await supabase.storage
                 .from(EVIDENCIAS_BUCKET)
-                .createSignedUrl(ev.storage_path, 300);
-            if (!error && data?.signedUrl) resultado.set(ev.id, data.signedUrl);
-        })
-    );
+                .createSignedUrls(uniquePaths, 3600);
+
+            if (!error && Array.isArray(data)) {
+                for (const item of data) {
+                    if (!item.error && item.path && item.signedUrl) {
+                        setCachedSignedUrl(item.path, item.signedUrl);
+                        const ids = pathToIds.get(item.path) ?? [];
+                        for (const id of ids) {
+                            resultado.set(id, item.signedUrl);
+                        }
+                    }
+                }
+            }
+        } catch {
+            // Un fallo de red al firmar no debe tumbar la pantalla del portafolio
+        }
+    }
 
     return resultado;
 }
 
-/**
- * Mensaje de una excepcion, sin `any`.
- *
- * Los `catch` de las pantallas necesitan el texto del fallo para pintar un aviso
- * legible, y repiten el mismo `err?.message || '...'` en cinco sitios. Aqui se
- * centraliza y se estrecha a `unknown`, que es lo que TypeScript infiere en un
- * catch y lo que evita el `@typescript-eslint/no-explicit-any`.
- */
 export function mensajeDeExcepcion(e: unknown, porDefecto: string): string {
     if (e && typeof e === 'object' && 'message' in e) {
         const msg = (e as { message?: unknown }).message;
@@ -322,7 +537,6 @@ export function mensajeDeExcepcion(e: unknown, porDefecto: string): string {
     return porDefecto;
 }
 
-/** Tamano legible para la ficha de la evidencia. */
 export function tamanoLegible(bytes: number | null): string | null {
     if (!bytes || bytes <= 0) return null;
     if (bytes < 1024) return `${bytes} B`;

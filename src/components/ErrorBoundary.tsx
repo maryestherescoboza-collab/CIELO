@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
+import logo from '../assets/logo.png';
 import { attemptChunkRecovery, isChunkLoadError } from '../utils/chunkRecovery';
 
 interface ErrorBoundaryProps {
@@ -43,35 +43,41 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasErro
             if (this.state.isChunkError) {
                 // Si llegamos aquí con un error de chunk, es porque la recuperación (reloading) falló o ya se intentó.
                 return (
-                    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-(--bg-main)">
-                        <div className="max-w-md w-full bg-white rounded-4xl shadow-xl overflow-hidden text-center relative border border-(--border-unificado)">
-                            <div className="h-32 bg-linear-to-r from-(--french-blue) to-(--olive-branch) flex items-center justify-center">
-                                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white ring-4 ring-white/30 shadow-lg">
-                                    <Sparkles size={32} strokeWidth={2.5} />
-                                </div>
+                    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 sm:p-6 bg-(--bg-main)">
+                        <div className="max-w-md w-full bg-white rounded-2xl sm:rounded-3xl shadow-sm overflow-hidden text-center border border-(--border-unificado) px-6 py-8 sm:px-10 sm:py-10">
+                            <div className="flex justify-center mb-6 sm:mb-7">
+                                <img
+                                    src={logo}
+                                    alt="CIELO"
+                                    className="h-14 sm:h-16 w-auto object-contain select-none"
+                                />
                             </div>
-                            <div className="p-10">
-                                <h2 className="text-2xl font-bold text-(--ink) mb-4 tracking-tight">¡Tenemos algo nuevo para ti!</h2>
-                                <p className="text-(--ink-soft) mb-6 leading-relaxed">
-                                    CIELO se ha actualizado con mejoras para que tu experiencia siga siendo cada vez mejor.
+
+                            <h2 className="text-xl sm:text-2xl font-bold text-(--ink) mb-3.5 tracking-tight">
+                                ¡Tenemos algo nuevo para ti!
+                            </h2>
+
+                            <p className="text-sm sm:text-base text-(--ink-soft) mb-3.5 leading-relaxed">
+                                CIELO se ha actualizado con mejoras para que tu experiencia siga siendo cada vez mejor.
+                            </p>
+
+                            <p className="text-sm sm:text-base text-(--ink-soft) mb-6 leading-relaxed">
+                                Haz clic en <strong className="font-semibold text-(--ink)">Actualizar CIELO</strong> y continúa trabajando con la nueva versión.
+                            </p>
+
+                            <div className="bg-(--linen)/60 rounded-xl px-4 py-3.5 mb-6 border border-(--border-unificado)">
+                                <p className="text-(--ink) font-medium text-xs sm:text-sm leading-snug">
+                                    Todo lo que has creado está guardado y seguro.
                                 </p>
-                                <p className="text-(--ink-soft) mb-8 leading-relaxed">
-                                    Haz clic en <strong>Actualizar CIELO</strong> y continúa trabajando con la nueva versión.
-                                </p>
-                                
-                                <div className="bg-(--linen) rounded-xl p-4 mb-8 border border-(--border-unificado)">
-                                    <p className="text-(--ink) font-semibold text-sm">
-                                        Todo lo que has creado está guardado y seguro.
-                                    </p>
-                                </div>
-                    
-                                <button 
-                                    onClick={() => window.location.reload()} 
-                                    className="w-full py-4 bg-(--ink) hover:bg-black text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                                >
-                                    Actualizar CIELO
-                                </button>
                             </div>
+
+                            <button
+                                type="button"
+                                onClick={() => window.location.reload()}
+                                className="w-full py-3.5 px-6 bg-(--ink) hover:bg-[#1f2321] active:scale-[0.99] text-white rounded-xl font-semibold text-sm sm:text-base tracking-wide transition-colors duration-200 cursor-pointer"
+                            >
+                                Actualizar CIELO
+                            </button>
                         </div>
                     </div>
                 );

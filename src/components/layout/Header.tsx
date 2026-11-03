@@ -148,6 +148,8 @@ const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-2">
                 <PresentationToggle checked={isPresenting} onChange={() => { void togglePresentation(); }} />
                 <button 
+                    id="btn-alertas-header"
+                    data-guide="btn-alertas"
                     className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/55 hover:border-(--primary) transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill shrink-0" 
                     onClick={() => setShowNotifs(prev => !prev)} 
                     aria-label="Ver pendientes"
@@ -155,7 +157,10 @@ const Header: React.FC<HeaderProps> = ({
                     <Bell size={14} className="shrink-0" />
                     <span className="hidden lg:inline shrink-0">Alertas</span>
                     {hasUnread && (
-                        <span className="absolute top-1.5 right-2 w-2 h-2 bg-(--warning) rounded-full border border-white"></span>
+                        <span className="absolute top-1.5 right-2 flex h-2.5 w-2.5 items-center justify-center pointer-events-none">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
+                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-600 border border-white animate-pulse"></span>
+                        </span>
                     )}
                 </button>
 
@@ -174,6 +179,7 @@ const Header: React.FC<HeaderProps> = ({
                     {showTutorialMenu && (
                         <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-(--border-soft) shadow-md py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                             {[
+                                { id: 'plan-recuperacion-p1', label: 'Plan de recuperación P1' },
                                 { id: 'crear-curso', label: 'Crear un curso' },
                                 { id: 'crear-actividades-alumnos', label: 'Agregar actividades y alumnos' },
                                 { id: 'pase-de-lista', label: 'Cómo hacer el pase de lista' },

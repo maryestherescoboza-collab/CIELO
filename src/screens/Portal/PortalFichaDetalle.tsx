@@ -270,14 +270,14 @@ export default function PortalFichaDetalle() {
                 key={producto.actividad_id}
                 className={`rounded-2xl border p-4 ${
                   producto.entregado
-                    ? 'border-emerald-200 bg-emerald-50/50'
-                    : 'border-amber-200 bg-amber-50/40'
+                    ? 'border-[#689C63]/40 bg-[#689C63]/8'
+                    : 'border-[#DEAE4D]/40 bg-[#DEAE4D]/10'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <span
                     className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                      producto.entregado ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'
+                      producto.entregado ? 'bg-[#689C63] text-white' : 'bg-[#DEAE4D] text-white'
                     }`}
                   >
                     {producto.entregado ? <CheckCircle2 size={17} /> : <PhoneCall size={17} />}
@@ -298,7 +298,7 @@ export default function PortalFichaDetalle() {
 
                     {producto.entregado ? (
                       <div className="mt-3">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#689C63] px-3 py-1 text-[11px] font-bold text-white">
                           <Check size={12} /> Producto entregado
                         </span>
                         {producto.entregas.length > 0 && (
@@ -314,7 +314,7 @@ export default function PortalFichaDetalle() {
                     ) : (
                       <button
                         onClick={() => setActividadEntregando(producto)}
-                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2 text-xs font-bold text-white hover:bg-neutral-800 active:scale-95 transition-all"
+                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#689C63] hover:bg-[#588554] px-4 py-2 text-xs font-bold text-white active:scale-95 transition-all shadow-2xs"
                       >
                         <PhoneCall size={15} />
                         Entregar producto
@@ -418,7 +418,7 @@ export default function PortalFichaDetalle() {
           <button
             onClick={handleEnviarComentario}
             disabled={!nuevoComentario.trim() || enviando}
-            className="w-11 h-11 flex-none flex items-center justify-center bg-black text-white rounded-xl hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-11 h-11 flex-none flex items-center justify-center bg-[#537BAC] text-white rounded-xl hover:bg-[#43648C] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-2xs"
           >
             {enviando ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="ml-0.5" />}
           </button>
@@ -445,6 +445,7 @@ export default function PortalFichaDetalle() {
             },
           ]}
           actividadInicial={actividadEntregando.actividad_id}
+          selectedAsignatura={actividadEntregando.asignatura}
           onCerrar={() => setActividadEntregando(null)}
           onGuardada={() => {
             setActividadEntregando(null);

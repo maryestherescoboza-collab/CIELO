@@ -52,7 +52,8 @@ export default function PortalEstudiante() {
     selectedPeriodo, 
     setSelectedPeriodo,
     selectedAsignatura,
-    estudianteContext 
+    estudianteContext,
+    portalConfig
   } = usePortal();
 
   // Si no viene seleccionada en el contexto, tomar la primera con docente o primera de la lista
@@ -75,6 +76,19 @@ export default function PortalEstudiante() {
     published_until: null,
   };
   const activeOficial = SIETE_ASIGNATURAS_OFICIALES.find(o => sonMismaAsignatura(o.nombre, activeMateria));
+  const visiblePeriods = React.useMemo(() => {
+    if (portalConfig?.periodos_visibles && Array.isArray(portalConfig.periodos_visibles) && portalConfig.periodos_visibles.length > 0) {
+      return (['P1', 'P2', 'P3', 'P4'] as Periodo[]).filter(p => portalConfig.periodos_visibles.includes(p));
+    }
+    return ['P1', 'P2', 'P3', 'P4'] as Periodo[];
+  }, [portalConfig?.periodos_visibles]);
+
+  React.useEffect(() => {
+    if (visiblePeriods.length > 0 && !visiblePeriods.includes(selectedPeriodo)) {
+      setSelectedPeriodo(visiblePeriods[0]);
+    }
+  }, [visiblePeriods, selectedPeriodo, setSelectedPeriodo]);
+
 
   useEffect(() => {
     if (!sessionToken || !activeMateria) return;
@@ -229,7 +243,7 @@ export default function PortalEstudiante() {
         <div className="flex items-center justify-between pt-1">
           <h2 className="text-xs font-bold tracking-wider text-black uppercase">Período Académico</h2>
           <div className="flex gap-1.5 p-1 rounded-full border border-stone-200 bg-stone-50">
-            {(['P1', 'P2', 'P3', 'P4'] as Periodo[]).map(p => (
+            {visiblePeriods.map(p => (
               <button 
                 key={p}
                 onClick={() => setSelectedPeriodo(p)}
@@ -292,11 +306,11 @@ export default function PortalEstudiante() {
             </div>
           </section>
 
-          {activeAsignaturaConfig.mostrar_evidencias && evidencias.length > 0 && (
+          {portalConfig?.inicio_mostrar_evidencias !== false && activeAsignaturaConfig.mostrar_evidencias && evidencias.length > 0 && (
             <section className="space-y-3" data-purpose="learning-evidence-missions">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-bold tracking-wider uppercase text-black">Evidencias de Aprendizaje</h2>
-                <span className="text-xs font-bold border border-black px-2.5 py-0.5 rounded-full bg-stone-100 text-black">
+                <span className="text-xs font-bold border border-black px-2.5 py-0.5 rounded-full bg-[#BFC9A6]/25 text-[#1B1F2A]">
                   {evidencias.length} Actividad{evidencias.length !== 1 && 'es'}
                 </span>
               </div>
@@ -311,7 +325,7 @@ export default function PortalEstudiante() {
                   <div className="p-3.5 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-stone-500">{ev.fecha}</span>
-                      <span className={`text-base font-black tracking-tight ${!isEvaluated ? 'text-stone-400' : 'text-black'}`}>{statusText}</span>
+                      <span className={`text-base font-black tracking-tight ${!isEvaluated ? 'text-stone-400' : 'text-[#689C63]'}`}>{statusText}</span>
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-black">{ev.nombre}</h3>
@@ -343,19 +357,19 @@ export default function PortalEstudiante() {
             </section>
           )}
 
-          {activeAsignaturaConfig.mostrar_incidencias && incidencias.length > 0 && (
+          {portalConfig?.inicio_mostrar_incidencias !== false && activeAsignaturaConfig.mostrar_incidencias && incidencias.length > 0 && (
             <section className="space-y-2.5" data-purpose="convivencia-logbook">
               <h2 className="text-xs font-bold tracking-wider text-black uppercase">Bitácora de Convivencia</h2>
               <div className="space-y-2">
                 {incidencias.map(inc => (
                   <div key={inc.id} className="border border-black rounded-2xl p-3 flex gap-3 items-start bg-white">
-                    <div className="w-9 h-9 rounded-full border border-black flex items-center justify-center text-black shrink-0 bg-stone-100">
+                    <div className="w-9 h-9 rounded-full border border-black flex items-center justify-center text-[#DB5B48] shrink-0 bg-[#DB5B48]/15">
                       <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>flag</span>
                     </div>
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold text-stone-500">{inc.fecha}</span>
-                        <span className="px-2 py-0.5 border border-black text-[9px] font-bold rounded-full bg-stone-100 text-black">
+                        <span className="px-2 py-0.5 border border-black text-[9px] font-bold rounded-full bg-[#DEAE4D]/20 text-[#1B1F2A]">
                           {inc.categoria.toUpperCase()}
                         </span>
                       </div>

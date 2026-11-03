@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { fetchWithPortalCache, invalidatePortalDriveCache } from '../cache/portalCache';
 
 /* ═════════════════════════════════════════════════════════════════════════
    GOOGLE DRIVE DESDE EL PORTAL DEL ESTUDIANTE
@@ -46,10 +47,19 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
     return data as T;
 }
 
-export async function obtenerEstadoDrive(sessionToken: string): Promise<EstadoDrive> {
+export async function obtenerEstadoDrive(
+    sessionToken: string,
+    options?: { forceRefresh?: boolean }
+): Promise<EstadoDrive> {
     // Sin defaults: `portal_drive_estado` devuelve la forma COMPLETA en los dos
     // casos (con y sin conexion), asi que rellenarla aqui solo taparia un fallo.
-    return rpc<EstadoDrive>('portal_drive_estado', { p_session_token: sessionToken });
+    return fetchWithPortalCache<EstadoDrive>(
+        sessionToken,
+        'drive_estado',
+        'main',
+        () => rpc<EstadoDrive>('portal_drive_estado', { p_session_token: sessionToken }),
+        { forceRefresh: options?.forceRefresh }
+    );
 }
 
 /**
@@ -67,6 +77,7 @@ export async function registrarConexionDrive(
         p_email: email,
         p_cielo_root_id: cieloRootId,
     });
+    invalidatePortalDriveCache(sessionToken);
 }
 
 export async function registrarRaizDrive(sessionToken: string, cieloRootId: string): Promise<void> {
@@ -74,6 +85,7 @@ export async function registrarRaizDrive(sessionToken: string, cieloRootId: stri
         p_session_token: sessionToken,
         p_cielo_root_id: cieloRootId,
     });
+    invalidatePortalDriveCache(sessionToken);
 }
 
 /** Enlaza (o re-enlaza) la carpeta de una asignatura con su id real de Drive. */
@@ -91,11 +103,13 @@ export async function registrarCarpetaDrive(
         p_drive_folder_id: driveFolderId,
         p_creado_en_drive: creadoEnDrive,
     });
+    invalidatePortalDriveCache(sessionToken);
 }
 
 /** Suelta la referencia del Portal. No toca Drive: el archivo es del alumno. */
 export async function desconectarDrive(sessionToken: string): Promise<void> {
     await rpc('portal_drive_desconectar', { p_session_token: sessionToken });
+    invalidatePortalDriveCache(sessionToken);
 }
 
 export function buscarCarpeta(estado: EstadoDrive, asignatura: string): CarpetaDrive | undefined {

@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    PlusCircle, 
-    Cloud, 
-    ExternalLink, 
-    MoreVertical, 
-    Trash2, 
-    X, 
-    Loader2, 
-    Image as ImageIcon, 
+import {
+    PlusCircle,
+    Cloud,
+    ExternalLink,
+    MoreVertical,
+    Trash2,
+    X,
+    Loader2,
+    Image as ImageIcon,
     FolderOpen,
     Stamp
 } from 'lucide-react';
@@ -50,7 +50,7 @@ const MiniaturaEvidencia: React.FC<{ ev: EvidenciaPortafolio; url: string | null
     }
 
     return (
-        <div className="w-full h-full flex items-center justify-center text-[#3B82F6]">
+        <div className="w-full h-full flex items-center justify-center text-[#537BAC]">
             <ImageIcon size={26} strokeWidth={1.6} />
         </div>
     );
@@ -75,6 +75,7 @@ const PortalPortafolio: React.FC = () => {
     const [menuAbiertoId, setMenuAbiertoId] = useState<number | null>(null);
     const [evidenciaAEliminar, setEvidenciaAEliminar] = useState<EvidenciaPortafolio | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const reqIdRef = useRef(0);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent | TouchEvent) => {
@@ -94,24 +95,38 @@ const PortalPortafolio: React.FC = () => {
 
     const cargar = useCallback(async () => {
         if (!sessionToken) return;
+        const currentReqId = ++reqIdRef.current;
         setLoading(true);
         setError(null);
+        // Limpiar inmediatamente para que no queden datos de la materia anterior visibles
+        setEvidencias([]);
+        setActividades([]);
+        setUrls(new Map());
+
         try {
             const [evs, acts, estadoDrive] = await Promise.all([
-                evidenciasApiPortal.listar(sessionToken),
-                evidenciasApiPortal.listarActividades(sessionToken),
+                evidenciasApiPortal.listar(sessionToken, { asignatura: selectedAsignatura || undefined }),
+                evidenciasApiPortal.listarActividades(sessionToken, { asignatura: selectedAsignatura || undefined }),
                 obtenerEstadoDrive(sessionToken).catch(() => null),
             ]);
+
+            if (currentReqId !== reqIdRef.current) return;
+
             setEvidencias(evs);
             setActividades(acts);
             setDrive(estadoDrive);
-            setUrls(await resolverUrls(evs));
+            const resolved = await resolverUrls(evs);
+            if (currentReqId !== reqIdRef.current) return;
+            setUrls(resolved);
         } catch (e) {
+            if (currentReqId !== reqIdRef.current) return;
             setError(mensajeDeExcepcion(e, 'No se pudo cargar tu portafolio'));
         } finally {
-            setLoading(false);
+            if (currentReqId === reqIdRef.current) {
+                setLoading(false);
+            }
         }
-    }, [sessionToken]);
+    }, [sessionToken, selectedAsignatura]);
 
     useEffect(() => {
         cargar();
@@ -119,12 +134,12 @@ const PortalPortafolio: React.FC = () => {
 
     const evidenciasMateria = useMemo(() => {
         if (!selectedAsignatura) return evidencias;
-        return evidencias.filter(e => !e.asignatura || sonMismaAsignatura(e.asignatura, selectedAsignatura));
+        return evidencias.filter(e => Boolean(e.asignatura && sonMismaAsignatura(e.asignatura, selectedAsignatura)));
     }, [evidencias, selectedAsignatura]);
 
     const actividadesMateria = useMemo(() => {
         if (!selectedAsignatura) return actividades;
-        return actividades.filter(a => !a.asignatura || sonMismaAsignatura(a.asignatura, selectedAsignatura));
+        return actividades.filter(a => Boolean(a.asignatura && sonMismaAsignatura(a.asignatura, selectedAsignatura)));
     }, [actividades, selectedAsignatura]);
 
     const visibles = useMemo(
@@ -199,7 +214,7 @@ const PortalPortafolio: React.FC = () => {
         <div className="p-3.5 sm:p-5 pb-24 max-w-xl mx-auto">
             {/* Contenedor principal con estética idéntica al mockup */}
             <div className="bg-white rounded-3xl border border-[#E5E7EB] p-4.5 sm:p-5 shadow-xs">
-                
+
                 {/* 1. Encabezado: Título "Evidencias", subtítulo y botón (+) azul */}
                 <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
@@ -223,7 +238,7 @@ const PortalPortafolio: React.FC = () => {
                         onClick={() => abrirForm()}
                         aria-label="Agregar evidencia"
                         title="Agregar evidencia"
-                        className="text-[#3B82F6] hover:text-[#2563EB] active:scale-95 transition-all p-0.5 mt-0.5 shrink-0"
+                        className="text-[#537BAC] hover:text-[#43648C] active:scale-95 transition-all p-0.5 mt-0.5 shrink-0"
                     >
                         <PlusCircle size={26} strokeWidth={1.8} />
                     </button>
@@ -236,7 +251,7 @@ const PortalPortafolio: React.FC = () => {
                         className="w-full flex items-center justify-between border border-[#E5E7EB] rounded-2xl p-4 mb-4 hover:bg-[#FAFAF7] active:scale-[0.995] transition-all bg-white text-left group"
                     >
                         <div className="flex items-center gap-3.5 min-w-0">
-                            <Cloud size={22} strokeWidth={1.6} className="text-[#1B1F2A] shrink-0" />
+                            <Cloud size={22} strokeWidth={1.6} className="text-[#537BAC] shrink-0" />
                             <div className="min-w-0">
                                 <p className="text-sm font-bold text-[#1B1F2A] leading-tight">
                                     {drive.conectado ? 'Google Drive conectado' : 'Conectar Google Drive'}
@@ -262,11 +277,10 @@ const PortalPortafolio: React.FC = () => {
                             <button
                                 key={f.k}
                                 onClick={() => setFiltro(f.k)}
-                                className={`shrink-0 text-xs font-bold transition-all ${
-                                    activo
-                                        ? 'bg-[#1B1F2A] text-white px-4 py-2 rounded-full'
-                                        : 'text-[#1B1F2A] hover:text-black py-2 px-1'
-                                }`}
+                                className={`shrink-0 text-xs font-bold transition-all ${activo
+                                        ? 'bg-[#537BAC] text-white px-4 py-2 rounded-full'
+                                        : 'text-[#1B1F2A] hover:text-[#537BAC] py-2 px-1'
+                                    }`}
                             >
                                 {f.label} {f.count}
                             </button>
@@ -287,8 +301,8 @@ const PortalPortafolio: React.FC = () => {
                         <p className="text-[#C0392B] text-xs font-bold">{error}</p>
                     </div>
                 ) : grupos.length === 0 ? (
-                    <div className="text-center py-14 border border-dashed border-[#D8D7E0] rounded-2xl bg-white my-3">
-                        <FolderOpen size={26} strokeWidth={1.5} className="mx-auto text-[#A8A9B0] mb-3" />
+                    <div className="text-center py-14 border border-dashed border-[#BFC9A6] rounded-2xl bg-[#FCFCFA] my-3">
+                        <FolderOpen size={26} strokeWidth={1.5} className="mx-auto text-[#537BAC]/60 mb-3" />
                         <p className="text-sm font-bold text-[#1B1F2A]">No hay evidencias aquí</p>
                         <p className="text-xs text-[#767A76] mt-1">
                             {filtro === 'todas'
@@ -336,9 +350,8 @@ const PortalPortafolio: React.FC = () => {
                                                 onClick={() => {
                                                     if (url) window.open(url, '_blank', 'noopener,noreferrer');
                                                 }}
-                                                className={`relative border border-[#E5E7EB] rounded-2xl p-3.5 flex items-center gap-4 bg-white transition-all ${
-                                                    url ? 'cursor-pointer hover:border-[#D1D5DB] active:scale-[0.995]' : ''
-                                                }`}
+                                                className={`relative border border-[#E5E7EB] rounded-2xl p-3.5 flex items-center gap-4 bg-white transition-all ${url ? 'cursor-pointer hover:border-[#D1D5DB] active:scale-[0.995]' : ''
+                                                    }`}
                                             >
                                                 {/* Miniatura 64-68px uniforme con ícono de imagen azul */}
                                                 <div className="w-16 h-16 shrink-0 rounded-xl overflow-hidden flex items-center justify-center">
@@ -356,11 +369,11 @@ const PortalPortafolio: React.FC = () => {
 
                                                     <div className="mt-2 flex items-center gap-2 flex-wrap">
                                                         {ev.estado === 'pendiente' ? (
-                                                            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#F5ECD8] text-[#8D6829]">
+                                                            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#DEAE4D]/20 text-[#8C6415]">
                                                                 Por revisar
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#EDF7ED] text-[#2E7D32]">
+                                                            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#689C63]/18 text-[#4a7a46]">
                                                                 Revisada
                                                             </span>
                                                         )}
@@ -508,6 +521,7 @@ const PortalPortafolio: React.FC = () => {
                     token={token}
                     actividades={actividadesMateria}
                     actividadInicial={actividadInicial}
+                    selectedAsignatura={selectedAsignatura}
                     onCerrar={() => setFormAbierto(false)}
                     onGuardada={() => {
                         setFormAbierto(false);

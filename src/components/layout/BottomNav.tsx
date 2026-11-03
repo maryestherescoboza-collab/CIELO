@@ -60,7 +60,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                 return (
                     <button 
                         key={item.label} 
-                        id={item.screen === 'cursos' ? 'nav-cursos' : undefined}
+                        id={item.screen === 'cursos' ? 'nav-cursos' : item.screen === 'plan-de-clases' ? 'nav-plan-clases' : undefined}
+                        data-guide={item.screen === 'plan-de-clases' ? 'nav-plan-clases' : undefined}
                         onClick={() => { onNavigate(item.screen); setShowMore(false); }} 
                         aria-label={item.label}
                         title={item.label}

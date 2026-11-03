@@ -9,6 +9,7 @@ import BottomNav from './layout/BottomNav';
 import ProfileSidebar from './layout/ProfileSidebar';
 import NotificationDropdown from './layout/NotificationDropdown';
 import ResetModal from './layout/ResetModal';
+import { useAlertaRecuperacionP1 } from '../hooks/useAlertaRecuperacionP1';
 
 interface Props {
     onResetSchoolYear: () => void;
@@ -186,7 +187,8 @@ export default function Layout({
         return activeProfile?.avatar || null;
     };
 
-    const hasUnread = useMemo(() => state.notificaciones.some(n => !n.leida), [state.notificaciones]);
+    const alertaP1 = useAlertaRecuperacionP1();
+    const hasUnread = useMemo(() => state.notificaciones.some(n => !n.leida) || alertaP1.visible, [state.notificaciones, alertaP1.visible]);
 
     const logrosPedagogicos = useMemo(() => {
         const result = {
@@ -275,9 +277,9 @@ export default function Layout({
                     <NotificationDropdown 
                         showNotifs={showNotifs}
                         notificaciones={state.notificaciones}
-
                         onMarkNotifyRead={onMarkNotifyRead}
                         onCompleteTarea={onCompleteTarea}
+                        onClose={() => setShowNotifs(false)}
                     />
                 </>
             )}

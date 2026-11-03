@@ -41,3 +41,25 @@
     padding-right: 3rem;
   }
 }
+
+
+/* ==========================================================================
+   ESTILO DE GRABADO ANTIGUO PARA TARJETAS /PORTAL (XILOGRAFÍA / TINTA)
+   Inspirado en la técnica tradicional de grabado en naipes antiguos (As de Picas):
+   - Contorno exterior de tinta sólida (#1E1E24, ~2.5px) con esquinas redondeadas.
+   - Sombra artesanal rayada diagonal a 45° proyectada hacia abajo y a la derecha.
+   ========================================================================== */
+
+.portal-hatched-shadow {
+  background: repeating-linear-gradient(
+    45deg,
+    #1E1E24 0px,
+    #1E1E24 1.5px,
+    transparent 1.5px,
+    transparent 5.5px
+  );
+}
+
+.portal-card-engraved {
+  border: 2.5px solid #1E1E24 !important;
+}

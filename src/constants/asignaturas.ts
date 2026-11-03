@@ -97,13 +97,36 @@ export const sonMismaAsignatura = (a: string | null | undefined, b: string | nul
   const ca = clean(a);
   const cb = clean(b);
   if (ca === cb) return true;
-  if (ca.includes('lengua') && cb.includes('lengua')) return true;
-  if (ca.includes('matematica') && cb.includes('matematica')) return true;
-  if (ca.includes('social') && cb.includes('social')) return true;
-  if (ca.includes('naturaleza') && cb.includes('naturaleza')) return true;
+
+  // Lengua Española / Español: NUNCA debe coincidir con Lenguas Extranjeras (Inglés o Francés)
+  const esEspanolA = (ca.includes('lengua') || ca.includes('espanol')) && !ca.includes('ingl') && !ca.includes('extranjer') && !ca.includes('franc');
+  const esEspanolB = (cb.includes('lengua') || cb.includes('espanol')) && !cb.includes('ingl') && !cb.includes('extranjer') && !cb.includes('franc');
+  if (esEspanolA && esEspanolB) return true;
+
+  // Inglés / Lenguas Extranjeras (Inglés)
   if (ca.includes('ingl') && cb.includes('ingl')) return true;
+
+  // Francés / Lenguas Extranjeras (Francés)
+  if (ca.includes('franc') && cb.includes('franc')) return true;
+
+  // Matemática
+  if (ca.includes('matematica') && cb.includes('matematica')) return true;
+
+  // Ciencias Sociales
+  if (ca.includes('social') && cb.includes('social') && !ca.includes('naturaleza') && !cb.includes('naturaleza')) return true;
+
+  // Ciencias de la Naturaleza
+  if (ca.includes('naturaleza') && cb.includes('naturaleza')) return true;
+
+  // Educación Física (nunca debe coincidir con Ciencias de la Naturaleza / física)
   if (ca.includes('fisica') && cb.includes('fisica') && !ca.includes('naturaleza') && !cb.includes('naturaleza')) return true;
+
+  // Educación Artística
   if (ca.includes('artistic') && cb.includes('artistic')) return true;
+
+  // Formación Integral
+  if (ca.includes('formacion') && cb.includes('formacion')) return true;
+
   return false;
 };
 

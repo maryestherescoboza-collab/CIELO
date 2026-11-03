@@ -7,7 +7,6 @@ import {
   type AsignaturaOficial 
 } from '../../constants/asignaturas';
 import type { AsignaturaPublicada, EstudianteContextInfo, Periodo } from './portalContext';
-import { getIlustracionAsignatura } from './PortalCardIllustrations';
 import { supabase } from '../../lib/supabase';
 import { 
   ArrowLeft, 
@@ -15,7 +14,8 @@ import {
   ChevronRight, 
   GraduationCap, 
   School, 
-  AlertTriangle 
+  AlertTriangle,
+  Frown
 } from 'lucide-react';
 
 interface PortalAsignaturasSelectorProps {
@@ -82,48 +82,57 @@ export const getRutaImagenAsignatura = (nombre: string): { src: string; fallback
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 
-  if (norm.includes('lengua') || norm.includes('espanol')) {
+  // 1. Inglés / Lenguas Extranjeras (Inglés) - Debe ir antes de 'lengua' para evitar colisión con 'Lenguas Extranjeras'
+  if (norm.includes('ingl') || norm.includes('english')) {
+    return { src: '/portal/asignaturas/ingles.png' };
+  }
+  // 2. Francés / Lenguas Extranjeras (Francés)
+  if (norm.includes('franc')) {
+    return { src: '/portal/asignaturas/frances.png' };
+  }
+  // 3. Lengua Española / Español (excluyendo expresamente lenguas extranjeras)
+  if ((norm.includes('lengua') || norm.includes('espanol')) && !norm.includes('extranjer')) {
     return {
       src: '/portal/asignaturas/lengua-espanola.png',
       fallbackSrc: '/portal/asignaturas/lengua_espanola.png',
     };
   }
+  // 4. Matemática
   if (norm.includes('matematica') || norm.includes('calculo')) {
     return {
       src: '/portal/asignaturas/matematica.png',
       fallbackSrc: '/portal/asignaturas/matematicas.png',
     };
   }
+  // 5. Ciencias Sociales
   if (norm.includes('social') || norm.includes('historia')) {
     return {
       src: '/portal/asignaturas/ciencias-sociales.png',
       fallbackSrc: '/portal/asignaturas/ciencias_sociales.png',
     };
   }
+  // 6. Ciencias de la Naturaleza
   if (norm.includes('naturaleza') || norm.includes('biolog') || norm.includes('quimic') || (norm.includes('cienc') && norm.includes('fisic'))) {
     return {
       src: '/portal/asignaturas/ciencias-naturales.png',
       fallbackSrc: '/portal/asignaturas/ciencias_naturales.png',
     };
   }
-  if (norm.includes('ingl') || norm.includes('english')) {
-    return { src: '/portal/asignaturas/ingles.png' };
-  }
-  if (norm.includes('franc')) {
-    return { src: '/portal/asignaturas/frances.png' };
-  }
-  if (norm.includes('fisica') || norm.includes('deporte')) {
+  // 7. Educación Física
+  if ((norm.includes('fisica') || norm.includes('deporte')) && !norm.includes('naturaleza')) {
     return {
       src: '/portal/asignaturas/educacion-fisica.png',
       fallbackSrc: '/portal/asignaturas/educacion_fisica.png',
     };
   }
+  // 8. Educación Artística
   if (norm.includes('artistic') || norm.includes('arte') || norm.includes('musica')) {
     return {
       src: '/portal/asignaturas/educacion-artistica.png',
       fallbackSrc: '/portal/asignaturas/artistica.png',
     };
   }
+  // 9. Formación Integral
   if (norm.includes('formacion') || norm.includes('integral') || norm.includes('religion') || norm.includes('religios')) {
     return {
       src: '/portal/asignaturas/formacion-integral.png',
@@ -282,9 +291,9 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
             continue;
           }
 
-          // Filtrar fichas correspondientes
+          // Filtrar fichas correspondientes con aislamiento estricto
           const fichasDeMateria = fichas.filter((f) => 
-            !f.asignatura || sonMismaAsignatura(f.asignatura, item.nombre)
+            Boolean(f.asignatura && sonMismaAsignatura(f.asignatura, item.nombre))
           );
 
           // Consultar evidencias e incidencias autorizadas
@@ -410,23 +419,30 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
           </button>
 
           {/* Tarjeta de estado sobria y clara con la carta ilustrada como pieza visual */}
-          <div className="bg-white border-2 border-[#1E1E24] rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-md max-w-sm mx-auto">
-            <div className="w-28 h-28 mx-auto rounded-2xl border-2 border-[#1E1E24] overflow-hidden shadow-sm">
-              {getIlustracionAsignatura(unassignedAsignatura.nombre, "w-full h-full object-cover")}
-            </div>
+          <div className="relative max-w-sm mx-auto">
+            {/* Sombra rayada diagonal artesanal tipo grabado */}
+            <div
+              aria-hidden="true"
+              className="absolute top-1.5 left-1.5 -right-2 -bottom-2 rounded-3xl pointer-events-none portal-hatched-shadow"
+            />
+            <div className="relative z-10 bg-white border-[2.5px] border-[#1E1E24] rounded-3xl p-6 sm:p-8 text-center space-y-5">
+              <div className="flex items-center justify-center py-2">
+                <Frown className="w-16 h-16 text-[#1E1E24]" strokeWidth={1.8} />
+              </div>
 
-            <div className="space-y-2">
-              <span className="inline-block text-[11px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full border border-stone-300 bg-stone-100 text-stone-700">
-                {unassignedAsignatura.nombre}
-              </span>
+              <div className="space-y-2">
+                <span className="inline-block text-[11px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full border border-stone-300 bg-stone-100 text-stone-700">
+                  {unassignedAsignatura.nombre}
+                </span>
 
-              <h2 className="text-base sm:text-lg font-black text-stone-900 leading-snug px-2">
-                «{mensaje}»
-              </h2>
+                <h2 className="text-base sm:text-lg font-black text-stone-900 leading-snug px-2">
+                  «{mensaje}»
+                </h2>
 
-              <p className="text-xs text-stone-600 leading-relaxed max-w-sm mx-auto pt-1">
-                Tan pronto como tu docente comience a registrar evaluaciones y actividades en la plataforma, podrás consultar aquí su progreso, calificaciones y portafolio.
-              </p>
+                <p className="text-xs text-stone-600 leading-relaxed max-w-sm mx-auto pt-1">
+                  Tan pronto como tu docente comience a registrar evaluaciones y actividades en la plataforma, podrás consultar aquí su progreso, calificaciones y portafolio.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -462,34 +478,41 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
     >
       {/* Cabecera de Bienvenida */}
       <section className="space-y-2.5">
-        <div className="border-2 border-[#1E1E24] rounded-3xl p-4.5 sm:p-5 bg-linear-to-br from-[#FAF8F5] via-[#FFFDF9] to-[#F5EFE6] shadow-[0_4px_12px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-lg sm:text-xl font-black text-[#1E1E24] tracking-tight">
-                {nombreCompleto}
-              </h1>
+        <div className="relative group/header">
+          {/* Sombra rayada diagonal artesanal tipo grabado */}
+          <div
+            aria-hidden="true"
+            className="absolute top-1.5 left-1.5 -right-1.5 -bottom-1.5 rounded-3xl pointer-events-none portal-hatched-shadow"
+          />
+          <div className="relative z-10 border-[2.5px] border-[#1E1E24] rounded-3xl p-4.5 sm:p-5 bg-[#FCFCFA]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h1 className="text-lg sm:text-xl font-black text-[#1E1E24] tracking-tight">
+                  {nombreCompleto}
+                </h1>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-[#537BAC] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm border border-[#537BAC]/40">
+                {nombreCompleto.charAt(0).toUpperCase()}
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-2xl bg-[#1E1E24] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm border border-stone-700">
-              {nombreCompleto.charAt(0).toUpperCase()}
-            </div>
-          </div>
 
-          {(detallesCurso || estudianteContext?.centro) && (
-            <div className="mt-3 pt-2.5 border-t border-[#1E1E24]/10 flex flex-wrap items-center gap-2 text-[11px] text-stone-700 font-medium">
-              {detallesCurso && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white border border-stone-300 font-bold text-stone-800 shadow-2xs">
-                  <GraduationCap size={13} className="text-stone-700" />
-                  {detallesCurso}
-                </span>
-              )}
-              {estudianteContext?.centro && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white border border-stone-300 text-stone-700 shadow-2xs">
-                  <School size={13} className="text-stone-600" />
-                  <span className="truncate max-w-44">{estudianteContext.centro}</span>
-                </span>
-              )}
-            </div>
-          )}
+            {(detallesCurso || estudianteContext?.centro) && (
+              <div className="mt-3 pt-2.5 border-t border-[#1E1E24]/10 flex flex-wrap items-center gap-2 text-[11px] text-stone-700 font-medium">
+                {detallesCurso && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white border border-[#BFC9A6] font-bold text-[#1B1F2A] shadow-2xs">
+                    <GraduationCap size={13} className="text-[#689C63]" />
+                    {detallesCurso}
+                  </span>
+                )}
+                {estudianteContext?.centro && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white border border-[#537BAC]/30 text-[#1B1F2A] shadow-2xs">
+                    <School size={13} className="text-[#537BAC]" />
+                    <span className="truncate max-w-44">{estudianteContext.centro}</span>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Título de la sección de Asignaturas con Controles del Carrusel */}
@@ -553,31 +576,38 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
             const tieneAlertas = stats.alertas > 0;
 
             return (
-              <article
+              <div
                 key={item.id}
-                onClick={() => {
-                  if (item.tieneDocente) {
-                    onSelectAsignatura(item.nombre);
-                  } else {
-                    setUnassignedAsignatura(item);
-                  }
-                }}
-                className={`
-                  relative shrink-0 select-none cursor-pointer snap-start
-                  w-[224px] sm:w-[244px] h-[390px] sm:h-[425px]
-                  rounded-[22px] border-[2.5px] border-[#1E1E24]
-                  bg-[#F8F8F9]
-                  shadow-[0_8px_20px_-6px_rgba(27,31,42,0.12)]
-                  p-2.5 sm:p-3 flex flex-col justify-between overflow-hidden
-                  transition-all duration-300 active:scale-[0.98]
-                  hover:-translate-y-1 hover:shadow-[0_12px_24px_-4px_rgba(27,31,42,0.2)]
-                  ${isCurrent ? 'ring-2 ring-[#1E1E24]/20' : 'opacity-95'}
-                `}
-                style={{ backgroundColor: '#F8F8F9' }}
-                role="button"
-                tabIndex={0}
-                aria-label={`Carta de ${item.nombre}`}
+                className="relative shrink-0 select-none snap-start group/card w-[224px] sm:w-[244px] h-[390px] sm:h-[425px]"
               >
+                {/* Sombra rayada diagonal artesanal tipo grabado (referencia naipe As de Picas) */}
+                <div
+                  aria-hidden="true"
+                  className="absolute top-1.5 left-1.5 -right-2 -bottom-2 rounded-[22px] pointer-events-none portal-hatched-shadow transition-transform duration-300 group-hover/card:translate-x-0.5 group-hover/card:translate-y-1"
+                />
+
+                <article
+                  onClick={() => {
+                    if (item.tieneDocente) {
+                      onSelectAsignatura(item.nombre);
+                    } else {
+                      setUnassignedAsignatura(item);
+                    }
+                  }}
+                  className={`
+                    relative z-10 w-full h-full cursor-pointer
+                    rounded-[22px] border-[2.5px] border-[#1E1E24]
+                    bg-[#F8F8F9]
+                    p-2.5 sm:p-3 flex flex-col justify-between overflow-hidden
+                    transition-all duration-300 active:scale-[0.98]
+                    hover:-translate-y-1
+                    ${isCurrent ? 'ring-2 ring-[#1E1E24]/20' : 'opacity-95'}
+                  `}
+                  style={{ backgroundColor: '#F8F8F9' }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Carta de ${item.nombre}`}
+                >
                 {/* 1. PRIMERA FILA: RACHA (esquina superior izquierda) + NOMBRE DE LA ASIGNATURA (a la derecha) */}
                 <div className="flex items-center gap-2 min-h-9 w-full shrink-0 px-0.5">
                   <StreakBadge racha={stats.racha} />
@@ -601,8 +631,8 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
                 <div className="relative z-10 pt-0.5 shrink-0">
                   <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
                     {/* Estadística 1: Fichas Pendientes */}
-                    <div className="relative bg-white rounded-xl border border-[#1E1E24]/20 p-1.5 sm:p-2 h-14 sm:h-15 flex flex-col justify-between overflow-hidden shadow-2xs group/stat">
-                      <span className="text-[6.5px] sm:text-[7px] font-black tracking-tight uppercase font-mono text-stone-500 leading-[1.05] block pr-0.5">
+                    <div className="relative bg-[#DEAE4D]/10 rounded-xl border border-[#DEAE4D]/35 p-1.5 sm:p-2 h-14 sm:h-15 flex flex-col justify-between overflow-hidden shadow-2xs group/stat">
+                      <span className="text-[6.5px] sm:text-[7px] font-black tracking-tight uppercase font-mono text-[#996B1E] leading-[1.05] block pr-0.5">
                         Fichas pendientes
                       </span>
                       <span className="text-sm sm:text-base font-black font-mono leading-none text-[#1E1E24]">
@@ -619,34 +649,34 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
                     <div className={`
                       relative rounded-xl border p-1.5 sm:p-2 h-14 sm:h-15 flex flex-col justify-between overflow-hidden shadow-2xs group/stat transition-colors
                       ${tieneAlertas 
-                        ? 'bg-rose-50/80 border-rose-300' 
-                        : 'bg-white border-[#1E1E24]/20'
+                        ? 'bg-[#DB5B48]/10 border-[#DB5B48]/35' 
+                        : 'bg-[#689C63]/8 border-[#689C63]/25'
                       }
                     `}>
-                      <span className={`text-[6.5px] sm:text-[7px] font-black tracking-tight uppercase font-mono leading-[1.05] block pr-0.5 ${tieneAlertas ? 'text-rose-600' : 'text-stone-500'}`}>
+                      <span className={`text-[6.5px] sm:text-[7px] font-black tracking-tight uppercase font-mono leading-[1.05] block pr-0.5 ${tieneAlertas ? 'text-[#DB5B48]' : 'text-[#689C63]'}`}>
                         Alertas
                       </span>
-                      <span className={`text-sm sm:text-base font-black font-mono leading-none ${tieneAlertas ? 'text-rose-700' : 'text-[#1E1E24]'}`}>
+                      <span className={`text-sm sm:text-base font-black font-mono leading-none ${tieneAlertas ? 'text-[#DB5B48]' : 'text-[#1E1E24]'}`}>
                         {stats.alertas}
                       </span>
                       <div className={`
                         absolute bottom-0.5 right-0.5 w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full border flex items-center justify-center shadow-xs transition-transform group-hover/stat:scale-110
                         ${tieneAlertas 
-                          ? 'bg-rose-100 border-rose-300 text-rose-600' 
-                          : 'bg-stone-100 border-[#1E1E24]/15 text-stone-400'
+                          ? 'bg-[#DB5B48]/20 border-[#DB5B48]/40 text-[#DB5B48]' 
+                          : 'bg-[#689C63]/15 border-[#689C63]/25 text-[#689C63]'
                         }
                       `}>
                         <AlertTriangle 
                           size={12} 
                           strokeWidth={2.4} 
-                          className={tieneAlertas ? 'text-rose-600 animate-pulse' : 'text-stone-500'} 
+                          className={tieneAlertas ? 'text-[#DB5B48] animate-pulse' : 'text-[#689C63]'} 
                         />
                       </div>
                     </div>
 
                     {/* Estadística 3: EXP */}
-                    <div className="relative bg-white rounded-xl border border-[#1E1E24]/20 p-1.5 sm:p-2 h-14 sm:h-15 flex flex-col justify-between overflow-hidden shadow-2xs group/stat">
-                      <span className="text-[6.5px] sm:text-[7px] font-black tracking-wider uppercase font-mono text-stone-500 leading-[1.05] block pr-0.5">
+                    <div className="relative bg-[#689C63]/8 rounded-xl border border-[#689C63]/30 p-1.5 sm:p-2 h-14 sm:h-15 flex flex-col justify-between overflow-hidden shadow-2xs group/stat">
+                      <span className="text-[6.5px] sm:text-[7px] font-black tracking-wider uppercase font-mono text-[#689C63] leading-[1.05] block pr-0.5">
                         EXP
                       </span>
                       <span className="text-sm sm:text-base font-black font-mono leading-none text-[#1E1E24]">
@@ -661,7 +691,8 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
                   </div>
                 </div>
               </article>
-            );
+            </div>
+          );
           })}
         </div>
 
@@ -674,8 +705,8 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
               aria-label={`Ir a carta ${i + 1}`}
               className={`h-2 rounded-full transition-all ${
                 activeIndex === i 
-                  ? 'w-6 bg-[#1E1E24]' 
-                  : 'w-2 bg-stone-300 hover:bg-stone-400'
+                  ? 'w-6 bg-[#689C63]' 
+                  : 'w-2 bg-[#BFC9A6]/50 hover:bg-[#BFC9A6]'
               }`}
             />
           ))}

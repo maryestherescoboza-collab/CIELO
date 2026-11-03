@@ -194,7 +194,10 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
   return (
     <div className="min-h-screen bg-(--background) flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle,#00000010_1.5px,transparent_1.5px)]" style={{ backgroundSize: '22px 22px' }}>
       
-      <div className="bg-white p-8 md:p-10 rounded-2xl shadow-sm border-3 border-(--ink) max-w-md w-full relative" style={{ boxShadow: '5px 5px 0 var(--ink)' }}>
+      <div className="relative max-w-md w-full">
+        {/* Sombra rayada diagonal artesanal tipo grabado */}
+        <div aria-hidden="true" className="absolute top-1.5 left-1.5 -right-2 -bottom-2 rounded-2xl pointer-events-none portal-hatched-shadow" />
+        <div className="relative z-10 bg-white p-8 md:p-10 rounded-2xl border-[2.5px] border-[#1E1E24] w-full">
         
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-(--french-blue) bg-opacity-10 border-2 border-(--french-blue) flex items-center justify-center">
@@ -270,6 +273,7 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
           </div>
         )}
 
+      </div>
       </div>
     </div>
   );

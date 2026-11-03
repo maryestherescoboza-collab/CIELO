@@ -79,13 +79,13 @@ function indiceIndicadorDefinitivo(bc: 1 | 2 | 3 | 4, textoAlmacenado: string): 
 }
 
 export default function PortalRecuperaciones() {
-  const { 
-    sessionToken, 
-    asignaturas, 
-    selectedPeriodo, 
+  const {
+    sessionToken,
+    asignaturas,
+    selectedPeriodo,
     setSelectedPeriodo,
     selectedAsignatura,
-    estudianteContext 
+    estudianteContext
   } = usePortal();
 
   const activeMateria = selectedAsignatura || asignaturas.find(a => a.tiene_docente)?.asignatura || asignaturas[0]?.asignatura || '';
@@ -109,6 +109,11 @@ export default function PortalRecuperaciones() {
 
   useEffect(() => {
     if (!sessionToken || !activeMateria) return;
+    const controller = new AbortController();
+
+    // Resetear inmediatamente para evitar que los datos de la asignatura anterior parpadeen
+    setEvidencias([]);
+    setRecuperaciones([]);
 
     const fetchDatos = async () => {
       setLoading(true);
@@ -126,21 +131,28 @@ export default function PortalRecuperaciones() {
             p_asignatura: activeMateria
           })
         ]);
-        
+
+        if (controller.signal.aborted) return;
         if (evidenciasRes.error) throw evidenciasRes.error;
         if (recuperacionesRes.error) throw recuperacionesRes.error;
-        
+
         setEvidencias(evidenciasRes.data || []);
         setRecuperaciones(recuperacionesRes.data || []);
       } catch (err: any) {
+        if (controller.signal.aborted) return;
         console.error(err);
         setError(err.message || 'Error al cargar los datos');
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchDatos();
+    return () => {
+      controller.abort();
+    };
   }, [sessionToken, selectedPeriodo, activeMateria]);
 
   // Evaluated averages per competency before recovery
@@ -228,7 +240,7 @@ export default function PortalRecuperaciones() {
 
   return (
     <div className="px-5 pt-4 pb-28 space-y-6">
-      
+
       {/* Student ID Card */}
       <section className="space-y-3.5" data-purpose="student-id-card">
         <div className="flex items-center justify-between">
@@ -240,7 +252,7 @@ export default function PortalRecuperaciones() {
               {[estudianteContext?.nombre, estudianteContext?.apellido].filter(Boolean).join(' ') || 'Estudiante'}
             </h1>
           </div>
-          
+
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-stone-200 bg-stone-50 shadow-xs">
             <span className="text-xs">{activeOficial?.icono || '📖'}</span>
             <span className="text-xs font-bold text-stone-900">{activeMateria}</span>
@@ -254,14 +266,13 @@ export default function PortalRecuperaciones() {
           <h2 className="text-xs font-bold tracking-wider text-black uppercase">Período Académico</h2>
           <div className="flex gap-1.5 p-1 rounded-full border border-stone-200 bg-stone-50">
             {(['P1', 'P2', 'P3', 'P4'] as Periodo[]).map(p => (
-              <button 
+              <button
                 key={p}
                 onClick={() => setSelectedPeriodo(p)}
-                className={`w-7 h-7 rounded-full text-xs flex items-center justify-center border-2 transition ${
-                  selectedPeriodo === p 
-                    ? 'bg-black text-white font-bold border-transparent' 
-                    : 'text-stone-600 font-medium hover:bg-stone-200 border-transparent'
-                }`}
+                className={`w-7 h-7 rounded-full text-xs flex items-center justify-center border-2 transition ${selectedPeriodo === p
+                    ? 'bg-[#EB8847] text-white font-bold border-transparent'
+                    : 'text-[#5F665E] font-medium hover:bg-[#EB8847]/15 border-transparent'
+                  }`}
               >
                 {p}
               </button>
@@ -284,10 +295,10 @@ export default function PortalRecuperaciones() {
 
       {!loading && !error && (
         <div className="w-full font-sans">
-          
+
           {/* Detailed Header like in /estudiante */}
           <div className="flex items-baseline gap-2">
-            <span className="font-['Space_Grotesk'] font-bold text-[#DB5B48] text-[13px]">//</span>
+            <span className="font-['Space_Grotesk'] font-bold text-[#EB8847] text-[13px]">//</span>
             <h2 className="font-['Space_Grotesk'] text-[12px] font-bold tracking-[0.14em] uppercase text-[#1B1F2A]">
               Recuperación por competencia
             </h2>
@@ -305,11 +316,11 @@ export default function PortalRecuperaciones() {
             <>
               {/* Congratulations Banner if all evaluated competencies are passed */}
               {bloques.length === 0 && totalEvaluatedBcs > 0 && passedBcs.length === totalEvaluatedBcs && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-3.5 flex items-start gap-2.5 mb-4">
-                  <span className="material-symbols-outlined text-green-600 text-[20px] shrink-0">verified</span>
+                <div className="bg-[#689C63]/10 border border-[#689C63]/30 rounded-xl p-3.5 flex items-start gap-2.5 mb-4">
+                  <span className="material-symbols-outlined text-[#689C63] text-[20px] shrink-0">verified</span>
                   <div>
-                    <p className="text-xs text-green-900 font-bold">¡Felicidades!</p>
-                    <p className="text-[11.5px] text-green-800 font-medium leading-relaxed mt-0.5">
+                    <p className="text-xs text-[#2E3330] font-bold">¡Felicidades!</p>
+                    <p className="text-[11.5px] text-[#4a7a46] font-medium leading-relaxed mt-0.5">
                       No debes recuperar ninguna competencia para el período {selectedPeriodo}.
                     </p>
                   </div>
@@ -325,15 +336,15 @@ export default function PortalRecuperaciones() {
                 /* Grid of Competency Recovery Cards */
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {bloques.map(({ key, nombre, indicadores, logradas, totalActividades, resultados, color, fecha, actividadesEvaluadas, pendiente }) => (
-                    <div 
-                      key={key} 
+                    <div
+                      key={key}
                       className="border border-[#E4E3EC] bg-white rounded-xl p-4 shadow-xs flex flex-col justify-between break-inside-avoid"
                     >
                       <div>
                         {/* Competency Badge */}
                         <div className="flex items-center justify-between mb-3">
-                          <div 
-                            className="inline-block font-['Space_Grotesk'] text-[11px] font-bold tracking-[0.02em] leading-[1.35] text-white px-2.5 py-1 rounded shadow-xs" 
+                          <div
+                            className="inline-block font-['Space_Grotesk'] text-[11px] font-bold tracking-[0.02em] leading-[1.35] text-white px-2.5 py-1 rounded shadow-xs"
                             style={{ background: color }}
                           >
                             Competencia {nombre.toLowerCase()}
@@ -344,12 +355,12 @@ export default function PortalRecuperaciones() {
                             </span>
                           )}
                         </div>
-                        
+
                         {/* Indicators with exact X/Y ratio */}
                         <div className="space-y-2 mb-3.5">
                           {indicadores.map((indicador, i) => (
                             <div key={indicador} className="text-[11px] text-[#4E5566] leading-normal flex items-start gap-2">
-                              <span 
+                              <span
                                 className="material-symbols-outlined text-[15px] mt-0.5 shrink-0"
                                 style={{ color: logradas[i] > 0 ? color : '#CBD5E1' }}
                               >

@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
 import { usePortal, rutaPortal } from './portalContext';
 import { sonMismaAsignatura } from '../../constants/asignaturas';
+import { fetchPortalFichasCompartidasCached } from '../../cache/portalCache';
 
 interface FichaCompartida {
   id: string;
@@ -22,34 +22,36 @@ export default function PortalFichas() {
 
   const [fichasCompartidas, setFichasCompartidas] = useState<FichaCompartida[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const reqIdRef = useRef(0);
 
   useEffect(() => {
     if (!sessionToken || asignaturas.length === 0) return;
 
+    const currentReqId = ++reqIdRef.current;
     const fetchAllData = async () => {
       setLoading(true);
       setError(null);
+      setFichasCompartidas([]);
       try {
-        // Fetch Fichas Reales Compartidas
-        const { data: fichasData, error: fichasError } = await supabase.rpc('portal_get_fichas_compartidas', {
-          p_session_token: sessionToken
-        });
-        
-        if (fichasError) throw fichasError;
-        if (fichasData && !fichasData.error) {
-          setFichasCompartidas(fichasData);
-        }
-
+        const fichasData = await fetchPortalFichasCompartidasCached<FichaCompartida>(
+          sessionToken,
+          selectedAsignatura || undefined
+        );
+        if (currentReqId !== reqIdRef.current) return;
+        setFichasCompartidas(fichasData || []);
       } catch (err: any) {
+        if (currentReqId !== reqIdRef.current) return;
         console.error(err);
         setError(err.message || 'Error al cargar las fichas');
       } finally {
-        setLoading(false);
+        if (currentReqId === reqIdRef.current) {
+          setLoading(false);
+        }
       }
     };
 
     fetchAllData();
-  }, [sessionToken, selectedPeriodo, asignaturas]);
+  }, [sessionToken, selectedPeriodo, asignaturas, selectedAsignatura]);
 
 
 
@@ -92,8 +94,10 @@ export default function PortalFichas() {
 
   const fichasFiltradas = useMemo(() => {
     return fichasCompartidas.filter((ficha) => {
-      if (selectedAsignatura && ficha.asignatura && !sonMismaAsignatura(ficha.asignatura, selectedAsignatura)) {
-        return false;
+      if (selectedAsignatura) {
+        if (!ficha.asignatura || !sonMismaAsignatura(ficha.asignatura, selectedAsignatura)) {
+          return false;
+        }
       }
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
@@ -133,7 +137,7 @@ export default function PortalFichas() {
               </span>
             )}
           </div>
-          <span className="text-[11px] font-bold border border-black px-2.5 py-0.5 rounded-full bg-stone-100 text-black">
+          <span className="text-[11px] font-bold border border-black px-2.5 py-0.5 rounded-full bg-[#DEAE4D]/15 text-[#1B1F2A]">
             {fichasFiltradas.length} Ficha{fichasFiltradas.length !== 1 && 's'}
           </span>
         </div>
@@ -145,7 +149,10 @@ export default function PortalFichas() {
         ) : (
           <div className="space-y-4 mb-6">
             {fichasFiltradas.map((ficha) => (
-              <article key={`ficha-${ficha.id}`} className="w-full border border-black rounded-xl p-4 bg-white shadow-sm flex flex-col">
+              <div key={`ficha-${ficha.id}`} className="relative">
+                {/* Sombra rayada diagonal artesanal tipo grabado */}
+                <div aria-hidden="true" className="absolute top-1.5 left-1.5 -right-1.5 -bottom-1.5 rounded-xl pointer-events-none portal-hatched-shadow" />
+                <article className="relative z-10 w-full border-[2.5px] border-[#1E1E24] rounded-xl p-4 bg-white flex flex-col">
                 <div className="mb-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -156,7 +163,7 @@ export default function PortalFichas() {
                     </div>
                     <button
                       onClick={() => navigate(rutaPortal(token, 'fichas', ficha.id))}
-                      className="text-[11px] font-bold text-black bg-neutral-100 px-3 py-1.5 rounded-lg hover:bg-neutral-200 transition-colors shrink-0"
+                      className="text-[11px] font-bold text-[#8A6415] bg-[#DEAE4D]/20 px-3 py-1.5 rounded-lg hover:bg-[#DEAE4D]/35 transition-colors shrink-0"
                     >
                       Leer ›
                     </button>
@@ -178,6 +185,7 @@ export default function PortalFichas() {
                   </div>
                 </div>
               </article>
+              </div>
             ))}
           </div>
         )}
