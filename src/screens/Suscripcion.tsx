@@ -1,22 +1,146 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
 import { usePremiumAccess } from '../hooks/usePremiumAccess';
-// Loader2 import removed since it's unused
 import { CieloPill } from '../components/ui/CieloPill';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { useAppStore } from '../store/appStore';
+import { AlertCircle, X } from 'lucide-react';
 
-export default function Suscripcion() {
+const PAYPAL_CLIENT_ID = "BAALGDYDZVHKbF-LAgkLOESd5uPYHjrnsQlUySvjMkkeA--XHzJYpfwyhzz-PkUUiYEQTiNi4zDYf2udJ4";
+
+const paypalScriptOptions = {
+  clientId: PAYPAL_CLIENT_ID,
+  vault: true,
+  intent: "subscription",
+  currency: "USD",
+  "enable-funding": "card"
+} as const;
+
+const STATIC_FORCE_RERENDER: any[] = [];
+
+const BUTTON_STYLE = {
+  layout: "vertical" as const,
+  color: "silver" as const,
+  shape: "rect" as const,
+  label: "subscribe" as const
+};
+
+interface PayPalSubscriptionButtonProps {
+  planType: 'mensual' | 'anual';
+  onApprove: (subscriptionId: string) => void;
+  onError: (err: any) => void;
+  onCancel: () => void;
+}
+
+const PayPalSubscriptionButton = memo(function PayPalSubscriptionButton({
+  planType,
+  onApprove,
+  onError,
+  onCancel
+}: PayPalSubscriptionButtonProps) {
+  // Diagnóstico seguro de ciclo de vida del componente
+  useEffect(() => {
+    console.log(`[PayPal Diagnostic] Botón [${planType}] MONTADO en el DOM.`);
+    return () => {
+      console.warn(`[PayPal Diagnostic] Botón [${planType}] DESMONTADO del DOM.`);
+    };
+  }, [planType]);
+
+  const handleInit = useCallback((_data: any, _actions: any) => {
+    console.log(`[PayPal Diagnostic] [${planType}] onInit: SDK de PayPal inicializado y listo.`);
+  }, [planType]);
+
+  const handleClick = useCallback((data: any, actions: any) => {
+    console.log(`[PayPal Diagnostic] [${planType}] onClick: Usuario abrió el flujo. Fuente:`, data?.fundingSource || 'standard');
+    return actions.resolve();
+  }, [planType]);
+
+  const handleCreateSubscription = useCallback(async () => {
+    console.log(`[PayPal Diagnostic] [${planType}] createSubscription iniciado.`);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      
+      if (userError || !userId) {
+        console.error(`[PayPal Diagnostic] [${planType}] Usuario no autenticado para crear suscripción.`);
+        throw new Error("Usuario no autenticado");
+      }
+
+      console.log(`[PayPal Diagnostic] [${planType}] Solicitando creación de suscripción en servidor.`);
+      const { data, error } = await supabase.functions.invoke('paypal-create-subscription', {
+        body: { planType }
+      });
+
+      if (error) {
+        console.error(`[PayPal Diagnostic] [${planType}] Error en Edge Function paypal-create-subscription:`, error.message || error);
+        throw error;
+      }
+
+      if (data?.error) {
+        console.error(`[PayPal Diagnostic] [${planType}] Error devuelto por paypal-create-subscription:`, data.error);
+        throw new Error(data.error);
+      }
+
+      if (!data?.subscriptionId) {
+        console.error(`[PayPal Diagnostic] [${planType}] subscriptionId no recibido en la respuesta.`);
+        throw new Error('No se recibió el ID de suscripción de PayPal');
+      }
+
+      console.log(`[PayPal Diagnostic] [${planType}] Suscripción creada en PayPal. ID recibido: ${data.subscriptionId}`);
+      return data.subscriptionId;
+    } catch (err: any) {
+      console.error(`[PayPal Diagnostic] [${planType}] Fallo en createSubscription:`, err?.message || err);
+      throw err;
+    }
+  }, [planType]);
+
+  const handleApproveCallback = useCallback(async (data: { subscriptionID?: string | null }) => {
+    console.log(`[PayPal Diagnostic] [${planType}] onApprove recibido de PayPal. ID: ${data.subscriptionID}`);
+    if (data.subscriptionID) {
+      onApprove(data.subscriptionID);
+    }
+  }, [planType, onApprove]);
+
+  const handleCancelCallback = useCallback((data: any) => {
+    console.log(`[PayPal Diagnostic] [${planType}] onCancel disparado por PayPal. Detalle sanitizado:`, {
+      orderID: data?.orderID || null,
+      timestamp: new Date().toISOString()
+    });
+    onCancel();
+  }, [planType, onCancel]);
+
+  const handleErrorCallback = useCallback((err: any) => {
+    console.error(`[PayPal Diagnostic] [${planType}] onError disparado por PayPal SDK. Detalle sanitizado:`, {
+      message: err?.message || String(err),
+      timestamp: new Date().toISOString()
+    });
+    onError(err);
+  }, [planType, onError]);
+
+  return (
+    <PayPalButtons
+      style={BUTTON_STYLE}
+      forceReRender={STATIC_FORCE_RERENDER}
+      onInit={handleInit}
+      onClick={handleClick}
+      createSubscription={handleCreateSubscription}
+      onApprove={handleApproveCallback}
+      onCancel={handleCancelCallback}
+      onError={handleErrorCallback}
+    />
+  );
+});
+
+function SuscripcionContent() {
   const navigate = useNavigate();
   const { hasPremium, suscripcionActual } = usePremiumAccess();
   const setState = useAppStore(s => s.setState);
-  // El ID oficial de Live de PayPal
-  const PAYPAL_CLIENT_ID = "BAALGDYDZVHKbF-LAgkLOESd5uPYHjrnsQlUySvjMkkeA--XHzJYpfwyhzz-PkUUiYEQTiNi4zDYf2udJ4";
 
   const [isExtending, setIsExtending] = useState(false);
   const [extensionGranted, setExtensionGranted] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState<{ type: 'error' | 'info'; text: string } | null>(null);
 
   const handleInstitutionalTrial = async () => {
     if (isExtending || extensionGranted) return;
@@ -27,7 +151,6 @@ export default function Suscripcion() {
       if (error) throw error;
       
       if (activatedAt) {
-        // Obtenemos el userId de la sesión para actualizar el store
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
            setState(prev => ({
@@ -41,7 +164,6 @@ export default function Suscripcion() {
         }
         setExtensionGranted(true);
       } else {
-        // Ya estaba activada antes
         alert('Ya has utilizado tus 7 días de prueba institucionales.');
       }
     } catch (e) {
@@ -52,66 +174,35 @@ export default function Suscripcion() {
     }
   };
 
+  // Solo redirigir si el docente ya tiene una suscripción pagada activa en base de datos.
+  // Los usuarios con prueba activa o vencida deben permanecer para contratar cualquier plan.
   useEffect(() => {
-    if (hasPremium) {
+    if (suscripcionActual && suscripcionActual.estado === 'activa') {
+      console.log("[PayPal Diagnostic] Usuario con suscripción activa confirmado. Redirigiendo a /inicio");
       navigate('/inicio', { replace: true });
     }
-    if ((suscripcionActual as any)?.provider === 'manual' && suscripcionActual?.estado === 'activa') {
-      navigate('/inicio', { replace: true });
-    }
-  }, [hasPremium, suscripcionActual, navigate]);
+  }, [suscripcionActual, navigate]);
 
-  const PayPalSubscriptionButton = ({ planType }: { planType: 'mensual' | 'anual' }) => {
-    return (
-      <PayPalScriptProvider options={{ 
-        clientId: PAYPAL_CLIENT_ID, 
-        vault: true, 
-        intent: "subscription",
-        "enable-funding": "card"
-      }}>
-        <PayPalButtons 
-          style={{ layout: "vertical", color: "silver", shape: "rect", label: "subscribe" }}
-          createSubscription={async () => {
-            const { data: userData } = await supabase.auth.getUser();
-            const userId = userData.user?.id;
-            
-            if (!userId) {
-              throw new Error("Usuario no autenticado");
-            }
+  const handleApprove = useCallback((subscriptionId: string) => {
+    console.log(`[PayPal Diagnostic] Aprobación completada. Redirigiendo a retorno con ID: ${subscriptionId}`);
+    navigate(`/suscripcion/paypal/retorno?subscription_id=${subscriptionId}`);
+  }, [navigate]);
 
-            // Llamamos a la Edge Function pasando el tipo de plan
-            const { data, error } = await supabase.functions.invoke('paypal-create-subscription', {
-              body: { planType }
-            });
+  const handleCancel = useCallback(() => {
+    console.log("[PayPal Diagnostic] Flujo cancelado en ventana PayPal. Notificando al usuario.");
+    setCheckoutMessage({
+      type: 'info',
+      text: 'El proceso en PayPal fue cancelado. Tus datos no fueron modificados y puedes reintentar cuando gustes.'
+    });
+  }, []);
 
-            if (error) {
-              console.error("Supabase edge function error:", error);
-              throw error;
-            }
-
-            if (data?.error) {
-              throw new Error(data.error);
-            }
-
-            if (!data?.subscriptionId) {
-              throw new Error('No se recibió el ID de suscripción de PayPal');
-            }
-
-            return data.subscriptionId;
-          }}
-          onApprove={async (data) => {
-            if (data.subscriptionID) {
-              navigate(`/suscripcion/paypal/retorno?subscription_id=${data.subscriptionID}`);
-            }
-          }}
-          onError={(err) => {
-            console.error("PayPal button error:", err);
-            alert("Error al procesar el pago. Por favor intenta nuevamente.");
-          }}
-        />
-      </PayPalScriptProvider>
-    );
-  };
+  const handleError = useCallback((err: any) => {
+    console.error("[PayPal Diagnostic] Error capturado en el flujo de pago:", err?.message || err);
+    setCheckoutMessage({
+      type: 'error',
+      text: 'No se pudo completar la operación con PayPal. Por favor verifica los datos o intenta nuevamente.'
+    });
+  }, []);
 
   const TASA_CAMBIO_RD = 58.8; // Valor configurable de tasa de cambio (USD a RD$)
   const precioMensualUSD = 5;
@@ -149,8 +240,6 @@ export default function Suscripcion() {
     features: featuresComunes
   };
 
-
-
   return (
     <div className="min-h-screen bg-[#F8F3ED] pt-6 pb-12 px-4 md:px-8 font-sans flex flex-col">
       <div className="w-full max-w-6xl mx-auto flex justify-end mb-4">
@@ -159,7 +248,26 @@ export default function Suscripcion() {
         </button>
       </div>
 
-      {hasPremium && suscripcionActual ? (
+      {checkoutMessage && (
+        <div className={`w-full max-w-6xl mx-auto mb-4 p-4 rounded-lg flex items-center justify-between border ${
+          checkoutMessage.type === 'error'
+            ? 'bg-rose-50 border-rose-200 text-rose-800'
+            : 'bg-amber-50 border-amber-200 text-amber-800'
+        }`}>
+          <div className="flex items-center gap-2 text-sm">
+            <AlertCircle size={18} />
+            <span>{checkoutMessage.text}</span>
+          </div>
+          <button
+            onClick={() => setCheckoutMessage(null)}
+            className="text-zinc-400 hover:text-zinc-700 p-1 cursor-pointer"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {hasPremium && suscripcionActual && suscripcionActual.estado === 'activa' ? (
         <div className="w-full max-w-6xl mx-auto mb-6 bg-white border border-dashed border-[rgba(120,135,110,0.25)] rounded-lg p-5 flex items-start gap-4 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
           <div className="w-12 h-12 bg-[#EBF1E9] border border-[#D5E1D2] rounded-full flex items-center justify-center shrink-0">
             <span className="text-[#5C7257] font-bold text-xl">✓</span>
@@ -191,14 +299,11 @@ export default function Suscripcion() {
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-bold text-zinc-900 mb-1">
-              Suscripción Pendiente
+              Suscripción pendiente de confirmación
             </h3>
-            <p className="text-zinc-600 text-sm mb-4">
-              Tienes una suscripción iniciada. Finaliza el proceso con PayPal.
+            <p className="text-zinc-600 text-sm">
+              Tienes un intento de suscripción previo con PayPal. Puedes reintentar o elegir cualquiera de los planes disponibles a continuación.
             </p>
-            <div className="max-w-xs relative z-0">
-               <PayPalSubscriptionButton planType="mensual" />
-            </div>
           </div>
         </div>
       ) : null}
@@ -267,13 +372,19 @@ export default function Suscripcion() {
                   {planMensual.secondary}
                 </p>
                 
-                <div className="relative z-0">
-                  {hasPremium && suscripcionActual?.tipo === 'individual' ? (
+                <div className="relative z-0 min-h-[44px]">
+                  {hasPremium && suscripcionActual?.tipo === 'individual' && suscripcionActual.estado === 'activa' ? (
                     <button disabled className="w-full py-2 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.2)] text-zinc-400 text-[10px] font-medium tracking-widest uppercase rounded-sm">
                       Plan Actual
                     </button>
                   ) : (
-                    <PayPalSubscriptionButton planType="mensual" />
+                    <PayPalSubscriptionButton
+                      key="paypal-sub-btn-mensual"
+                      planType="mensual"
+                      onApprove={handleApprove}
+                      onCancel={handleCancel}
+                      onError={handleError}
+                    />
                   )}
                 </div>
               </div>
@@ -333,13 +444,19 @@ export default function Suscripcion() {
                   {planAnual.secondary}
                 </p>
                 
-                <div className="relative z-0">
-                  {hasPremium && suscripcionActual?.tipo === 'individual' ? (
+                <div className="relative z-0 min-h-[44px]">
+                  {hasPremium && suscripcionActual?.tipo === 'individual' && suscripcionActual.estado === 'activa' ? (
                     <button disabled className="w-full py-2 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.2)] text-zinc-400 text-[10px] font-medium tracking-widest uppercase rounded-sm">
                       Plan Actual
                     </button>
                   ) : (
-                    <PayPalSubscriptionButton planType="anual" />
+                    <PayPalSubscriptionButton
+                      key="paypal-sub-btn-anual"
+                      planType="anual"
+                      onApprove={handleApprove}
+                      onCancel={handleCancel}
+                      onError={handleError}
+                    />
                   )}
                 </div>
               </div>
@@ -400,5 +517,13 @@ export default function Suscripcion() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Suscripcion() {
+  return (
+    <PayPalScriptProvider options={paypalScriptOptions}>
+      <SuscripcionContent />
+    </PayPalScriptProvider>
   );
 }

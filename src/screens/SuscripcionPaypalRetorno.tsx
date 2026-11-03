@@ -23,7 +23,7 @@ export default function SuscripcionPaypalRetorno() {
 
     let isMounted = true;
     let pollCount = 0;
-    const maxPolls = 15; // 30 seconds max (2s interval)
+    const maxPolls = 15; // 30 segundos en total (2s intervalo)
 
     const pollSubscriptionStatus = async () => {
       try {
@@ -32,23 +32,39 @@ export default function SuscripcionPaypalRetorno() {
           .select('estado')
           .eq('paypal_subscription_id', subscriptionId)
           .eq('user_id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
 
-        if (data.estado === 'activa') {
+        if (data && data.estado === 'activa') {
           if (isMounted) setStatus('success');
-        } else {
-          pollCount++;
-          if (pollCount >= maxPolls) {
-            if (isMounted) setStatus('timeout');
-          } else {
-            if (isMounted) setTimeout(pollSubscriptionStatus, 2000);
+          return;
+        }
+
+        pollCount++;
+
+        // Verificación activa directa con la Edge Function ante retrasos del Webhook
+        if (pollCount === 2 || pollCount === 6) {
+          try {
+            const { data: verifyData } = await supabase.functions.invoke('paypal-verify-subscription', {
+              body: { subscriptionId }
+            });
+            if (verifyData?.estado === 'activa' && isMounted) {
+              setStatus('success');
+              return;
+            }
+          } catch (vErr) {
+            console.warn("Direct verification fallback:", vErr);
           }
+        }
+
+        if (pollCount >= maxPolls) {
+          if (isMounted) setStatus('timeout');
+        } else {
+          if (isMounted) setTimeout(pollSubscriptionStatus, 2000);
         }
       } catch (error) {
         console.error("Error polling subscription status:", error);
-        // Retry anyway in case of transient network error
         pollCount++;
         if (pollCount >= maxPolls) {
           if (isMounted) setStatus('timeout');
@@ -64,6 +80,11 @@ export default function SuscripcionPaypalRetorno() {
       isMounted = false;
     };
   }, [subscriptionId, session]);
+
+  const handleGoHome = () => {
+    // Recarga suave para asegurar que el contexto y hooks lean el nuevo estado de suscripciones
+    window.location.href = '/inicio';
+  };
 
   return (
     <div className="min-h-screen bg-(--background) flex flex-col items-center justify-center p-4">
@@ -86,7 +107,7 @@ export default function SuscripcionPaypalRetorno() {
               Tu pago ha sido procesado correctamente y ya tienes acceso a todas las funcionalidades premium de CIELO.
             </p>
             <button 
-              onClick={() => navigate('/inicio')}
+              onClick={handleGoHome}
               className="px-6 py-2 bg-(--primary) text-white font-semibold rounded-lg hover:opacity-90 cursor-pointer"
             >
               Ir a mi cuenta
@@ -99,10 +120,10 @@ export default function SuscripcionPaypalRetorno() {
             <Clock size={48} className="text-orange-500 mb-6" />
             <h2 className="text-xl font-bold text-(--ink) mb-2">Estamos terminando de confirmar tu pago</h2>
             <p className="text-(--ink-soft) text-sm mb-6">
-              PayPal puede tardar unos minutos adicionales en enviarnos la confirmación. Puedes continuar usando CIELO y revisaremos automáticamente el estado de tu suscripción en segundo plano.
+              PayPal puede tardar unos momentos adicionales en consolidar la transacción. Puedes continuar usando CIELO y validaremos automáticamente tu cuenta en segundo plano.
             </p>
             <button 
-              onClick={() => navigate('/inicio')}
+              onClick={handleGoHome}
               className="px-6 py-2 bg-(--ink) text-white font-semibold rounded-lg hover:opacity-90 cursor-pointer"
             >
               Ir al inicio

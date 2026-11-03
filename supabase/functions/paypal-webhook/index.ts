@@ -66,6 +66,7 @@ async function verifyPayPalWebhookSignature(req: Request, rawBody: string, acces
   const transmissionSig = req.headers.get("paypal-transmission-sig");
 
   if (!transmissionId || !transmissionTime || !certUrl || !authAlgo || !transmissionSig) {
+    console.error("[paypal-webhook] Falta alguno de los encabezados obligatorios de firma de PayPal");
     return false;
   }
 
@@ -89,10 +90,15 @@ async function verifyPayPalWebhookSignature(req: Request, rawBody: string, acces
   });
 
   if (!response.ok) {
+    const errText = await response.text();
+    console.error(`[paypal-webhook] Error en llamada verify-webhook-signature (${response.status}):`, errText);
     return false;
   }
 
   const data = await response.json();
+  if (data.verification_status !== "SUCCESS") {
+    console.warn(`[paypal-webhook] Firma rechazada por PayPal. status=${data.verification_status}. PAYPAL_WEBHOOK_ID=${PAYPAL_WEBHOOK_ID ? "PRESENTE" : "VACIO"}`);
+  }
   return data.verification_status === "SUCCESS";
 }
 
@@ -151,7 +157,6 @@ Deno.serve(async (req: Request) => {
       throw claimError;
     }
 
-    // claimResult devuelve un arreglo/objeto según config, asumimos formato { status, token } de la RPC
     const claimStatus = claimResult[0]?.status || claimResult?.status;
     const claimToken = claimResult[0]?.token || claimResult?.token;
 
@@ -180,9 +185,10 @@ Deno.serve(async (req: Request) => {
         .from("suscripciones")
         .select("*")
         .eq("paypal_subscription_id", subscriptionId)
-        .single();
+        .maybeSingle();
 
       if (subError || !subData) {
+        console.warn(`[paypal-webhook] Suscripción ${subscriptionId} no encontrada localmente aún. Puede estar creándose.`);
         throw new Error("Subscription not found locally");
       }
 
@@ -231,11 +237,18 @@ Deno.serve(async (req: Request) => {
         case "BILLING.SUBSCRIPTION.ACTIVATED":
         case "BILLING.SUBSCRIPTION.UPDATED":
           requiresSubscriptionUpdate = true;
-          newEstado = "activa";
-          if (!paypalSub.billing_info?.next_billing_time) {
-            throw new Error("Missing next_billing_time in ACTIVATED/UPDATED event");
+          // Si el estado en vivo en PayPal ya es CANCELLED o SUSPENDED, no reactivar por un evento desfasado
+          if (paypalSub.status === "CANCELLED") {
+            newEstado = "cancelada";
+          } else if (paypalSub.status === "SUSPENDED") {
+            newEstado = "cancelada";
+          } else {
+            newEstado = "activa";
+            if (!paypalSub.billing_info?.next_billing_time) {
+              throw new Error("Missing next_billing_time in ACTIVATED/UPDATED event");
+            }
+            newFechaFin = paypalSub.billing_info.next_billing_time;
           }
-          newFechaFin = paypalSub.billing_info.next_billing_time;
           break;
 
         case "BILLING.SUBSCRIPTION.CANCELLED":
@@ -246,7 +259,8 @@ Deno.serve(async (req: Request) => {
 
         case "BILLING.SUBSCRIPTION.SUSPENDED":
           requiresSubscriptionUpdate = true;
-          newEstado = "suspendida";
+          // Si el constraint de base de datos aún no tiene 'suspendida', usamos 'cancelada' como estado compatible seguro.
+          newEstado = "cancelada";
           break;
 
         case "BILLING.SUBSCRIPTION.EXPIRED":
@@ -273,7 +287,17 @@ Deno.serve(async (req: Request) => {
 
           requiresSubscriptionUpdate = true;
           newFechaFin = paypalSub.billing_info.next_billing_time;
-          newEstado = "activa";
+
+          // Protección contra eventos desordenados o desfasados
+          if (paypalSub.status === "CANCELLED") {
+            console.warn(`[paypal-webhook] PAYMENT.SALE.COMPLETED recibido pero la suscripción ${subscriptionId} está cancelada en PayPal.`);
+            newEstado = "cancelada";
+          } else if (paypalSub.status === "SUSPENDED") {
+            console.warn(`[paypal-webhook] PAYMENT.SALE.COMPLETED recibido pero la suscripción ${subscriptionId} está suspendida en PayPal.`);
+            newEstado = "cancelada";
+          } else {
+            newEstado = "activa";
+          }
           break;
 
         case "BILLING.SUBSCRIPTION.PAYMENT.FAILED":
@@ -293,9 +317,6 @@ Deno.serve(async (req: Request) => {
     }
 
     // 4. Finalización atómica mediante Fencing Token
-    // Este RPC asegura que nadie nos haya robado el evento (Token-B),
-    // verifica que se actualice exactamente 1 fila en suscripciones,
-    // y usa el subscription_id almacenado originalmente en la DB.
     const { data: finalizeResult, error: finalizeError } = await supabase.rpc(
       "finalize_paypal_event",
       {
@@ -311,8 +332,6 @@ Deno.serve(async (req: Request) => {
     if (finalizeError) throw finalizeError;
 
     if (finalizeResult === 'LOST_CLAIM') {
-      // El Token ya no era válido o el evento fue marcado como procesado.
-      // Significa que nos convertimos en un proceso Zombie y perdimos la reclamación.
       throw new Error(`Lost claim authority for event ${eventId}. Updates aborted.`);
     } else if (finalizeResult === 'SUBSCRIPTION_NOT_FOUND') {
       throw new Error(`Zero rows updated. Suscripción original no encontrada en DB. Evento: ${eventId}`);

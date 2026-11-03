@@ -116,6 +116,28 @@ Deno.serve(async (req) => {
 
     const accessToken = await getPayPalAccessToken();
 
+    // Determinar la URL base dinámica respetando el origen del usuario (evaluacielo.com vs www.evaluacielo.com)
+    // para garantizar que al retornar conserve su sesión activa en localStorage.
+    const originHeader = req.headers.get("origin") || req.headers.get("referer");
+    let baseUrl = "https://evaluacielo.com";
+    if (originHeader) {
+      try {
+        const parsedUrl = new URL(originHeader);
+        const host = parsedUrl.hostname.toLowerCase();
+        if (
+          host === "evaluacielo.com" ||
+          host === "www.evaluacielo.com" ||
+          host.endsWith(".vercel.app") ||
+          host === "localhost" ||
+          host === "127.0.0.1"
+        ) {
+          baseUrl = parsedUrl.origin;
+        }
+      } catch (_) {
+        // Fallback seguro a baseUrl por defecto
+      }
+    }
+
     // Crear suscripción en PayPal
     const createSubRes = await fetch(`${PAYPAL_API_BASE}/v1/billing/subscriptions`, {
       method: 'POST',
@@ -133,8 +155,8 @@ Deno.serve(async (req) => {
           locale: "es-ES",
           shipping_preference: "NO_SHIPPING",
           user_action: "SUBSCRIBE_NOW",
-          return_url: "https://evaluacielo.com/suscripcion/paypal/retorno",
-          cancel_url: "https://evaluacielo.com/suscripcion/paypal/cancelada"
+          return_url: `${baseUrl}/suscripcion/paypal/retorno`,
+          cancel_url: `${baseUrl}/suscripcion/paypal/cancelada`
         }
       })
     });
