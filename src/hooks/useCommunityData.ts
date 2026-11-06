@@ -25,15 +25,13 @@ export function useCommunityData() {
 
         try {
             const userIdsInState = (globalState.perfiles || []).map(p => p.userId).filter(Boolean);
-            let histQuery = supabase.from('historial_colaboradores')
+            const targetUserIds = userIdsInState.length > 0 ? userIdsInState : [session.user.id];
+            const histQuery = supabase.from('historial_colaboradores')
                 .select('usuario_id, publicaciones_realizadas')
                 .gt('publicaciones_realizadas', 0)
-                .order('publicaciones_realizadas', { ascending: false });
-
-            if (userIdsInState.length > 0) {
-                histQuery = histQuery.in('usuario_id', userIdsInState);
-            }
-            histQuery = histQuery.limit(5);
+                .in('usuario_id', targetUserIds)
+                .order('publicaciones_realizadas', { ascending: false })
+                .limit(5);
 
             const [postsRes, histRes] = await Promise.all([
                 supabase.from('posts')

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquareText, Brain, Puzzle, Microscope, Sparkles } from 'lucide-react';
+import { MessageSquareText, Brain, Puzzle, Microscope, Sparkles, BookOpen, AlertCircle, Check, Loader2 } from 'lucide-react';
 import type { AppState, Actividad, BCKey } from '../../types';
 import { COMPETENCIAS_LABEL } from '../../types';
 import { TC_Flux, TC_Genesis, TC_Archive, TC_Echo } from '../icons/TerraCognitaIcons';
@@ -9,6 +9,7 @@ import { getAIAIProvider, isProviderConfigured, providerDisplayName, saveAIKey, 
 import { callAI, clearAICircuitBreakers } from '../../lib/aiProvider';
 import { calculateHash, cleanTechnicalText } from '../../lib/aiPreprocessor';
 import { getCurrentMonthAIUsage, type AIUsageStats } from '../../lib/aiUsage';
+import { SelectorIndicadorFragmento } from '../curriculo/SelectorIndicadorFragmento';
 
 const BC_CIRCLE_CONFIG: Array<{ id: BCKey; label: string; icon: typeof MessageSquareText; bg: string; selectedBg: string; selectedText: string }> = [
   { id: 'BC1', label: COMPETENCIAS_LABEL.BC1, icon: MessageSquareText, bg: 'bg-blue-50', selectedBg: 'bg-blue-600', selectedText: 'text-white' },
@@ -57,6 +58,8 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         cursoId: cursos[0]?.id ?? 0,
         indicador: ''
     });
+
+    const [indicadoresJson, setIndicadoresJson] = useState<any[]>([]);
 
     // IA flow (texto pegado) states
     const [pastedText, setPastedText] = useState('');
@@ -114,6 +117,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
             cursoId: cursos[0]?.id ?? 0,
             indicador: ''
         });
+        setIndicadoresJson([]);
         onClose();
     };
 
@@ -145,13 +149,14 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
                 nombre: form.nombre,
                 fecha: form.fecha,
                 cursoId: form.cursoId,
-                periodo: curso?.periodo ?? 'P1',
+                periodo: useAppStore.getState().selectedPeriodo || curso?.periodo || 'P2',
                 bcAsignados: form.bcs,
                 secuenciaId: form.secuenciaId ? parseInt(form.secuenciaId) : undefined,
                 sharedCourseId: curso?.sharedCourseId,
                 userId: currentUserId,
                 asignatura: docenteAsignatura,
-                indicador: form.indicador || undefined
+                indicador: form.indicador || undefined,
+                indicadores_json: indicadoresJson.length > 0 ? indicadoresJson : undefined
             });
 
             if (result) {
@@ -605,13 +610,15 @@ ${pastedText}`;
             return (
                 <div className="flex gap-3 w-full">
                     <button 
-                        className="h-10 px-4 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95" 
+                        type="button"
+                        className="h-11 px-6 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer" 
                         onClick={() => { setShowApiKeyPrompt(false); setTempApiKey(''); }}
                     >
                         Cancelar
                     </button>
                     <button 
-                        className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all active:scale-95" 
+                        type="button"
+                        className="flex-1 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer" 
                         onClick={() => {
                             if (session?.user?.id) saveAIAIProvider(session.user.id, 'deepseek');
                             setShowApiKeyPrompt(false);
@@ -621,7 +628,8 @@ ${pastedText}`;
                         Usar Asistente CIELO
                     </button>
                     <button 
-                        className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 ${!tempApiKey.trim() ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                        type="button"
+                        className={`flex-1 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${!tempApiKey.trim() ? 'opacity-50 cursor-not-allowed' : ''}`} 
                         onClick={handleSaveApiKey}
                         disabled={!tempApiKey.trim()}
                     >
@@ -634,79 +642,112 @@ ${pastedText}`;
         if (flowMode === 'choice') {
             return (
                 <button 
-                    className="w-full h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95" 
+                    type="button"
+                    className="w-full sm:w-auto px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer ml-auto" 
                     onClick={handleClose}
                 >
                     Cerrar
                 </button>
             );
         }
+
         if (flowMode === 'manual') {
+            const isManualReady = form.nombre.trim() && form.cursoId && form.bcs.length > 0 && form.indicador.trim() && !isSaving;
             return (
-                <div className="flex gap-4 w-full">
-                    <button className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95" onClick={() => setFlowMode('choice')}>Volver</button>
+                <div className="flex items-center justify-between gap-4 w-full">
                     <button 
-                        className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`} 
-                        onClick={handleCreateManual}
+                        type="button"
+                        className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer" 
+                        onClick={() => setFlowMode('choice')}
                         disabled={isSaving}
                     >
-                        {isSaving ? 'Guardando...' : (
+                        Volver
+                    </button>
+                    <button 
+                        type="button"
+                        className={`px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer ${
+                            !isManualReady ? 'opacity-50 cursor-not-allowed' : ''
+                        }`} 
+                        onClick={handleCreateManual}
+                        disabled={!isManualReady}
+                    >
+                        {isSaving ? (
+                            <>
+                                <Loader2 size={16} className="animate-spin" />
+                                <span>Guardando…</span>
+                            </>
+                        ) : (
                             <>
                                 <span>Programar Actividad</span>
-                                <TC_Flux size={14} />
+                                <TC_Flux size={15} />
                             </>
                         )}
                     </button>
                 </div>
             );
         }
+
         if (flowMode === 'text') {
             const isMissingContext = !pastedText.trim() || !targetCursoId || !targetPeriodo;
             return (
-                <div className="flex gap-4 w-full">
+                <div className="flex items-center justify-between gap-3 w-full flex-wrap sm:flex-nowrap">
                     <button 
-                        className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95" 
+                        type="button"
+                        className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer" 
                         onClick={() => setFlowMode('choice')}
+                        disabled={isProcessing}
                     >
                         Volver
                     </button>
-                    <button 
-                        className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95`}
-                        onClick={handleCopyPrompt}
-                    >
-                        {isPromptCopied ? 'Prompt copiado' : 'Copiar prompt'}
-                    </button>
-                    <button 
-                        className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-[#EAE4DA] text-[#2E3330] shadow-sm hover:bg-[#EAE4DA]/80 transition-all active:scale-95 ${isMissingContext ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={handlePasteJson}
-                        disabled={isMissingContext}
-                    >
-                        Pegar JSON
-                    </button>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <button 
+                            type="button"
+                            className="flex-1 sm:flex-none px-5 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer" 
+                            onClick={handleCopyPrompt}
+                        >
+                            {isPromptCopied ? 'Prompt copiado' : 'Copiar prompt'}
+                        </button>
+                        <button 
+                            type="button"
+                            className={`flex-1 sm:flex-none px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#FAF7F2] border border-slate-300 text-[#2E3330] hover:bg-[#EAE4DA] transition-all active:scale-95 cursor-pointer ${isMissingContext ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            onClick={handlePasteJson}
+                            disabled={isMissingContext}
+                        >
+                            Pegar JSON
+                        </button>
+                    </div>
                 </div>
             );
         }
+
         // Preview mode footer
         const selectedCount = extractedActivities.filter(a => a.selected).length;
         return (
-            <div className="flex gap-4 w-full">
+            <div className="flex items-center justify-between gap-4 w-full">
                 <button 
-                    className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95" 
+                    type="button"
+                    className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer" 
                     onClick={() => setFlowMode('text')}
                     disabled={isSaving}
                 >
                     Volver
                 </button>
                 <button 
+                    type="button"
                     data-guide="btn-guardar-actividades-ia"
-                    className={`flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-primary text-[#2E3330] shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 ${selectedCount === 0 || isSaving || !targetCursoId || !targetPeriodo ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                    className={`px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer ${selectedCount === 0 || isSaving || !targetCursoId || !targetPeriodo ? 'opacity-50 cursor-not-allowed' : ''}`} 
                     onClick={handleSaveExtracted}
                     disabled={selectedCount === 0 || isSaving || !targetCursoId || !targetPeriodo}
                 >
-                    {isSaving ? 'Guardando...' : (
+                    {isSaving ? (
+                        <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Guardando…</span>
+                        </>
+                    ) : (
                         <>
                             <span>Guardar ({selectedCount}) Actividades</span>
-                            <TC_Echo size={14} />
+                            <TC_Echo size={15} />
                         </>
                     )}
                 </button>
@@ -726,17 +767,33 @@ ${pastedText}`;
                         : flowMode === 'manual' 
                             ? 'Programar Actividad' 
                             : flowMode === 'text'
-                                ? 'Importar Actividades desde Secuencia'
-                                : 'Actividades Detectadas en el Documento'
+                                ? 'Importar desde Planificación'
+                                : 'Actividades Detectadas'
             }
-            maxWidth={flowMode === 'preview' ? '7xl' : 'lg'}
+            subtitle={
+                flowMode === 'manual'
+                    ? 'Completa los datos y selecciona los elementos curriculares a evaluar'
+                    : flowMode === 'choice'
+                        ? 'Elige cómo deseas crear tu actividad'
+                        : undefined
+            }
+            maxWidth={
+                flowMode === 'preview' 
+                    ? '7xl' 
+                    : flowMode === 'manual' 
+                        ? '5xl' 
+                        : flowMode === 'text' 
+                            ? '3xl' 
+                            : '2xl'
+            }
+            icon={<TC_Flux size={20} className="text-[#689C63]" />}
             footer={getModalFooter()}
         >
             {showApiKeyPrompt ? (
                 <div className="py-4 space-y-6">
                     <div className="text-center space-y-2">
                         <h3 className="text-sm font-bold text-slate-900">Necesitamos tu API Key de {providerDisplayName(getAIAIProvider(session?.user?.id))}</h3>
-                        <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                        <p className="text-xs text-slate-600 leading-relaxed font-medium">
                             La clave será utilizada para analizar el texto de las actividades y extraer los elementos pedagógicos de forma automática.
                         </p>
                     </div>
@@ -746,18 +803,18 @@ ${pastedText}`;
                             href={getAIAIProvider(session?.user?.id) === 'openai' ? 'https://platform.openai.com/api-keys' : 'https://aistudio.google.com/app/api-keys?project=gen-lang-client-0626735374'}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs font-bold text-primary hover:underline flex items-center gap-1.5"
+                            className="text-xs font-bold text-[#689C63] hover:underline flex items-center gap-1.5"
                         >
                             {getAIAIProvider(session?.user?.id) === 'openai' ? 'Obtener API Key de OpenAI ↗' : 'Obtener API Key de Google AI Studio ↗'}
                         </a>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="notion-label">API Key</label>
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">API Key</label>
                         <div className="search-container h-12! rounded-xl!">
                             <input 
                                 type="password"
-                                className="text-base font-medium w-full bg-transparent outline-none" 
+                                className="text-base font-medium w-full bg-transparent outline-none text-[#1E2421]" 
                                 placeholder={`Ingresa tu clave de ${providerDisplayName(getAIAIProvider(session?.user?.id))}...`} 
                                 value={tempApiKey}
                                 onChange={e => setTempApiKey(e.target.value)} 
@@ -767,219 +824,362 @@ ${pastedText}`;
                 </div>
             ) : (
                 <>
+                    {/* Modo 1: Selección inicial de método */}
                     {flowMode === 'choice' && (
-                        <div className="py-6 space-y-6">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest text-center">
-                                Seleccione el método para crear su actividad
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="py-5 space-y-6">
+                            <div className="text-center max-w-lg mx-auto space-y-1.5">
+                                <h3 className="text-base sm:text-lg font-extrabold text-[#2E3330]">
+                                    ¿Cómo deseas crear tu actividad?
+                                </h3>
+                                <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                                    Elige el método que mejor se adapte a tu planificación.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-2xl mx-auto">
                                 <button
+                                    type="button"
                                     onClick={() => setFlowMode('manual')}
-                                    className="p-6 rounded-2xl border border-slate-200 hover:border-primary hover:bg-[#EAE4DA]/20 transition-all flex flex-col items-center text-center group"
+                                    className="p-6 rounded-2xl border-2 border-slate-200/90 hover:border-[#689C63] hover:bg-[#FAF7F2] transition-all flex flex-col items-center text-center group cursor-pointer shadow-xs"
                                 >
-                                    <div className="w-12 h-12 rounded-xl bg-[#EAE4DA] flex items-center justify-center mb-4 text-[#2E3330] group-hover:bg-primary transition-colors">
-                                        <TC_Genesis size={24} />
+                                    <div className="w-14 h-14 rounded-2xl bg-[#FAF7F2] border border-slate-200 flex items-center justify-center mb-4 text-[#2E3330] group-hover:bg-[#689C63] group-hover:text-white group-hover:border-[#689C63] transition-all">
+                                        <TC_Genesis size={26} />
                                     </div>
-                                    <h3 className="text-sm font-bold text-slate-900 mb-2">Creación Manual</h3>
-                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                        Complete los campos manualmente definiendo el nombre, fecha y competencias.
+                                    <h4 className="text-sm font-black text-[#2E3330] mb-1.5 uppercase tracking-wide">
+                                        Creación Manual
+                                    </h4>
+                                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                                        Define el curso, fecha, competencias y selecciona los contenidos e indicadores curriculares.
                                     </p>
                                 </button>
 
                                 <button
+                                    type="button"
                                     data-guide="opcion-importar-ia"
                                     onClick={() => setFlowMode('text')}
-                                    className="p-6 rounded-2xl border border-slate-200 hover:border-primary hover:bg-[#EAE4DA]/20 transition-all flex flex-col items-center text-center group"
+                                    className="p-6 rounded-2xl border-2 border-slate-200/90 hover:border-[#689C63] hover:bg-[#FAF7F2] transition-all flex flex-col items-center text-center group cursor-pointer shadow-xs"
                                 >
-                                    <div className="w-12 h-12 rounded-xl bg-[#EAE4DA] flex items-center justify-center mb-4 text-[#2E3330] group-hover:bg-primary transition-colors">
-                                        <TC_Archive size={24} />
+                                    <div className="w-14 h-14 rounded-2xl bg-[#FAF7F2] border border-slate-200 flex items-center justify-center mb-4 text-[#2E3330] group-hover:bg-[#689C63] group-hover:text-white group-hover:border-[#689C63] transition-all">
+                                        <TC_Archive size={26} />
                                     </div>
-                                    <h3 className="text-sm font-bold text-slate-900 mb-2">Importar una Secuencia o planificación</h3>
-                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                        Pega el texto y la IA extrae lo necesario para crear las actividades que debes evaluar.
+                                    <h4 className="text-sm font-black text-[#2E3330] mb-1.5 uppercase tracking-wide">
+                                        Importar Planificación
+                                    </h4>
+                                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                                        Pega el texto de tu secuencia didáctica para extraer automáticamente las actividades con IA.
                                     </p>
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    {flowMode === 'manual' && (
-                        <div className="space-y-6">
-                            <div className="space-y-2.5">
-                                <label className="notion-label">Nombre de la actividad</label>
-                                <div className="search-container h-12! rounded-xl!">
-                                    <input className="text-base font-medium w-full bg-transparent outline-none" placeholder="Ej: Análisis Crítico de Textos" value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} />
-                                </div>
-                            </div>
+                    {/* Modo 2: Creación manual amplia (Distribuida en 2 columnas en escritorio) */}
+                    {flowMode === 'manual' && (() => {
+                        const currentCurso = cursos.find(c => c.id === form.cursoId);
+                        const currentCd = state.cursoDocentes.find(cd => cd.cursoId === form.cursoId && cd.userId === session?.user?.id);
+                        const currentAsignatura = currentCd?.asignatura || currentCurso?.asignatura;
 
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="space-y-2.5">
-                                    <label className="notion-label">Fecha programada</label>
-                                    <input type="date" className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium transition-all"
-                                        value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} />
-                                </div>
-                                <div className="space-y-2.5">
-                                    <label className="notion-label">Curso destino</label>
-                                    <div className="relative">
-                                        <select className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium appearance-none transition-all cursor-pointer"
-                                            value={form.cursoId} onChange={e => setForm(p => ({ ...p, cursoId: Number(e.target.value) }))}>
-                                            <option value={0} disabled>Seleccione curso...</option>
-                                            {cursos.map(c => <option key={c.id} value={c.id}>{c.grado} {c.seccion} - {c.nombre}</option>)}
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                            <TC_Flux size={14} className="rotate-90" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="notion-label">Competencias a evaluar</label>
-                                <div className="flex items-center gap-3">
-                                    {BC_CIRCLE_CONFIG.map(({ id, label, icon: Icon, bg, selectedBg, selectedText }) => {
-                                        const isSelected = form.bcs.includes(id);
-                                        return (
-                                            <div key={id} className="relative group">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setForm(p => ({
-                                                            ...p,
-                                                            bcs: isSelected
-                                                                ? p.bcs.filter(x => x !== id)
-                                                                : [...p.bcs, id]
-                                                        }));
-                                                    }}
-                                                    className={`
-                                                        w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer
-                                                        ${isSelected
-                                                            ? `${selectedBg} ${selectedText} shadow-md ring-2 ring-offset-1 ring-current/30`
-                                                            : `${bg} text-slate-500 hover:shadow-md hover:scale-105`
-                                                        }
-                                                    `}
-                                                >
-                                                    <Icon size={20} strokeWidth={2.2} />
-                                                </button>
-                                                <div className="
-                                                    absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5
-                                                    w-64 p-3 rounded-xl text-left
-                                                    bg-slate-900 text-white shadow-2xl
-                                                    opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                                                    transition-all duration-200 pointer-events-none z-9999
-                                                ">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{id}</span>
-                                                    <p className="text-xs font-bold mt-0.5 leading-snug">{label}</p>
-                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-slate-900"></div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                {form.bcs.length > 0 && (
-                                    <div className="mt-2">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Indicador de logro *</label>
-                                        <textarea
-                                            className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium transition-all resize-none"
-                                            rows={2}
-                                            placeholder="Ej: El estudiante será capaz de aplicar técnicas de comprensión lectora para analizar textos argumentativos..."
-                                            value={form.indicador}
-                                            onChange={e => setForm(p => ({ ...p, indicador: e.target.value }))}
-                                        />
+                        return (
+                            <div className="space-y-6 py-2">
+                                {errorMsg && (
+                                    <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-bold rounded-xl flex items-center gap-2.5">
+                                        <AlertCircle size={17} className="text-rose-600 shrink-0" />
+                                        <span>{errorMsg}</span>
                                     </div>
                                 )}
-                            </div>
-                        </div>
-                    )}
 
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                                    {/* Columna Izquierda: Información básica y Competencias (5 de 12 columnas) */}
+                                    <div className="lg:col-span-5 space-y-5">
+                                        {/* Bloque 1: Datos de la actividad */}
+                                        <div className="bg-[#FAF7F2]/70 border border-slate-300/80 rounded-2xl p-4.5 space-y-4">
+                                            <div className="border-b border-slate-200 pb-2.5">
+                                                <span className="text-[11px] font-black uppercase tracking-wider text-slate-600 block">
+                                                    Paso 1
+                                                </span>
+                                                <h3 className="text-sm font-extrabold text-[#2E3330]">
+                                                    Información de la actividad
+                                                </h3>
+                                            </div>
+
+                                            {/* Curso destino */}
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                                                    Curso destino *
+                                                </label>
+                                                <div className="relative">
+                                                    <select 
+                                                        className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold appearance-none transition-all cursor-pointer pr-9"
+                                                        value={form.cursoId} 
+                                                        onChange={e => setForm(p => ({ ...p, cursoId: Number(e.target.value) }))}
+                                                    >
+                                                        <option value={0} disabled>Selecciona el curso…</option>
+                                                        {cursos.map(c => (
+                                                            <option key={c.id} value={c.id}>
+                                                                {c.grado} {c.seccion} — {c.nombre}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                                                        <TC_Flux size={14} className="rotate-90" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Nombre de la actividad */}
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                                                    Nombre de la actividad *
+                                                </label>
+                                                <input 
+                                                    type="text"
+                                                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] placeholder:text-slate-500 outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-semibold transition-all"
+                                                    placeholder="Ej: Análisis Crítico de Textos" 
+                                                    value={form.nombre} 
+                                                    onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} 
+                                                />
+                                            </div>
+
+                                            {/* Fecha programada */}
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                                                    Fecha programada *
+                                                </label>
+                                                <input 
+                                                    type="date" 
+                                                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-semibold transition-all"
+                                                    value={form.fecha} 
+                                                    onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} 
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Bloque 2: Competencias a evaluar */}
+                                        <div className="bg-[#FAF7F2]/70 border border-slate-300/80 rounded-2xl p-4.5 space-y-3">
+                                            <div className="border-b border-slate-200 pb-2.5 flex items-center justify-between">
+                                                <div>
+                                                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-600 block">
+                                                        Paso 2
+                                                    </span>
+                                                    <h3 className="text-sm font-extrabold text-[#2E3330]">
+                                                        Competencias a evaluar *
+                                                    </h3>
+                                                </div>
+                                                <span className="text-[11px] font-bold text-slate-700 bg-white border border-slate-300 px-2.5 py-0.5 rounded-md">
+                                                    {form.bcs.length} seleccionada{form.bcs.length !== 1 ? 's' : ''}
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 gap-2.5">
+                                                {BC_CIRCLE_CONFIG.map(({ id, label, icon: Icon, bg, selectedBg, selectedText }) => {
+                                                    const isSelected = form.bcs.includes(id);
+                                                    return (
+                                                        <button
+                                                            key={id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setForm(p => ({
+                                                                    ...p,
+                                                                    bcs: isSelected
+                                                                        ? p.bcs.filter(x => x !== id)
+                                                                        : [...p.bcs, id]
+                                                                }));
+                                                            }}
+                                                            className={`w-full p-2.5 rounded-xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                                                                isSelected
+                                                                    ? 'bg-white border-[#689C63] shadow-xs ring-2 ring-[#689C63]/40'
+                                                                    : 'bg-white/80 border-slate-200 hover:border-slate-300 hover:bg-white'
+                                                            }`}
+                                                        >
+                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                                                isSelected ? `${selectedBg} ${selectedText}` : `${bg} text-slate-700`
+                                                            }`}>
+                                                                <Icon size={16} strokeWidth={2.4} />
+                                                            </div>
+
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                                                                        {id}
+                                                                    </span>
+                                                                    {isSelected && (
+                                                                        <span className="text-[10px] font-bold text-[#689C63] flex items-center gap-1">
+                                                                            <Check size={12} strokeWidth={3} />
+                                                                            Activa
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-xs font-bold text-[#2E3330] leading-snug truncate">
+                                                                    {label}
+                                                                </p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Columna Derecha: Currículo e Indicadores (7 de 12 columnas) */}
+                                    <div className="lg:col-span-7 bg-[#FAF7F2]/70 border border-slate-300/80 rounded-2xl p-4.5 space-y-4">
+                                        <div className="border-b border-slate-200 pb-2.5 flex items-center justify-between">
+                                            <div>
+                                                <span className="text-[11px] font-black uppercase tracking-wider text-slate-600 block">
+                                                    Paso 3
+                                                </span>
+                                                <h3 className="text-sm font-extrabold text-[#2E3330]">
+                                                    Contenido e Indicador curricular
+                                                </h3>
+                                            </div>
+                                            {currentCurso && (
+                                                <span className="text-xs font-bold text-slate-700 bg-white border border-slate-300 px-2.5 py-1 rounded-lg">
+                                                    {currentCurso.grado} · {currentAsignatura || currentCurso.asignatura}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {!form.cursoId ? (
+                                            <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-300 space-y-2">
+                                                <BookOpen size={26} className="mx-auto text-slate-400" />
+                                                <p className="text-xs sm:text-sm font-bold text-slate-700">
+                                                    Selecciona primero un curso destino
+                                                </p>
+                                                <p className="text-xs text-slate-600 font-medium">
+                                                    Podrás explorar sus contenidos curriculares y seleccionar el indicador de logro.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <SelectorIndicadorFragmento
+                                                grado={currentCurso?.grado}
+                                                asignatura={currentAsignatura}
+                                                cursoId={form.cursoId ? Number(form.cursoId) : undefined}
+                                                periodo={useAppStore.getState().selectedPeriodo || currentCurso?.periodo || 'P2'}
+                                                initialIndicador={form.indicador}
+                                                onChange={(data) => {
+                                                    setForm(p => ({
+                                                        ...p,
+                                                        indicador: data.indicadorTexto,
+                                                        bcs: data.bcSugerido ? [data.bcSugerido] : p.bcs
+                                                    }));
+                                                    setIndicadoresJson(data.indicadoresJson);
+                                                }}
+                                                disabled={isSaving}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* Modo 3: Importar texto con IA */}
                     {flowMode === 'text' && (
-                        <div className="space-y-6 py-4">
+                        <div className="space-y-5 py-3">
                             {errorMsg && (
-                                <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider rounded-xl">
-                                    {errorMsg}
+                                <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-bold rounded-xl flex items-center gap-2.5">
+                                    <AlertCircle size={16} className="text-rose-600 shrink-0" />
+                                    <span>{errorMsg}</span>
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="space-y-2.5">
-                                    <label className="notion-label">Curso destino *</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                                        Curso destino *
+                                    </label>
                                     <div className="relative">
                                         <select 
                                             data-guide="sel-curso-ia"
-                                            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium appearance-none transition-all cursor-pointer"
+                                            className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold appearance-none transition-all cursor-pointer pr-9"
                                             value={targetCursoId || 0} 
                                             onChange={e => setTargetCursoId(Number(e.target.value))}
                                         >
-                                            <option value={0} disabled>Seleccione curso...</option>
-                                            {cursos.map(c => <option key={c.id} value={c.id}>{c.grado} {c.seccion} - {c.nombre}</option>)}
+                                            <option value={0} disabled>Selecciona el curso…</option>
+                                            {cursos.map(c => (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.grado} {c.seccion} — {c.nombre}
+                                                </option>
+                                            ))}
                                         </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
                                             <TC_Flux size={14} className="rotate-90" />
                                         </div>
                                     </div>
                                 </div>
-                                <div className="space-y-2.5">
-                                    <label className="notion-label">Período *</label>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                                        Período *
+                                    </label>
                                     <div className="relative">
                                         <select 
                                             data-guide="sel-periodo-ia"
-                                            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium appearance-none transition-all cursor-pointer"
+                                            className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold appearance-none transition-all cursor-pointer pr-9"
                                             value={targetPeriodo} 
                                             onChange={e => setTargetPeriodo(e.target.value)}
                                         >
-                                            <option value="" disabled>Seleccione período...</option>
-                                            {['P1', 'P2', 'P3', 'P4'].map(p => <option key={p} value={p}>{p}</option>)}
+                                            <option value="" disabled>Selecciona el período…</option>
+                                            {['P1', 'P2', 'P3', 'P4'].map(p => (
+                                                <option key={p} value={p}>{p}</option>
+                                            ))}
                                         </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
                                             <TC_Flux size={14} className="rotate-90" />
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-2.5">
-                                <label className="notion-label">Texto de la secuencia</label>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                                    Texto de la secuencia o planificación *
+                                </label>
                                 <textarea
                                     data-guide="texto-actividad"
-                                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 font-medium transition-all resize-y leading-relaxed min-h-40"
-                                    rows={10}
-                                    placeholder="Pega aquí el texto copiado del PDF..."
+                                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-xs sm:text-sm text-[#1E2421] placeholder:text-slate-500 bg-white outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-medium transition-all resize-y leading-relaxed min-h-40"
+                                    rows={8}
+                                    placeholder="Pega aquí el texto copiado de la planificación o PDF..."
                                     value={pastedText}
                                     onChange={e => setPastedText(e.target.value)}
                                     disabled={isProcessing}
                                 />
-                                <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                                    Abre la secuencia, copia el texto y pégalo aquí. CIELO analizará el contenido para identificar los elementos de la actividad.
+                                <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                                    CIELO analizará el texto para extraer automáticamente las actividades y sus competencias asociadas.
                                 </p>
                             </div>
 
                             {isProcessing && (
-                                <div className="flex flex-col items-center justify-center space-y-3 py-6">
-                                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest animate-pulse">Analizando texto...</p>
+                                <div className="flex flex-col items-center justify-center space-y-2.5 py-6">
+                                    <div className="w-8 h-8 border-3 border-[#689C63] border-t-transparent rounded-full animate-spin" />
+                                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wider animate-pulse">
+                                        Analizando texto con IA…
+                                    </p>
                                 </div>
                             )}
                         </div>
                     )}
 
+                    {/* Modo 4: Vista previa de actividades detectadas */}
                     {flowMode === 'preview' && (
-                        <div className="space-y-6">
+                        <div className="space-y-5 py-2">
                             {errorMsg && (
-                                <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider rounded-xl">
-                                    {errorMsg}
+                                <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-bold rounded-xl flex items-center gap-2.5">
+                                    <AlertCircle size={16} className="text-rose-600 shrink-0" />
+                                    <span>{errorMsg}</span>
                                 </div>
                             )}
 
-                            <div className="flex items-center justify-between bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-200/60">
-                                <p className="text-xs font-bold uppercase tracking-widest">
-                                    Se encontraron {extractedActivities.length} actividades
+                            <div className="flex items-center justify-between bg-emerald-50 text-emerald-900 p-4 rounded-xl border border-emerald-300">
+                                <p className="text-xs sm:text-sm font-bold uppercase tracking-wider">
+                                    Se detectaron {extractedActivities.length} actividades
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Curso Destino *</label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#FAF7F2] p-4 rounded-2xl border border-slate-300">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700">Curso Destino *</label>
                                     <select 
-                                        className="w-full border border-slate-200 rounded-xl px-4 py-2 text-xs bg-slate-100 outline-none font-bold cursor-not-allowed"
+                                        className="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm bg-slate-100 text-[#1E2421] outline-none font-bold cursor-not-allowed"
                                         value={targetCursoId || ''} 
                                         disabled
                                     >
@@ -987,10 +1187,10 @@ ${pastedText}`;
                                         {cursos.map(c => <option key={c.id} value={c.id}>{c.grado} {c.seccion} - {c.nombre}</option>)}
                                     </select>
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Período *</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700">Período *</label>
                                     <select 
-                                        className="w-full border border-slate-200 rounded-xl px-4 py-2 text-xs bg-slate-100 outline-none font-bold cursor-not-allowed"
+                                        className="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm bg-slate-100 text-[#1E2421] outline-none font-bold cursor-not-allowed"
                                         value={targetPeriodo} 
                                         disabled
                                     >
@@ -998,11 +1198,11 @@ ${pastedText}`;
                                         {['P1', 'P2', 'P3', 'P4'].map(p => <option key={p} value={p}>{p}</option>)}
                                     </select>
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Fecha Programada</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700">Fecha Programada</label>
                                     <input 
                                         type="date" 
-                                        className="w-full border border-slate-200 rounded-xl px-4 py-2 text-xs bg-white outline-none focus:border-primary font-bold"
+                                        className="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] font-bold"
                                         value={targetFecha} 
                                         onChange={e => setTargetFecha(e.target.value)} 
                                     />
@@ -1010,56 +1210,56 @@ ${pastedText}`;
                             </div>
 
                             {fallbackNotice && (
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-medium">
-                                    <Sparkles size={14} className="text-amber-600 shrink-0" />
+                                <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-medium">
+                                    <Sparkles size={15} className="text-amber-700 shrink-0" />
                                     <span>Actividades generadas con el asistente de respaldo</span>
                                 </div>
                             )}
 
-                            <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm">
+                            <div className="overflow-x-auto border border-slate-300 rounded-2xl shadow-xs">
                                 <table className="w-full text-left border-collapse bg-white">
                                     <thead>
-                                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-500">
-                                            <th className="p-4 w-12 text-center">
+                                        <tr className="bg-slate-100 border-b border-slate-300 text-xs font-black uppercase tracking-wider text-slate-700">
+                                            <th className="p-3.5 w-12 text-center">
                                                 <input 
                                                     type="checkbox" 
-                                                    className="w-4 h-4 rounded border-slate-350 cursor-pointer accent-primary"
+                                                    className="w-4 h-4 rounded border-slate-400 cursor-pointer accent-[#689C63]"
                                                     checked={extractedActivities.length > 0 && extractedActivities.every(a => a.selected)}
                                                     onChange={e => handleSelectAll(e.target.checked)}
                                                 />
                                             </th>
-                                            <th className="p-4 min-w-56">Actividad</th>
-                                            <th className="p-4 min-w-64">Descripción</th>
-                                            <th className="p-4 min-w-64">Competencias</th>
-                                            <th className="p-4 min-w-72">Indicador de logro</th>
-                                            <th className="p-4 min-w-72">Producto</th>
+                                            <th className="p-3.5 min-w-56">Actividad</th>
+                                            <th className="p-3.5 min-w-64">Descripción</th>
+                                            <th className="p-3.5 min-w-64">Competencias</th>
+                                            <th className="p-3.5 min-w-72">Indicador de logro</th>
+                                            <th className="p-3.5 min-w-72">Producto</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 text-xs">
+                                    <tbody className="divide-y divide-slate-200 text-xs sm:text-sm">
                                         {extractedActivities.map((act, idx) => (
-                                            <tr key={idx} className={`hover:bg-slate-50/50 transition-colors ${act.selected ? 'bg-primary/5' : ''}`}>
-                                                <td className="p-4 text-center">
+                                            <tr key={idx} className={`hover:bg-slate-50/80 transition-colors ${act.selected ? 'bg-[#689C63]/5' : ''}`}>
+                                                <td className="p-3.5 text-center">
                                                     <input 
-                                                        type="checkbox"
+                                                        type="checkbox" 
                                                         data-guide="celda-actividad-ia"
-                                                        className="w-4 h-4 rounded border-slate-350 cursor-pointer accent-primary"
+                                                        className="w-4 h-4 rounded border-slate-400 cursor-pointer accent-[#689C63]"
                                                         checked={act.selected}
                                                         onChange={e => updateActivityField(idx, 'selected', e.target.checked)}
                                                     />
                                                 </td>
-                                                <td className="p-4">
+                                                <td className="p-3.5">
                                                     <input 
                                                         type="text" 
-                                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-primary py-1 font-bold text-slate-800 outline-none transition-colors"
+                                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-[#689C63] py-1 font-bold text-slate-800 outline-none transition-colors"
                                                         value={act.nombre}
                                                         onChange={e => updateActivityField(idx, 'nombre', e.target.value)}
                                                     />
                                                 </td>
-                                                <td className="p-4">
+                                                <td className="p-3.5">
                                                     <div className="relative group">
-                                                        <textarea 
+                                                        <textarea
                                                             rows={2}
-                                                            className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-primary py-1 font-medium text-slate-500 outline-none transition-colors resize-none leading-relaxed scrollbar-hide line-clamp-2"
+                                                            className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-[#689C63] py-1 font-medium text-slate-700 outline-none transition-colors resize-none leading-relaxed scrollbar-hide line-clamp-2"
                                                             value={act.descripcion || ''}
                                                             placeholder="No especificada"
                                                             onChange={e => updateActivityField(idx, 'descripcion', e.target.value)}
@@ -1067,7 +1267,7 @@ ${pastedText}`;
                                                         />
                                                     </div>
                                                 </td>
-                                                <td className="p-4">
+                                                <td className="p-3.5">
                                                     <div className="flex flex-col gap-1.5">
                                                         {act.competencias.length > 0 ? (
                                                             act.competencias.map(bc => {
@@ -1080,30 +1280,30 @@ ${pastedText}`;
                                                                 return (
                                                                     <span
                                                                         key={bc}
-                                                                        className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border bg-primary/10 border-primary text-[#2E3330]"
+                                                                        className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border bg-white border-slate-300 text-slate-800"
                                                                     >
                                                                         {bcNames[bc] || bc}
                                                                     </span>
                                                                 );
                                                             })
                                                         ) : (
-                                                            <span className="text-xs text-slate-400 italic">No especificada</span>
+                                                            <span className="text-xs text-slate-500 italic">No especificada</span>
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="p-4">
+                                                <td className="p-3.5">
                                                     <textarea 
                                                         rows={3}
-                                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-primary py-1 font-medium text-slate-500 outline-none transition-colors resize-none leading-relaxed scrollbar-hide"
+                                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-[#689C63] py-1 font-medium text-slate-700 outline-none transition-colors resize-none leading-relaxed scrollbar-hide"
                                                         value={act.indicador_logro}
                                                         placeholder="No especificado"
                                                         onChange={e => updateActivityField(idx, 'indicador_logro', e.target.value)}
                                                     />
                                                 </td>
-                                                <td className="p-4">
+                                                <td className="p-3.5">
                                                     <textarea 
                                                         rows={3}
-                                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-primary py-1 font-medium text-slate-500 outline-none transition-colors resize-none leading-relaxed scrollbar-hide"
+                                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-[#689C63] py-1 font-medium text-slate-700 outline-none transition-colors resize-none leading-relaxed scrollbar-hide"
                                                         value={act.producto}
                                                         placeholder="No especificado"
                                                         onChange={e => updateActivityField(idx, 'producto', e.target.value)}
@@ -1115,7 +1315,7 @@ ${pastedText}`;
                                 </table>
                             </div>
                             {aiUsage && (
-                                <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500 border border-gray-100 flex justify-between items-center">
+                                <div className="mt-4 p-3 bg-slate-50 rounded-xl text-xs text-slate-700 border border-slate-200 flex justify-between items-center font-medium">
                                     <span>Uso de IA este mes: <strong>{aiUsage.tokensEsteMes.toLocaleString()} tokens</strong></span>
                                     <span>Disponible: <strong>US${aiUsage.disponible.toFixed(2)}</strong></span>
                                 </div>

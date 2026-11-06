@@ -43,10 +43,10 @@ export default function InvitationModal({ session, currentUserProfile, onRefresh
         }
 
         try {
-            // 2. Validar existencia del curso
+            // 2. Validar existencia del curso con columnas explícitas
             const { data: courseData, error: courseError } = await supabase
                 .from('cursos')
-                .select('*')
+                .select('id, nombre, grado, seccion, centro_id, asignatura')
                 .eq('id', courseId)
                 .maybeSingle();
 
@@ -55,7 +55,7 @@ export default function InvitationModal({ session, currentUserProfile, onRefresh
                 setChecking(false);
                 return;
             }
-            setCurso(courseData);
+            setCurso(courseData as any);
 
             // 3. Validar pertenencia al mismo centro
             if (courseData.centro_id && currentUserProfile?.centro_id !== courseData.centro_id) {
@@ -64,26 +64,21 @@ export default function InvitationModal({ session, currentUserProfile, onRefresh
                 return;
             }
 
-            // 4. Validar vinculación previa
-            const { data: previousLinks } = await supabase
+            // 4. Validar vinculación y obtener asignaturas en UNA SOLA consulta eficiente
+            const { data: cursoDocentesRows } = await supabase
                 .from('curso_docentes')
-                .select('*')
-                .eq('curso_id', courseId)
-                .eq('docente_id', session.user.id);
+                .select('docente_id, asignatura')
+                .eq('curso_id', courseId);
 
-            if (previousLinks && previousLinks.length > 0) {
+            const isAlreadyLinked = (cursoDocentesRows || []).some(l => l.docente_id === session.user.id);
+            if (isAlreadyLinked) {
                 setError('Ya te encuentras vinculado a este curso.');
                 setChecking(false);
                 return;
             }
 
             // 5. Encontrar asignaturas disponibles
-            const { data: takenLinks } = await supabase
-                .from('curso_docentes')
-                .select('asignatura')
-                .eq('curso_id', courseId);
-
-            const takenSet = new Set(takenLinks?.map(l => l.asignatura) || []);
+            const takenSet = new Set((cursoDocentesRows || []).map(l => l.asignatura).filter(Boolean));
             const available = ASIGNATURAS_CATALOGO.filter(a => !takenSet.has(a.id));
             setAvailableSubjects(available);
 
@@ -140,7 +135,7 @@ export default function InvitationModal({ session, currentUserProfile, onRefresh
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
             <div className="w-full max-w-md bg-white rounded-none shadow-2xl border border-slate-200 p-8 flex flex-col">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
                     <div className="flex items-center gap-2">

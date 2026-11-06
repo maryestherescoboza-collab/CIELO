@@ -279,21 +279,25 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       const esUuid = UUID_RE.test(q);
 
       if (esUuid) {
-        const { data, error } = await supabase.from('centros').select('*').eq('id', q);
+        const { data, error } = await supabase
+          .from('centros')
+          .select('*')
+          .eq('id', q);
         if (error) throw error;
         if (data && data.length > 0) matches.push(...(data as CentroRow[]));
       }
 
-      // Fallback/adicional: buscar por código de centro (insensible a mayúsculas)
-      const { data: codData, error: codError } = await supabase
-        .from('centros')
-        .select('*')
-        .ilike('codigo_centro', q);
-      if (codError) throw codError;
-      if (codData && codData.length > 0) {
-        (codData as CentroRow[]).forEach((c) => {
-          if (!matches.some((m) => m.id === c.id)) matches.push(c);
-        });
+      // Si no era UUID o no se encontró coincidencia directa por ID, buscar por código de centro
+      if (matches.length === 0) {
+        const { data: codData, error: codError } = await supabase
+          .from('centros')
+          .select('*')
+          .ilike('codigo_centro', q)
+          .limit(10);
+        if (codError) throw codError;
+        if (codData && codData.length > 0) {
+          matches.push(...(codData as CentroRow[]));
+        }
       }
 
       if (matches.length === 0) {

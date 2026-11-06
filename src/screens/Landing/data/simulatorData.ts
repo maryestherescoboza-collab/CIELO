@@ -6,7 +6,7 @@ const cursoDemo: Curso = {
     seccion: 'B',
     nombre: 'Lengua Española',
     asignatura: 'Lengua Española',
-    periodo: 'P1',
+    periodo: 'P2',
     diasSemana: [],
     color: 'var(--primary)',
     grupoId: 1
@@ -22,7 +22,7 @@ const actividadesDemo: Actividad[] = [
     {
         id: 5001,
         cursoId: 999,
-        periodo: 'P1',
+        periodo: 'P2',
         nombre: 'Ensayo Analítico',
         fecha: '2026-08-01',
         bcAsignados: ['BC1'],
@@ -32,7 +32,7 @@ const actividadesDemo: Actividad[] = [
     {
         id: 5002,
         cursoId: 999,
-        periodo: 'P1',
+        periodo: 'P2',
         nombre: 'Participación Activa',
         fecha: '2026-08-05',
         bcAsignados: ['BC3', 'BC4'],

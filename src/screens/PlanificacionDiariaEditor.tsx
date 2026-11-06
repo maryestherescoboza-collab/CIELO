@@ -229,7 +229,7 @@ export default function PlanificacionDiariaEditor({
     const [directCentro, setDirectCentro] = useState<Centro | null>(null);
 
     /* ---------------- Período, currículo y actividades ---------------- */
-    const [periodoSel, setPeriodoSel] = useState<string>('P1');
+    const [periodoSel, setPeriodoSel] = useState<string>(() => useAppStore.getState().selectedPeriodo || 'P2');
     const [asignaturaSel, setAsignaturaSel] = useState<string>('');
     const [panelCurricular, setPanelCurricular] = useState(false);
     const [modalActividades, setModalActividades] = useState(false);

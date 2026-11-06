@@ -928,177 +928,181 @@ export default function Rubrica({
 
                     {!isSidebarCollapsed ? (
                         <div className="flex flex-col h-full overflow-y-auto relative z-10">
-                            <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                    <ClipboardList size={18} />
+                            <div className="px-4 py-3 border-b border-(--border-soft) flex items-center gap-2.5 shrink-0">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-(--primary)/20 text-(--ink) shrink-0">
+                                    <ClipboardList size={16} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h1 className="text-xl font-semibold text-slate-800 truncate tracking-tight">Rúbrica</h1>
-                                    <p className="text-[11px] font-medium text-slate-500">Instrumento de evaluación</p>
+                                    <h1 className="text-sm font-bold text-(--ink) truncate tracking-tight">Rúbrica</h1>
+                                    <p className="text-[10px] font-medium text-(--ink-soft)">Instrumento de evaluación</p>
                                 </div>
                             </div>
 
-                            <div className="p-5 space-y-6 flex-1">
-                                <div className="space-y-5">
-                                    <div className="space-y-4">
-                                        <div className="px-1">
-                                            <p className="text-xs font-semibold text-slate-900 mb-0.5">Enfoque</p>
-                                            <p className="text-xs font-normal text-slate-900">Configura el entorno de evaluación.</p>
+                            <div className="p-3 space-y-3 flex-1 overflow-y-auto">
+                                <div className="space-y-2.5">
+                                    {/* Selector Curso */}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-(--ink-soft) uppercase tracking-wider block mb-1">Curso / grado</label>
+                                        <select
+                                            data-guide="selector-curso"
+                                            className="w-full bg-white border border-(--border-soft) rounded-lg px-2.5 py-1.5 text-xs font-semibold text-(--ink) outline-none transition-all cursor-pointer hover:border-(--ink-soft)/40 focus:border-(--french-blue) focus:ring-1 focus:ring-(--french-blue) shadow-2xs appearance-none truncate"
+                                            value={`${selectedCursoId}|${selectedAsignatura}`}
+                                            onChange={(event) => {
+                                                const [idStr, asig] = event.target.value.split('|');
+                                                setSelectedCursoId(Number(idStr));
+                                                setSelectedAsignatura(asig || '');
+                                                setSelectedEstId(null);
+                                                setSelectedActId(null);
+                                            }}
+                                        >
+                                            {cursosStore.map((curso) => (
+                                                <option key={`${curso.id}|${curso.asignatura}`} value={`${curso.id}|${curso.asignatura}`}>
+                                                    {curso.grado} {curso.seccion} - {getAsignaturaNombre(curso.asignatura)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Selector Actividad */}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-(--ink-soft) uppercase tracking-wider block mb-1">Actividad</label>
+                                        <select
+                                            data-guide="selector-actividad"
+                                            className="w-full bg-white border border-(--border-soft) rounded-lg px-2.5 py-1.5 text-xs font-semibold text-(--ink) outline-none transition-all cursor-pointer hover:border-(--ink-soft)/40 focus:border-(--french-blue) focus:ring-1 focus:ring-(--french-blue) shadow-2xs appearance-none truncate"
+                                            value={selectedAct?.id ?? ''}
+                                            onChange={(event) => setSelectedActId(Number(event.target.value) || null)}
+                                        >
+                                            <option value="">Seleccionar actividad...</option>
+                                            {actividades.map((actividad) => (
+                                                <option key={actividad.id} value={actividad.id}>
+                                                    {actividad.nombre} ({actividad.periodo})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Periodo y Descargar evaluaciones */}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-(--ink-soft) uppercase tracking-wider block mb-1">Periodo</label>
+                                        <div className="flex items-center bg-(--linen)/60 border border-(--border-soft) rounded-lg p-0.5 gap-0.5" role="radiogroup" aria-label="Periodo académico">
+                                            {['P1', 'P2', 'P3', 'P4'].map(p => (
+                                                <button
+                                                    key={p}
+                                                    type="button"
+                                                    role="radio"
+                                                    aria-checked={selectedPeriodo === p}
+                                                    data-guide={`btn-periodo-${p}`}
+                                                    onClick={() => { setSelectedPeriodo(p); setSelectedActId(null); setSelectedEstId(null); }}
+                                                    className={`flex-1 py-1 text-xs font-bold rounded-md transition-all outline-none cursor-pointer ${
+                                                        selectedPeriodo === p
+                                                            ? 'bg-white text-(--ink) shadow-2xs font-black'
+                                                            : 'text-(--ink-soft) hover:text-(--ink) hover:bg-white/40'
+                                                    }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ))}
                                         </div>
-                                        <div>
-                                            <label className="text-[11px] font-medium text-slate-900 uppercase tracking-wider block mb-1.5 ml-1">Curso / grado</label>
+                                        <button
+                                            type="button"
+                                            onClick={handleDescargarEvaluacionesPeriodo}
+                                            disabled={isDownloadingEval}
+                                            className="w-full flex items-center justify-center gap-1.5 mt-1.5 px-2.5 py-1.5 text-xs font-semibold text-(--ink) bg-white hover:bg-(--linen)/40 border border-(--border-soft) rounded-lg transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                                            title={`Descargar evaluaciones del período ${selectedPeriodo} en Word`}
+                                        >
+                                            {isDownloadingEval ? <Loader2 size={13} className="animate-spin text-(--herb-garden)" /> : <FileDown size={13} className="text-(--herb-garden)" />}
+                                            <span>Descargar evaluaciones ({selectedPeriodo})</span>
+                                        </button>
+                                    </div>
+
+                                    {/* Bloque unificado de Plantillas */}
+                                    <div className="bg-(--background) border border-(--border-soft) rounded-xl p-2.5 space-y-2">
+                                        <div className="flex items-center justify-between px-0.5">
+                                            <span className="text-[10px] font-bold text-(--ink-soft) uppercase tracking-wider">Plantillas</span>
+                                            <span className="text-[10px] font-bold text-(--ink-soft) bg-(--linen)/80 px-1.5 py-0.5 rounded">
+                                                {rubricaPlantillas.length} / {LIMITE_PLANTILLAS}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 border border-(--border-soft) rounded-lg px-2.5 py-1.5 bg-white focus-within:border-(--french-blue) focus-within:ring-1 focus-within:ring-(--french-blue) transition-all shadow-2xs">
+                                            <BookMarked size={13} className="text-(--french-blue) shrink-0" />
                                             <select
-                                                data-guide="selector-curso"
-                                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none transition-colors cursor-pointer hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary shadow-sm appearance-none"
-                                                value={`${selectedCursoId}|${selectedAsignatura}`}
+                                                data-guide="selector-plantilla"
+                                                className="flex-1 bg-transparent text-xs font-semibold outline-none text-(--ink) cursor-pointer appearance-none truncate"
+                                                disabled={!hasTemplates}
+                                                value={selectedPlantillaId ?? ''}
                                                 onChange={(event) => {
-                                                    const [idStr, asig] = event.target.value.split('|');
-                                                    setSelectedCursoId(Number(idStr));
-                                                    setSelectedAsignatura(asig || '');
-                                                    setSelectedEstId(null);
-                                                    setSelectedActId(null);
+                                                    const val = event.target.value;
+                                                    if (!val) {
+                                                        setSelectedPlantillaId(null);
+                                                        setLocalDescriptors(normalizeDescriptors(descriptoresRubricaStore.slice(0, 4)));
+                                                        return;
+                                                    }
+                                                    handleLoadTemplate(Number(val));
                                                 }}
                                             >
-                                                {cursosStore.map((curso) => (
-                                                    <option key={`${curso.id}|${curso.asignatura}`} value={`${curso.id}|${curso.asignatura}`}>
-                                                        {curso.grado} {curso.seccion} - {getAsignaturaNombre(curso.asignatura)}
-                                                     </option>
+                                                <option value="">Evaluación Base</option>
+                                                {rubricaPlantillas.map((p) => (
+                                                    <option key={p.id} value={p.id}>{p.nombre}</option>
                                                 ))}
                                             </select>
                                         </div>
-                                        <div>
-                                            <label className="text-[11px] font-medium text-slate-900 uppercase tracking-wider block mb-1.5 ml-1">Actividad</label>
-                                            <select
-                                                data-guide="selector-actividad"
-                                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none transition-colors cursor-pointer hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary shadow-sm appearance-none"
-                                                value={selectedAct?.id ?? ''}
-                                                onChange={(event) => setSelectedActId(Number(event.target.value) || null)}
-                                            >
-                                                <option value="">Seleccionar actividad...</option>
-                                                {actividades.map((actividad) => (
-                                                    <option key={actividad.id} value={actividad.id}>
-                                                        {actividad.nombre} ({actividad.periodo})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-[11px] font-medium text-slate-900 uppercase tracking-wider block mb-1.5 ml-1">Periodo</label>
-                                            <div className="flex items-center bg-slate-100/70 rounded-lg p-1" role="radiogroup" aria-label="Periodo académico">
-                                                {['P1', 'P2', 'P3', 'P4'].map(p => (
-                                                    <button
-                                                        key={p}
-                                                        type="button"
-                                                        role="radio"
-                                                        aria-checked={selectedPeriodo === p}
-                                                        data-guide={`btn-periodo-${p}`}
-                                                        onClick={() => { setSelectedPeriodo(p); setSelectedActId(null); setSelectedEstId(null); }}
-                                                        className={`flex-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${selectedPeriodo === p ? 'bg-white text-primary shadow-sm' : 'bg-transparent text-slate-900 hover:text-slate-900'}`}
-                                                    >
-                                                        {p}
-                                                    </button>
-                                                ))}
+
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    data-guide="btn-guardar-plantilla"
+                                                    onClick={handleSaveTemplate}
+                                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-(--ink) bg-white hover:bg-(--linen)/40 border border-(--border-soft) rounded-lg transition-all shadow-2xs cursor-pointer"
+                                                    title="Guardar como nueva plantilla"
+                                                >
+                                                    <Save size={12} className="text-(--ink-soft)" />
+                                                    <span>Guardar</span>
+                                                </button>
+                                                {selectedPlantillaId !== null && (
+                                                    <>
+                                                        <button
+                                                            onClick={handleUpdateTemplate}
+                                                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold text-(--ink) bg-white hover:bg-(--linen)/40 border border-(--border-soft) rounded-lg transition-all shadow-2xs cursor-pointer"
+                                                            title="Actualizar plantilla seleccionada"
+                                                        >
+                                                            <RefreshCw size={12} className="text-(--french-blue)" />
+                                                            <span>Actualizar</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={handleDeleteTemplate}
+                                                            className="p-1.5 text-rose-700 bg-rose-50/70 hover:bg-rose-100/70 border border-rose-200/60 rounded-lg transition-all shadow-2xs cursor-pointer shrink-0"
+                                                            title="Eliminar plantilla seleccionada"
+                                                        >
+                                                            <Trash2 size={12} className="text-rose-600" />
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
+
                                             <button
                                                 type="button"
-                                                onClick={handleDescargarEvaluacionesPeriodo}
-                                                disabled={isDownloadingEval}
-                                                className="w-full flex items-center justify-center gap-1.5 mt-2 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
-                                                title={`Descargar evaluaciones del período ${selectedPeriodo} en Word`}
+                                                onClick={handleDescargarTodasPlantillas}
+                                                disabled={isDownloadingPlantillas}
+                                                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-(--ink) bg-white hover:bg-(--linen)/40 border border-(--border-soft) rounded-lg transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                                                title="Descargar catálogo de plantillas de rúbrica en Word"
                                             >
-                                                {isDownloadingEval ? <Loader2 size={13} className="animate-spin text-[#689C63]" /> : <FileDown size={13} className="text-[#689C63]" />}
-                                                <span>Descargar evaluaciones ({selectedPeriodo})</span>
+                                                {isDownloadingPlantillas ? <Loader2 size={13} className="animate-spin text-(--french-blue)" /> : <BookMarked size={13} className="text-(--french-blue)" />}
+                                                <span>Descargar plantillas</span>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div className="h-px bg-slate-100" />
-
-                                    <div className="space-y-4">
-                                        <div className="px-1 flex items-center justify-between">
-                                            <p className="text-xs font-semibold text-slate-900">Plantillas</p>
-                                            <span className="text-[11px] font-medium text-slate-400">{rubricaPlantillas.length} de {LIMITE_PLANTILLAS}</span>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 bg-white focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all shadow-sm">
-                                                <BookMarked size={14} className="text-slate-400" />
-                                                <select
-                                                    data-guide="selector-plantilla"
-                                                    className="flex-1 bg-transparent text-sm font-medium outline-none text-slate-900 cursor-pointer appearance-none"
-                                                    disabled={!hasTemplates}
-                                                    value={selectedPlantillaId ?? ''}
-                                                    onChange={(event) => {
-                                                        const val = event.target.value;
-                                                        if (!val) {
-                                                            setSelectedPlantillaId(null);
-                                                            setLocalDescriptors(normalizeDescriptors(descriptoresRubricaStore.slice(0, 4)));
-                                                            return;
-                                                        }
-                                                        handleLoadTemplate(Number(val));
-                                                    }}
-                                                >
-                                                    <option value="">Evaluación Base</option>
-                                                    {rubricaPlantillas.map((p) => (
-                                                        <option key={p.id} value={p.id}>{p.nombre}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            <div className="flex flex-col gap-1">
-                                                <button
-                                                    data-guide="btn-guardar-plantilla"
-                                                    onClick={handleSaveTemplate}
-                                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-900 hover:text-slate-900 hover:bg-slate-50 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                                                >
-                                                    <Save size={14} className="text-slate-400" />
-                                                    Guardar
-                                                </button>
-                                                
-                                                {selectedPlantillaId !== null && (
-                                                    <div className="flex items-center gap-1">
-                                                        <button
-                                                            onClick={handleUpdateTemplate}
-                                                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium text-slate-900 hover:text-slate-900 hover:bg-slate-50 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                                                            title="Actualizar plantilla seleccionada"
-                                                        >
-                                                            <RefreshCw size={14} className="text-slate-400" />
-                                                            Actualizar
-                                                        </button>
-                                                        <button
-                                                            onClick={handleDeleteTemplate}
-                                                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium text-slate-900 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-red-300"
-                                                            title="Eliminar plantilla seleccionada"
-                                                        >
-                                                            <Trash2 size={14} className="text-slate-400 group-hover:text-red-500" />
-                                                            Eliminar
-                                                        </button>
-                                                    </div>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    onClick={handleDescargarTodasPlantillas}
-                                                    disabled={isDownloadingPlantillas}
-                                                    className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-md transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
-                                                    title="Descargar catálogo de plantillas de rúbrica en Word"
-                                                >
-                                                    {isDownloadingPlantillas ? <Loader2 size={13} className="animate-spin text-[#2B4C6F]" /> : <BookMarked size={13} className="text-[#2B4C6F]" />}
-                                                    <span>Descargar plantillas</span>
-                                                </button>
-                                            </div>
-
-                                            <div className="pt-2 border-t border-slate-100">
-                                                <button
-                                                    data-guide="btn-generar-ia"
-                                                    onClick={() => setShowGenerarModal(true)}
-                                                    className="w-full bg-primary border border-primary/40 text-[#2E3330] font-black uppercase tracking-widest text-xs py-2 rounded-full hover:opacity-90 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shadow-sm artisan-pill flex items-center justify-center gap-1.5"
-                                                    title="Generar descriptores de rúbrica con IA a partir del contexto del curso y la actividad"
-                                                >
-                                                    <Sparkles size={13} />
-                                                    Generar con IA
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    {/* Acción Principal: Generar con IA */}
+                                    <button
+                                        data-guide="btn-generar-ia"
+                                        onClick={() => setShowGenerarModal(true)}
+                                        className="w-full bg-(--primary) hover:brightness-95 text-(--ink) font-black uppercase tracking-wider text-xs py-2 px-3 rounded-xl border border-(--border-soft) shadow-2xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                        title="Generar descriptores de rúbrica con IA a partir del contexto del curso y la actividad"
+                                    >
+                                        <Sparkles size={13} className="text-(--ink)" />
+                                        <span>Generar con IA</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1206,57 +1210,13 @@ export default function Rubrica({
                     {!readOnly && (
                         <div className="sticky top-0 z-30 bg-(--background)/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
                             <div className="w-full space-y-3">
-                                <div className="px-1 flex flex-wrap items-center justify-between gap-2.5">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        {/* Selector de Período visible para las evaluaciones */}
-                                        <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs" role="radiogroup" aria-label="Periodo de evaluaciones">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Período:</span>
-                                            {(['P1', 'P2', 'P3', 'P4'] as const).map(p => (
-                                                <button
-                                                    key={p}
-                                                    type="button"
-                                                    onClick={() => { setSelectedPeriodo(p); setSelectedActId(null); setSelectedEstId(null); }}
-                                                    className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
-                                                        selectedPeriodo === p
-                                                            ? 'bg-[#689C63] text-white shadow-xs'
-                                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                                                    }`}
-                                                >
-                                                    {p}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        {/* Botón Descargar evaluaciones */}
-                                        <button
-                                            type="button"
-                                            onClick={handleDescargarEvaluacionesPeriodo}
-                                            disabled={isDownloadingEval}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#1E293B] bg-white hover:bg-[#689C63]/10 hover:text-[#689C63] border border-slate-200 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
-                                            title={`Descargar todas las evaluaciones realizadas en ${selectedPeriodo} (.docx)`}
-                                        >
-                                            {isDownloadingEval ? <Loader2 size={13} className="animate-spin text-[#689C63]" /> : <FileDown size={13} className="text-[#689C63]" />}
-                                            <span>Descargar evaluaciones ({selectedPeriodo})</span>
-                                        </button>
-
-                                        {/* Botón Descargar plantillas */}
-                                        <button
-                                            type="button"
-                                            onClick={handleDescargarTodasPlantillas}
-                                            disabled={isDownloadingPlantillas}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#1E293B] bg-white hover:bg-[#2B4C6F]/10 hover:text-[#2B4C6F] border border-slate-200 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
-                                            title="Descargar únicamente las plantillas guardadas (.docx)"
-                                        >
-                                            {isDownloadingPlantillas ? <Loader2 size={13} className="animate-spin text-[#2B4C6F]" /> : <BookMarked size={13} className="text-[#2B4C6F]" />}
-                                            <span>Descargar plantillas</span>
-                                        </button>
-                                    </div>
-                                    {selectedAct && (
+                                {selectedAct && (
+                                    <div className="px-1 flex flex-wrap items-center justify-end gap-2.5">
                                         <CieloPill variant="primary" uppercase className="px-3.5 bg-white text-(--primary) shadow-sm tracking-[0.16em]">
                                             Actividad: {selectedAct.nombre} ({selectedAct.periodo})
                                         </CieloPill>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
 
                                 <div className="w-full bg-white rounded-(--radius-md) p-2 border border-(--border-soft) shadow-sm">
                                     <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide py-1 px-2.5">

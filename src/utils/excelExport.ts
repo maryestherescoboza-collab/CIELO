@@ -49,7 +49,7 @@ export function buildExcelFileName(
         if (cleanSeccion) parts.push(cleanSeccion);
     }
 
-    const cleanPeriodo = sanitize(periodo || 'P1') || 'P1';
+    const cleanPeriodo = sanitize(periodo || 'P2') || 'P2';
     parts.push(cleanPeriodo);
 
     return `${parts.join('_')}.xlsx`;

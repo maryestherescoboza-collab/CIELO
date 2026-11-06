@@ -121,6 +121,32 @@ export default function CursoDetalle(props: Props) {
     const [periodLoading, setPeriodLoading] = useState(false);
     const [periodError, setPeriodError] = useState<string | null>(null);
     const [isExportingExcel, setIsExportingExcel] = useState(false);
+    const [isExportingInstrumento, setIsExportingInstrumento] = useState(false);
+
+    const handleExportInstrumento = async () => {
+        if (periodLoading || isExportingInstrumento || !curso) return;
+        setIsExportingInstrumento(true);
+        try {
+            const { descargarInstrumentoEscalaEstimativaDocx } = await import('../utils/instrumentosDocx');
+            await descargarInstrumentoEscalaEstimativaDocx({
+                curso,
+                asignaturaNombre: myAsignatura || currentCourseRole?.asignatura || curso.asignatura || '',
+                periodo: selectedPeriodo,
+                actividades: state.actividades,
+                calificaciones: localCalifs.length > 0 ? localCalifs : state.calificaciones,
+                estudiantes: allCourseStudents && allCourseStudents.length > 0 ? allCourseStudents : state.estudiantes,
+                cursoDocentes: state.cursoDocentes,
+                cursos: state.cursos,
+                currentUserId: currentUserId || undefined,
+            });
+        } catch (error: any) {
+            console.error('[CursoDetalle] Error exportando Instrumento a Word:', error);
+            const msg = error?.message || 'No fue posible validar los datos del instrumento. Por favor, intenta de nuevo.';
+            alert(msg);
+        } finally {
+            setIsExportingInstrumento(false);
+        }
+    };
 
     const handleExportExcel = async () => {
         if (periodLoading || isExportingExcel) return;
@@ -230,7 +256,14 @@ export default function CursoDetalle(props: Props) {
         }
     };
 
-    const confirmAgregarActividad = async (indicador: string, producto: string): Promise<boolean> => {
+    const confirmAgregarActividad = async (
+        indicador: string,
+        producto: string,
+        extra?: {
+            indicadores_json?: any[];
+            bcAsignados?: BCKey[];
+        }
+    ): Promise<boolean> => {
         if (!curso || !props.onAddActividad) return false;
         const result = await props.onAddActividad({
             nombre: `Actividad ${actividades.length + 1}`,
@@ -238,10 +271,11 @@ export default function CursoDetalle(props: Props) {
             sharedCourseId,
             periodo: selectedPeriodo,
             asignatura: myAsignatura,
-            bcAsignados: ['BC1'],
+            bcAsignados: extra?.bcAsignados && extra.bcAsignados.length > 0 ? extra.bcAsignados : ['BC1'],
             userId: currentUserId,
             fecha: new Date().toISOString().split('T')[0],
             indicador,
+            indicadores_json: extra?.indicadores_json,
             producto
         });
         return !!result;
@@ -315,6 +349,8 @@ export default function CursoDetalle(props: Props) {
                 isTutor={!currentCourseRole || currentCourseRole.rol === 'tutor'}
                 onExportExcel={handleExportExcel}
                 isExporting={isExportingExcel}
+                onExportInstrumento={handleExportInstrumento}
+                isExportingInstrumento={isExportingInstrumento}
             />
 
             {restoredFromBackupCount > 0 && (
@@ -434,6 +470,8 @@ onSetCelda={setCotejoCelda}
                 show={showAgregarActividad}
                 onClose={() => setShowAgregarActividad(false)}
                 onConfirm={confirmAgregarActividad}
+                curso={curso}
+                asignatura={myAsignatura}
             />
 
             {showWarningsModal && (

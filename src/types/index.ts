@@ -58,6 +58,15 @@ export interface Curso {
     createdAt?: string;
 }
 
+export interface IndicadorJsonItem {
+    id?: string;
+    codigo?: string | null;
+    descripcion: string;
+    texto?: string;
+    fragmento?: string | null;
+    competencia?: string;
+}
+
 export interface Actividad {
     id: number; nombre: string; cursoId: number;
     fecha: string; periodo: string;
@@ -70,6 +79,8 @@ export interface Actividad {
     asignatura?: string;
     sharedCourseId?: string;
     indicador?: string;
+    indicadores_json?: IndicadorJsonItem[] | string;
+    indicadoresJson?: IndicadorJsonItem[];
     producto?: string;
     /** El docente pidió que el estudiante entregue un producto en esta
         actividad. La entrega se registra en `evidencias`; aquí no hay fila. */
@@ -297,6 +308,7 @@ export interface Suscripcion {
     fecha_fin?: string;
     tilopay_customer_id?: string;
     tilopay_subscription_id?: string;
+    paypal_subscription_id?: string;
     created_at?: string;
     updated_at?: string;
 }

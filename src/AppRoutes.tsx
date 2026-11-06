@@ -181,7 +181,7 @@ interface AppRoutesProps {
 
 const AppRoutes: React.FC<AppRoutesProps> = ({
   state, session, docenteNombre, 
-  selectedCursoId, selectedEstudianteId,
+  selectedCursoId,
   setSelectedCursoId, setSelectedEstudianteId,
   currentCourseRole, visibleActividades, visibleCalificaciones,
   onlineUsers, currentUserProfile,
@@ -367,22 +367,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           onSaveCalificaciones={saveCalificaciones}
         />
       } />
-      <Route path="/estudiante" element={
-        selectedEstudianteId ? (
-          <Estudiante key={selectedEstudianteId} />
-        ) : (
-          <div className="p-12 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
-             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-               <span className="material-symbols-outlined text-3xl">person_search</span>
-             </div>
-             <h3 className="text-lg font-bold text-slate-800">No has seleccionado un estudiante</h3>
-             <p className="text-slate-500 mt-2 max-w-sm mx-auto">Selecciona uno desde un curso o usa el buscador para ver su perfil detallado.</p>
-             <button onClick={() => navigate('/cursos')} className="mt-6 px-6 py-2 bg-slate-900 text-white rounded-xl font-bold">
-               Ir a Cursos
-             </button>
-          </div>
-        )
-      } />
+      <Route path="/estudiante" element={<Estudiante />} />
       <Route path="/estudiante/:id" element={<Estudiante />} />
       <Route path="/calificaciones-anuales" element={
         selectedCursoId !== null ? (

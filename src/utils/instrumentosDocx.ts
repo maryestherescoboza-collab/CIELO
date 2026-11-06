@@ -5,6 +5,7 @@ import {
     Footer,
     Header,
     Packer,
+    PageBreak,
     PageNumber,
     PageOrientation,
     Paragraph,
@@ -13,9 +14,12 @@ import {
     TableCell,
     TableRow,
     TextRun,
+    VerticalAlign,
     WidthType,
 } from 'docx';
 import { saveAs } from 'file-saver';
+import { normalizeArea } from './academic';
+import { esEstudianteDelCurso } from './aislamiento';
 import type {
     DescriptorRubrica,
     NivelPuntaje,
@@ -24,6 +28,8 @@ import type {
     Curso,
     Actividad,
     Estudiante,
+    CalificacionActividad,
+    CursoDocente,
 } from '../types';
 import { COMPETENCIAS_LABEL } from '../types';
 import { uploadDocxToDrive } from '../lib/googleDrive';
@@ -2140,4 +2146,717 @@ export async function descargarPlantillasCotejoDocx(
     saveAs(blob, nombreLimpio);
     return nombreLimpio;
 }
+
+/**
+ * ============================================================================
+ * 5. DESCARGAR INSTRUMENTO DE EVALUACIÓN: ESCALA DE ESTIMATIVA (WORD .DOCX)
+ * ============================================================================
+ */
+export interface ExportarEscalaEstimativaOptions {
+    curso: Curso | null | undefined;
+    asignaturaNombre: string;
+    periodo: string;
+    actividades: Actividad[];
+    calificaciones: CalificacionActividad[];
+    estudiantes: Estudiante[];
+    cursoDocentes?: CursoDocente[];
+    cursos?: Curso[];
+    currentUserId?: string;
+}
+
+export interface ResultadoValidacionContexto {
+    valido: boolean;
+    error?: string;
+    datosValidados?: {
+        curso: Curso;
+        asignatura: string;
+        periodo: string;
+        actividades: Actividad[];
+        estudiantes: Estudiante[];
+        calificaciones: CalificacionActividad[];
+    };
+}
+
+/**
+ * Validador estricto de contexto académico antes de exportar o generar el instrumento.
+ * Asegura aislamiento total entre cursos, secciones, períodos y asignaturas.
+ */
+export function validarContextoAcademicoInstrumento(
+    options: ExportarEscalaEstimativaOptions
+): ResultadoValidacionContexto {
+    const {
+        curso,
+        asignaturaNombre,
+        periodo,
+        actividades = [],
+        calificaciones = [],
+        estudiantes = [],
+        cursoDocentes,
+        cursos = [],
+        currentUserId,
+    } = options;
+
+    // 1. Identificar el grupo exacto seleccionado (Curso y Sección con ID real)
+    if (!curso || !curso.id) {
+        return {
+            valido: false,
+            error: 'No fue posible validar el curso seleccionado. El identificador del curso es inválido o no existe en la base de datos.',
+        };
+    }
+
+    const grado = (curso.grado || '').trim();
+    const seccion = (curso.seccion || '').trim();
+    if (!grado || !seccion) {
+        return {
+            valido: false,
+            error: `El curso (ID: ${curso.id}) no posee grado y sección completos para emitir el instrumento.`,
+        };
+    }
+
+    // 2. Verificar el período activo y su identificador
+    const periodosValidos = ['P1', 'P2', 'P3', 'P4'];
+    if (!periodo || !periodosValidos.includes(periodo)) {
+        return {
+            valido: false,
+            error: `El período seleccionado ('${periodo || 'vacío'}') no es válido. Debe ser P1, P2, P3 o P4.`,
+        };
+    }
+
+    // 3. Verificar la asignatura vinculada al docente mediante la relación existente en curso_docentes
+    let asignaturaAutorizada = (asignaturaNombre || '').trim();
+
+    if (cursoDocentes && Array.isArray(cursoDocentes) && cursoDocentes.length > 0) {
+        const docenteAsignaciones = cursoDocentes.filter(
+            (cd) => cd.cursoId === curso.id && (!currentUserId || cd.userId === currentUserId)
+        );
+
+        if (docenteAsignaciones.length > 0) {
+            if (asignaturaAutorizada) {
+                const matchDocente = docenteAsignaciones.find(
+                    (cd) => normalizeArea(cd.asignatura) === normalizeArea(asignaturaAutorizada)
+                );
+                if (matchDocente) {
+                    asignaturaAutorizada = matchDocente.asignatura;
+                } else if (!docenteAsignaciones.some((cd) => cd.rol === 'tutor')) {
+                    return {
+                        valido: false,
+                        error: `Inconsistencia académica: La asignatura '${asignaturaAutorizada}' no corresponde a las asignaciones del docente para el curso ${grado} ${seccion}.`,
+                    };
+                }
+            } else {
+                asignaturaAutorizada = docenteAsignaciones[0].asignatura;
+            }
+        }
+    }
+
+    if (!asignaturaAutorizada && curso.asignatura) {
+        asignaturaAutorizada = curso.asignatura.trim();
+    }
+
+    if (!asignaturaAutorizada || asignaturaAutorizada.toLowerCase() === 'general') {
+        return {
+            valido: false,
+            error: `No fue posible validar una asignatura académica específica para ${grado} ${seccion}. Por favor selecciona una asignatura en el selector.`,
+        };
+    }
+
+    // 4. Aislamiento estricto de Estudiantes inscritos en este curso y sección
+    const catalogoCursos = cursos.length > 0 ? cursos : [curso];
+    const estudiantesValidados = estudiantes.filter((e) => {
+        if (!e || !e.id) return false;
+        return esEstudianteDelCurso(catalogoCursos, curso, e, curso.centroId);
+    });
+
+    // Protección contra datos cruzados: si en la nómina hay alumnos de cursos incompatibles
+    const hayEstudiantesAjenos = estudiantes.some(
+        (e) => e && e.cursoId && e.cursoId !== curso.id && !esEstudianteDelCurso(catalogoCursos, curso, e, curso.centroId)
+    );
+    if (hayEstudiantesAjenos) {
+        return {
+            valido: false,
+            error: `Inconsistencia de aislamiento: se detectaron registros de estudiantes que pertenecen a otro curso o sección fuera de ${grado} ${seccion}.`,
+        };
+    }
+
+    if (estudiantesValidados.length === 0) {
+        return {
+            valido: false,
+            error: `El curso ${grado} ${seccion} no tiene estudiantes registrados para generar el instrumento.`,
+        };
+    }
+
+    // 5. Aislamiento estricto de Actividades (curso + período + asignatura)
+    const normAsig = normalizeArea(asignaturaAutorizada);
+    const actividadesValidadas = actividades.filter((a) => {
+        if (!a || !a.id) return false;
+        const isMyAct = a.cursoId === curso.id;
+        const isSharedAct = Boolean(curso.sharedCourseId && a.sharedCourseId === curso.sharedCourseId);
+        if (!isMyAct && !isSharedAct) return false;
+
+        // Período estricto
+        if (a.periodo !== periodo) return false;
+
+        // No incluir actividades de recuperación
+        if (a.nombre === 'Recuperación') return false;
+
+        // Coincidencia estricta de asignatura (prohibido cruzar con otras materias)
+        if (!a.asignatura || normalizeArea(a.asignatura) !== normAsig) return false;
+
+        return true;
+    });
+
+    if (actividadesValidadas.length === 0) {
+        return {
+            valido: false,
+            error: `No se encontraron actividades registradas para la asignatura '${asignaturaAutorizada}' en el período ${periodo} de ${grado} ${seccion}. Registre las actividades correspondientes antes de descargar el instrumento.`,
+        };
+    }
+
+    // 6. Recuperar y aislar las calificaciones de los estudiantes y actividades legítimas
+    const studentIdsSet = new Set(estudiantesValidados.map((e) => e.id));
+    const activityIdsSet = new Set(actividadesValidadas.map((a) => a.id));
+
+    const calificacionesValidadas = calificaciones.filter((c) => {
+        if (!c || !c.estudianteId || !c.actividadId) return false;
+        if (!studentIdsSet.has(c.estudianteId)) return false;
+        if (!activityIdsSet.has(c.actividadId)) return false;
+
+        // Consistencia de asignatura y período si están en el registro
+        if (c.asignatura && normalizeArea(c.asignatura) !== normAsig) return false;
+        if (c.periodo && c.periodo !== periodo) return false;
+
+        return true;
+    });
+
+    return {
+        valido: true,
+        datosValidados: {
+            curso,
+            asignatura: asignaturaAutorizada,
+            periodo,
+            actividades: actividadesValidadas,
+            estudiantes: estudiantesValidados,
+            calificaciones: calificacionesValidadas,
+        },
+    };
+}
+
+export function clasificarNivelEscalaEstimativa(score: number | null | undefined): 'completo' | 'esperado' | 'parcial' | 'iniciado' | null {
+    if (score === null || score === undefined || isNaN(score)) return null;
+    if (score >= 90) return 'completo';
+    if (score >= 80) return 'esperado';
+    if (score >= 70) return 'parcial';
+    return 'iniciado';
+}
+
+export function resolverIndicadorActividad(act: Actividad): string {
+    if (act.indicador && act.indicador.trim().length > 0) {
+        return act.indicador.trim();
+    }
+    if (Array.isArray(act.indicadoresJson) && act.indicadoresJson.length > 0) {
+        const ind = act.indicadoresJson
+            .map((i: any) => i.indicador || i.texto || i.codigo)
+            .filter(Boolean)
+            .join('; ');
+        if (ind) return ind;
+    }
+    if (typeof act.indicadores_json === 'string' && act.indicadores_json.trim().length > 0) {
+        try {
+            const parsed = JSON.parse(act.indicadores_json);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                const ind = parsed
+                    .map((i: any) => i.indicador || i.texto || i.codigo)
+                    .filter(Boolean)
+                    .join('; ');
+                if (ind) return ind;
+            }
+        } catch {
+            // ignore
+        }
+    }
+    if (act.descripcion && act.descripcion.trim().length > 0) {
+        return act.descripcion.trim();
+    }
+    return act.nombre;
+}
+
+interface ConfiguracionPaginacionActividades {
+    fontTitulo: number;
+    fontMeta: number;
+    fontLeyenda: number;
+    fontActividad: number;
+    fontIndicador: number;
+    fontEscala: number;
+    fontEstudiante: number;
+    fontMarcaX: number;
+    colWidthNum: number;
+    colWidthName: number;
+    paddingCelda: { top: number; bottom: number; left: number; right: number };
+    spacingHeaderP: { before: number; after: number };
+}
+
+function obtenerConfiguracionPaginacion(numActs: number): ConfiguracionPaginacionActividades {
+    if (numActs <= 10) {
+        return {
+            fontTitulo: 18,     // 9 pt
+            fontMeta: 16,       // 8 pt
+            fontLeyenda: 15,    // 7.5 pt
+            fontActividad: 14,  // 7 pt
+            fontIndicador: 13,  // 6.5 pt
+            fontEscala: 13,     // 6.5 pt
+            fontEstudiante: 15, // 7.5 pt
+            fontMarcaX: 15,     // 7.5 pt
+            colWidthNum: 340,   // ~0.60 cm
+            colWidthName: 3118, // ~5.50 cm
+            paddingCelda: { top: 35, bottom: 35, left: 25, right: 25 },
+            spacingHeaderP: { before: 0, after: 25 },
+        };
+    } else if (numActs <= 15) {
+        return {
+            fontTitulo: 18,     // 9 pt
+            fontMeta: 15,       // 7.5 pt
+            fontLeyenda: 14,    // 7 pt
+            fontActividad: 13,  // 6.5 pt
+            fontIndicador: 12,  // 6 pt
+            fontEscala: 12,     // 6 pt
+            fontEstudiante: 14, // 7 pt
+            fontMarcaX: 14,     // 7 pt
+            colWidthNum: 284,   // ~0.50 cm
+            colWidthName: 2551, // ~4.50 cm
+            paddingCelda: { top: 25, bottom: 25, left: 18, right: 18 },
+            spacingHeaderP: { before: 0, after: 20 },
+        };
+    } else if (numActs <= 20) {
+        return {
+            fontTitulo: 18,     // 9 pt
+            fontMeta: 14,       // 7 pt
+            fontLeyenda: 13,    // 6.5 pt
+            fontActividad: 12,  // 6 pt
+            fontIndicador: 11,  // 5.5 pt
+            fontEscala: 12,     // 6 pt
+            fontEstudiante: 14, // 7 pt
+            fontMarcaX: 14,     // 7 pt
+            colWidthNum: 255,   // ~0.45 cm
+            colWidthName: 2268, // ~4.00 cm
+            paddingCelda: { top: 20, bottom: 20, left: 14, right: 14 },
+            spacingHeaderP: { before: 0, after: 18 },
+        };
+    } else {
+        // 21 a 25 actividades: aprovechamiento máximo del ancho Legal horizontal
+        return {
+            fontTitulo: 18,     // 9 pt
+            fontMeta: 14,       // 7 pt
+            fontLeyenda: 13,    // 6.5 pt
+            fontActividad: 12,  // 6 pt
+            fontIndicador: 11,  // 5.5 pt
+            fontEscala: 12,     // 6 pt
+            fontEstudiante: 14, // 7 pt
+            fontMarcaX: 14,     // 7 pt
+            colWidthNum: 255,   // ~0.45 cm
+            colWidthName: 2154, // ~3.80 cm
+            paddingCelda: { top: 16, bottom: 16, left: 8, right: 8 },
+            spacingHeaderP: { before: 0, after: 16 },
+        };
+    }
+}
+
+export async function generarDocumentoEscalaEstimativaDocx(
+    options: ExportarEscalaEstimativaOptions
+): Promise<Blob> {
+    const validacion = validarContextoAcademicoInstrumento(options);
+    if (!validacion.valido || !validacion.datosValidados) {
+        throw new Error(validacion.error || 'No fue posible validar el contexto académico del instrumento.');
+    }
+
+    const {
+        curso,
+        asignatura: asignaturaNombre,
+        periodo,
+        actividades: actividadesParaTabla,
+        estudiantes: estudiantesValidados,
+        calificaciones,
+    } = validacion.datosValidados;
+
+    const sortedEsts = [...estudiantesValidados].sort((a, b) => {
+        const numA = a.numeroLista || 0;
+        const numB = b.numeroLista || 0;
+        if (numA !== numB) return numA - numB;
+        return (a.apellido || '').localeCompare(b.apellido || '') || (a.nombre || '').localeCompare(b.nombre || '');
+    });
+
+    // Dimensiones en twips (dxa) para papel Legal horizontal (35.56 cm x 21.59 cm)
+    // En docx, al establecer PageOrientation.LANDSCAPE se pasan dimensiones en modo vertical
+    // para que la librería aplique la rotación e invierta las dimensiones en el XML (w:w="20160" w:h="12240").
+    const PAGE_PORTRAIT_WIDTH = 12240;  // 21.59 cm
+    const PAGE_PORTRAIT_HEIGHT = 20160; // 35.56 cm
+    const MARGIN_TWIPS = 284;           // 0.5 cm
+    const TOTAL_USABLE_WIDTH = 20160 - (MARGIN_TWIPS * 2); // 19,592 dxa (~34.56 cm)
+
+    const BORDES_ESCALA = {
+        top: { style: BorderStyle.SINGLE, size: 4, color: '374151' },
+        bottom: { style: BorderStyle.SINGLE, size: 4, color: '374151' },
+        left: { style: BorderStyle.SINGLE, size: 4, color: '374151' },
+        right: { style: BorderStyle.SINGLE, size: 4, color: '374151' },
+        insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: '9CA3AF' },
+        insideVertical: { style: BorderStyle.SINGLE, size: 2, color: 'D1D5DB' },
+    };
+
+    // Paginación inteligente: si hay más de 25 actividades, dividir en bloques de máximo 25 por página
+    const CHUNK_SIZE = 25;
+    const chunks: Actividad[][] = [];
+    for (let i = 0; i < actividadesParaTabla.length; i += CHUNK_SIZE) {
+        chunks.push(actividadesParaTabla.slice(i, i + CHUNK_SIZE));
+    }
+
+    const docChildren: (Paragraph | Table)[] = [];
+
+    chunks.forEach((chunkActs, chunkIdx) => {
+        const config = obtenerConfiguracionPaginacion(chunkActs.length);
+        const anchoDisponibleActs = TOTAL_USABLE_WIDTH - (config.colWidthNum + config.colWidthName);
+        const anchoPorActividad = Math.floor(anchoDisponibleActs / chunkActs.length);
+        const remainingTwips = anchoDisponibleActs - (anchoPorActividad * chunkActs.length);
+        const colWidthNameAjustado = config.colWidthName + remainingTwips;
+
+        const subColBase = Math.floor(anchoPorActividad / 4);
+        const subColLast = anchoPorActividad - (subColBase * 3);
+
+        const columnWidths = [config.colWidthNum, colWidthNameAjustado];
+        chunkActs.forEach(() => {
+            columnWidths.push(subColBase, subColBase, subColBase, subColLast);
+        });
+
+        // Salto de página para bloques subsiguientes
+        if (chunkIdx > 0) {
+            docChildren.push(new Paragraph({ children: [new PageBreak()] }));
+        }
+
+        // 1. Encabezado del documento - Título
+        docChildren.push(
+            new Paragraph({
+                spacing: { before: 0, after: config.spacingHeaderP.after },
+                children: [
+                    new TextRun({
+                        text: chunkIdx === 0
+                            ? 'INSTRUMENTO DE EVALUACIÓN: ESCALA DE ESTIMATIVA'
+                            : `INSTRUMENTO DE EVALUACIÓN: ESCALA DE ESTIMATIVA (Continuación - Actividades ${chunkIdx * CHUNK_SIZE + 1} a ${chunkIdx * CHUNK_SIZE + chunkActs.length})`,
+                        bold: true,
+                        size: config.fontTitulo,
+                        color: '111827',
+                    }),
+                ],
+            })
+        );
+
+        // 2. Encabezado del documento - Datos generales (Asignatura, Curso y Sección, Período)
+        const metaRuns: TextRun[] = [
+            new TextRun({ text: 'Asignatura: ', bold: true, size: config.fontMeta, color: '111827' }),
+            new TextRun({ text: asignaturaNombre || '—', size: config.fontMeta, color: '1F2937' }),
+        ];
+
+        if (curso) {
+            const cursoStr = `${curso.grado || ''} ${curso.seccion || ''}`.trim();
+            if (cursoStr) {
+                metaRuns.push(
+                    new TextRun({ text: '   |   Curso y Sección: ', bold: true, size: config.fontMeta, color: '111827' }),
+                    new TextRun({ text: cursoStr, size: config.fontMeta, color: '1F2937' })
+                );
+            }
+        }
+
+        if (periodo) {
+            metaRuns.push(
+                new TextRun({ text: '   |   Período: ', bold: true, size: config.fontMeta, color: '111827' }),
+                new TextRun({ text: periodo, size: config.fontMeta, color: '1F2937' })
+            );
+        }
+
+        docChildren.push(
+            new Paragraph({
+                spacing: { before: 0, after: config.spacingHeaderP.after },
+                children: metaRuns,
+            })
+        );
+
+        // 3. Leyenda general única (no se repite en cada actividad)
+        docChildren.push(
+            new Paragraph({
+                spacing: { before: 0, after: config.spacingHeaderP.after * 2 },
+                children: [
+                    new TextRun({
+                        text: 'ESCALA DE VALORACIÓN: ',
+                        bold: true,
+                        size: config.fontLeyenda,
+                        color: '111827',
+                    }),
+                    new TextRun({
+                        text: 'DC: Dominio completo · LE: Logro esperado · LP: Logro parcial · I: Iniciado',
+                        size: config.fontLeyenda,
+                        color: '374151',
+                    }),
+                ],
+            })
+        );
+
+        // Fila 1: N.º, APELLIDOS Y NOMBRES y Celda superior combinada por cada actividad
+        const row1 = new TableRow({
+            tableHeader: true,
+            cantSplit: true,
+            children: [
+                new TableCell({
+                    rowSpan: 3,
+                    width: { size: config.colWidthNum, type: WidthType.DXA },
+                    shading: { fill: 'F3F4F6', type: ShadingType.CLEAR, color: 'auto' },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: config.paddingCelda,
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 0, after: 0 },
+                            children: [new TextRun({ text: 'N.º', bold: true, size: config.fontActividad, color: '111827' })],
+                        }),
+                    ],
+                }),
+                new TableCell({
+                    rowSpan: 3,
+                    width: { size: colWidthNameAjustado, type: WidthType.DXA },
+                    shading: { fill: 'F3F4F6', type: ShadingType.CLEAR, color: 'auto' },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: config.paddingCelda,
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 0, after: 0 },
+                            children: [new TextRun({ text: 'APELLIDOS Y NOMBRES', bold: true, size: config.fontActividad, color: '111827' })],
+                        }),
+                    ],
+                }),
+                ...chunkActs.map((act) =>
+                    new TableCell({
+                        columnSpan: 4,
+                        width: { size: anchoPorActividad, type: WidthType.DXA },
+                        shading: { fill: 'E5E7EB', type: ShadingType.CLEAR, color: 'auto' },
+                        verticalAlign: VerticalAlign.CENTER,
+                        margins: config.paddingCelda,
+                        children: [
+                            new Paragraph({
+                                alignment: AlignmentType.CENTER,
+                                spacing: { before: 0, after: 0 },
+                                children: [new TextRun({ text: act.nombre || 'Actividad', bold: true, size: config.fontActividad, color: '111827' })],
+                            }),
+                        ],
+                    })
+                ),
+            ],
+        });
+
+        // Fila 2: Indicador o fragmento del indicador evaluado por cada actividad
+        const row2 = new TableRow({
+            tableHeader: true,
+            cantSplit: true,
+            children: chunkActs.map((act) =>
+                new TableCell({
+                    columnSpan: 4,
+                    width: { size: anchoPorActividad, type: WidthType.DXA },
+                    shading: { fill: 'F9FAFB', type: ShadingType.CLEAR, color: 'auto' },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: config.paddingCelda,
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 0, after: 0 },
+                            children: [new TextRun({ text: resolverIndicadorActividad(act), size: config.fontIndicador, color: '1F2937' })],
+                        }),
+                    ],
+                })
+            ),
+        });
+
+        // Fila 3: Subcolumnas de valoración agrupadas bajo cada actividad (DC, LE, LP, I)
+        const row3 = new TableRow({
+            tableHeader: true,
+            cantSplit: true,
+            children: chunkActs.flatMap(() => [
+                new TableCell({
+                    width: { size: subColBase, type: WidthType.DXA },
+                    shading: { fill: 'F3F4F6', type: ShadingType.CLEAR, color: 'auto' },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: config.paddingCelda,
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 0, after: 0 },
+                            children: [new TextRun({ text: 'DC', bold: true, size: config.fontEscala, color: '111827' })],
+                        }),
+                    ],
+                }),
+                new TableCell({
+                    width: { size: subColBase, type: WidthType.DXA },
+                    shading: { fill: 'F3F4F6', type: ShadingType.CLEAR, color: 'auto' },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: config.paddingCelda,
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 0, after: 0 },
+                            children: [new TextRun({ text: 'LE', bold: true, size: config.fontEscala, color: '111827' })],
+                        }),
+                    ],
+                }),
+                new TableCell({
+                    width: { size: subColBase, type: WidthType.DXA },
+                    shading: { fill: 'F3F4F6', type: ShadingType.CLEAR, color: 'auto' },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: config.paddingCelda,
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 0, after: 0 },
+                            children: [new TextRun({ text: 'LP', bold: true, size: config.fontEscala, color: '111827' })],
+                        }),
+                    ],
+                }),
+                new TableCell({
+                    width: { size: subColLast, type: WidthType.DXA },
+                    shading: { fill: 'F3F4F6', type: ShadingType.CLEAR, color: 'auto' },
+                    verticalAlign: VerticalAlign.CENTER,
+                    margins: config.paddingCelda,
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 0, after: 0 },
+                            children: [new TextRun({ text: 'I', bold: true, size: config.fontEscala, color: '111827' })],
+                        }),
+                    ],
+                }),
+            ]),
+        });
+
+        // Filas de estudiantes con marcas de valoración ('X') por actividad
+        const studentRows = sortedEsts.map((est, idx) => {
+            const studentName = [est.apellido, est.nombre].filter(Boolean).join(', ').toUpperCase();
+            return new TableRow({
+                cantSplit: true,
+                children: [
+                    new TableCell({
+                        width: { size: config.colWidthNum, type: WidthType.DXA },
+                        verticalAlign: VerticalAlign.CENTER,
+                        margins: config.paddingCelda,
+                        children: [
+                            new Paragraph({
+                                alignment: AlignmentType.CENTER,
+                                spacing: { before: 0, after: 0 },
+                                children: [new TextRun({ text: String(est.numeroLista || idx + 1), size: config.fontEstudiante, color: '374151' })],
+                            }),
+                        ],
+                    }),
+                    new TableCell({
+                        width: { size: colWidthNameAjustado, type: WidthType.DXA },
+                        verticalAlign: VerticalAlign.CENTER,
+                        margins: config.paddingCelda,
+                        children: [
+                            new Paragraph({
+                                alignment: AlignmentType.LEFT,
+                                spacing: { before: 0, after: 0 },
+                                children: [new TextRun({ text: studentName, size: config.fontEstudiante, color: '111827' })],
+                            }),
+                        ],
+                    }),
+                    ...chunkActs.flatMap((act) => {
+                        const cal = calificaciones.find((c) => c.estudianteId === est.id && c.actividadId === act.id);
+                        const score =
+                            cal?.puntaje !== null && cal?.puntaje !== undefined
+                                ? cal.puntaje
+                                : cal?.recuperacion !== null && cal?.recuperacion !== undefined
+                                ? cal.recuperacion
+                                : null;
+                        const nivel = clasificarNivelEscalaEstimativa(score);
+
+                        const markCell = (isMarked: boolean, widthCell: number) =>
+                            new TableCell({
+                                width: { size: widthCell, type: WidthType.DXA },
+                                verticalAlign: VerticalAlign.CENTER,
+                                margins: config.paddingCelda,
+                                children: [
+                                    new Paragraph({
+                                        alignment: AlignmentType.CENTER,
+                                        spacing: { before: 0, after: 0 },
+                                        children: isMarked
+                                            ? [new TextRun({ text: 'X', bold: true, size: config.fontMarcaX, color: '111827' })]
+                                            : [],
+                                    }),
+                                ],
+                            });
+
+                        return [
+                            markCell(nivel === 'completo', subColBase),
+                            markCell(nivel === 'esperado', subColBase),
+                            markCell(nivel === 'parcial', subColBase),
+                            markCell(nivel === 'iniciado', subColLast),
+                        ];
+                    }),
+                ],
+            });
+        });
+
+        const table = new Table({
+            columnWidths,
+            width: { size: TOTAL_USABLE_WIDTH, type: WidthType.DXA },
+            borders: BORDES_ESCALA,
+            rows: [row1, row2, row3, ...studentRows],
+        });
+
+        docChildren.push(table);
+    });
+
+    const doc = new Document({
+        creator: 'CIELO — Plataforma Educativa',
+        title: `Instrumento de evaluación: Escala de estimativa — ${asignaturaNombre}`,
+        description: 'Escala de estimativa por competencias',
+        sections: [
+            {
+                properties: {
+                    page: {
+                        size: {
+                            orientation: PageOrientation.LANDSCAPE,
+                            width: PAGE_PORTRAIT_WIDTH,
+                            height: PAGE_PORTRAIT_HEIGHT,
+                        },
+                        margin: {
+                            top: MARGIN_TWIPS,
+                            right: MARGIN_TWIPS,
+                            bottom: MARGIN_TWIPS,
+                            left: MARGIN_TWIPS,
+                        },
+                    },
+                },
+                children: docChildren,
+            },
+        ],
+    });
+
+    return await Packer.toBlob(doc);
+}
+
+export async function descargarInstrumentoEscalaEstimativaDocx(
+    options: ExportarEscalaEstimativaOptions
+): Promise<string> {
+    const validacion = validarContextoAcademicoInstrumento(options);
+    if (!validacion.valido || !validacion.datosValidados) {
+        throw new Error(validacion.error || 'No fue posible validar los datos del instrumento de evaluación.');
+    }
+    const { curso, asignatura, periodo } = validacion.datosValidados;
+    const blob = await generarDocumentoEscalaEstimativaDocx(options);
+
+    const cursoStr = `${curso.grado || ''}_${curso.seccion || ''}`.replace(/\s+/g, '_');
+    const asigClean = (asignatura || 'Asignatura')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_\-]/g, '_')
+        .replace(/_+/g, '_');
+
+    const fileName = `Escala_Estimativa_${cursoStr}_${periodo}_${asigClean}.docx`;
+    saveAs(blob, fileName);
+    return fileName;
+}
+
 

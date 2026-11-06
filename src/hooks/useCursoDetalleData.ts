@@ -27,13 +27,10 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
     const [buscar, setBuscar] = useState('');
     const [evalMode, setEvalMode] = useState<'pincel' | 'numerico' | 'libre'>('pincel');
 
-    // Al entrar al componente o cambiar de curso, el modo pincel debe estar activado por defecto e inicializar período
+    // Al entrar al componente o cambiar de curso, el modo pincel debe estar activado por defecto
     useEffect(() => {
         setEvalMode('pincel');
-        if (curso?.periodo) {
-            setSelectedPeriodo(curso.periodo);
-        }
-    }, [cursoId, curso?.periodo, setSelectedPeriodo]);
+    }, [cursoId]);
 
     const [showRecoveryOnly, setShowRecoveryOnly] = useState(false);
     const [activePaintColor, setActivePaintColor] = useState<number>(100);
@@ -84,35 +81,68 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
 
     const [bcSel, setBcSel] = useState<Record<number, Set<BCKey>>>({});
 
-    // 1. Recuperación de emergencia desde sessionStorage al montar o cambiar cursoId
+    // Almacenamiento persistente resiliente (sessionStorage + localStorage)
+    const PENDING_STORAGE_KEY = `cielo_pending_califs_${cursoId}`;
+
+    const getPendingFromStorage = useCallback((): CalificacionActividad[] | null => {
+        try {
+            const sRaw = sessionStorage.getItem(PENDING_STORAGE_KEY);
+            if (sRaw) {
+                const parsed = JSON.parse(sRaw);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+            const lRaw = localStorage.getItem(PENDING_STORAGE_KEY);
+            if (lRaw) {
+                const parsed = JSON.parse(lRaw);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (_) {}
+        return null;
+    }, [PENDING_STORAGE_KEY]);
+
+    const persistPendingToStorage = useCallback((califs: CalificacionActividad[]) => {
+        try {
+            if (califs.length > 0) {
+                const str = JSON.stringify(califs);
+                sessionStorage.setItem(PENDING_STORAGE_KEY, str);
+                localStorage.setItem(PENDING_STORAGE_KEY, str);
+            } else {
+                sessionStorage.removeItem(PENDING_STORAGE_KEY);
+                localStorage.removeItem(PENDING_STORAGE_KEY);
+            }
+        } catch (_) {}
+    }, [PENDING_STORAGE_KEY]);
+
+    // 1. Recuperación de emergencia desde almacenamiento persistente al montar o cambiar cursoId
     useEffect(() => {
         try {
-            const backupRaw = sessionStorage.getItem(`cielo_pending_califs_${cursoId}`);
-            if (backupRaw) {
-                const parsed: CalificacionActividad[] = JSON.parse(backupRaw);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    console.warn(`[RECOVERY] Restaurando ${parsed.length} calificaciones pendientes desde almacenamiento de sesión para el curso ${cursoId}`);
-                    parsed.forEach(c => {
-                        const key = `${c.estudianteId}_${c.actividadId}`;
-                        pendingCalifsRef.current.set(key, { calif: c, timestamp: Date.now() });
-                    });
-                    setLocalCalifs(prev => {
-                        const map = new Map<string, CalificacionActividad>();
-                        prev.forEach(c => map.set(`${c.estudianteId}_${c.actividadId}`, c));
-                        parsed.forEach(c => map.set(`${c.estudianteId}_${c.actividadId}`, c));
-                        return Array.from(map.values());
-                    });
-                    setIsDirty(true);
-                    setSaveStatus('unsaved');
-                    setRestoredFromBackupCount(parsed.length);
-                }
+            const parsed = getPendingFromStorage();
+            if (parsed && parsed.length > 0) {
+                console.warn(`[RECOVERY] Restaurando ${parsed.length} calificaciones pendientes desde almacenamiento persistente para el curso ${cursoId}`);
+                parsed.forEach(c => {
+                    const key = `${c.estudianteId}_${c.actividadId}`;
+                    pendingCalifsRef.current.set(key, { calif: c, timestamp: Date.now() });
+                });
+                setLocalCalifs(prev => {
+                    const map = new Map<string, CalificacionActividad>();
+                    prev.forEach(c => map.set(`${c.estudianteId}_${c.actividadId}`, c));
+                    parsed.forEach(c => map.set(`${c.estudianteId}_${c.actividadId}`, c));
+                    return Array.from(map.values());
+                });
+                setIsDirty(true);
+                setSaveStatus('unsaved');
+                setRestoredFromBackupCount(parsed.length);
+                if (timerRef.current) clearTimeout(timerRef.current);
+                timerRef.current = setTimeout(() => {
+                    executeSave();
+                }, 1000);
             }
         } catch (err) {
-            console.error('[RECOVERY] Error restaurando desde sessionStorage:', err);
+            console.error('[RECOVERY] Error restaurando desde almacenamiento persistente:', err);
         }
-    }, [cursoId]);
+    }, [cursoId, getPendingFromStorage]);
 
-    // 2. Sincronización segura con Zustand / Realtime sin sobrescribir ediciones pendientes
+    // 2. Sincronización segura con Zustand / Realtime sin sobrescribir ediciones pendientes ni notas locales válidas
     useEffect(() => {
         const currentActs = state.actividades.filter(a => 
             a.id && a.cursoId === cursoId && 
@@ -121,27 +151,41 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         );
         
         // Reconciliación overlay: los cambios locales pendientes SIEMPRE ganan sobre datos entrantes
+        // y las respuestas vacías del servidor NUNCA eliminan calificaciones válidas en memoria
         setLocalCalifs(prev => {
             const serverCalifs = state.calificaciones.filter(c => 
                 c.cursoId === cursoId && 
                 (!c.asignatura || normalizeArea(c.asignatura) === normalizeArea(myAsignatura) || currentCourseRole?.rol === 'tutor')
             );
             const map = new Map<string, CalificacionActividad>();
-            // Primero cargar servidor
+
+            // 1. Cargar servidor como base
             serverCalifs.forEach(c => {
                 map.set(`${c.estudianteId}_${c.actividadId}`, c);
             });
-            // Segundo: sobreescribir con las celdas actualmente en memoria o pendientes
+
+            // 2. Preservar calificaciones locales existentes en memoria si el servidor aún no las tiene o devolvió vacío
             prev.forEach(c => {
                 const key = `${c.estudianteId}_${c.actividadId}`;
-                if (pendingCalifsRef.current.has(key)) {
+                const serverItem = map.get(key);
+                if (!serverItem && (c.puntaje !== null || c.recuperacion !== null)) {
                     map.set(key, c);
                 }
             });
-            // Tercero: asegurar que todo pending esté reflejado
+
+            // 3. Modificaciones en vuelo (enviadas a Supabase, esperando respuesta)
+            inFlightCalifsRef.current.forEach((_, key) => {
+                const pending = pendingCalifsRef.current.get(key);
+                if (pending) {
+                    map.set(key, pending.calif);
+                }
+            });
+
+            // 4. Modificaciones locales pendientes SIEMPRE ganan sobre cualquier dato
             pendingCalifsRef.current.forEach(({ calif }, key) => {
                 map.set(key, calif);
             });
+
             return Array.from(map.values());
         });
 
@@ -151,18 +195,34 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                 (!r.asignatura || normalizeArea(r.asignatura) === normalizeArea(myAsignatura) || currentCourseRole?.rol === 'tutor')
             );
             const map = new Map<string, RecuperacionBC>();
+
+            // 1. Cargar servidor como base
             serverRecs.forEach(r => {
                 map.set(`${r.estudianteId}_${r.bc}_${r.periodo}_${r.asignatura}`, r);
             });
+
+            // 2. Preservar locales
             prev.forEach(r => {
                 const key = `${r.estudianteId}_${r.bc}_${r.periodo}_${r.asignatura}`;
-                if (pendingRecsRef.current.has(key)) {
+                const serverItem = map.get(key);
+                if (!serverItem && r.puntaje !== null) {
                     map.set(key, r);
                 }
             });
+
+            // 3. En vuelo
+            inFlightRecsRef.current.forEach((_, key) => {
+                const pending = pendingRecsRef.current.get(key);
+                if (pending) {
+                    map.set(key, pending.rec);
+                }
+            });
+
+            // 4. Pendientes ganan
             pendingRecsRef.current.forEach(({ rec }, key) => {
                 map.set(key, rec);
             });
+
             return Array.from(map.values());
         });
 
@@ -224,7 +284,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
             console.log(`[AUTOSAVE] Persistiendo en Supabase: ${califsToSave.length} calificaciones, ${recsToSave.length} recuperaciones.`);
             await onSaveCalificaciones(califsToSave, recsToSave, cursoId);
 
-            // ÉXITO: remover de pendientes ÚNICAMENTE las entradas cuya marca temporal no haya cambiado
+            // ÉXITO CONFIRMADO: remover de pendientes ÚNICAMENTE las entradas cuya marca temporal no haya cambiado
             flightCalifs.forEach((sentTs, key) => {
                 const current = pendingCalifsRef.current.get(key);
                 if (current && current.timestamp === sentTs) {
@@ -238,15 +298,9 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                 }
             });
 
-            // Actualizar almacenamiento de emergencia
-            try {
-                const remaining = Array.from(pendingCalifsRef.current.values()).map(x => x.calif);
-                if (remaining.length > 0) {
-                    sessionStorage.setItem(`cielo_pending_califs_${cursoId}`, JSON.stringify(remaining));
-                } else {
-                    sessionStorage.removeItem(`cielo_pending_califs_${cursoId}`);
-                }
-            } catch (_) {}
+            // Actualizar almacenamiento persistente seguro
+            const remaining = Array.from(pendingCalifsRef.current.values()).map(x => x.calif);
+            persistPendingToStorage(remaining);
 
             if (pendingCalifsRef.current.size === 0 && pendingRecsRef.current.size === 0) {
                 setIsDirty(false);
@@ -265,15 +319,17 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
             return true;
         } catch (err: any) {
             console.error("[AUTOSAVE] Error al persistir calificaciones en Supabase:", err);
-            // Conservar todas las ediciones en pendingCalifsRef y localCalifs; no perder nada
+            // Conservar todas las ediciones en pendingCalifsRef, localCalifs y almacenamiento persistente; no perder nada
             setIsDirty(true);
             setSaveStatus('error');
             setSaveError(err?.message || 'Error al persistir calificaciones en el servidor');
             return false;
         } finally {
+            inFlightCalifsRef.current.clear();
+            inFlightRecsRef.current.clear();
             setIsSaving(false);
         }
-    }, [onSaveCalificaciones, cursoId]);
+    }, [onSaveCalificaciones, cursoId, persistPendingToStorage]);
 
     // 4. Programación de guardado automático con debounce
     const scheduleDebounce = useCallback(() => {
@@ -480,25 +536,23 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                     sharedCourseId: sharedCourseId,
                     userId: currentUserId!,
                     asignatura: act?.asignatura || myAsignatura,
-                    periodo: act?.periodo || selectedPeriodo || 'P1',
+                    periodo: act?.periodo || selectedPeriodo || 'P2',
                     competencias: (act?.bcAsignados && act.bcAsignados.length > 0) ? act.bcAsignados : ['BC1'],
                     descriptores: []
                 };
 
             pendingCalifsRef.current.set(key, { calif: updatedCalif, timestamp: getNextTimestamp() });
 
-            // Almacenamiento seguro de emergencia
-            try {
-                const pendingList = Array.from(pendingCalifsRef.current.values()).map(x => x.calif);
-                sessionStorage.setItem(`cielo_pending_califs_${cursoId}`, JSON.stringify(pendingList));
-            } catch (_) {}
+            // Almacenamiento seguro persistente (sessionStorage + localStorage)
+            const pendingList = Array.from(pendingCalifsRef.current.values()).map(x => x.calif);
+            persistPendingToStorage(pendingList);
 
             if (idx >= 0) return prev.map((c, i) => i === idx ? updatedCalif : c);
             return [...prev, updatedCalif];
         });
 
         scheduleDebounce();
-    }, [state.actividades, cursoId, sharedCourseId, currentUserId, myAsignatura, selectedPeriodo, scheduleDebounce, getNextTimestamp]);
+    }, [state.actividades, cursoId, sharedCourseId, currentUserId, myAsignatura, selectedPeriodo, scheduleDebounce, getNextTimestamp, persistPendingToStorage]);
 
     const setCalifsBatch = useCallback((updates: Array<{ estId: number, actId: number, val: number | null }>) => {
         if (!updates || updates.length === 0) return;
@@ -526,7 +580,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                         sharedCourseId: sharedCourseId,
                         userId: currentUserId!,
                         asignatura: act?.asignatura || myAsignatura,
-                        periodo: act?.periodo || selectedPeriodo || 'P1',
+                        periodo: act?.periodo || selectedPeriodo || 'P2',
                         competencias: (act?.bcAsignados && act.bcAsignados.length > 0) ? act.bcAsignados : ['BC1'],
                         descriptores: []
                     };
@@ -534,17 +588,15 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                 pendingCalifsRef.current.set(key, { calif: updatedCalif, timestamp: getNextTimestamp() });
             });
 
-            // Almacenamiento seguro de emergencia
-            try {
-                const pendingList = Array.from(pendingCalifsRef.current.values()).map(x => x.calif);
-                sessionStorage.setItem(`cielo_pending_califs_${cursoId}`, JSON.stringify(pendingList));
-            } catch (_) {}
+            // Almacenamiento seguro persistente (sessionStorage + localStorage)
+            const pendingList = Array.from(pendingCalifsRef.current.values()).map(x => x.calif);
+            persistPendingToStorage(pendingList);
 
             return Array.from(map.values());
         });
 
         scheduleDebounce();
-    }, [state.actividades, cursoId, sharedCourseId, currentUserId, myAsignatura, selectedPeriodo, scheduleDebounce, getNextTimestamp]);
+    }, [state.actividades, cursoId, sharedCourseId, currentUserId, myAsignatura, selectedPeriodo, scheduleDebounce, getNextTimestamp, persistPendingToStorage]);
 
     const setRec = useCallback((estId: number, bc: 1 | 2 | 3 | 4, val: number | null) => {
         if (estId <= 0) return;
@@ -702,10 +754,18 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         return warnings;
     }, [state.actividades, cursoId, localCalifs, bcSel, myAsignatura]);
 
+    const handleSetSelectedPeriodo = useCallback((periodo: string) => {
+        if (pendingCalifsRef.current.size > 0 || pendingRecsRef.current.size > 0) {
+            console.log(`[AUTOSAVE] Persistiendo ediciones pendientes antes de cambiar al período ${periodo}`);
+            executeSave();
+        }
+        setSelectedPeriodo(periodo);
+    }, [executeSave, setSelectedPeriodo]);
+
     return {
         curso,
         selectedPeriodo,
-        setSelectedPeriodo,
+        setSelectedPeriodo: handleSetSelectedPeriodo,
         buscar,
         setBuscar,
         evalMode,

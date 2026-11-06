@@ -35,9 +35,10 @@ export function useEvaluationActions() {
             asignatura: a.asignatura || '',
             shared_course_id: shared_course_id,
             indicador: a.indicador,
+            indicadores_json: a.indicadores_json || a.indicadoresJson || (a.indicador ? [{ descripcion: a.indicador }] : []),
             producto: a.producto,
             descripcion: a.descripcion ?? null
-        }]).select();
+        }]).select('id, nombre, fecha, periodo, curso_id, bc_asignados, secuencia_id, plan_ficha_id, is_rec, is_producto_final, user_id, asignatura, shared_course_id, indicador, indicadores_json, producto, descripcion');
 
         if (actError) { 
             // Caso específico: al reintentar / volver a CursoDetalle, el sistema
@@ -52,7 +53,7 @@ export function useEvaluationActions() {
             if (isProductoFinalDuplicado) {
                 const { data: existingData } = await supabase
                     .from('actividades')
-                    .select()
+                    .select('id, nombre, fecha, periodo, curso_id, bc_asignados, secuencia_id, plan_ficha_id, is_rec, is_producto_final, user_id, asignatura, shared_course_id, indicador, indicadores_json, producto, descripcion')
                     .eq('curso_id', a.cursoId)
                     .eq('periodo', a.periodo)
                     .eq('is_producto_final', true)
@@ -76,6 +77,8 @@ export function useEvaluationActions() {
                         asignatura: existingRow.asignatura,
                         sharedCourseId: existingRow.shared_course_id,
                         indicador: existingRow.indicador,
+                        indicadores_json: existingRow.indicadores_json,
+                        indicadoresJson: Array.isArray(existingRow.indicadores_json) ? existingRow.indicadores_json : undefined,
                         producto: existingRow.producto,
                         descripcion: existingRow.descripcion ?? null
                     };
@@ -112,6 +115,8 @@ export function useEvaluationActions() {
                 asignatura: actData[0].asignatura,
                 sharedCourseId: actData[0].shared_course_id,
                 indicador: actData[0].indicador,
+                indicadores_json: actData[0].indicadores_json,
+                indicadoresJson: Array.isArray(actData[0].indicadores_json) ? actData[0].indicadores_json : undefined,
                 producto: actData[0].producto,
                 descripcion: actData[0].descripcion ?? null
             };
@@ -129,19 +134,34 @@ export function useEvaluationActions() {
     ) => {
         console.log('[DEBUG] 4. saveCalificaciones() se ejecuta transformando los datos. Recs a guardar:', recs.length);
         const cursoId = cursoIdOverride ?? selectedCursoId;
-        if (cursoId === null || !session?.user?.id) {
-            console.error('[CALIFICACIONES] Operación abortada ANTES de contactar Supabase:', {
-                motivo: cursoId === null ? 'cursoId es null' : 'sin sesión activa',
-                cursoIdOverride,
-                selectedCursoIdStore: selectedCursoId,
-                haySesion: !!session?.user?.id,
-                filasRecibidas: califs.length
-            });
-            return;
+        if (cursoId === null) {
+            console.error('[CALIFICACIONES] Operación abortada: cursoId es null');
+            throw new Error('[CALIFICACIONES] Operación abortada: No se ha seleccionado un curso válido');
+        }
+        if (!session?.user?.id) {
+            console.error('[CALIFICACIONES] Operación abortada: sesión de usuario no activa o expirada');
+            throw new Error('[CALIFICACIONES] Operación abortada: Sesión de usuario no activa o expirada. Inicie sesión nuevamente.');
         }
 
-        const validCalifs = califs.filter(c => c.estudianteId > 0 && c.actividadId > 0);
-        const validRecs = recs.filter(r => r.estudianteId > 0);
+        // Validación estricta: ninguna calificación con IDs temporales o inválidos debe ser procesada
+        const invalidCalifs = califs.filter(c => !c.estudianteId || c.estudianteId <= 0 || !c.actividadId || c.actividadId <= 0);
+        if (invalidCalifs.length > 0) {
+            console.error('[CALIFICACIONES] Operación rechazada: calificaciones con IDs inválidos o no persistidos:', invalidCalifs);
+            throw new Error(`[CALIFICACIONES] No se pueden guardar ${invalidCalifs.length} calificaciones con identificadores temporales o inválidos`);
+        }
+
+        const invalidRecs = recs.filter(r => !r.estudianteId || r.estudianteId <= 0);
+        if (invalidRecs.length > 0) {
+            console.error('[CALIFICACIONES] Operación rechazada: recuperaciones con IDs de estudiante inválidos:', invalidRecs);
+            throw new Error(`[CALIFICACIONES] No se pueden guardar ${invalidRecs.length} recuperaciones con identificador de estudiante inválido`);
+        }
+
+        const validCalifs = califs;
+        const validRecs = recs;
+
+        if (validCalifs.length === 0 && validRecs.length === 0) {
+            return { success: true, count: 0 };
+        }
 
         const dbCalifs = validCalifs.map(c => {
             const act = state.actividades.find(a => a.id === c.actividadId);
@@ -181,20 +201,28 @@ export function useEvaluationActions() {
             dbCalifs.forEach(c => {
                 console.log(`[CALIFICACIONES] fila → op=UPSERT tabla=calificaciones onConflict=(estudiante_id,actividad_id) estudiante_id=${c.estudiante_id} curso_id=${c.curso_id} actividad_id=${c.actividad_id} periodo=${c.periodo} puntaje=${c.puntaje}`);
             });
-            promises.push(supabase.from('calificaciones').upsert(dbCalifs, { onConflict: 'estudiante_id,actividad_id' }));
+            promises.push(
+                supabase
+                    .from('calificaciones')
+                    .upsert(dbCalifs, { onConflict: 'estudiante_id,actividad_id' })
+                    .select('id, estudiante_id, actividad_id')
+            );
         }
         if (dbRecs.length > 0) {
             // FIX: Include asignatura in onConflict to match new primary key
-            promises.push(supabase.from('recuperaciones').upsert(dbRecs, { onConflict: 'estudiante_id,curso_id,bc,periodo,asignatura' }));
+            promises.push(
+                supabase
+                    .from('recuperaciones')
+                    .upsert(dbRecs, { onConflict: 'estudiante_id,curso_id,bc,periodo,asignatura' })
+                    .select('id')
+            );
         }
         
         if (promises.length > 0) {
             console.log('[DEBUG] Esperando respuesta de Supabase...');
             const upsertResults = await Promise.all(promises);
-            const califsResult = upsertResults[0];
-            if (dbCalifs.length > 0 && !califsResult?.error) {
-                console.log(`[CALIFICACIONES] OK: Supabase aceptó el UPSERT en calificaciones (filas=${dbCalifs.length}).`);
-            }
+            const califsResult = dbCalifs.length > 0 ? upsertResults[0] : null;
+
             const upsertErrors = upsertResults.filter(r => r?.error);
             if (upsertErrors.length > 0) {
                 upsertErrors.forEach(r => console.error('[CALIFICACIONES] Error Supabase:', {
@@ -206,6 +234,14 @@ export function useEvaluationActions() {
                 const firstErr = upsertErrors[0].error;
                 throw new Error(firstErr?.message || 'Error al persistir calificaciones en Supabase');
             }
+
+            if (dbCalifs.length > 0) {
+                if (!califsResult?.data || califsResult.data.length === 0) {
+                    throw new Error('[CALIFICACIONES] Supabase no confirmó la persistencia de las calificaciones enviadas');
+                }
+                console.log(`[CALIFICACIONES] OK: Supabase confirmó el UPSERT de ${califsResult.data.length} calificaciones.`);
+            }
+
             console.log('[DEBUG] 6. Supabase responde exitosamente (upsert resuelto).');
             setState(s => {
                 console.log('[DEBUG] 7. Actualizando estado global de Zustand con las recuperaciones...');
@@ -533,7 +569,7 @@ export function useEvaluationActions() {
                         estudianteId: evalData.estudianteId!,
                         actividadId: evalData.actividadId!,
                         cursoId: cursoId,
-                        periodo: actividad.periodo || 'P1',
+                        periodo: actividad.periodo || 'P2',
                         competencias: evaluatedBCs,
                         puntaje: avgPuntaje,
                         descriptores: evalData.descriptores || existing?.descriptores || [],
@@ -548,7 +584,7 @@ export function useEvaluationActions() {
                     estudianteId: evalData.estudianteId!,
                     actividadId: evalData.actividadId!,
                     cursoId: cursoId,
-                    periodo: actividad.periodo || 'P1',
+                    periodo: actividad.periodo || 'P2',
                     competencias: actividad.bcAsignados && actividad.bcAsignados.length > 0 ? actividad.bcAsignados : ['BC1'],
                     descriptores: evalData.descriptores || existing?.descriptores || [],
                     puntaje: evalData.puntajeTotal,
@@ -968,6 +1004,7 @@ export function useEvaluationActions() {
             asignatura: merged.asignatura,
             shared_course_id: merged.sharedCourseId,
             indicador: merged.indicador,
+            indicadores_json: merged.indicadores_json ?? merged.indicadoresJson ?? undefined,
             producto: merged.producto,
             descripcion: merged.descripcion ?? null
         });

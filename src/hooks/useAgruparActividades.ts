@@ -20,7 +20,7 @@ export function useAgruparActividades() {
             if (!curso) return acc;
             
             const asignatura = act.asignatura || curso.asignatura || 'Sin asignatura';
-            const periodo = act.periodo || curso.periodo || 'P1';
+            const periodo = act.periodo || curso.periodo || 'P2';
             const key = `${curso.id}|${asignatura}|${periodo}`;
             
             if (!acc[key]) {

@@ -10,7 +10,8 @@ import {
     Loader2,
     Check,
     AlertCircle,
-    FileSpreadsheet
+    FileSpreadsheet,
+    FileText
 } from 'lucide-react';
 import type { Curso } from '../../types';
 import { CieloPill } from '../ui/CieloPill';
@@ -47,6 +48,8 @@ interface CursoDetalleHeaderProps {
     onShowWarnings?: () => void;
     onExportExcel?: () => void;
     isExporting?: boolean;
+    onExportInstrumento?: () => void;
+    isExportingInstrumento?: boolean;
 }
 
 const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
@@ -79,7 +82,9 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     academicWarningsCount: _academicWarningsCount = 0,
     onShowWarnings: _onShowWarnings,
     onExportExcel,
-    isExporting = false
+    isExporting = false,
+    onExportInstrumento,
+    isExportingInstrumento = false
 }) => {
     return (
         <div className="flex flex-col gap-4 p-5 md:p-6 bg-white border-b border-(--border-soft) shadow-sm relative z-20">
@@ -136,6 +141,28 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         </CieloPill>
                     )}
 
+                    {onExportInstrumento && (
+                        <CieloPill
+                            as="button"
+                            variant="ghost"
+                            onClick={onExportInstrumento}
+                            disabled={periodLoading || isExportingInstrumento}
+                            title={`Descargar Instrumento de Evaluación (${selectedPeriodo}) en Word (.docx)`}
+                            className={`gap-2 px-3.5 min-h-10 transition-all border ${
+                                periodLoading || isExportingInstrumento
+                                    ? 'bg-base-creme border-(--border-soft) text-[#5F665E]/40 cursor-not-allowed opacity-60'
+                                    : 'bg-white border-(--border-soft) text-[#537BAC] hover:bg-[#537BAC]/10 hover:border-[#537BAC]/40 hover:text-[#476B96] shadow-sm cursor-pointer'
+                            }`}
+                        >
+                            {isExportingInstrumento ? (
+                                <Loader2 size={16} className="animate-spin text-[#537BAC]" />
+                            ) : (
+                                <FileText size={16} className="text-[#537BAC]" />
+                            )}
+                            <span className="font-bold text-xs tracking-wider">INSTRUMENTO</span>
+                        </CieloPill>
+                    )}
+
                     <div className="flex flex-col items-end">
                         <CieloPill
                             as="button"
@@ -170,7 +197,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                                 : 'GUARDADO'}
                         </CieloPill>
                         {saveError && (
-                            <span className="text-[10px] text-rose-600 font-medium mt-1 truncate max-w-[200px]" title={saveError}>
+                            <span className="text-[10px] text-rose-600 font-medium mt-1 truncate max-w-50" title={saveError}>
                                 {saveError}
                             </span>
                         )}

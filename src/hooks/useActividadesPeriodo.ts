@@ -32,6 +32,8 @@ const mapFila = (a: Record<string, unknown>): Actividad => ({
     userId: a.user_id as string | undefined,
     asignatura: a.asignatura as string | undefined,
     indicador: a.indicador as string | undefined,
+    indicadores_json: a.indicadores_json as Actividad['indicadores_json'],
+    indicadoresJson: Array.isArray(a.indicadores_json) ? (a.indicadores_json as any[]) : undefined,
     producto: a.producto as string | undefined,
     requiereProducto: a.requiere_producto as boolean | undefined,
     descripcion: (a.descripcion as string | null) ?? null,

@@ -3,10 +3,13 @@ import {
   User, Briefcase, Shield, Palette, Sparkles, GraduationCap,
   X, Camera, Eye, EyeOff,
   CheckCircle, AlertCircle, Loader2, LogOut,
-  Building2, Search, PlusCircle, Check
+  Building2, Search, PlusCircle, Check, CreditCard
 } from 'lucide-react';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import PortalSettingsTab from '../components/settings/PortalSettingsTab';
+import { WhatsAppIcon } from '../components/icons/WhatsAppIcon';
+import { CieloModal } from '../components/ui/CieloModal';
+import { usePremiumAccess } from '../hooks/usePremiumAccess';
 import { supabase } from '../lib/supabase';
 import { getGeminiApiKey, saveGeminiApiKey, removeGeminiApiKey, maskApiKey, getOpenAIApiKey, saveOpenAIApiKey, removeOpenAIApiKey, getAIAIProvider, saveAIAIProvider, isProviderConfigured, providerDisplayName, AI_PROVIDERS, type AIProvider } from '../lib/aiConfig';
 import { clearAICircuitBreakers } from '../lib/aiProvider';
@@ -40,7 +43,7 @@ interface ProfileSettingsProps {
   centroNombre?: string;
 }
 
-type SectionId = 'perfil' | 'profesional' | 'seguridad' | 'portal' | 'ia' | 'apariencia';
+type SectionId = 'perfil' | 'profesional' | 'seguridad' | 'portal' | 'ia' | 'apariencia' | 'plan';
 
 const AVATAR_COLORS = [
   '#2D3436', '#D03817', '#E6991F', '#0F753D', '#3b82f6', '#8b5cf6',
@@ -74,7 +77,7 @@ export default function ProfileSettings({
   const [activeSection, setActiveSection] = useState<SectionId>(() => {
     try {
       const p = new URLSearchParams(window.location.search).get('tab');
-      if (p && ['perfil', 'profesional', 'seguridad', 'portal', 'ia', 'apariencia'].includes(p)) {
+      if (p && ['perfil', 'profesional', 'seguridad', 'portal', 'ia', 'apariencia', 'plan'].includes(p)) {
         return p as SectionId;
       }
     } catch {}
@@ -195,6 +198,10 @@ export default function ProfileSettings({
                      onColorSelect={onUpdateAvatarColor}
                    />
                  )}
+
+                {activeSection === 'plan' && (
+                   <PlanSuscripcionTab session={session} />
+                 )}
              </div>
           </div>
         </div>
@@ -266,6 +273,7 @@ const Sidebar = React.memo(function Sidebar({
         <NavItem id="portal" label="Portal del estudiante" icon={<GraduationCap size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
         <NavItem id="ia" label="Integrar IA" icon={<Sparkles size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
         <NavItem id="apariencia" label="Apariencia" icon={<Palette size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
+        <NavItem id="plan" label="Plan y suscripción" icon={<CreditCard size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
       </nav>
 
       <div className="p-4 border-t border-(--border-soft) bg-(--linen)/5 space-y-3">
@@ -299,7 +307,8 @@ function Header({ activeSection, onClose }: { activeSection: SectionId; onClose:
     'seguridad': 'Seguridad y Acceso',
     'portal': 'Portal del Estudiante',
     'ia': 'Integración de IA',
-    'apariencia': 'Personalización Visual'
+    'apariencia': 'Personalización Visual',
+    'plan': 'Plan y Suscripción'
   };
 
   return (
@@ -1624,6 +1633,180 @@ function SimplePasswordField({ label, value, onChange, show, onToggle }: { label
              {show ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
        </div>
+    </div>
+  );
+}
+
+function PlanSuscripcionTab({ session: _session }: { session: Session | null }) {
+  const { suscripcionActual, hasPremium, hasTrial, trialDaysLeft } = usePremiumAccess();
+  const [showModalCancelar, setShowModalCancelar] = useState(false);
+
+  const WHATSAPP_PHONE = '18093132365';
+  const MENSAJE_CANCELAR = 'Hola, necesito ayuda con mi suscripción de CIELO. Me gustaría solicitar su cancelación o consultar la posibilidad de pausarla. ¿Podrían orientarme?';
+
+  const handleContactarSoporte = () => {
+    const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(MENSAJE_CANCELAR)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setShowModalCancelar(false);
+  };
+
+  // Determinar estado de la suscripción
+  let estadoBadge = {
+    texto: 'Sin plan activo',
+    color: 'bg-slate-100 text-slate-700 border-slate-200',
+    descripcion: 'No dispones de una suscripción activa actualmente.'
+  };
+
+  if (suscripcionActual) {
+    if (suscripcionActual.estado === 'activa') {
+      estadoBadge = {
+        texto: 'Activa',
+        color: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        descripcion: 'Tu suscripción se encuentra activa y al día con PayPal.'
+      };
+    } else if (suscripcionActual.estado === 'cancelada') {
+      const fechaFinValida = suscripcionActual.fecha_fin && new Date() < new Date(suscripcionActual.fecha_fin);
+      if (fechaFinValida) {
+        estadoBadge = {
+          texto: 'Pendiente de finalización',
+          color: 'bg-amber-50 text-amber-800 border-amber-200',
+          descripcion: `Tu suscripción fue cancelada. Mantendrás acceso a todas las funciones hasta el ${new Date(suscripcionActual.fecha_fin!).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' })}.`
+        };
+      } else {
+        estadoBadge = {
+          texto: 'Cancelada',
+          color: 'bg-slate-100 text-slate-700 border-slate-200',
+          descripcion: 'Tu suscripción ha finalizado.'
+        };
+      }
+    } else if (suscripcionActual.estado === 'pendiente') {
+      estadoBadge = {
+        texto: 'Pendiente de confirmación',
+        color: 'bg-amber-50 text-amber-800 border-amber-200',
+        descripcion: 'Tienes un pago pendiente de confirmación por parte de PayPal.'
+      };
+    }
+  } else if (hasTrial) {
+    estadoBadge = {
+      texto: 'Período de prueba',
+      color: 'bg-blue-50 text-blue-800 border-blue-200',
+      descripcion: `Disfrutas de acceso de prueba completo (${trialDaysLeft} días restantes).`
+    };
+  }
+
+  const nombrePlan = suscripcionActual?.tipo === 'institucional'
+    ? 'Plan Institucional CIELO'
+    : suscripcionActual?.tipo === 'promocional'
+    ? 'Acceso Promocional CIELO'
+    : hasPremium && !suscripcionActual
+    ? 'CIELO Docente (Prueba gratuita)'
+    : 'CIELO Docente Individual';
+
+  return (
+    <div className="space-y-6">
+      {/* Tarjeta principal del plan */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="space-y-1">
+            <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+              Plan actual
+            </span>
+            <h3 className="text-lg font-bold text-[#1E2421]">
+              {nombrePlan}
+            </h3>
+            <p className="text-xs text-slate-500 font-medium max-w-md">
+              {estadoBadge.descripcion}
+            </p>
+          </div>
+
+          <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${estadoBadge.color}`}>
+            {estadoBadge.texto}
+          </span>
+        </div>
+
+        {/* Detalles informativos */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
+          <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100 space-y-0.5">
+            <span className="text-slate-400 font-semibold block">Canal de pago</span>
+            <span className="text-[#1E2421] font-bold">PayPal</span>
+          </div>
+
+          {suscripcionActual?.fecha_fin && (
+            <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100 space-y-0.5">
+              <span className="text-slate-400 font-semibold block">Vigencia del período</span>
+              <span className="text-[#1E2421] font-bold">
+                {new Date(suscripcionActual.fecha_fin).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+          )}
+
+          {suscripcionActual?.paypal_subscription_id && (
+            <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100 space-y-0.5 sm:col-span-2">
+              <span className="text-slate-400 font-semibold block">ID de suscripción PayPal</span>
+              <span className="text-[#1E2421] font-mono font-medium text-[11px] truncate block">
+                {suscripcionActual.paypal_subscription_id}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Opción visible y discreta de cancelar suscripción */}
+        {(hasPremium || suscripcionActual) && (
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-xs text-slate-500 font-medium">
+              ¿Deseas pausar o dar de baja tu plan?
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowModalCancelar(true)}
+              className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline transition-colors cursor-pointer py-1.5 px-3 rounded-lg hover:bg-rose-50"
+            >
+              Cancelar suscripción
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Ventana de confirmación para cancelar */}
+      <CieloModal
+        isOpen={showModalCancelar}
+        onClose={() => setShowModalCancelar(false)}
+        title="Cancelar o pausar suscripción"
+        maxWidth="md"
+        icon={<WhatsAppIcon size={20} />}
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => setShowModalCancelar(false)}
+              className="rounded-full px-5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 border border-slate-300 transition-all cursor-pointer"
+            >
+              Volver
+            </button>
+            <button
+              type="button"
+              onClick={handleContactarSoporte}
+              className="rounded-full px-5 py-2 text-xs font-bold bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+            >
+              <WhatsAppIcon size={16} /> Contactar soporte
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3.5 py-1 text-[#2E3330]">
+          <p className="text-sm font-medium leading-relaxed">
+            Puedes solicitar la cancelación o pausa de tu suscripción de CIELO a través de nuestro canal oficial de soporte por WhatsApp.
+          </p>
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs text-slate-600">
+            <p className="font-bold text-slate-700">Toma en cuenta:</p>
+            <ul className="list-disc list-inside space-y-1 leading-relaxed">
+              <li>Un asesor te asistirá para tramitar tu solicitud mediante los mecanismos de PayPal.</li>
+              <li>Mantendrás acceso completo a todas las funciones de CIELO hasta que finalice el período que ya has pagado.</li>
+              <li>Tus datos, cursos y calificaciones se conservarán intactos en tu cuenta.</li>
+            </ul>
+          </div>
+        </div>
+      </CieloModal>
     </div>
   );
 }

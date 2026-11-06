@@ -21,6 +21,12 @@ export function LandingNavbar() {
           </button>
           <div className="flex items-center gap-2">
             <Link 
+              to="/portal"
+              className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-full border border-[rgba(46,51,48,0.15)] bg-white/70 text-[#2E3330] text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-black/5 hover:-translate-y-0.5 transition-all inline-flex items-center"
+            >
+              Portal Estudiantes
+            </Link>
+            <Link 
               to="/login"
               className="px-3 sm:px-5 py-2 sm:py-2.5 rounded-full bg-transparent text-[#2E3330] text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-black/5 hover:-translate-y-0.5 transition-all"
             >

@@ -67,7 +67,7 @@ export default function Cursos({
                 asignatura: form.asignatura,
                 diasSemana: form.diasSemana,
                 isTutorOficial: form.isTutorOficial,
-                periodo: 'P1',
+                periodo: 'P2',
                 color: 'var(--primary)',
                 configuracionEvaluacion: {}
             });

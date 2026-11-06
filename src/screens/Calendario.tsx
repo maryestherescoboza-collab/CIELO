@@ -606,7 +606,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                 tipo_calendario: 'clase',
                 plan_ficha_id: ficha.id,
                 curso_id: selectedCursoId || null,
-                periodo: selectedPeriodo || 'P1',
+                periodo: selectedPeriodo || 'P2',
                 user_id: session?.user?.id
             };
 

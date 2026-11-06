@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppStore } from '../../store/appStore';
 import { supabase } from '../../lib/supabase';
-import { X } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface AttendanceReportModalProps {
     date: string; // "YYYY-MM-DD"
@@ -20,10 +20,28 @@ const statusColors: Record<string, string> = {
 export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceReportModalProps) {
     const { state, session } = useAppStore();
     const [selectedCursoDocenteId, setSelectedCursoDocenteId] = useState<number | null>(null);
+    const [currentDate, setCurrentDate] = useState<Date>(() => {
+        return date ? new Date(date + 'T12:00:00') : new Date();
+    });
     const [sesiones, setSesiones] = useState<any[]>([]);
     const [excepciones, setExcepciones] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showLegend, setShowLegend] = useState(false);
+
+    // Sync currentDate when modal opens or date prop changes
+    useEffect(() => {
+        if (isOpen && date) {
+            setCurrentDate(new Date(date + 'T12:00:00'));
+        }
+    }, [isOpen, date]);
+
+    const handlePrevMonth = () => {
+        setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1, 12, 0, 0));
+    };
+
+    const handleNextMonth = () => {
+        setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1, 12, 0, 0));
+    };
 
     // Filter available courses for the user based on their specific subjects
     const availableCursoDocentes = useMemo(() => {
@@ -65,16 +83,19 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
         };
     }, [isOpen, availableCursoDocentes, selectedCursoDocenteId]);
 
-    // Fetch monthly data
+    // Fetch monthly data con protección contra carreras al navegar rápido entre meses
     useEffect(() => {
-        if (!isOpen || !selectedCursoDocenteId || !date) return;
+        if (!isOpen || !selectedCursoDocenteId) return;
         
+        let isCancelled = false;
         const fetchMonthlyAttendance = async () => {
             setIsLoading(true);
             try {
-                const currentDate = new Date(date + 'T12:00:00');
-                const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0];
-                const end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
+                const y = currentDate.getFullYear();
+                const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const lastDay = new Date(y, currentDate.getMonth() + 1, 0).getDate();
+                const start = `${y}-${m}-01`;
+                const end = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
 
                 const { data: sesData, error: sesError } = await supabase
                     .from('asistencia_sesiones')
@@ -84,6 +105,7 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
                     .lte('fecha', end)
                     .order('fecha', { ascending: true });
                 
+                if (isCancelled) return;
                 if (sesError) throw sesError;
                 setSesiones(sesData || []);
 
@@ -94,20 +116,29 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
                         .select('sesion_id, estudiante_id, estado')
                         .in('sesion_id', sessionIds);
                     
+                    if (isCancelled) return;
                     if (excError) throw excError;
                     setExcepciones(excData || []);
                 } else {
                     setExcepciones([]);
                 }
             } catch (err) {
-                console.error("Error fetching attendance report:", err);
+                if (!isCancelled) {
+                    console.error("Error fetching attendance report:", err);
+                }
             } finally {
-                setIsLoading(false);
+                if (!isCancelled) {
+                    setIsLoading(false);
+                }
             }
         };
 
         fetchMonthlyAttendance();
-    }, [selectedCursoDocenteId, date, isOpen]);
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [selectedCursoDocenteId, currentDate, isOpen]);
 
     // Get course students
     const courseStudents = useMemo(() => {
@@ -131,14 +162,13 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
 
     // Month details
     const monthDetails = useMemo(() => {
-        const currentDate = new Date(date + 'T12:00:00');
         const monthName = new Intl.DateTimeFormat('es-DO', { month: 'long', year: 'numeric' }).format(currentDate);
         return {
             title: monthName.charAt(0).toUpperCase() + monthName.slice(1),
             year: currentDate.getFullYear(),
             monthName
         };
-    }, [date]);
+    }, [currentDate]);
 
     // Compute report table data based ONLY on real recorded sessions
     const tableData = useMemo(() => {
@@ -197,14 +227,36 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-[#fcfcfa] rounded-2xl shadow-2xl max-w-6xl w-full flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300">
                 <header className="px-6 py-4 border-b border-[#e6e8e2] bg-white flex justify-between items-center shrink-0">
-                    <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <h2 className="text-xl font-bold text-[#263128]">Informe de asistencia</h2>
-                        <div className="text-sm text-[#58625a] font-medium mt-0.5">{monthDetails.title}</div>
+                        <div className="flex items-center gap-1 bg-[#f9faf8] border border-[#e6e8e2] rounded-xl px-2 py-1 shadow-2xs">
+                            <button
+                                type="button"
+                                onClick={handlePrevMonth}
+                                title="Mes anterior"
+                                aria-label="Mes anterior"
+                                className="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-white border border-[#e6e8e2] text-[#58625a] hover:text-[#263128] hover:bg-[#f3f7ef] transition-colors cursor-pointer shadow-2xs"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <span className="text-sm font-bold text-[#263128] px-2 min-w-36 text-center select-none capitalize">
+                                {monthDetails.title}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={handleNextMonth}
+                                title="Mes siguiente"
+                                aria-label="Mes siguiente"
+                                className="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-white border border-[#e6e8e2] text-[#58625a] hover:text-[#263128] hover:bg-[#f3f7ef] transition-colors cursor-pointer shadow-2xs"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="p-2 text-[#8a918b] hover:text-[#263128] hover:bg-[#f3f7ef] rounded-lg transition-colors">
+                    <button onClick={onClose} className="p-2 text-[#8a918b] hover:text-[#263128] hover:bg-[#f3f7ef] rounded-lg transition-colors cursor-pointer" aria-label="Cerrar">
                         <X size={20} />
                     </button>
                 </header>

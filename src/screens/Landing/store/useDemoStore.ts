@@ -16,7 +16,7 @@ interface DemoState {
 }
 
 export const useDemoStore = create<DemoState>((set) => ({
-  periodo: 'P1',
+  periodo: 'P2',
   setPeriodo: (p) => set({ periodo: p }),
   
   grades: generateInitialGrades(),

@@ -31,7 +31,7 @@ export default function CentroCodigos({ centroId }: Props) {
         return () => { activo = false; };
     }, [centroId, loadCodigosAcceso]);
 
-    // Realtime: actualiza automáticamente la lista cuando cambian los códigos
+    // Realtime: parchea inmediatamente el estado local sin refetch completo por red (AGUA Sec. 10)
     useEffect(() => {
         if (!centroId) return;
         const channel = supabase
@@ -41,15 +41,24 @@ export default function CentroCodigos({ centroId }: Props) {
                 schema: 'public',
                 table: 'codigos_acceso_centro',
                 filter: `centro_id=eq.${centroId}`
-            }, () => {
-                loadCodigosAcceso(centroId).then(({ codigos, error }) => {
-                    setCodigosAcceso(codigos);
-                    if (error) setErrorCodigos(error);
+            }, (payload) => {
+                const { eventType, new: newRow, old: oldRow } = payload;
+                setCodigosAcceso(prev => {
+                    if (eventType === 'INSERT' && newRow) {
+                        return [newRow as any, ...prev.filter(c => c.id !== newRow.id)];
+                    }
+                    if (eventType === 'UPDATE' && newRow) {
+                        return prev.map(c => c.id === newRow.id ? (newRow as any) : c);
+                    }
+                    if (eventType === 'DELETE' && oldRow) {
+                        return prev.filter(c => c.id !== oldRow.id);
+                    }
+                    return prev;
                 });
             })
             .subscribe();
         return () => { supabase.removeChannel(channel); };
-    }, [centroId, loadCodigosAcceso]);
+    }, [centroId]);
 
     const copiarCodigo = useCallback(async (codigo: string, id: string) => {
         const fallback = () => {

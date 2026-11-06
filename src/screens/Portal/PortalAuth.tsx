@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Loader2, Shield, Lock, AlertCircle } from 'lucide-react';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
@@ -12,9 +12,9 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [context, setContext] = useState<{ nombre: string; requiereSetup: boolean } | null>(null);
 
-  // Form states
-  const [pin, setPin] = useState(['', '', '', '']);
-  const [confirmPin, setConfirmPin] = useState(['', '', '', '']);
+  // Form states - Clave numérica de 6 dígitos (compatible con claves existentes de 4 dígitos)
+  const [pin, setPin] = useState(['', '', '', '', '', '']);
+  const [confirmPin, setConfirmPin] = useState(['', '', '', '', '', '']);
   const [step, setStep] = useState<'verify' | 'setup_pin' | 'setup_confirm' | 'login'>('verify');
   
   const [processing, setProcessing] = useState(false);
@@ -59,27 +59,59 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
     verifyToken();
   }, [token, navigate]);
 
-  const handlePinInput = (index: number, value: string, isConfirm = false) => {
-    if (!/^\d*$/.test(value)) return;
+  const handlePinInput = (index: number, rawValue: string, isConfirm = false) => {
+    // Solo permitir dígitos numéricos exactos (sin letras, símbolos ni espacios)
+    const cleaned = rawValue.replace(/\D/g, '');
+    if (!cleaned && rawValue !== '') return;
     
+    const digit = cleaned.slice(-1);
     const newArr = [...(isConfirm ? confirmPin : pin)];
-    newArr[index] = value;
+    newArr[index] = digit;
     
     if (isConfirm) setConfirmPin(newArr);
     else setPin(newArr);
 
-    // Auto focus next
-    if (value && index < 3) {
+    // Autoenfoque al siguiente campo
+    if (digit && index < 5) {
       const nextId = isConfirm ? `c-pin-${index + 1}` : `pin-${index + 1}`;
       document.getElementById(nextId)?.focus();
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent, isConfirm = false) => {
-    if (e.key === 'Backspace' && !e.currentTarget.nodeValue) {
+  const handlePaste = (e: React.ClipboardEvent, isConfirm = false) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+
+    const digits = pasted.split('');
+    const newArr = [...(isConfirm ? confirmPin : pin)];
+    for (let i = 0; i < 6; i++) {
+      newArr[i] = digits[i] || '';
+    }
+
+    if (isConfirm) setConfirmPin(newArr);
+    else setPin(newArr);
+
+    const focusIndex = Math.min(digits.length, 5);
+    const targetId = isConfirm ? `c-pin-${focusIndex}` : `pin-${focusIndex}`;
+    document.getElementById(targetId)?.focus();
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>, isConfirm = false) => {
+    if (e.key === 'Backspace' && !e.currentTarget.value) {
       if (index > 0) {
         const prevId = isConfirm ? `c-pin-${index - 1}` : `pin-${index - 1}`;
         document.getElementById(prevId)?.focus();
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (step === 'setup_pin' && pin.join('').length === 6) {
+        setStep('setup_confirm');
+        setError(null);
+      } else if (step === 'setup_confirm' && confirmPin.join('').length === 6) {
+        submitSetup();
+      } else if (step === 'login') {
+        submitLogin();
       }
     }
   };
@@ -88,11 +120,20 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
     const finalPin = pin.join('');
     const finalConfirm = confirmPin.join('');
     
-    if (finalPin.length !== 4 || finalConfirm.length !== 4) return;
+    // Nueva clave debe ser estrictamente de 6 dígitos numéricos
+    if (finalPin.length !== 6 || !/^\d{6}$/.test(finalPin)) {
+      setError('La clave debe contener exactamente 6 dígitos numéricos.');
+      return;
+    }
+
+    if (finalConfirm.length !== 6 || !/^\d{6}$/.test(finalConfirm)) {
+      setError('Debes confirmar los 6 dígitos numéricos de tu clave.');
+      return;
+    }
     
     if (finalPin !== finalConfirm) {
-      setError('Los PINs no coinciden.');
-      setConfirmPin(['', '', '', '']);
+      setError('Las claves no coinciden.');
+      setConfirmPin(['', '', '', '', '', '']);
       setStep('setup_pin');
       return;
     }
@@ -104,7 +145,7 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
       if (setupError) throw setupError;
       
       if (!data.success) {
-        setError(data.error || 'Error al configurar el PIN');
+        setError(data.error || 'Error al configurar la clave');
         setProcessing(false);
         return;
       }
@@ -120,7 +161,11 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
 
   const submitLogin = async () => {
     const finalPin = pin.join('');
-    if (finalPin.length !== 4) return;
+    // Soporta 6 dígitos (nuevas claves) y 4 dígitos (compatibilidad con cuentas anteriores)
+    if (!/^\d{4}$|^\d{6}$/.test(finalPin)) {
+      setError('Introduce tu clave numérica (6 dígitos, o 4 dígitos para cuentas anteriores).');
+      return;
+    }
     
     setProcessing(true);
     setError(null);
@@ -134,7 +179,7 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
       
       if (!data.success) {
         setError(data.error || 'Acceso denegado');
-        setPin(['', '', '', '']);
+        setPin(['', '', '', '', '', '']);
         document.getElementById('pin-0')?.focus();
         setProcessing(false);
         return;
@@ -164,7 +209,13 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-(--border-soft) max-w-sm w-full text-center">
           <AlertCircle className="mx-auto text-danger mb-4" size={48} />
           <h2 className="text-xl font-black text-(--ink) mb-2">Acceso Inválido</h2>
-          <p className="text-sm text-(--ink-soft)">{error}</p>
+          <p className="text-sm text-(--ink-soft) mb-6">{error}</p>
+          <Link
+            to="/portal"
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#1E1E24] hover:bg-[#343541] text-white text-xs font-black uppercase tracking-wider transition-all"
+          >
+            Ir al Portal de Estudiantes
+          </Link>
         </div>
       </div>
     );
@@ -173,7 +224,10 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
   const renderPinInputs = (isConfirm = false) => {
     const arr = isConfirm ? confirmPin : pin;
     return (
-      <div className="flex justify-center gap-3 mb-6">
+      <div 
+        className="flex justify-center gap-2 sm:gap-2.5 mb-6"
+        onPaste={e => handlePaste(e, isConfirm)}
+      >
         {arr.map((val, i) => (
           <input
             key={i}
@@ -181,10 +235,12 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
             type="password"
             maxLength={1}
             inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="off"
             value={val}
             onChange={e => handlePinInput(i, e.target.value, isConfirm)}
             onKeyDown={e => handleKeyDown(i, e, isConfirm)}
-            className="w-14 h-16 text-center text-2xl font-black rounded-xl border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) outline-none transition-all shadow-sm"
+            className="w-10 sm:w-12 h-14 sm:h-16 text-center text-xl sm:text-2xl font-black rounded-xl border border-(--border-soft) bg-(--background) focus:bg-white focus:border-(--primary) outline-none transition-all shadow-sm"
           />
         ))}
       </div>
@@ -197,7 +253,7 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
       <div className="relative max-w-md w-full">
         {/* Sombra rayada diagonal artesanal tipo grabado */}
         <div aria-hidden="true" className="absolute top-1.5 left-1.5 -right-2 -bottom-2 rounded-2xl pointer-events-none portal-hatched-shadow" />
-        <div className="relative z-10 bg-white p-8 md:p-10 rounded-2xl border-[2.5px] border-[#1E1E24] w-full">
+        <div className="relative z-10 bg-white p-6 sm:p-8 md:p-10 rounded-2xl border-[2.5px] border-[#1E1E24] w-full">
         
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-(--french-blue) bg-opacity-10 border-2 border-(--french-blue) flex items-center justify-center">
@@ -205,7 +261,7 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
           </div>
         </div>
 
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="text-2xl font-black text-(--ink) mb-2 uppercase tracking-tight">Portal CIELO</h1>
           <p className="text-sm font-semibold text-(--ink-soft)">
             Estudiante: <span className="text-(--ink) font-bold">{context?.nombre}</span>
@@ -221,17 +277,22 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
 
         {(step === 'setup_pin' || step === 'setup_confirm') && (
           <div className="animate-in fade-in slide-in-from-bottom-2">
-            <h2 className="text-center text-sm font-black text-(--ink) uppercase tracking-widest mb-6">
-              {step === 'setup_pin' ? 'Configura tu PIN de 4 dígitos' : 'Confirma tu PIN'}
+            <h2 className="text-center text-sm font-black text-(--ink) uppercase tracking-widest mb-1.5">
+              {step === 'setup_pin' ? 'Configura tu clave de 6 dígitos' : 'Confirma tu clave de 6 dígitos'}
             </h2>
+            <p className="text-center text-xs text-(--ink-soft) mb-6">
+              {step === 'setup_pin' 
+                ? 'Ingresa una clave numérica de exactamente 6 dígitos para proteger tu acceso.' 
+                : 'Vuelve a ingresar la clave de 6 dígitos para confirmarla.'}
+            </p>
             
             {renderPinInputs(step === 'setup_confirm')}
 
             <div className="flex gap-3">
               {step === 'setup_confirm' && (
                 <button 
-                  onClick={() => { setStep('setup_pin'); setConfirmPin(['','','','']); setError(null); }}
-                  className="w-1/3 py-3 rounded-xl border border-(--border-soft) bg-(--background) text-(--ink) font-bold text-sm"
+                  onClick={() => { setStep('setup_pin'); setConfirmPin(['','','','','','']); setError(null); }}
+                  className="w-1/3 py-3 rounded-xl border border-(--border-soft) bg-(--background) text-(--ink) font-bold text-sm cursor-pointer hover:bg-slate-100 transition-colors"
                   disabled={processing}
                 >
                   Volver
@@ -239,15 +300,15 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
               )}
               <button
                 onClick={() => {
-                  if (step === 'setup_pin' && pin.join('').length === 4) {
+                  if (step === 'setup_pin' && pin.join('').length === 6) {
                     setStep('setup_confirm');
                     setError(null);
                   } else if (step === 'setup_confirm') {
                     submitSetup();
                   }
                 }}
-                disabled={processing || (step === 'setup_pin' ? pin.join('').length < 4 : confirmPin.join('').length < 4)}
-                className="flex-1 py-3 bg-(--primary) text-white rounded-xl font-bold text-sm uppercase tracking-widest disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                disabled={processing || (step === 'setup_pin' ? pin.join('').length !== 6 || !/^\d{6}$/.test(pin.join('')) : confirmPin.join('').length !== 6 || !/^\d{6}$/.test(confirmPin.join('')))}
+                className="flex-1 py-3 bg-(--primary) text-white rounded-xl font-bold text-sm uppercase tracking-widest disabled:opacity-50 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 {processing ? <Loader2 className="animate-spin" size={16} /> : 'Continuar'}
               </button>
@@ -257,18 +318,21 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
 
         {step === 'login' && (
           <div className="animate-in fade-in slide-in-from-bottom-2">
-             <h2 className="text-center text-sm font-black text-(--ink) uppercase tracking-widest mb-6">
-              Introduce tu PIN
+            <h2 className="text-center text-sm font-black text-(--ink) uppercase tracking-widest mb-1.5">
+              Introduce tu clave de acceso
             </h2>
+            <p className="text-center text-xs text-(--ink-soft) mb-6">
+              Ingresa tu clave numérica (6 dígitos, o 4 dígitos para cuentas anteriores).
+            </p>
             
             {renderPinInputs(false)}
 
             <button
-                onClick={submitLogin}
-                disabled={processing || pin.join('').length < 4}
-                className="w-full py-3 bg-(--primary) text-white rounded-xl font-bold text-sm uppercase tracking-widest disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
-              >
-                {processing ? <Loader2 className="animate-spin" size={16} /> : 'Ingresar al Portal'}
+              onClick={submitLogin}
+              disabled={processing || (pin.join('').length !== 4 && pin.join('').length !== 6)}
+              className="w-full py-3 bg-(--primary) text-white rounded-xl font-bold text-sm uppercase tracking-widest disabled:opacity-50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              {processing ? <Loader2 className="animate-spin" size={16} /> : 'Ingresar al Portal'}
             </button>
           </div>
         )}

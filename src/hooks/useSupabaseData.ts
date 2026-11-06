@@ -88,6 +88,8 @@ const mapActividad = (a: any, cursos?: any[]): Actividad => ({
     asignatura: a.asignatura as string,
     sharedCourseId: a.shared_course_id as string || (cursos?.find(cur => cur.id === a.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === a.curso_id)?.grupo_id}` : String(a.curso_id)),
     indicador: a.indicador as string,
+    indicadores_json: a.indicadores_json,
+    indicadoresJson: Array.isArray(a.indicadores_json) ? a.indicadores_json : undefined,
     producto: a.producto as string,
     requiereProducto: a.requiere_producto as boolean,
     descripcion: a.descripcion as string | null,
@@ -236,6 +238,8 @@ let isGlobalFetching = false;
 
 // Garantiza una única carga inicial automática por sesión autenticada
 let lastInitialBootstrapUserId: string | null = null;
+const REALTIME_UNPUBLISHED_ENABLED = false;
+const diagLog = (...args: any[]) => { if (import.meta.env.DEV) console.log(...args); };
 
 // Estado reactivo global cuando la carga inicial falla y no existe caché válida para recuperar la UI
 let globalInitialLoadError = false;
@@ -310,18 +314,18 @@ export function useSupabaseData(skipInit = false) {
     };
 
     const fetchData = useCallback(async (isSilent = false) => {
-        console.log('[DEBUG LOAD] fetchData INICIO');
+        diagLog('[DEBUG LOAD] fetchData INICIO');
         if (!session?.user?.id) {
-            console.log('[DEBUG LOAD] RETURN — sesión no disponible');
+            diagLog('[DEBUG LOAD] RETURN — sesión no disponible');
             return;
         }
-        console.log('[DEBUG LOAD] sesión encontrada');
+        diagLog('[DEBUG LOAD] sesión encontrada');
         const antesFetch = useAppStore.getState().state;
-        console.log(`[DIAG][FETCH] start user=${session.user.id} ts=${new Date().toISOString()} STATE_BEFORE perfiles=${antesFetch.perfiles.length} cursos=${antesFetch.cursos.length} estudiantes=${antesFetch.estudiantes.length} actividades=${antesFetch.actividades.length} calificaciones=${antesFetch.calificaciones.length} grupos=${antesFetch.grupos.length} secuencias=${antesFetch.secuencias.length}`);
+        diagLog(`[DIAG][FETCH] start user=${session.user.id} ts=${new Date().toISOString()} STATE_BEFORE perfiles=${antesFetch.perfiles.length} cursos=${antesFetch.cursos.length} estudiantes=${antesFetch.estudiantes.length} actividades=${antesFetch.actividades.length} calificaciones=${antesFetch.calificaciones.length} grupos=${antesFetch.grupos.length} secuencias=${antesFetch.secuencias.length}`);
 
         if (isFetching.current || isGlobalFetching) {
-            console.log('[DEBUG LOAD] RETURN — fetchData ignorado: ya hay una carga en progreso');
-            console.log(`[DIAG][GUARD] fetchData-concurrente-omitido user=${session.user.id} ts=${new Date().toISOString()}`);
+            diagLog('[DEBUG LOAD] RETURN — fetchData ignorado: ya hay una carga en progreso');
+            diagLog(`[DIAG][GUARD] fetchData-concurrente-omitido user=${session.user.id} ts=${new Date().toISOString()}`);
             return;
         }
         isFetching.current = true;
@@ -335,7 +339,7 @@ export function useSupabaseData(skipInit = false) {
         ++fetchDataGeneration;
         console.log('[PLANIFICACION] inicio carga global por contexto (useSupabaseData)');
         try {
-            console.log('[DEBUG LOAD] PASO 1: fetch perfil propio (sin JOIN) INICIO');
+            diagLog('[DEBUG LOAD] PASO 1: fetch perfil propio (sin JOIN) INICIO');
             const startPerfil = performance.now();
             
             const { data: miPerfil, error: miPerfilError } = await supabase
@@ -363,14 +367,14 @@ export function useSupabaseData(skipInit = false) {
             }
             
             const userCentroId = (miPerfil as any).centro_id || null;
-            console.log('[DEBUG LOAD] userCentroId:', userCentroId);
+            diagLog('[DEBUG LOAD] userCentroId:', userCentroId);
 
             // Poblar/renovar el caché persistente del perfil del usuario autenticado
             // con los cinco campos cacheados, tomados de la fuente de verdad (Query 1).
             // Esta consulta NO se omite: es la que resuelve `userCentroId` (aislamiento).
             savePerfilCacheFromRow(session.user.id, miPerfil as Record<string, unknown>);
 
-            console.log('[DEBUG LOAD] consultando mis cursos INICIO');
+            diagLog('[DEBUG LOAD] consultando mis cursos INICIO');
             const startCursos = performance.now();
 
             // Caché persistente de cursos: si existe una entrada válida para este
@@ -380,7 +384,7 @@ export function useSupabaseData(skipInit = false) {
             // en Supabase y re-sincroniza Zustand + caché.
             const cachedCursos = !isSilent ? getValidCursoCache(session.user.id, userCentroId) : null;
 
-            console.log(`[DIAG][CACHECURSOS] ${cachedCursos ? 'hit' : 'miss'} user=${session.user.id} centro=${userCentroId ?? 'sin-centro'} isSilent=${isSilent} cursos=${cachedCursos?.cursos.length ?? 0} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][CACHECURSOS] ${cachedCursos ? 'hit' : 'miss'} user=${session.user.id} centro=${userCentroId ?? 'sin-centro'} isSilent=${isSilent} cursos=${cachedCursos?.cursos.length ?? 0} ts=${new Date().toISOString()}`);
 
             let misCursosIds: number[] = [];
             let misCursosDocentePrefetched: { data: any; error: any } | null = null;
@@ -423,7 +427,7 @@ export function useSupabaseData(skipInit = false) {
                 ? supabase.from('centros').select('*').eq('id', userCentroId)
                 : null;
 
-            console.log('[DEBUG LOAD] Phase 1 INICIO');
+            diagLog('[DEBUG LOAD] Phase 1 INICIO');
             const startPhase1 = performance.now();
             const phase1 = await Promise.all([
                 timeQuery('perfiles', perfilesQuery),
@@ -438,7 +442,7 @@ export function useSupabaseData(skipInit = false) {
 
             // Verificación de error en consulta de perfiles de centro (Fase 1)
             if (false) {
-                console.log('[DEBUG LOAD] Fase 1 perfiles fallback a miPerfil');
+                diagLog('[DEBUG LOAD] Fase 1 perfiles fallback a miPerfil');
                 console.warn('[Supabase fetchData] Perfiles de centro no disponible.');
                 return;
             }
@@ -562,7 +566,7 @@ export function useSupabaseData(skipInit = false) {
                 };
             })();
 
-            console.log('[DEBUG LOAD] Actualizando estado global de Zustand (Zustand setState) INICIO');
+            diagLog('[DEBUG LOAD] Actualizando estado global de Zustand (Zustand setState) INICIO');
             const startZustand = performance.now();
 
             // La carga de registros anecdóticos e imágenes se difiere a loadDashboardData
@@ -652,7 +656,7 @@ export function useSupabaseData(skipInit = false) {
             });
             console.log(`[DEBUG LOAD] Actualizando estado global de Zustand (Zustand setState) FIN: ${Math.round(performance.now() - startZustand)}ms`);
             const despuesFetch = useAppStore.getState().state;
-            console.log(`[DIAG][FETCH] fin user=${session.user.id} ts=${new Date().toISOString()} STATE_AFTER perfiles=${despuesFetch.perfiles.length} cursos=${despuesFetch.cursos.length} estudiantes=${despuesFetch.estudiantes.length} actividades=${despuesFetch.actividades.length} calificaciones=${despuesFetch.calificaciones.length} grupos=${despuesFetch.grupos.length} secuencias=${despuesFetch.secuencias.length}`);
+            diagLog(`[DIAG][FETCH] fin user=${session.user.id} ts=${new Date().toISOString()} STATE_AFTER perfiles=${despuesFetch.perfiles.length} cursos=${despuesFetch.cursos.length} estudiantes=${despuesFetch.estudiantes.length} actividades=${despuesFetch.actividades.length} calificaciones=${despuesFetch.calificaciones.length} grupos=${despuesFetch.grupos.length} secuencias=${despuesFetch.secuencias.length}`);
 
             // Si fue un MISS (o refresco silencioso), guardar el nuevo conjunto filtrado
             // de cursos en el caché persistente, tomándolo de la fuente de verdad (Zustand).
@@ -677,12 +681,12 @@ export function useSupabaseData(skipInit = false) {
                 }
             }
         } finally {
-            console.log('[DEBUG LOAD] FINALLY EJECUTADO');
+            diagLog('[DEBUG LOAD] FINALLY EJECUTADO');
             isFetching.current = false;
             isGlobalFetching = false;
             console.log(`[DEBUG LOAD] setLoading(false) - isSilent: ${isSilent}`);
             if (!isSilent) setLoading(false);
-            console.log('[DEBUG LOAD] fetchData TERMINÓ');
+            diagLog('[DEBUG LOAD] fetchData TERMINÓ');
         }
     }, [session]);
 
@@ -718,7 +722,7 @@ export function useSupabaseData(skipInit = false) {
             const mapped = mapCalificacion(newRow, stateCursos);
             upsertAcademicRow('calificaciones', mapped, mapped.cursoId, mapped.periodo ?? null, false);
         }
-        console.log(`[DIAG][REALTIME] calificaciones eventType=${eventType} cursoId=${newRow?.curso_id ?? oldRow?.curso_id} periodo=${newRow?.periodo ?? oldRow?.periodo ?? '??'} actividadId=${newRow?.actividad_id ?? oldRow?.actividad_id} estudianteId=${newRow?.estudiante_id ?? oldRow?.estudiante_id} calificacionesState=${useAppStore.getState().state.calificaciones.length} ts=${new Date().toISOString()}`);
+        diagLog(`[DIAG][REALTIME] calificaciones eventType=${eventType} cursoId=${newRow?.curso_id ?? oldRow?.curso_id} periodo=${newRow?.periodo ?? oldRow?.periodo ?? '??'} actividadId=${newRow?.actividad_id ?? oldRow?.actividad_id} estudianteId=${newRow?.estudiante_id ?? oldRow?.estudiante_id} calificacionesState=${useAppStore.getState().state.calificaciones.length} ts=${new Date().toISOString()}`);
     }, [setState]);
 
     const handleCursoDetalleRealtime = useCallback((payload: any) => {
@@ -772,7 +776,7 @@ export function useSupabaseData(skipInit = false) {
             const mapped = mapActividad(newRow, stateCursos);
             upsertAcademicRow('actividades', mapped, mapped.cursoId, mapped.periodo ?? null, false);
         }
-        console.log(`[DIAG][REALTIME] actividades eventType=${eventType} cursoId=${newRow?.curso_id ?? oldRow?.curso_id} periodo=${newRow?.periodo ?? oldRow?.periodo ?? '??'} actividadId=${newRow?.id ?? oldRow?.id} actividadesState=${useAppStore.getState().state.actividades.length} ts=${new Date().toISOString()}`);
+        diagLog(`[DIAG][REALTIME] actividades eventType=${eventType} cursoId=${newRow?.curso_id ?? oldRow?.curso_id} periodo=${newRow?.periodo ?? oldRow?.periodo ?? '??'} actividadId=${newRow?.id ?? oldRow?.id} actividadesState=${useAppStore.getState().state.actividades.length} ts=${new Date().toISOString()}`);
     }, [setState]);
 
     const handleEstudiantesRealtime = useCallback((payload: any) => {
@@ -900,7 +904,7 @@ export function useSupabaseData(skipInit = false) {
 
     // 3. Setup user-scoped global Realtime subscription (notificaciones + anecdóticos)
     useEffect(() => {
-        if (skipInit || !session?.user?.id) return;
+        if (skipInit || !session?.user?.id || !REALTIME_UNPUBLISHED_ENABLED) return;
 
         const userGlobalChannelName = `user-global-${session.user.id}`;
         console.log(`[REALTIME] CREATE canal=${userGlobalChannelName}`);
@@ -963,7 +967,7 @@ export function useSupabaseData(skipInit = false) {
 
     // 4. Setup course-specific Realtime subscription (only active if selectedCursoId is set)
     useEffect(() => {
-        if (skipInit || !selectedCursoId) return;
+        if (skipInit || !selectedCursoId || !REALTIME_UNPUBLISHED_ENABLED) return;
 
         const courseChannelName = `curso-context-${selectedCursoId}`;
         console.log(`[REALTIME] CREATE canal=${courseChannelName} curso=${selectedCursoId}`);
@@ -983,19 +987,19 @@ export function useSupabaseData(skipInit = false) {
     }, [skipInit, selectedCursoId, handleCalificacionRealtime, handleCursoDetalleRealtime, handleActividadesRealtime, handleEstudiantesRealtime, handleRecuperacionRealtime, handleRecuperacionCotejoRealtime]);
 
     const loadDashboardData = useCallback(async () => {
-        if (!session?.user?.id) { console.log(`[DIAG][DASH] guard sin-sesion ts=${new Date().toISOString()}`); return; }
-        if (loadedModules.includes('dashboard')) { console.log(`[DIAG][DASH] guard ya-cargado ts=${new Date().toISOString()}`); return; }
+        if (!session?.user?.id) { diagLog(`[DIAG][DASH] guard sin-sesion ts=${new Date().toISOString()}`); return; }
+        if (loadedModules.includes('dashboard')) { diagLog(`[DIAG][DASH] guard ya-cargado ts=${new Date().toISOString()}`); return; }
         if (!loadedModules.includes('core')) {
-            console.log('[DIAG][DASH] omitiendo loadDashboardData porque core no está cargado');
+            diagLog('[DIAG][DASH] omitiendo loadDashboardData porque core no está cargado');
             return;
         }
         if (isDashboardFetching.current) {
-            console.log('[DIAG][DASH] omitiendo loadDashboardData porque ya hay una carga en progreso');
+            diagLog('[DIAG][DASH] omitiendo loadDashboardData porque ya hay una carga en progreso');
             return;
         }
         isDashboardFetching.current = true;
         console.log('[PLANIFICACION] lazy loading Dashboard data');
-        console.log(`[DIAG][DASH] start user=${session.user.id} ts=${new Date().toISOString()}`);
+        diagLog(`[DIAG][DASH] start user=${session.user.id} ts=${new Date().toISOString()}`);
         setLoading(true);
         try {
             const currentProfile = state.perfiles.find(p => p.userId === session.user.id);
@@ -1004,7 +1008,7 @@ export function useSupabaseData(skipInit = false) {
 
             if (!currentProfile) {
                 console.log('[PLANIFICACION] loadDashboardData: perfiles no disponibles aún, omitiendo carga (sin marcar loaded)');
-                console.log(`[DIAG][GUARD] dashboard-perfiles-no-disponibles user=${session.user.id} ts=${new Date().toISOString()}`);
+                diagLog(`[DIAG][GUARD] dashboard-perfiles-no-disponibles user=${session.user.id} ts=${new Date().toISOString()}`);
                 setLoading(false);
                 return;
             }
@@ -1124,8 +1128,8 @@ export function useSupabaseData(skipInit = false) {
             }
 
             const stAntes = useAppStore.getState().state;
-            console.log(`[DIAG][DASH] SUPABASE_FETCH user=${session.user.id} isCentroAdmin=${isCentroAdmin} cursosParticipa=${cursosParticipaIds.length} estudiantes=${estudiantes.length} actividades=${actividades.length} calificaciones=${calificaciones.length} incidencias=${incidencias.length} grupos=${grupos.length} ts=${new Date().toISOString()}`);
-            console.log(`[DIAG][DASH] STATE_BEFORE estudiantes=${stAntes.estudiantes.length} actividades=${stAntes.actividades.length} calificaciones=${stAntes.calificaciones.length} grupos=${stAntes.grupos.length} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][DASH] SUPABASE_FETCH user=${session.user.id} isCentroAdmin=${isCentroAdmin} cursosParticipa=${cursosParticipaIds.length} estudiantes=${estudiantes.length} actividades=${actividades.length} calificaciones=${calificaciones.length} incidencias=${incidencias.length} grupos=${grupos.length} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][DASH] STATE_BEFORE estudiantes=${stAntes.estudiantes.length} actividades=${stAntes.actividades.length} calificaciones=${stAntes.calificaciones.length} grupos=${stAntes.grupos.length} ts=${new Date().toISOString()}`);
 
             setState(prev => {
                 const mappedEst = estudiantes.map(e => mapEstudiante(e));
@@ -1235,9 +1239,9 @@ export function useSupabaseData(skipInit = false) {
                 };
             });
             const st2 = useAppStore.getState().state;
-            console.log(`[DIAG][DASH] STATE_AFTER estudiantes=${st2.estudiantes.length} actividades=${st2.actividades.length} calificaciones=${st2.calificaciones.length} grupos=${st2.grupos.length} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][DASH] STATE_AFTER estudiantes=${st2.estudiantes.length} actividades=${st2.actividades.length} calificaciones=${st2.calificaciones.length} grupos=${st2.grupos.length} ts=${new Date().toISOString()}`);
             addLoadedModule('dashboard');
-            console.log(`[DIAG][DASH] end ok user=${session.user.id} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][DASH] end ok user=${session.user.id} ts=${new Date().toISOString()}`);
         } catch (error) {
             console.error('Error loading Dashboard data:', error);
         } finally {
@@ -1248,7 +1252,7 @@ export function useSupabaseData(skipInit = false) {
 
     const loadCursoData = useCallback(async (cursoId: number, periodo?: string) => {
         if (!session?.user?.id || !cursoId) {
-            console.log(`[DIAG][CURSO] guard sin-sesion-o-curso cursoId=${cursoId ?? 'sin-curso'} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][CURSO] guard sin-sesion-o-curso cursoId=${cursoId ?? 'sin-curso'} ts=${new Date().toISOString()}`);
             return;
         }
         const stateCursos = useAppStore.getState().state.cursos;
@@ -1272,7 +1276,7 @@ export function useSupabaseData(skipInit = false) {
 
         const fetchPromise = (async () => {
             const antesCurso = useAppStore.getState().state;
-            console.log(`[DIAG][CURSO] STATE_BEFORE cursoId=${cursoId} actividadesCurso=${antesCurso.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesCurso.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesCurso.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][CURSO] STATE_BEFORE cursoId=${cursoId} actividadesCurso=${antesCurso.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesCurso.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesCurso.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
 
         // Paso 7 — caché académico en memoria (actividades + calificaciones) por
         // curso + período. Los períodos son conjuntos independientes para efectos de
@@ -1295,11 +1299,11 @@ export function useSupabaseData(skipInit = false) {
         if (loadedCursos.includes(cursoId)) {
             if (faltantesAct.length === 0 && faltantesCal.length === 0) {
                 console.log(`[PLANIFICACION] Curso ${cursoId} completo en caché académico por período (sin consultas de actividades/calificaciones)`);
-                console.log(`[DIAG][CURSO] skip-cache-completo cursoId=${cursoId} sin-consultas ts=${new Date().toISOString()}`);
+                diagLog(`[DIAG][CURSO] skip-cache-completo cursoId=${cursoId} sin-consultas ts=${new Date().toISOString()}`);
                 return;
             }
             console.log(`[PLANIFICACION] Reconciliación académica del curso ${cursoId} (períodos faltantes: ${faltantesCal.join(',')}${faltaNullActividades ? ' + sin-período' : ''})`);
-            console.log(`[DIAG][CURSO] reconciliacion cursoId=${cursoId} faltantesCal=[${faltantesCal.join(',')}] faltaNullActividades=${faltaNullActividades} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][CURSO] reconciliacion cursoId=${cursoId} faltantesCal=[${faltantesCal.join(',')}] faltaNullActividades=${faltaNullActividades} ts=${new Date().toISOString()}`);
         } else {
             console.log(`[PLANIFICACION] lazy loading Curso data for course ${cursoId}`);
         }
@@ -1363,9 +1367,9 @@ export function useSupabaseData(skipInit = false) {
             const mappedAct = actividades.map((a: Record<string, unknown>) => mapActividad(a, stateCursos));
             const mappedCal = calificaciones.map((c: Record<string, unknown>) => mapCalificacion(c, stateCursos));
 
-            console.log(`[DIAG][CURSO] SUPABASE_FETCH cursoId=${cursoId} userId=${userId} centroId=${centroId ?? 'sin-centro'} periodosActConsultados=[${faltantesAct.join(',')}] periodosCalConsultados=[${faltantesCal.join(',')}] estudiantesRecibidos=${estudiantes.length} actividadesRecibidas=${actividades.length} calificacionesRecibidas=${calificaciones.length} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][CURSO] SUPABASE_FETCH cursoId=${cursoId} userId=${userId} centroId=${centroId ?? 'sin-centro'} periodosActConsultados=[${faltantesAct.join(',')}] periodosCalConsultados=[${faltantesCal.join(',')}] estudiantesRecibidos=${estudiantes.length} actividadesRecibidas=${actividades.length} calificacionesRecibidas=${calificaciones.length} ts=${new Date().toISOString()}`);
             const antesMerge = useAppStore.getState().state;
-            console.log(`[DIAG][CURSO] STATE_BEFORE_MERGE cursoId=${cursoId} actividadesCurso=${antesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][CURSO] STATE_BEFORE_MERGE cursoId=${cursoId} actividadesCurso=${antesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
 
             setState(prev => {
                 const mappedEst = (!estQueryFailed && results[0]?.data) ? results[0].data.map((e: any) => mapEstudiante(e)) : null;
@@ -1417,7 +1421,7 @@ export function useSupabaseData(skipInit = false) {
             });
             addLoadedCurso(cursoId);
             const despuesMerge = useAppStore.getState().state;
-            console.log(`[DIAG][CURSO] STATE_AFTER_MERGE cursoId=${cursoId} actividadesCurso=${despuesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${despuesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${despuesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][CURSO] STATE_AFTER_MERGE cursoId=${cursoId} actividadesCurso=${despuesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${despuesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${despuesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
 
             // Guardar slices por PERÍODO consultado (SOLO si no hubo fallo de consulta).
             if (!actQueryFailed && !calQueryFailed) {
@@ -1455,56 +1459,14 @@ export function useSupabaseData(skipInit = false) {
         } finally {
             delete cursoPromises[cursoId];
             if (!skipInit) setLoading(false);
-            console.log(`[DIAG][CURSO] end cursoId=${cursoId} ts=${new Date().toISOString()}`);
+            diagLog(`[DIAG][CURSO] end cursoId=${cursoId} ts=${new Date().toISOString()}`);
         }
     }, [session, loadedCursos, addLoadedCurso, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
 
     const loadComunidadData = useCallback(async () => {
-        if (!session?.user?.id) return;
-        if (loadedModules.includes('comunidad')) return;
-        console.log('[PLANIFICACION] lazy loading Comunidad data');
-        setLoading(true);
-        try {
-            const results = await Promise.all([
-                supabase.from('posts').select('*, profiles:perfiles(nombre_docente, avatar_url, bio)').order('id', { ascending: false }).limit(20),
-                supabase.from('historial_colaboradores').select('*').eq('usuario_id', session.user.id)
-            ]);
-
-            const posts = results[0].data || [];
-            
-            setState(prev => {
-                const mappedPosts = posts.map((p: any): Post => {
-                    const prof = (Array.isArray(p.profiles) ? p.profiles[0] : p.profiles) as Record<string, unknown> | undefined;
-                    return {
-                        id: p.id as number,
-                        autor: prof?.nombre_docente as string || p.autor as string || 'Docente',
-                        cargo: p.cargo as string || 'Docente',
-                        avatarUrl: prof?.avatar_url as string || '',
-                        contenido: p.contenido as string,
-                        tiempo: p.tiempo as string || 'Hace un momento',
-                        fechaPublicacion: p.fecha_publicacion as string,
-                        tipo: p.tipo as 'rubrica' | 'secuencia' | 'general' | 'cotejo',
-                        asignatura: p.asignatura as string,
-                        userId: p.user_id as string,
-                        userBio: prof?.bio as string || '',
-                        expiresAt: p.expires_at as string,
-                        recursoDatos: p.recurso_datos || {},
-                        recursoId: p.recurso_id as number,
-                    };
-                });
-
-                return {
-                    ...prev,
-                    posts: mappedPosts
-                };
-            });
-            addLoadedModule('comunidad');
-        } catch (error) {
-            console.error('Error loading Comunidad data:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [session, loadedModules, addLoadedModule, setState, setLoading]);
+        // Código muerto limpiado: la comunidad ahora se carga exclusivamente vía useCommunityData
+        return;
+    }, []);
 
     const loadPlanificacionData = useCallback(async () => {
         if (!session?.user?.id) return;
@@ -1518,7 +1480,7 @@ export function useSupabaseData(skipInit = false) {
 
             if (!currentProfile) {
                 console.log('[PLANIFICACION] loadPlanificacionData: perfiles no disponibles aún, omitiendo carga (sin marcar loaded)');
-                console.log(`[DIAG][GUARD] planificacion-perfiles-no-disponibles user=${session.user.id} ts=${new Date().toISOString()}`);
+                diagLog(`[DIAG][GUARD] planificacion-perfiles-no-disponibles user=${session.user.id} ts=${new Date().toISOString()}`);
                 setLoading(false);
                 return;
             }
@@ -1640,36 +1602,10 @@ export function useSupabaseData(skipInit = false) {
         }
     }, [session, loadedModules, addLoadedModule, setState, setLoading]);
 
-    const syncUpsert = useCallback(async (table: string, data: Record<string, unknown> | Record<string, unknown>[]) => {
-        if (!session?.user?.id) return;
-
-        const toSnakeCase = (obj: Record<string, unknown>) => {
-            const snakeObj: Record<string, unknown> = {};
-            for (const key in obj) {
-                const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-                snakeObj[snakeKey] = obj[key];
-            }
-            return snakeObj;
-        };
-
-        const dbData = Array.isArray(data)
-            ? (data as Record<string, unknown>[]).map(toSnakeCase)
-            : toSnakeCase(data as Record<string, unknown>);
-
-        if (Array.isArray(dbData)) {
-            dbData.forEach(item => (item as Record<string, unknown>).user_id = session.user.id);
-        } else {
-            (dbData as Record<string, unknown>).user_id = session.user.id;
-        }
-
-        if (isPerfilRecoveredFromCache(session.user.id)) {
-            console.warn(`[Supabase sync] Escritura en '${table}' bloqueada: el perfil actual proviene de caché de recuperación sin verificación activa en Supabase.`);
-            useAppStore.getState().setGenericToast({ message: 'Conexión en recuperación: sincroniza antes de guardar cambios.', type: 'error' });
-            return;
-        }
-        const { error } = await supabase.from(table).upsert(dbData);
-        if (error) console.error('Error syncing upsert to ' + table + ':', error);
-    }, [session]);
+    const syncUpsert = useCallback(async () => {
+        // Código muerto limpiado: reemplazado por mutaciones atómicas dedicadas en hooks de acciones
+        return;
+    }, []);
 
     const syncDelete = useCallback(async (table: string, idOrFilter: number | string | Record<string, unknown>) => {
         if (!session?.user?.id) return;
@@ -1705,7 +1641,7 @@ export function useSupabaseData(skipInit = false) {
         if (!session?.user?.id) return;
         if (loadedModules.includes('calendario')) return;
         if (!loadedModules.includes('core')) {
-            console.log('[DIAG][CALENDARIO] omitiendo porque core no está cargado');
+            diagLog('[DIAG][CALENDARIO] omitiendo porque core no está cargado');
             return;
         }
         if (isCalendarioFetching.current) return;
@@ -1804,7 +1740,7 @@ export function useSupabaseData(skipInit = false) {
         if (!session?.user?.id) return;
         if (loadedModules.includes('actividades')) return;
         if (!loadedModules.includes('core')) {
-            console.log('[DIAG][ACTIVIDADES] omitiendo porque core no está cargado');
+            diagLog('[DIAG][ACTIVIDADES] omitiendo porque core no está cargado');
             return;
         }
         if (isActividadesFetching.current) return;
@@ -1864,7 +1800,7 @@ export function useSupabaseData(skipInit = false) {
         if (!session?.user?.id) return;
         if (loadedModules.includes('incidencias')) return;
         if (!loadedModules.includes('core')) {
-            console.log('[DIAG][INCIDENCIAS] omitiendo porque core no está cargado');
+            diagLog('[DIAG][INCIDENCIAS] omitiendo porque core no está cargado');
             return;
         }
         if (isIncidenciasFetching.current) return;

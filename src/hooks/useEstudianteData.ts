@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { AppState, Skill, CursoDocente } from '../types';
+import { useAppStore } from '../store/appStore';
 
 interface Params {
     state: AppState;
@@ -9,8 +10,9 @@ interface Params {
 }
 
 export function useEstudianteData({ state, selectedId, currentCourseRole, currentUserId }: Params) {
-    const [periodo, setPeriodo] = useState<string>('P1');
-    const [activeTab, setActiveTab] = useState<'Perfil' | 'Evaluación'>('Perfil');
+    const periodo = useAppStore(s => s.selectedPeriodo) || 'P2';
+    const setPeriodo = useAppStore(s => s.setSelectedPeriodo);
+
     const [habilidades, setHabilidades] = useState<Record<number, Skill[]>>({});
 
     const est = state.estudiantes.find(e => e.id === selectedId);
@@ -106,8 +108,6 @@ export function useEstudianteData({ state, selectedId, currentCourseRole, curren
     return {
         periodo,
         setPeriodo,
-        activeTab,
-        setActiveTab,
         est,
         curso,
         studentHabilidades,

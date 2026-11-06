@@ -78,7 +78,7 @@ export function usePortal(): PortalContext {
       token: '',
       sessionToken: null,
       asignaturas: [],
-      selectedPeriodo: 'P1',
+      selectedPeriodo: 'P2',
       setSelectedPeriodo: () => {},
       selectedAsignatura: null,
       setSelectedAsignatura: () => {},

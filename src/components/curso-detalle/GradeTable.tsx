@@ -303,6 +303,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                     if (targetActIndex >= currentActs.length) break; // Excede las actividades disponibles
 
                     const targetAct = currentActs[targetActIndex];
+                    if (!targetAct || !targetAct.id || targetAct.id <= 0) continue;
                     if (targetAct.nombre === 'Recuperación') continue;
 
                     const cellRaw = cells[c]?.trim() ?? '';
@@ -674,6 +675,15 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                 );
                                             }
                                             const act = col.act;
+                                            const isActValid = Boolean(act && typeof act.id === 'number' && act.id > 0);
+                                            if (!isActValid) {
+                                                // Actividad en proceso de creación o sin ID confirmado por Supabase
+                                                return (
+                                                    <div key={col.id} className="px-3 py-3 border-r border-(--border-soft) flex items-center justify-center box-border bg-base-creme/40" style={style}>
+                                                        <span className="text-xs font-bold text-[#5F665E]/30" title="Actividad en confirmación con el servidor...">—</span>
+                                                    </div>
+                                                );
+                                            }
                                             const isProductoFinal = !!act.isProductoFinal;
                                             const hasCustomPFPoints = isProductoFinal && hasProductoFinalCustomPoints(act, bcSel);
                                             const maxPoints = hasCustomPFPoints ? getProductoFinalMaxPoints(act, actividades, bcSel) : 100;

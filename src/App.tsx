@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
+import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 import Layout from './components/Layout';
 import Auth from './screens/Auth';
@@ -30,6 +30,7 @@ import { useNotificationActions } from './hooks/useNotificationActions';
 import { useIncidenciaActions } from './hooks/useIncidenciaActions';
 import { useSecuenciaActions } from './hooks/useSecuenciaActions';
 import PortalApp from './screens/Portal/PortalApp';
+import PortalGeneral from './screens/Portal/PortalGeneral';
 import { usePostActions } from './hooks/usePostActions';
 import { useTareaActions } from './hooks/useTareaActions';
 import { useCentroActions } from './hooks/useCentroActions';
@@ -277,7 +278,7 @@ export default function App() {
     return <Landing />;
   }
 
-  if (PORTAL_FAMILIA_ENABLED && pathname.startsWith('/portal/')) {
+  if (PORTAL_FAMILIA_ENABLED && (pathname === '/portal' || pathname.startsWith('/portal/'))) {
     // El Portal solia vivir dentro de <AppRoutes>, que ya venia envuelto en
     // <ErrorBoundary>. Al sacarlo de ahi se perdio la red: cualquier error de
     // render en una pantalla del Portal tumbaba la app entera en blanco. El
@@ -301,7 +302,9 @@ export default function App() {
         }
       >
         <Routes>
+          <Route path="/portal" element={<PortalGeneral />} />
           <Route path="/portal/:token/*" element={<PortalApp />} />
+          <Route path="*" element={<Navigate to="/portal" replace />} />
         </Routes>
       </ErrorBoundary>
     );

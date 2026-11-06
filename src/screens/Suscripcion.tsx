@@ -286,7 +286,12 @@ function SuscripcionContent() {
               </p>
             )}
             <div className="mt-4 flex gap-3">
-              <CieloPill as="button" variant="primary" className="px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#FAFBF9] shadow-sm cursor-pointer text-xs uppercase tracking-widest">
+              <CieloPill
+                as="button"
+                variant="primary"
+                onClick={() => navigate('/ajustes?tab=plan')}
+                className="px-4 bg-white border border-dashed border-[rgba(120,135,110,0.45)] text-zinc-700 hover:bg-[#FAFBF9] shadow-sm cursor-pointer text-xs uppercase tracking-widest"
+              >
                 Gestionar Suscripción
               </CieloPill>
             </div>

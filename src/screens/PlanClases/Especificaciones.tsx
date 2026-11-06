@@ -76,7 +76,7 @@ export default function EspecificacionesCurriculares() {
   const [pantalla, setPantalla] = useState<'lista' | 'recorrido' | 'resumen'>('lista');
   const [combo, setCombo] = useState<CombinacionCurricular | null>(null);
   const [paso, setPaso] = useState<number>(1);
-  const [periodo, setPeriodo] = useState<string>('P1');
+  const [periodo, setPeriodo] = useState<string>(() => useAppStore.getState().selectedPeriodo || 'P2');
   const [competenciasCatalogo, setCompetenciasCatalogo] = useState<FilaCompetenciaEspecifica[]>([]);
   const [ceSeleccionadas, setCeSeleccionadas] = useState<Set<string>>(new Set());
   const [contenidosSel, setContenidosSel] = useState<Set<string>>(new Set());
@@ -438,7 +438,7 @@ export default function EspecificacionesCurriculares() {
         guardada?.periodo_actual &&
         (PERIODOS_ACADEMICOS as readonly string[]).includes(guardada.periodo_actual)
           ? guardada.periodo_actual
-          : 'P1';
+          : 'P2';
 
       setCombo(c);
       setCompetenciasCatalogo([]);
@@ -476,8 +476,8 @@ export default function EspecificacionesCurriculares() {
     setContenidosDetalleSel({});
     setContenidosExpandidos(new Set());
     setIndicadoresSel(new Set());
-    setPeriodo('P1');
-    periodoRef.current = 'P1';
+    setPeriodo('P2');
+    periodoRef.current = 'P2';
     setPeriodoCargado(null);
     setCargandoCatalogo(true);
     setCargandoPeriodo(false);

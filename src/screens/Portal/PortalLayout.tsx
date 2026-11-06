@@ -44,7 +44,7 @@ export default function PortalLayout() {
   const token = location.pathname.split('/')[2];
   const [sessionToken, setSessionToken] = useState<string | null>(null);
 
-  const [selectedPeriodo, setSelectedPeriodo] = useState<Periodo>('P1');
+  const [selectedPeriodo, setSelectedPeriodo] = useState<Periodo>('P2');
   const [asignaturas, setAsignaturas] = useState<AsignaturaPublicada[]>([]);
   const [estudianteContext, setEstudianteContext] = useState<EstudianteContextInfo | null>(null);
   const [portalConfig, setPortalConfig] = useState<PortalConfig | null>(null);
@@ -91,18 +91,18 @@ export default function PortalLayout() {
     }
   }, [location.search, location.pathname, selectedAsignatura, token]);
 
-  // Cargar contexto del estudiante y catálogo de asignaturas
+  // 1. Cargar contexto del estudiante (solo una vez por sesión o si cambia el token)
   useEffect(() => {
     if (!sessionToken) return;
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+    let isMounted = true;
+    const fetchContext = async () => {
       try {
-        // 1. Obtener contexto del estudiante (nombre, grado, sección, centro)
         const { data: contextData } = await supabase.rpc('portal_get_context', {
           p_session_token: sessionToken
         });
+
+        if (!isMounted) return;
 
         if (contextData && contextData.valid) {
           setEstudianteContext({
@@ -115,23 +115,43 @@ export default function PortalLayout() {
           });
         }
 
-          if (contextData.portal_config) {
-            setPortalConfig(contextData.portal_config);
-            if (
-              Array.isArray(contextData.portal_config.periodos_visibles) &&
-              contextData.portal_config.periodos_visibles.length > 0 &&
-              !contextData.portal_config.periodos_visibles.includes(selectedPeriodo)
-            ) {
-              setSelectedPeriodo(contextData.portal_config.periodos_visibles[0]);
-            }
+        if (contextData?.portal_config) {
+          setPortalConfig(contextData.portal_config);
+          if (
+            Array.isArray(contextData.portal_config.periodos_visibles) &&
+            contextData.portal_config.periodos_visibles.length > 0 &&
+            !contextData.portal_config.periodos_visibles.includes(selectedPeriodo)
+          ) {
+            setSelectedPeriodo(contextData.portal_config.periodos_visibles[0]);
           }
+        }
+      } catch (err: any) {
+        console.error('Error al cargar contexto del portal:', err);
+      }
+    };
 
-        // 2. Obtener estado de las asignaturas
+    fetchContext();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionToken]);
+
+  // 2. Cargar asignaturas y estado según el período seleccionado (evita re-consultar contexto)
+  useEffect(() => {
+    if (!sessionToken) return;
+
+    let isMounted = true;
+    const fetchAsignaturas = async () => {
+      setLoading(true);
+      setError(null);
+      try {
         const { data: asigData, error: rpcError } = await supabase.rpc('portal_get_asignaturas', {
           p_session_token: sessionToken,
           p_periodo: selectedPeriodo
         });
 
+        if (!isMounted) return;
         if (rpcError) throw rpcError;
         if (asigData && asigData.error) throw new Error(asigData.error);
 
@@ -187,6 +207,7 @@ export default function PortalLayout() {
 
         setAsignaturas(mergedList);
       } catch (err: any) {
+        if (!isMounted) return;
         console.error('Error al cargar portal:', err);
         setError(err.message || 'Error al cargar las asignaturas');
         if (err.message === 'Sesión inválida') {
@@ -194,11 +215,17 @@ export default function PortalLayout() {
           navigate(`/portal/${token}`);
         }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchData();
+    fetchAsignaturas();
+
+    return () => {
+      isMounted = false;
+    };
   }, [sessionToken, selectedPeriodo, token, navigate]);
 
   // Manejar selección de asignatura

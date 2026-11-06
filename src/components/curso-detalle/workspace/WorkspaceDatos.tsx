@@ -81,6 +81,25 @@ export interface WorkspaceDatosProps {
 // Ventana "Datos de la actividad" (referencia: ventana única con fecha /
 // indicador / producto). Los campos editables escriben SOLO en la actividad real
 // a través de las funciones existentes (updateActividad).
+const extraerInfoCurricular = (activity: Actividad) => {
+    let items: any[] = [];
+    if (Array.isArray(activity.indicadores_json)) {
+        items = activity.indicadores_json;
+    } else if (typeof activity.indicadores_json === 'string') {
+        try { items = JSON.parse(activity.indicadores_json); } catch {}
+    } else if (Array.isArray(activity.indicadoresJson)) {
+        items = activity.indicadoresJson;
+    }
+    const primer = items[0];
+    if (!primer || typeof primer !== 'object') return null;
+    if (!primer.descripcion && !primer.fragmento && !primer.codigo) return null;
+    return {
+        codigo: (primer.codigo as string) || null,
+        descripcion: (primer.descripcion || primer.texto as string) || null,
+        fragmento: (primer.fragmento as string) || null,
+    };
+};
+
 const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
     activity,
     position,
@@ -96,6 +115,8 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
             onUpdateActividad(activity.id, patch);
         }
     };
+
+    const infoCurricular = extraerInfoCurricular(activity);
 
     return (
         <FloatingWorkWindow
@@ -134,6 +155,28 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
                     placeholder="¿Qué debe demostrar el estudiante al finalizar?"
                     onBlur={(e) => commit({ indicador: e.currentTarget.value }, e.currentTarget.value, activity.indicador)}
                 />
+                {infoCurricular && (
+                    <div className="mt-1.5 p-2 bg-[#FAF7F2] border border-black/10 rounded-lg text-xs space-y-1">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase">
+                            {infoCurricular.codigo && (
+                                <span className="px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded text-[9px] font-black">
+                                    {infoCurricular.codigo}
+                                </span>
+                            )}
+                            <span>Currículo oficial</span>
+                        </div>
+                        {infoCurricular.descripcion && (
+                            <p className="text-[11px] text-[#5F665E] leading-snug line-clamp-2" title={infoCurricular.descripcion}>
+                                {infoCurricular.descripcion}
+                            </p>
+                        )}
+                        {infoCurricular.fragmento && (
+                            <div className="text-[10px] font-bold text-emerald-800 pt-0.5">
+                                Fragmento evaluado: <span className="italic font-semibold">«{infoCurricular.fragmento}»</span>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div className="ws-field">

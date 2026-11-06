@@ -261,7 +261,7 @@ export const useAppStore = create<AppStore>()(
         selectedAsignatura: null,
         selectedEstudianteId: null,
         selectedActividadId: null,
-        selectedPeriodo: 'P1',
+        selectedPeriodo: 'P2',
         searchQuery: '',
         showProfileSettings: false,
         
@@ -356,6 +356,7 @@ export const useAppStore = create<AppStore>()(
         selectedAsignatura: state.selectedAsignatura,
         selectedEstudianteId: state.selectedEstudianteId,
         selectedPeriodo: state.selectedPeriodo,
+        defaultPeriodoV3: true,
         darkMode: state.darkMode,
         centroCache: state.centroCache,
         perfilCache: state.perfilCache,
@@ -401,13 +402,32 @@ export const useAppStore = create<AppStore>()(
             validPlantillaCache[key] = entry;
           }
         }
+
+        // Migración del período predeterminado a P2:
+        // P2 es el período inicial predeterminado para todos los usuarios.
+        // Si el usuario tenía P1 guardado bajo sesiones anteriores, inicia en P2.
+        // Si el usuario selecciona manualmente otro período (P1, P3, P4) en esta versión (defaultPeriodoV3),
+        // se respeta su elección durante la sesión y en recargas.
+        let periodoInicial = currentState.selectedPeriodo || 'P2';
+        if (persistedState) {
+          if (!persistedState.defaultPeriodoV3) {
+            if (!persistedState.selectedPeriodo || persistedState.selectedPeriodo === 'P1') {
+              periodoInicial = 'P2';
+            } else {
+              periodoInicial = persistedState.selectedPeriodo;
+            }
+          } else {
+            periodoInicial = persistedState.selectedPeriodo ?? currentState.selectedPeriodo ?? 'P2';
+          }
+        }
+
         return {
           ...currentState,
           selectedCursoId: persistedState?.selectedCursoId ?? currentState.selectedCursoId,
           selectedCursoDocenteId: persistedState?.selectedCursoDocenteId ?? currentState.selectedCursoDocenteId,
           selectedAsignatura: persistedState?.selectedAsignatura ?? currentState.selectedAsignatura,
           selectedEstudianteId: persistedState?.selectedEstudianteId ?? currentState.selectedEstudianteId,
-          selectedPeriodo: persistedState?.selectedPeriodo ?? currentState.selectedPeriodo ?? 'P1',
+          selectedPeriodo: periodoInicial,
           darkMode: persistedState?.darkMode ?? currentState.darkMode,
           centroCache: validCache,
           perfilCache: validPerfilCache,

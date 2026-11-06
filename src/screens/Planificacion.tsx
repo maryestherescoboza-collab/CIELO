@@ -160,7 +160,7 @@ function detectarPeriodoPlan(seq: Secuencia, curso?: Curso): string {
         return curso.periodo.trim().toUpperCase();
     }
 
-    return 'P1';
+    return 'P2';
 }
 
 function detectarAsignaturaPlan(seq: Secuencia, curso?: Curso, cursoDocentes?: any[]): string {
@@ -746,7 +746,7 @@ export default function Planificacion({
             const asignatura = (curso.asignatura?.trim() || cd?.asignatura?.trim() || curso.nombre || 'General').trim();
             const periodo = (curso.periodo && /^P[1-4]$/i.test(curso.periodo.trim())) 
                 ? curso.periodo.trim().toUpperCase() 
-                : 'P1';
+                : 'P2';
             const key = `${curso.id}|${(asignatura || 'general').toLowerCase()}|${periodo.toLowerCase()}`;
 
             if (!mapa.has(key)) {

@@ -150,12 +150,18 @@ export function useTareaActions() {
     const cancelTarea = useCallback(async (tareaId: string) => {
         if (!session?.user?.id) return;
 
-        // La función de cancelar a nivel general en la UI no está explicitamente definida en la nueva arquitectura del usuario.
-        // Asumiendo que se borra de tareas_institucionales
-        const { error } = await supabase
+        // Eliminación protegida por centro e id para preservar aislamiento multi-tenant
+        const currentProfile = useAppStore.getState().state.perfiles.find(p => p.userId === session.user.id);
+        let delQuery = supabase
             .from('tareas_institucionales')
             .delete()
             .eq('id', tareaId);
+
+        if (currentProfile?.centro_id) {
+            delQuery = delQuery.eq('centro_id', currentProfile.centro_id);
+        }
+
+        const { error } = await delQuery;
 
         if (error) {
             console.error('Error eliminando tarea:', error);

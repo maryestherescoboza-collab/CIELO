@@ -177,7 +177,7 @@ const SubjectCardImage: React.FC<{ nombreAsignatura: string }> = ({ nombreAsigna
 
   return (
     <div 
-      className="relative w-full h-full min-h-[220px] sm:min-h-[250px] max-h-[290px] flex items-center justify-center select-none overflow-hidden"
+      className="relative w-full h-full min-h-55 sm:min-h-62.5 max-h-72.5 flex items-center justify-center select-none overflow-hidden"
     >
       {!hasError && (
         <img
@@ -219,7 +219,7 @@ const SubjectCardImage: React.FC<{ nombreAsignatura: string }> = ({ nombreAsigna
 
 export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps> = ({
   sessionToken,
-  selectedPeriodo = 'P1',
+  selectedPeriodo = 'P2',
   estudianteContext,
   asignaturas,
   onSelectAsignatura,
@@ -578,7 +578,7 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
             return (
               <div
                 key={item.id}
-                className="relative shrink-0 select-none snap-start group/card w-[224px] sm:w-[244px] h-[390px] sm:h-[425px]"
+                className="relative shrink-0 select-none snap-start group/card w-56 sm:w-61 h-97.5 sm:h-106.25"
               >
                 {/* Sombra rayada diagonal artesanal tipo grabado (referencia naipe As de Picas) */}
                 <div
