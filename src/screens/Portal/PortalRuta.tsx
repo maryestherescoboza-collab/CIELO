@@ -318,13 +318,13 @@ export default function PortalRuta() {
       <div className="pt-2 px-5 pb-10 max-w-3xl">
         <button
           onClick={salirDeEtapa}
-          className="flex items-center text-xs font-bold mb-4 text-neutral-600 hover:text-black transition-colors"
+          className="inline-flex items-center text-xs font-bold mb-4 px-3.5 py-1.5 rounded-full bg-[#BFC9A6]/25 border border-[#BFC9A6]/55 text-[#1B1F2A] hover:bg-[#BFC9A6]/40 transition-colors"
         >
           <ArrowLeft size={14} className="mr-1.5" /> Salir de la etapa
         </button>
 
-        <header className="bg-white border border-neutral-200 rounded-2xl p-5 mb-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1">
+        <header className="bg-[#FCFCFA] border border-[#BFC9A6]/55 rounded-2xl p-5 mb-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#5F665E] mb-1">
             {etapaVisible.titulo}
           </p>
           {/* La descripcion de la etapa se mostraba al desplegar el acordeon y
@@ -368,8 +368,8 @@ export default function PortalRuta() {
     <div className="pt-2 px-5 pb-10 max-w-3xl">
       <Volver onVolver={() => navigate(rutaPortal(token, 'fichas', id ?? ''))} />
 
-      <header className="bg-white border border-neutral-200 rounded-2xl p-6 mb-4">
-        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500 bg-neutral-100 px-2.5 py-1 rounded-full mb-3">
+      <header className="bg-[#FCFCFA] border border-[#BFC9A6]/55 rounded-2xl p-6 mb-4">
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#2C4F7C] bg-[#537BAC]/15 border border-[#537BAC]/30 px-2.5 py-1 rounded-full mb-3">
           <RouteIcon size={11} /> Ruta de aprendizaje
         </span>
         <h1 className="text-xl md:text-2xl font-bold text-black tracking-tight mb-1">
@@ -380,13 +380,13 @@ export default function PortalRuta() {
         )}
 
         <div className="flex items-center gap-3">
-          <div className="flex-1 h-2 rounded-full bg-neutral-100 overflow-hidden">
+          <div className="flex-1 h-2.5 rounded-full bg-[#BFC9A6]/35 overflow-hidden">
             <div
-              className="h-full rounded-full bg-black transition-all duration-500"
+              className="h-full rounded-full bg-[#537BAC] transition-all duration-500"
               style={{ width: `${porcentaje}%` }}
             />
           </div>
-          <span className="text-xs font-bold text-neutral-600 tabular-nums shrink-0">
+          <span className="text-xs font-bold text-[#2C4F7C] bg-[#537BAC]/12 px-2.5 py-0.5 rounded-full tabular-nums shrink-0">
             {completadas}/{total} · {porcentaje}%
           </span>
         </div>
@@ -397,14 +397,14 @@ export default function PortalRuta() {
             calcula el servidor (ruta_puntajes_ruta) con los pesos que fijo el
             docente, no contando items. */}
         {total > 0 && (
-          <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center gap-3">
-            <div className="flex-1 h-2 rounded-full bg-neutral-100 overflow-hidden">
+          <div className="mt-4 pt-4 border-t border-[#BFC9A6]/40 flex items-center gap-3">
+            <div className="flex-1 h-2.5 rounded-full bg-[#BFC9A6]/35 overflow-hidden">
               <div
                 className="h-full rounded-full bg-[#689C63] transition-all duration-500"
                 style={{ width: `${Math.min(100, ruta.puntaje)}%` }}
               />
             </div>
-            <span className="text-xs font-bold text-[#4a7a46] tabular-nums shrink-0">
+            <span className="text-xs font-bold text-[#2E572A] bg-[#689C63]/15 px-2.5 py-0.5 rounded-full tabular-nums shrink-0">
               {redondearPuntaje(ruta.puntaje)} / 100
             </span>
           </div>
@@ -473,10 +473,10 @@ function ProgresoItems({
             key={i}
             className={`h-2.5 rounded-full transition-all ${
               esActual
-                ? 'w-6 bg-black'
+                ? 'w-6 bg-[#537BAC]'
                 : hecho
                   ? 'w-2.5 bg-[#689C63]'
-                  : 'w-2.5 bg-neutral-200'
+                  : 'w-2.5 bg-[#BFC9A6]/50'
             }`}
           />
         );
@@ -493,7 +493,7 @@ function Volver({ onVolver }: { onVolver: () => void }) {
   return (
     <button
       onClick={onVolver}
-      className="flex items-center text-xs font-bold mb-6 text-neutral-600 hover:text-black transition-colors"
+      className="inline-flex items-center text-xs font-bold mb-6 px-3.5 py-1.5 rounded-full bg-[#BFC9A6]/25 border border-[#BFC9A6]/55 text-[#1B1F2A] hover:bg-[#BFC9A6]/40 transition-colors"
     >
       <ArrowLeft size={14} className="mr-1.5" /> Volver a la ficha
     </button>
@@ -507,8 +507,8 @@ function Volver({ onVolver }: { onVolver: () => void }) {
  */
 function EstadoRutaVacia({ titulo, detalle }: { titulo: string; detalle: string }) {
   return (
-    <div className="p-6 bg-white border border-neutral-200 rounded-2xl text-center">
-      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-red-50 text-red-500 mb-3">
+    <div className="p-6 bg-[#FCFCFA] border border-[#BFC9A6]/60 rounded-2xl text-center">
+      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#DB5B48]/15 text-[#DB5B48] mb-3">
         <AlertTriangle size={18} />
       </span>
       <p className="text-sm font-bold text-black">{titulo}</p>
@@ -544,19 +544,19 @@ function Etapa({ etapa, indice, onEntrar }: EtapaProps) {
   ).length;
 
   return (
-    <section className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
+    <section className="bg-[#FCFCFA] border border-[#BFC9A6]/55 rounded-2xl overflow-hidden">
       <button
         onClick={onEntrar}
         disabled={bloqueada || vacia}
-        className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:cursor-default"
+        className="w-full flex items-center gap-3 px-5 py-4 text-left disabled:cursor-default hover:bg-[#BFC9A6]/12 transition-colors"
       >
         <span
           className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${
             etapa.completada
-              ? 'bg-black text-white'
+              ? 'bg-[#689C63] text-white'
               : bloqueada
-                ? 'bg-neutral-100 text-neutral-400'
-                : 'bg-neutral-100 text-black'
+                ? 'bg-[#BFC9A6]/25 text-[#767A76]'
+                : 'bg-[#537BAC]/15 text-[#2C4F7C]'
           }`}
         >
           {etapa.completada ? <Check size={14} /> : bloqueada ? <Lock size={12} /> : indice + 1}
@@ -565,27 +565,27 @@ function Etapa({ etapa, indice, onEntrar }: EtapaProps) {
         <span className="flex-1 min-w-0">
           <span className="block text-sm font-bold text-black truncate">{etapa.titulo}</span>
           {bloqueada ? (
-            <span className="block text-[11px] text-neutral-500">
+            <span className="block text-[11px] text-[#5F665E]">
               Completa la etapa anterior para abrirla
             </span>
           ) : vacia ? (
-            <span className="block text-[11px] text-neutral-500">Todavía no tiene items</span>
+            <span className="block text-[11px] text-[#5F665E]">Todavía no tiene items</span>
           ) : (
-            <span className="block text-[11px] text-neutral-500 tabular-nums">
+            <span className="block text-[11px] text-[#5F665E] tabular-nums">
               {hechos}/{items.length} items · {redondearPuntaje(etapa.peso)} % de la ruta
             </span>
           )}
         </span>
 
         {etapa.completada && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-black bg-neutral-200 px-1.5 py-0.5 rounded-full shrink-0">
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#2E572A] bg-[#689C63]/18 border border-[#689C63]/35 px-2 py-0.5 rounded-full shrink-0">
             <Check size={9} /> Completada
           </span>
         )}
 
         {!bloqueada && !vacia && sinPreguntas > 0 && (
           <span
-            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#8a6d2f] bg-[#d8b45a]/18 px-1.5 py-0.5 rounded-full shrink-0"
+            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#7A5612] bg-[#DEAE4D]/20 border border-[#DEAE4D]/45 px-2 py-0.5 rounded-full shrink-0"
             title={`${sinPreguntas} item(s) sin preguntas`}
           >
             <CircleAlert size={9} /> {sinPreguntas} sin preguntas
@@ -593,7 +593,7 @@ function Etapa({ etapa, indice, onEntrar }: EtapaProps) {
         )}
 
         {!bloqueada && !vacia && (
-          <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-400 shrink-0">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-[#2C4F7C] bg-[#537BAC]/15 px-2.5 py-1 rounded-full shrink-0">
             Entrar
           </span>
         )}
@@ -666,26 +666,26 @@ function ItemEnCurso({
   return (
     <>
       <div
-        className={`bg-white border rounded-2xl p-5 ${
-          actividad.completada ? 'border-black/15' : 'border-neutral-200'
+        className={`bg-[#FCFCFA] border rounded-2xl p-5 ${
+          actividad.completada ? 'border-[#689C63]/45' : 'border-[#BFC9A6]/55'
         }`}
       >
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#2C4F7C] bg-[#537BAC]/12 px-2 py-0.5 rounded-full">
             {actividad.tipo_etiqueta}
           </span>
           {actividad.completada && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-black bg-neutral-200 px-1.5 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#2E572A] bg-[#689C63]/18 border border-[#689C63]/35 px-2 py-0.5 rounded-full">
               <Check size={9} /> Completada
             </span>
           )}
           {!actividad.obligatorio && (
-            <span className="text-[10px] font-bold text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-bold text-[#4E5540] bg-[#BFC9A6]/30 px-2 py-0.5 rounded-full">
               Opcional
             </span>
           )}
           <span className="flex-1" />
-          <span className="text-[10px] font-bold text-neutral-500 tabular-nums shrink-0">
+          <span className="text-[10px] font-bold text-[#5F665E] bg-[#BFC9A6]/20 px-2 py-0.5 rounded-full tabular-nums shrink-0">
             {redondearPuntaje(actividad.peso)} % · {redondearPuntaje(actividad.puntaje)} / 100
           </span>
         </div>
@@ -744,7 +744,7 @@ function ItemEnCurso({
         <div className="mt-4 flex justify-end">
           <button
             onClick={onContinuar}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white text-xs font-bold rounded-xl hover:bg-neutral-800 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#689C63] text-white text-xs font-bold rounded-xl hover:bg-[#588554] transition-colors shadow-2xs"
           >
             {esUltimo ? 'Terminar etapa' : 'Continuar'}
             <ChevronDown size={14} className="-rotate-90" />
@@ -753,9 +753,9 @@ function ItemEnCurso({
       )}
 
       {solicitaProducto && actividad.actividad_origen_id && (
-        <div className="mt-4 bg-white border border-neutral-200 rounded-2xl p-5">
+        <div className="mt-4 bg-[#FCFCFA] border border-[#BFC9A6]/55 rounded-2xl p-5">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[#537BAC]/15 text-[#2C4F7C] flex items-center justify-center shrink-0">
               <Upload size={20} />
             </div>
             <div className="flex-1">
@@ -771,7 +771,7 @@ function ItemEnCurso({
                 <button
                   onClick={() => setMostrandoFormEvidencia(true)}
                   disabled={bloqueada}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#537BAC] text-white text-xs font-bold rounded-xl hover:bg-[#43648C] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Upload size={14} /> Subir producto
                 </button>
@@ -945,7 +945,7 @@ function Pregunta({
       {pregunta.pista && !resuelta && (
         <div className="mt-2">
           {pistaAbierta ? (
-            <p className="flex items-start gap-1.5 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+            <p className="flex items-start gap-1.5 text-xs text-[#7A5612] bg-[#DEAE4D]/15 border border-[#DEAE4D]/45 rounded-lg px-2.5 py-2">
               <Lightbulb size={12} className="mt-0.5 shrink-0" />
               {pregunta.pista}
             </p>
@@ -953,7 +953,7 @@ function Pregunta({
             <button
               type="button"
               onClick={() => setPista(true)}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 hover:text-black"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#DEAE4D]/20 border border-[#DEAE4D]/45 text-xs font-semibold text-[#7A5612] hover:bg-[#DEAE4D]/35 transition-colors"
             >
               <Lightbulb size={12} /> Ver pista
             </button>
@@ -961,26 +961,26 @@ function Pregunta({
         </div>
       )}
 
-      {error && <p className="mt-2 text-xs text-red-600 font-semibold">{error}</p>}
+      {error && <p className="mt-2 text-xs text-[#DB5B48] font-semibold">{error}</p>}
 
       {/* ── Veredicto ── */}
       {veredicto && (
         <div
           className={`mt-3 p-3 rounded-xl border flex items-start gap-2.5 ${
             veredicto.correcto
-              ? 'bg-[#689C63]/10 border-[#689C63]/30'
-              : 'bg-red-50 border-red-200'
+              ? 'bg-[#689C63]/12 border-[#689C63]/35'
+              : 'bg-[#DB5B48]/12 border-[#DB5B48]/35'
           }`}
         >
           <span
             className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-white ${
-              veredicto.correcto ? 'bg-[#689C63]' : 'bg-red-500'
+              veredicto.correcto ? 'bg-[#689C63]' : 'bg-[#DB5B48]'
             }`}
           >
             {veredicto.correcto ? <Check size={12} strokeWidth={3} /> : <X size={12} strokeWidth={3} />}
           </span>
           <div className="min-w-0">
-            <p className={`text-sm font-bold ${veredicto.correcto ? 'text-[#4a7a46]' : 'text-red-700'}`}>
+            <p className={`text-sm font-bold ${veredicto.correcto ? 'text-[#2E572A]' : 'text-[#9E3525]'}`}>
               {veredicto.correcto
                 ? '¡Correcto!'
                 : esProcedimiento && (veredicto.parciales ?? 0) > 0
@@ -1019,7 +1019,7 @@ function Pregunta({
         <button
           onClick={onEnviar}
           disabled={bloqueada || enviando || faltanHuecos}
-          className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-black text-white text-xs font-bold rounded-xl hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-[#537BAC] text-white text-xs font-bold rounded-xl hover:bg-[#43648C] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-2xs"
         >
           {enviando ? <Loader2 size={13} className="animate-spin" /> : <Target size={13} />}
           Comprobar

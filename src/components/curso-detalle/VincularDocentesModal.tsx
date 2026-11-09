@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Trash2, Users } from 'lucide-react';
 import type { AppState } from '../../types';
-import { ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
+import { ASIGNATURAS_CATALOGO, esAsignaturaOptativa } from '../../constants/asignaturas';
 import { CieloModal } from '../ui/CieloModal';
 import { supabase } from '../../lib/supabase';
 import { useAppStore } from '../../store/appStore';
@@ -57,6 +57,28 @@ const VincularDocentesModal: React.FC<VincularDocentesModalProps> = ({
         }
     }, [show, cursoId, setState]);
 
+    const asignaturasCarga = useMemo(() => {
+        const oficiales = ASIGNATURAS_CATALOGO.filter(a => a.id !== 'lengua_espanola').map(a => ({
+            id: a.id,
+            nombre: a.nombre,
+            esOptativa: false
+        }));
+        const optativasMap = new Map<string, { id: string; nombre: string; esOptativa: boolean }>();
+        state.cursoDocentes
+            .filter(cd => cd.cursoId === cursoId && esAsignaturaOptativa(cd.asignatura))
+            .forEach(cd => {
+                const key = cd.asignatura.toLowerCase();
+                if (!optativasMap.has(key)) {
+                    optativasMap.set(key, {
+                        id: cd.asignatura,
+                        nombre: getAsignaturaNombre(cd.asignatura),
+                        esOptativa: true
+                    });
+                }
+            });
+        return [...oficiales, ...Array.from(optativasMap.values())];
+    }, [state.cursoDocentes, cursoId, getAsignaturaNombre]);
+
     if (!show) return null;
 
     return (
@@ -68,7 +90,7 @@ const VincularDocentesModal: React.FC<VincularDocentesModalProps> = ({
             maxWidth="2xl"
         >
             <div className="space-y-4">
-                    {ASIGNATURAS_CATALOGO.filter(a => a.id !== 'lengua_espanola').map((asig) => {
+                    {asignaturasCarga.map((asig) => {
                         const linked = state.cursoDocentes.find(cd => cd.cursoId === cursoId && cd.asignatura === asig.id);
                         const profile = linked ? state.perfiles.find(p => p.userId === linked.userId) : null;
 
@@ -76,11 +98,18 @@ const VincularDocentesModal: React.FC<VincularDocentesModalProps> = ({
                             <div key={asig.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg bg-indigo-500`}>
-                                            {asig.nombre[0]}
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg ${asig.esOptativa ? 'bg-amber-600' : 'bg-indigo-500'}`}>
+                                            {(asig.nombre || 'A')[0]}
                                         </div>
                                         <div>
-                                            <h4 className="text-slate-900 font-black text-sm uppercase tracking-wide">{asig.nombre}</h4>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="text-slate-900 font-black text-sm uppercase tracking-wide">{asig.nombre}</h4>
+                                                {asig.esOptativa && (
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80">
+                                                        Optativa
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-slate-400 text-xs font-bold mt-0.5">
                                                 {profile ? (
                                                     <span className="flex items-center gap-1.5">

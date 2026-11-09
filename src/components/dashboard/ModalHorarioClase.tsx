@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Clock } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { cdImparteEnDia, diaDeSemana, normalizarHora } from '../../utils/diasSemana';
+import { getAsignaturaNombre } from '../../constants/asignaturas';
 
 interface ModalHorarioClaseProps {
     show: boolean;
@@ -104,7 +105,7 @@ export const ModalHorarioClase: React.FC<ModalHorarioClaseProps> = ({ show, onCl
                                     const curso = cursos.find(c => c.id === cd.cursoId);
                                     return (
                                         <option key={cd.id} value={cd.id}>
-                                            {curso ? `${curso.grado} ${curso.seccion}` : ''} - {cd.asignatura}
+                                            {curso ? `${curso.grado} ${curso.seccion}` : ''} - {getAsignaturaNombre(cd.asignatura)}
                                         </option>
                                     );
                                 })}

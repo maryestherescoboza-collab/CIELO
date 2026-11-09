@@ -265,6 +265,24 @@ export function construirUrlPortalEstudiante(accessToken: string | null | undefi
 }
 
 /**
+ * Construye la URL para el procedimiento de recuperación de clave del Portal CIELO.
+ * Apunta a `/portal/recuperar/:recoveryToken`, que solicita establecer una nueva clave
+ * y nunca otorga acceso directo al portal sin autenticación.
+ */
+export function construirUrlRecuperacionPortal(recoveryToken: string | null | undefined, baseUrl?: string): string {
+    const rawOrigin =
+        baseUrl ||
+        (typeof window !== 'undefined' && window.location?.origin && window.location.origin.startsWith('http')
+            ? window.location.origin
+            : 'https://cielo.app');
+    const origin = rawOrigin.replace(/\/+$/, '');
+    if (recoveryToken && recoveryToken.trim()) {
+        return `${origin}/portal/recuperar/${encodeURIComponent(recoveryToken.trim())}`;
+    }
+    return `${origin}/portal`;
+}
+
+/**
  * Extrae la matriz booleana exacta del QR a partir de `QRCodeSVG` (`qrcode.react`).
  * El QR se dibuja después como vectores en el PDF (nitidez máxima al imprimir).
  */

@@ -8,10 +8,31 @@ export interface ActividadRecuperar {
   puntajeObtenido: number;
 }
 
+export interface PreguntaMetacognicion {
+  dimension: string;
+  pregunta: string;
+}
+
+export const PREGUNTAS_METACOGNICION_DEFAULT: readonly PreguntaMetacognicion[] = [
+  {
+    dimension: 'Saber conocer (conocimientos):',
+    pregunta: '¿Qué conocimientos y conceptos lograste recuperar y comprender mejor al realizar las actividades de recuperación?'
+  },
+  {
+    dimension: 'Saber hacer (procedimientos):',
+    pregunta: '¿Qué habilidades desarrollaste o fortaleciste al realizar las actividades de recuperación y cómo lograste aplicarlas?'
+  },
+  {
+    dimension: 'Saber ser (actitudes y valores):',
+    pregunta: '¿Qué actitudes y valores demostraste durante la realización de las actividades de recuperación y cómo contribuyeron a superar tus dificultades?'
+  }
+] as const;
+
 export interface EstudianteRecuperar {
   nombreCompleto: string;
   curso: string;
   actividades: ActividadRecuperar[];
+  metacognicion?: (string | PreguntaMetacognicion)[] | string;
 }
 
 export interface PlanRecuperacionData {
@@ -25,6 +46,7 @@ export interface PlanRecuperacionData {
   periodoRecuperacion: 'P1' | 'P2' | 'P3';
   nombrePeriodo: string;
   estudiantes: EstudianteRecuperar[];
+  preguntasMetacognicion?: (string | PreguntaMetacognicion)[] | string;
 }
 
 export const PERIODOS_RECUPERACION = {
@@ -83,6 +105,32 @@ function formatCompetencias(competencias: string[]): string {
   return competencias
     .map(c => `▪ ${getCompetenciaDisplay(c) || c}`)
     .join('<br>');
+}
+
+export function renderMetacognicionItems(
+  custom?: (string | PreguntaMetacognicion)[] | string | readonly PreguntaMetacognicion[]
+): string {
+  if (custom) {
+    if (Array.isArray(custom) && custom.length > 0) {
+      return custom.map(item => {
+        if (typeof item === 'object' && item !== null && 'dimension' in item && 'pregunta' in item) {
+          const dimension = item.dimension.endsWith(':') ? item.dimension : `${item.dimension}:`;
+          return `<li contenteditable="true" data-placeholder="${dimension} Escriba la pregunta..."><strong>${dimension}</strong> ${item.pregunta}</li>`;
+        }
+        return `<li contenteditable="true" data-placeholder="Escriba la pregunta...">${String(item)}</li>`;
+      }).join('\n            ');
+    }
+    if (typeof custom === 'string' && custom.trim().length > 0) {
+      if (custom.includes('<li')) {
+        return custom;
+      }
+      return `<li contenteditable="true" data-placeholder="Escriba la pregunta...">${custom}</li>`;
+    }
+  }
+
+  return PREGUNTAS_METACOGNICION_DEFAULT.map(
+    q => `<li contenteditable="true" data-placeholder="${q.dimension} Escriba la pregunta..."><strong>${q.dimension}</strong> ${q.pregunta}</li>`
+  ).join('\n            ');
 }
 
 export function getPlanRecuperacionTemplate(data: PlanRecuperacionData): string {
@@ -163,15 +211,7 @@ export function getPlanRecuperacionTemplate(data: PlanRecuperacionData): string 
             El estudiante debe ser capaz de responder:
           </div>
           <ul class="meta-questions">
-            <li contenteditable="true"
-                data-placeholder="¿Qué aprendí al realizar esta actividad?">
-            </li>
-            <li contenteditable="true"
-                data-placeholder="¿Qué dificultades encontré y cómo las resolví?">
-            </li>
-            <li contenteditable="true"
-                data-placeholder="¿Qué haría diferente la próxima vez?">
-            </li>
+            ${renderMetacognicionItems(estudiante.metacognicion || data.preguntasMetacognicion)}
           </ul>
         </td>
       </tr>
@@ -358,7 +398,13 @@ export function getPlanRecuperacionTemplate(data: PlanRecuperacionData): string 
   }
 
   .meta-questions li{
-    margin-bottom:4px;
+    margin-bottom:6px;
+    line-height:1.45;
+  }
+
+  .meta-questions li strong{
+    font-size:10.5px;
+    color:#1A1A1A;
   }
 
   .meta-questions li[contenteditable="true"]:empty::before{

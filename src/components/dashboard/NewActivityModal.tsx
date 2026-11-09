@@ -10,6 +10,7 @@ import { callAI, clearAICircuitBreakers } from '../../lib/aiProvider';
 import { calculateHash, cleanTechnicalText } from '../../lib/aiPreprocessor';
 import { getCurrentMonthAIUsage, type AIUsageStats } from '../../lib/aiUsage';
 import { SelectorIndicadorFragmento } from '../curriculo/SelectorIndicadorFragmento';
+import { esAsignaturaOptativa, getAsignaturaNombre, sonMismaAsignatura } from '../../constants/asignaturas';
 
 const BC_CIRCLE_CONFIG: Array<{ id: BCKey; label: string; icon: typeof MessageSquareText; bg: string; selectedBg: string; selectedText: string }> = [
   { id: 'BC1', label: COMPETENCIAS_LABEL.BC1, icon: MessageSquareText, bg: 'bg-blue-50', selectedBg: 'bg-blue-600', selectedText: 'text-white' },
@@ -44,7 +45,8 @@ interface ExtractedActivity {
 
 export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSuccess, initialDate }: NewActivityModalProps) {
     const session = useAppStore(s => s.session);
-    const state = useAppStore(s => s.state);
+    const cursoDocentes = useAppStore(s => s.state.cursoDocentes);
+    const actividades = useAppStore(s => s.state.actividades);
     const today = new Date().toISOString().split('T')[0];
     const [flowMode, setFlowMode] = useState<'choice' | 'manual' | 'text' | 'preview'>('choice');
     
@@ -56,6 +58,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         secuenciaId: '',
         bcs: ['BC1'] as BCKey[],
         cursoId: cursos[0]?.id ?? 0,
+        asignatura: cursos[0]?.asignatura ?? '',
         indicador: ''
     });
 
@@ -67,6 +70,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     const [isProcessing, setIsProcessing] = useState(false);
     const [extractedActivities, setExtractedActivities] = useState<ExtractedActivity[]>([]);
     const [targetCursoId, setTargetCursoId] = useState<number>(0);
+    const [targetAsignatura, setTargetAsignatura] = useState<string>('');
     const [targetPeriodo, setTargetPeriodo] = useState<string>('');
     const [targetFecha, setTargetFecha] = useState<string>(today);
     const [isPromptCopied, setIsPromptCopied] = useState(false);
@@ -79,12 +83,12 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     const [aiUsage, setAiUsage] = useState<AIUsageStats | null>(null);
     const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
 
-    // Fetch AI Usage when modal opens
+    // Fetch AI Usage under demand when entering text/AI flow (lazy)
     useEffect(() => {
-        if (show && session?.user?.id) {
+        if (show && flowMode === 'text' && session?.user?.id && !aiUsage) {
             getCurrentMonthAIUsage(session.user.id).then(setAiUsage);
         }
-    }, [show, session?.user?.id]);
+    }, [show, flowMode, session?.user?.id, aiUsage]);
 
     useEffect(() => {
         if (show && initialDate) {
@@ -107,6 +111,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         setTempApiKey('');
         setExtractedActivities([]);
         setTargetCursoId(0);
+        setTargetAsignatura('');
         setTargetPeriodo('');
         setTargetFecha(initialDate || today);
         setForm({
@@ -115,6 +120,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
             secuenciaId: '',
             bcs: ['BC1'] as BCKey[],
             cursoId: cursos[0]?.id ?? 0,
+            asignatura: cursos[0]?.asignatura ?? '',
             indicador: ''
         });
         setIndicadoresJson([]);
@@ -131,10 +137,19 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
             return;
         }
 
-        const cursoDocente = state.cursoDocentes.find(
+        const cursoSeleccionado = cursos.find(
+            c => c.id === form.cursoId && (!form.asignatura || sonMismaAsignatura(c.asignatura, form.asignatura))
+        ) || cursos.find(c => c.id === form.cursoId);
+
+        const cursoDocente = cursoDocentes.find(
+            cd =>
+                cd.cursoId === form.cursoId &&
+                cd.userId === currentUserId &&
+                (!form.asignatura || sonMismaAsignatura(cd.asignatura, form.asignatura))
+        ) || cursoDocentes.find(
             cd => cd.cursoId === form.cursoId && cd.userId === currentUserId
         );
-        const docenteAsignatura = cursoDocente?.asignatura;
+        const docenteAsignatura = form.asignatura || cursoDocente?.asignatura || cursoSeleccionado?.asignatura;
 
         if (!docenteAsignatura) {
             setErrorMsg('El docente no tiene una asignatura asignada para ese curso.');
@@ -144,7 +159,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         setIsSaving(true);
         setErrorMsg(null);
         try {
-            const curso = cursos.find(c => c.id === form.cursoId);
+            const curso = cursoSeleccionado;
             const result = await onAddActividad({
                 nombre: form.nombre,
                 fecha: form.fecha,
@@ -286,7 +301,7 @@ Estructura obligatoria:
             return;
         }
 
-        const cursoDocente = state.cursoDocentes.find(
+        const cursoDocente = cursoDocentes.find(
             cd => cd.cursoId === targetCursoId && cd.userId === currentUserId
         );
         const docenteAsignatura = cursoDocente?.asignatura;
@@ -523,10 +538,19 @@ ${pastedText}`;
             return;
         }
 
-        const cursoDocente = state.cursoDocentes.find(
+        const cursoSeleccionado = cursos.find(
+            c => c.id === targetCursoId && (!targetAsignatura || sonMismaAsignatura(c.asignatura, targetAsignatura))
+        ) || cursos.find(c => c.id === targetCursoId);
+
+        const cursoDocente = cursoDocentes.find(
+            cd =>
+                cd.cursoId === targetCursoId &&
+                cd.userId === currentUserId &&
+                (!targetAsignatura || sonMismaAsignatura(cd.asignatura, targetAsignatura))
+        ) || cursoDocentes.find(
             cd => cd.cursoId === targetCursoId && cd.userId === currentUserId
         );
-        const docenteAsignatura = cursoDocente?.asignatura;
+        const docenteAsignatura = targetAsignatura || cursoDocente?.asignatura || cursoSeleccionado?.asignatura;
 
         if (!docenteAsignatura) {
             setErrorMsg('El docente no tiene una asignatura asignada para ese curso.');
@@ -541,39 +565,45 @@ ${pastedText}`;
         let skippedCount = 0;
 
         try {
-            const curso = cursos.find(c => c.id === targetCursoId);
+            const curso = cursoSeleccionado;
+            const toSave: ExtractedActivity[] = [];
+            const seenBatch = new Set<string>();
             
             for (const act of selected) {
+                const actKey = `${act.nombre.trim().toLowerCase()}__${targetFecha}`;
                 // Prevention of duplicates check (Fase 9)
-                const isDuplicate = state.actividades.some(existing => 
+                const isDuplicate = actividades.some(existing => 
                     existing.cursoId === targetCursoId && 
                     existing.nombre.trim().toLowerCase() === act.nombre.trim().toLowerCase() &&
                     existing.fecha === targetFecha &&
                     existing.asignatura === docenteAsignatura
                 );
 
-                if (isDuplicate) {
+                if (isDuplicate || seenBatch.has(actKey)) {
                     skippedCount++;
-                    continue;
+                } else {
+                    seenBatch.add(actKey);
+                    toSave.push(act);
                 }
+            }
 
-                const result = await onAddActividad({
-                    nombre: act.nombre,
-                    fecha: targetFecha,
-                    cursoId: targetCursoId,
-                    periodo: targetPeriodo,
-                    bcAsignados: act.competencias,
-                    sharedCourseId: curso?.sharedCourseId,
-                    indicador: act.indicador_logro,
-                    producto: act.producto || undefined,
-                    descripcion: act.descripcion || null,
-                    userId: currentUserId,
-                    asignatura: docenteAsignatura
-                });
-
-                if (result) {
-                    savedCount++;
-                }
+            if (toSave.length > 0) {
+                const results = await Promise.all(
+                    toSave.map(act => onAddActividad({
+                        nombre: act.nombre,
+                        fecha: targetFecha,
+                        cursoId: targetCursoId,
+                        periodo: targetPeriodo,
+                        bcAsignados: act.competencias,
+                        sharedCourseId: curso?.sharedCourseId,
+                        indicador: act.indicador_logro,
+                        producto: act.producto || undefined,
+                        descripcion: act.descripcion || null,
+                        userId: currentUserId,
+                        asignatura: docenteAsignatura
+                    }))
+                );
+                savedCount = results.filter(Boolean).length;
             }
 
             if (savedCount > 0 || skippedCount > 0) {
@@ -875,9 +905,19 @@ ${pastedText}`;
 
                     {/* Modo 2: Creación manual amplia (Distribuida en 2 columnas en escritorio) */}
                     {flowMode === 'manual' && (() => {
-                        const currentCurso = cursos.find(c => c.id === form.cursoId);
-                        const currentCd = state.cursoDocentes.find(cd => cd.cursoId === form.cursoId && cd.userId === session?.user?.id);
-                        const currentAsignatura = currentCd?.asignatura || currentCurso?.asignatura;
+                        const currentCurso = cursos.find(
+                            c => c.id === form.cursoId && (!form.asignatura || sonMismaAsignatura(c.asignatura, form.asignatura))
+                        ) || cursos.find(c => c.id === form.cursoId);
+                        const currentCd = cursoDocentes.find(
+                            cd =>
+                                cd.cursoId === form.cursoId &&
+                                cd.userId === session?.user?.id &&
+                                (!form.asignatura || sonMismaAsignatura(cd.asignatura, form.asignatura))
+                        ) || cursoDocentes.find(cd => cd.cursoId === form.cursoId && cd.userId === session?.user?.id);
+                        const currentAsignatura = form.asignatura || currentCd?.asignatura || currentCurso?.asignatura;
+                        const selectedCourseComposite = form.cursoId
+                            ? `${form.cursoId}::${currentAsignatura || ''}`
+                            : '0::';
 
                         return (
                             <div className="space-y-6 py-2">
@@ -910,15 +950,24 @@ ${pastedText}`;
                                                 <div className="relative">
                                                     <select 
                                                         className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold appearance-none transition-all cursor-pointer pr-9"
-                                                        value={form.cursoId} 
-                                                        onChange={e => setForm(p => ({ ...p, cursoId: Number(e.target.value) }))}
+                                                        value={selectedCourseComposite} 
+                                                        onChange={e => {
+                                                            const [idStr, ...asigParts] = e.target.value.split('::');
+                                                            const nextId = Number(idStr);
+                                                            const nextAsig = asigParts.join('::');
+                                                            setForm(p => ({ ...p, cursoId: nextId, asignatura: nextAsig }));
+                                                        }}
                                                     >
-                                                        <option value={0} disabled>Selecciona el curso…</option>
-                                                        {cursos.map(c => (
-                                                            <option key={c.id} value={c.id}>
-                                                                {c.grado} {c.seccion} — {c.nombre}
-                                                            </option>
-                                                        ))}
+                                                        <option value="0::" disabled>Selecciona el curso…</option>
+                                                        {cursos.map(c => {
+                                                            const asigNombre = getAsignaturaNombre(c.asignatura);
+                                                            const esOpt = esAsignaturaOptativa(c.asignatura);
+                                                            return (
+                                                                <option key={`${c.id}-${c.asignatura}`} value={`${c.id}::${c.asignatura || ''}`}>
+                                                                    {c.grado} {c.seccion} — {asigNombre}{esOpt ? ' (Optativa)' : ''}
+                                                                </option>
+                                                            );
+                                                        })}
                                                     </select>
                                                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
                                                         <TC_Flux size={14} className="rotate-90" />
@@ -1033,7 +1082,7 @@ ${pastedText}`;
                                             </div>
                                             {currentCurso && (
                                                 <span className="text-xs font-bold text-slate-700 bg-white border border-slate-300 px-2.5 py-1 rounded-lg">
-                                                    {currentCurso.grado} · {currentAsignatura || currentCurso.asignatura}
+                                                    {currentCurso.grado} · {getAsignaturaNombre(currentAsignatura || currentCurso.asignatura)}
                                                 </span>
                                             )}
                                         </div>
@@ -1091,15 +1140,23 @@ ${pastedText}`;
                                         <select 
                                             data-guide="sel-curso-ia"
                                             className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold appearance-none transition-all cursor-pointer pr-9"
-                                            value={targetCursoId || 0} 
-                                            onChange={e => setTargetCursoId(Number(e.target.value))}
+                                            value={targetCursoId ? `${targetCursoId}::${targetAsignatura}` : '0::'} 
+                                            onChange={e => {
+                                                const [idStr, ...asigParts] = e.target.value.split('::');
+                                                setTargetCursoId(Number(idStr));
+                                                setTargetAsignatura(asigParts.join('::'));
+                                            }}
                                         >
-                                            <option value={0} disabled>Selecciona el curso…</option>
-                                            {cursos.map(c => (
-                                                <option key={c.id} value={c.id}>
-                                                    {c.grado} {c.seccion} — {c.nombre}
-                                                </option>
-                                            ))}
+                                            <option value="0::" disabled>Selecciona el curso…</option>
+                                            {cursos.map(c => {
+                                                const asigNombre = getAsignaturaNombre(c.asignatura);
+                                                const esOpt = esAsignaturaOptativa(c.asignatura);
+                                                return (
+                                                    <option key={`${c.id}-${c.asignatura}`} value={`${c.id}::${c.asignatura || ''}`}>
+                                                        {c.grado} {c.seccion} — {asigNombre}{esOpt ? ' (Optativa)' : ''}
+                                                    </option>
+                                                );
+                                            })}
                                         </select>
                                         <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
                                             <TC_Flux size={14} className="rotate-90" />
@@ -1180,11 +1237,19 @@ ${pastedText}`;
                                     <label className="text-xs font-bold uppercase tracking-wider text-slate-700">Curso Destino *</label>
                                     <select 
                                         className="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm bg-slate-100 text-[#1E2421] outline-none font-bold cursor-not-allowed"
-                                        value={targetCursoId || ''} 
+                                        value={targetCursoId ? `${targetCursoId}::${targetAsignatura}` : ''} 
                                         disabled
                                     >
                                         <option value="" disabled>Seleccionar...</option>
-                                        {cursos.map(c => <option key={c.id} value={c.id}>{c.grado} {c.seccion} - {c.nombre}</option>)}
+                                        {cursos.map(c => {
+                                            const asigNombre = getAsignaturaNombre(c.asignatura);
+                                            const esOpt = esAsignaturaOptativa(c.asignatura);
+                                            return (
+                                                <option key={`${c.id}-${c.asignatura}`} value={`${c.id}::${c.asignatura || ''}`}>
+                                                    {c.grado} {c.seccion} — {asigNombre}{esOpt ? ' (Optativa)' : ''}
+                                                </option>
+                                            );
+                                        })}
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">

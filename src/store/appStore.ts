@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Session } from '@supabase/supabase-js';
-import type { AppState, SearchResults, FloatingRubricWindow, Nivel, Centro, Curso, CursoDocente, Plantilla, Actividad, CalificacionActividad, Secuencia } from '../types';
+import type { AppState, SearchResults, FloatingRubricWindow, Nivel, Centro, Curso, CursoDocente, Plantilla, Actividad, CalificacionActividad, Secuencia, Estudiante } from '../types';
 import { initialState } from '../data/mockData';
 
 export interface CentroCacheEntry {
@@ -47,6 +47,25 @@ export interface PlantillaCacheEntry {
     /** Colección de plantillas activas del usuario, exactamente como se guardan en Zustand. */
     data: Plantilla[];
     cachedAt: number;
+    expiresAt: number;
+}
+
+/**
+ * Caché persistente (TTL de hasta 1 año / 365 días) de la lista de estudiantes
+ * de un curso físico (`cursoId`).
+ * Aislado por `${userId}:${centroId || 'sin-centro'}:${cursoId}` para garantizar
+ * que jamás se mezclen estudiantes entre centros, cursos o usuarios.
+ */
+export interface EstudianteCacheEntry {
+    /** Clave compuesta `${userId}:${centroId || 'sin-centro'}:${cursoId}` */
+    key: string;
+    userId: string;
+    centroId?: string;
+    cursoId: number;
+    /** Lista de estudiantes activos del curso físico, ordenados por numeroLista. */
+    data: Estudiante[];
+    cachedAt: number;
+    updatedAt: number;
     expiresAt: number;
 }
 
@@ -116,6 +135,10 @@ interface AppStore {
     // Caché persistente de las plantillas del usuario, aislado por {userId}.
     plantillaCache: Record<string, PlantillaCacheEntry>;
     setPlantillaCache: (entry: PlantillaCacheEntry | ((prev: Record<string, PlantillaCacheEntry>) => Record<string, PlantillaCacheEntry>)) => void;
+
+    // Caché persistente (1 año) de estudiantes por curso físico, aislado por {userId}:{centroId}:{cursoId}.
+    estudianteCache: Record<string, EstudianteCacheEntry>;
+    setEstudianteCache: (entry: EstudianteCacheEntry | ((prev: Record<string, EstudianteCacheEntry>) => Record<string, EstudianteCacheEntry>)) => void;
 
     // Caché EN MEMORIA por curso + período (actividades + calificaciones), aislado por
     // {userId}:{centroId}:{cursoId}:{periodo}. NO se persiste en localStorage.
@@ -238,6 +261,14 @@ export const useAppStore = create<AppStore>()(
                 : { ...s.plantillaCache, [entry.key]: entry }
         })),
 
+        // Cache persistente de estudiantes por curso físico (TTL 365 días), persistido por Zustand.
+        estudianteCache: {},
+        setEstudianteCache: (entry: EstudianteCacheEntry | ((prev: Record<string, EstudianteCacheEntry>) => Record<string, EstudianteCacheEntry>)) => set((s: AppStore) => ({
+            estudianteCache: typeof entry === 'function'
+                ? entry(s.estudianteCache)
+                : { ...s.estudianteCache, [entry.key]: entry }
+        })),
+
         // Cache EN MEMORIA por curso + período. No se persiste.
         academicCache: {},
         setAcademicCache: (entry: AcademicCacheEntry | ((prev: Record<string, AcademicCacheEntry>) => Record<string, AcademicCacheEntry>)) => set((s: AppStore) => ({
@@ -291,10 +322,27 @@ export const useAppStore = create<AppStore>()(
             return { state: nextState };
         }),
         setSession: (session: Session | null) => set((s: AppStore) => {
-            const userChanged = s.session?.user?.id !== session?.user?.id;
+            const oldUserId = s.session?.user?.id ?? null;
+            const newUserId = session?.user?.id ?? null;
+            const userChanged = oldUserId !== newUserId;
             if (userChanged) {
-                console.log(`[DIAG][SETSESSION] userChanged old=${s.session?.user?.id ?? 'null'} new=${session?.user?.id ?? 'null'} limpia=loadedModules,loadedCursos,cursoCache,plantillaCache,academicCache,secuenciaCache conserva=state(perfiles,estudiantes,actividades,calificaciones,secuencias,grupos,...),centroCache,perfilCache ts=${new Date().toISOString()}`);
-                return { session, loadedModules: [], loadedCursos: [], cursoCache: {}, plantillaCache: {}, academicCache: {}, secuenciaCache: {} };
+                // NOTA CRÍTICA DE PERSISTENCIA:
+                // Los cachés persistentes (`centroCache`, `perfilCache`, `cursoCache`, `plantillaCache`, `estudianteCache`)
+                // están estrictamente aislados por claves compuestas con `userId` y `centroId` y se validan por `expiresAt`.
+                // NUNCA deben vaciarse en `setSession` (especialmente en el arranque cuando `s.session` pasa de `null` a `session`,
+                // ni al cerrar/reabrir sesión), para garantizar que la caché persistente de 1 año sobreviva a recargas y reinicios.
+                // Al cerrar sesión o cambiar a un usuario distinto, se limpian únicamente las banderas y cachés en memoria de la sesión,
+                // y si se cerró sesión o cambió a otro usuario distinto, se limpia el `state` en memoria para evitar fugas entre sesiones.
+                const shouldResetInMemoryState = oldUserId !== null && oldUserId !== newUserId;
+                console.log(`[DIAG][SETSESSION] userChanged old=${oldUserId ?? 'null'} new=${newUserId ?? 'null'} resetInMemoryState=${shouldResetInMemoryState} conservaCachesPersistentes=centroCache,perfilCache,cursoCache,plantillaCache,estudianteCache ts=${new Date().toISOString()}`);
+                return {
+                    session,
+                    ...(shouldResetInMemoryState ? { state: initialState } : {}),
+                    loadedModules: [],
+                    loadedCursos: [],
+                    academicCache: {},
+                    secuenciaCache: {},
+                };
             }
             return { session };
         }),
@@ -361,7 +409,8 @@ export const useAppStore = create<AppStore>()(
         centroCache: state.centroCache,
         perfilCache: state.perfilCache,
         cursoCache: state.cursoCache,
-        plantillaCache: state.plantillaCache
+        plantillaCache: state.plantillaCache,
+        estudianteCache: state.estudianteCache
       }),
       merge: (persistedState: any, currentState: any) => {
         // Only merge the keys we explicitly partialize, discarding any legacy corrupted state
@@ -402,6 +451,22 @@ export const useAppStore = create<AppStore>()(
             validPlantillaCache[key] = entry;
           }
         }
+        // Las entradas de caché de estudiantes por curso expiradas (TTL 365 días) se descartan al hidratar.
+        const persistedEstudianteCache = (persistedState?.estudianteCache || {}) as Record<string, EstudianteCacheEntry>;
+        const validEstudianteCache: Record<string, EstudianteCacheEntry> = {};
+        for (const key of Object.keys(persistedEstudianteCache)) {
+          const entry = persistedEstudianteCache[key];
+          if (
+            entry &&
+            typeof entry.expiresAt === 'number' &&
+            entry.expiresAt > nowMs &&
+            typeof entry.cursoId === 'number' &&
+            typeof entry.userId === 'string' &&
+            Array.isArray(entry.data)
+          ) {
+            validEstudianteCache[key] = entry;
+          }
+        }
 
         // Migración del período predeterminado a P2:
         // P2 es el período inicial predeterminado para todos los usuarios.
@@ -433,6 +498,7 @@ export const useAppStore = create<AppStore>()(
           perfilCache: validPerfilCache,
           cursoCache: validCursoCache,
           plantillaCache: validPlantillaCache,
+          estudianteCache: validEstudianteCache,
         };
       },
     }

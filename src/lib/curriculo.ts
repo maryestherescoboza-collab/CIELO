@@ -101,7 +101,13 @@ export function normalizarTexto(valor: unknown): string {
  * Incluye alias por variantes reales de los seeds ("Inglés" vs "Lenguas Extranjeras (Inglés)").
  */
 export function claveAsignatura(valor: string | null | undefined): string {
-  const n = normalizarTexto(valor);
+  const raw = String(valor ?? '').trim();
+  if (!raw) return '';
+  if (raw.toLowerCase().startsWith('optativa:')) {
+    const limpio = normalizarTexto(raw.slice('optativa:'.length));
+    return limpio ? `optativa:${limpio}` : '';
+  }
+  const n = normalizarTexto(raw);
   if (!n) return '';
   if (n.includes('ingles')) return 'ingles';
   if (n.includes('frances')) return 'frances';

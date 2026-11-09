@@ -8,16 +8,16 @@ import { CourseCard } from '../components/courses/CourseCard';
 import { NewCourseModal } from '../components/courses/NewCourseModal';
 import { LinkTeacherModal } from '../components/courses/LinkTeacherModal';
 import VincularDocentesModal from '../components/curso-detalle/VincularDocentesModal';
-import { getAsignaturaNombre } from '../constants/asignaturas';
+import { getAsignaturaNombre, crearAsignaturaOptativaId } from '../constants/asignaturas';
 import { CieloPill } from '../components/ui/CieloPill';
 
 interface Props {
     onAddCurso: (c: Omit<Curso, 'id' | 'grupoId'>) => Promise<any>;
-    onDeleteCurso: (id: number) => void;
+    onDeleteCurso: (id: number, asignatura?: string) => void;
     selectedCursoId: number | null;
     onSelectCurso: (id: number) => void;
-    onSaveAsignatura?: (cursoId: number, asignatura: string) => void;
-    onSaveDias?: (cursoId: number, dias: string[]) => void;
+    onSaveAsignatura?: (cursoId: number, asignatura: string, oldAsignatura?: string) => void;
+    onSaveDias?: (cursoId: number, dias: string[], asignatura?: string) => void;
     onToggleDocenteCurso?: (cursoId: number, userId: string, rol: 'tutor' | 'co-docente', asignatura: string) => void;
 }
 
@@ -33,7 +33,7 @@ export default function Cursos({
     const state = useAppStore(s => s.state);
     const session = useAppStore(s => s.session);
     const navigate = useNavigate();
-    const [editingAsignaturaId, setEditingAsignaturaId] = useState<number | null>(null);
+    const [editingAsignaturaId, setEditingAsignaturaId] = useState<string | number | null>(null);
     const [cargaCourseId, setCargaCourseId] = useState<number | null>(null);
     const {
         showModal,
@@ -57,6 +57,11 @@ export default function Cursos({
 
     const handleCreate = useCallback(async () => {
         if (!form.seccion.trim() || isSaving) return;
+        const finalAsignatura = form.esOptativa
+            ? crearAsignaturaOptativaId(form.asignaturaOptativaNombre || '')
+            : form.asignatura;
+        if (!finalAsignatura) return;
+
         setIsSaving(true);
         try {
             const generatedNombre = `${form.grado} de Secundaria - Sección ${form.seccion}`;
@@ -64,7 +69,7 @@ export default function Cursos({
                 nombre: generatedNombre,
                 grado: form.grado,
                 seccion: form.seccion,
-                asignatura: form.asignatura,
+                asignatura: finalAsignatura,
                 diasSemana: form.diasSemana,
                 isTutorOficial: form.isTutorOficial,
                 periodo: 'P2',
@@ -97,12 +102,12 @@ export default function Cursos({
         const newDias = curso.diasSemana.includes(d)
             ? curso.diasSemana.filter(x => x !== d)
             : [...curso.diasSemana, d];
-        onSaveDias(curso.id, newDias);
+        onSaveDias(curso.id, newDias, curso.asignatura);
     }, [onSaveDias]);
 
     const handleSaveAsignatura = useCallback((curso: Curso, newAsignatura: string) => {
         if (!onSaveAsignatura) return;
-        onSaveAsignatura(curso.id, newAsignatura);
+        onSaveAsignatura(curso.id, newAsignatura, curso.asignatura);
     }, [onSaveAsignatura]);
 
     const handleToggleLinkTeacher = useCallback((cursoId: number, userId: string, teacherSubject: string) => {
@@ -191,6 +196,8 @@ export default function Cursos({
                 setForm={setForm}
                 isSaving={isSaving}
                 onConfirm={handleCreate}
+                existingCursos={state.cursos}
+                cursoDocentes={state.cursoDocentes}
             />
 
             <LinkTeacherModal 

@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
 import { clearCursoCache } from '../cache/cursoCache';
 import { clearAcademicCacheByUser } from '../cache/academicCache';
+import { invalidateCursoEstudianteCache, ensureCourseStudentsSWR } from '../cache/estudianteCache';
+import { getAsignaturaNombre, sonMismaAsignatura } from '../constants/asignaturas';
 import type { Curso } from '../types';
 
 export function useCourseActions() {
@@ -47,13 +49,20 @@ export function useCourseActions() {
             // Course exists, reuse it!
             finalCurso = existingData;
             
-            // Check if this teacher is already assigned to this subject in the course
-            const existingLink = state.cursoDocentes.find(cd => cd.cursoId === existingData.id && cd.asignatura === c.asignatura);
+            // Check if this subject (official or optional) is already assigned in the course
+            const existingLink = state.cursoDocentes.find(
+                cd => cd.cursoId === existingData.id && sonMismaAsignatura(cd.asignatura, c.asignatura)
+            );
             if (existingLink) {
-                setGenericToast({ message: `Ya hay un docente asignado a ${c.asignatura} en este curso.`, type: 'error' });
+                setGenericToast({ message: `Ya hay un docente asignado a ${getAsignaturaNombre(c.asignatura)} en este curso.`, type: 'error' });
                 setTimeout(() => setGenericToast(null), 3000);
                 return null;
             }
+
+            const yaEsTutorEnCurso =
+                existingData.user_id === session.user.id ||
+                state.cursoDocentes.some(cd => cd.cursoId === existingData.id && cd.userId === session.user.id && (cd.esTutor || cd.rol === 'tutor'));
+            const esTutorFinal = Boolean(c.isTutorOficial || yaEsTutorEnCurso);
 
             // Insert linking record in curso_docentes
             const { data: linkData, error: linkError } = await supabase
@@ -61,8 +70,8 @@ export function useCourseActions() {
                 .insert([{
                     curso_id: existingData.id,
                     docente_id: session.user.id,
-                    rol: c.isTutorOficial ? 'tutor' : 'co-docente',
-                    es_tutor: !!c.isTutorOficial,
+                    rol: esTutorFinal ? 'tutor' : 'co-docente',
+                    es_tutor: esTutorFinal,
                     asignatura: c.asignatura,
                     dias_semana: c.diasSemana
                 }])
@@ -87,7 +96,7 @@ export function useCourseActions() {
                     }
                 }
 
-                setGenericToast({ message: `La asignatura ya está siendo utilizada por ${nombreConflicto}. Elige otra asignatura para crear el curso.`, type: 'error' });
+                setGenericToast({ message: `La asignatura ${getAsignaturaNombre(c.asignatura)} ya está siendo utilizada por ${nombreConflicto}. Elige otra asignatura para crear el curso.`, type: 'error' });
                 setTimeout(() => setGenericToast(null), 8000);
                 return null;
             }
@@ -128,7 +137,20 @@ export function useCourseActions() {
             }
 
             const grupo_id = grupoData[0].id;
-            const shared_course_id = c.sharedCourseId || crypto.randomUUID();
+
+            // Si ya existe otro curso en el mismo centro para este mismo grado y sección,
+            // heredar su shared_course_id para garantizar la continuidad del estudiantado.
+            let shared_course_id = c.sharedCourseId;
+            if (!shared_course_id) {
+                const existingSibling = state.cursos.find(
+                    existing =>
+                        existing.centroId === centro_id &&
+                        existing.grado === c.grado &&
+                        String(existing.seccion || '').trim().toUpperCase() === String(c.seccion || '').trim().toUpperCase() &&
+                        Boolean(existing.sharedCourseId)
+                );
+                shared_course_id = existingSibling?.sharedCourseId || crypto.randomUUID();
+            }
 
             const { data, error } = await supabase.from('cursos').insert([{
                 nombre: c.nombre,
@@ -216,20 +238,29 @@ export function useCourseActions() {
             // Invalidar el caché de cursos: el conjunto visible cambió.
             clearCursoCache(session.user.id);
 
+            // Hidratar o consultar en segundo plano los estudiantes del curso físico (especialmente si es un curso existente compartido)
+            void ensureCourseStudentsSWR(session.user.id, mapped.centroId, mapped.id);
+
             return mapped;
         }
         return null;
     }, [session, setState, setGenericToast, state.perfiles, state.cursoDocentes]);
 
-    const handleDeleteCurso = useCallback(async (id: number) => {
+    const handleDeleteCurso = useCallback(async (id: number, asignatura?: string) => {
         if (!session?.user?.id) return;
         
         // Logical delete (hide) instead of physical delete
-        const { error } = await supabase
+        let query = supabase
             .from('curso_docentes')
             .update({ activo: false })
             .eq('curso_id', id)
             .eq('docente_id', session.user.id);
+
+        if (asignatura) {
+            query = query.eq('asignatura', asignatura);
+        }
+
+        const { error } = await query;
             
         if (error) {
             console.error('Error hiding curso:', error);
@@ -238,15 +269,25 @@ export function useCourseActions() {
         
         setState(s => ({
             ...s,
-            cursoDocentes: s.cursoDocentes.filter(cd => !(cd.cursoId === id && cd.userId === session.user.id)),
-            // Filter out the course locally if no longer linked
-            cursos: s.cursos.filter(c => c.id !== id || s.cursoDocentes.some(cd => cd.cursoId === c.id && cd.userId !== session.user.id && cd.cursoId !== id)) 
+            cursoDocentes: s.cursoDocentes.filter(cd =>
+                !(cd.cursoId === id && cd.userId === session.user.id && (!asignatura || sonMismaAsignatura(cd.asignatura, asignatura)))
+            ),
+            // Filter out only the targeted course/subject card locally
+            cursos: s.cursos.filter(c =>
+                !(c.id === id && (!asignatura || sonMismaAsignatura(c.asignatura, asignatura)))
+            )
         }));
         // Invalidar el caché de cursos: el conjunto visible cambió.
         clearCursoCache(session.user.id);
         // Paso 7 — invalidar únicamente las slices académicas de ESTE curso (por clave),
         // nunca limpiar indiscriminadamente los datos del usuario.
         clearAcademicCacheByUser(session.user.id, id);
+        // Si el docente ya no conserva ninguna asignatura activa en ese curso físico,
+        // invalidar selectivamente la entrada de caché de estudiantes de ese curso.
+        const stillInPhysicalCourse = useAppStore.getState().state.cursos.some(c => c.id === id);
+        if (!stillInPhysicalCourse) {
+            invalidateCursoEstudianteCache(session.user.id, id, { hardDelete: true });
+        }
     }, [session, setState]);
 
     const handleSaveCurso = useCallback(async (c: Curso) => {
@@ -338,17 +379,18 @@ export function useCourseActions() {
         clearCursoCache(session.user.id);
     }, [session, state.cursoDocentes, state.cursos, setState]);
 
-    const handleUpdateDocenteAsignatura = useCallback(async (cursoId: number, asignatura: string) => {
+    const handleUpdateDocenteAsignatura = useCallback(async (cursoId: number, asignatura: string, oldAsignatura?: string) => {
         if (!session?.user?.id) return;
         
-        // 1. Check if asignatura is already assigned to another teacher in this course
+        // 1. Check if asignatura is already assigned in this course (either to another teacher or another card of the same teacher)
+        const targetOld = oldAsignatura;
         const isAlreadyAssignedLocal = state.cursoDocentes.some(cd => 
             cd.cursoId === cursoId && 
-            cd.asignatura === asignatura && 
-            cd.userId !== session.user.id
+            sonMismaAsignatura(cd.asignatura, asignatura) && 
+            !(cd.userId === session.user.id && (!targetOld || sonMismaAsignatura(cd.asignatura, targetOld)))
         );
         if (isAlreadyAssignedLocal) {
-            setGenericToast({ message: "Esta asignatura ya está asignada a otro docente en este curso.", type: 'error' });
+            setGenericToast({ message: `La asignatura «${getAsignaturaNombre(asignatura)}» ya está registrada en este curso.`, type: 'error' });
             setTimeout(() => setGenericToast(null), 3000);
             return;
         }
@@ -367,9 +409,16 @@ export function useCourseActions() {
             return;
         }
 
-        let existing = state.cursoDocentes.find(cd => cd.cursoId === cursoId && cd.userId === session.user.id);
+        let existing = state.cursoDocentes.find(cd =>
+            cd.cursoId === cursoId &&
+            cd.userId === session.user.id &&
+            (!targetOld || sonMismaAsignatura(cd.asignatura, targetOld))
+        );
+        if (!existing && targetOld) {
+            existing = state.cursoDocentes.find(cd => cd.cursoId === cursoId && cd.userId === session.user.id);
+        }
         if (!existing) {
-            const curso = state.cursos.find(c => c.id === cursoId);
+            const curso = state.cursos.find(c => c.id === cursoId && (!targetOld || sonMismaAsignatura(c.asignatura, targetOld))) || state.cursos.find(c => c.id === cursoId);
             if (curso && curso.userId === session.user.id) {
                 const { data, error } = await supabase.from('curso_docentes').insert([{
                     curso_id: cursoId,
@@ -399,7 +448,11 @@ export function useCourseActions() {
                 setState(s => ({
                     ...s,
                     cursoDocentes: [...s.cursoDocentes, newLink],
-                    cursos: s.cursos.map(cu => cu.id === cursoId ? { ...cu, asignatura, diasSemana: newLink.diasSemana } : cu)
+                    cursos: s.cursos.map(cu =>
+                        cu.id === cursoId && (!targetOld || sonMismaAsignatura(cu.asignatura, targetOld))
+                            ? { ...cu, asignatura, diasSemana: newLink.diasSemana }
+                            : cu
+                    )
                 }));
                 // Invalidar el caché de cursos: cambió la asignatura/relación del curso.
                 clearCursoCache(session.user.id);
@@ -408,6 +461,7 @@ export function useCourseActions() {
                 return;
             }
         } else {
+            const prevAsig = existing.asignatura;
             const { error } = await supabase
                 .from('curso_docentes')
                 .update({ asignatura })
@@ -422,20 +476,31 @@ export function useCourseActions() {
 
             setState(s => ({
                 ...s,
-                cursoDocentes: s.cursoDocentes.map(cd => cd.id === existing.id ? { ...cd, asignatura } : cd),
-                cursos: s.cursos.map(cu => cu.id === cursoId ? { ...cu, asignatura } : cu)
+                cursoDocentes: s.cursoDocentes.map(cd => cd.id === existing!.id ? { ...cd, asignatura } : cd),
+                cursos: s.cursos.map(cu =>
+                    cu.id === cursoId && (!prevAsig || sonMismaAsignatura(cu.asignatura, prevAsig))
+                        ? { ...cu, asignatura }
+                        : cu
+                )
             }));
         }
         // Invalidar el caché de cursos: cambió la asignatura/relación del curso.
         clearCursoCache(session.user.id);
     }, [session, state.cursoDocentes, state.cursos, setState, setGenericToast]);
 
-    const handleUpdateDocenteDias = useCallback(async (cursoId: number, diasSemana: string[]) => {
+    const handleUpdateDocenteDias = useCallback(async (cursoId: number, diasSemana: string[], asignatura?: string) => {
         if (!session?.user?.id) return;
 
-        let existing = state.cursoDocentes.find(cd => cd.cursoId === cursoId && cd.userId === session.user.id);
+        let existing = state.cursoDocentes.find(cd =>
+            cd.cursoId === cursoId &&
+            cd.userId === session.user.id &&
+            (!asignatura || sonMismaAsignatura(cd.asignatura, asignatura))
+        );
+        if (!existing && asignatura) {
+            existing = state.cursoDocentes.find(cd => cd.cursoId === cursoId && cd.userId === session.user.id);
+        }
         if (!existing) {
-            const curso = state.cursos.find(c => c.id === cursoId);
+            const curso = state.cursos.find(c => c.id === cursoId && (!asignatura || sonMismaAsignatura(c.asignatura, asignatura))) || state.cursos.find(c => c.id === cursoId);
             if (curso && curso.userId === session.user.id) {
                 const { data, error } = await supabase.from('curso_docentes').insert([{
                     curso_id: cursoId,
@@ -465,7 +530,11 @@ export function useCourseActions() {
                 setState(s => ({
                     ...s,
                     cursoDocentes: [...s.cursoDocentes, newLink],
-                    cursos: s.cursos.map(cu => cu.id === cursoId ? { ...cu, diasSemana, asignatura: newLink.asignatura } : cu)
+                    cursos: s.cursos.map(cu =>
+                        cu.id === cursoId && (!asignatura || sonMismaAsignatura(cu.asignatura, asignatura))
+                            ? { ...cu, diasSemana, asignatura: newLink.asignatura }
+                            : cu
+                    )
                 }));
                 // Invalidar el caché de cursos: cambiaron los días de clase.
                 clearCursoCache(session.user.id);
@@ -474,6 +543,7 @@ export function useCourseActions() {
                 return;
             }
         } else {
+            const targetAsig = existing.asignatura;
             const { error } = await supabase
                 .from('curso_docentes')
                 .update({ dias_semana: diasSemana })
@@ -488,8 +558,12 @@ export function useCourseActions() {
 
             setState(s => ({
                 ...s,
-                cursoDocentes: s.cursoDocentes.map(cd => cd.id === existing.id ? { ...cd, diasSemana } : cd),
-                cursos: s.cursos.map(cu => cu.id === cursoId ? { ...cu, diasSemana } : cu)
+                cursoDocentes: s.cursoDocentes.map(cd => cd.id === existing!.id ? { ...cd, diasSemana } : cd),
+                cursos: s.cursos.map(cu =>
+                    cu.id === cursoId && (!targetAsig || sonMismaAsignatura(cu.asignatura, targetAsig))
+                        ? { ...cu, diasSemana }
+                        : cu
+                )
             }));
         }
         // Invalidar el caché de cursos: cambiaron los días de clase.

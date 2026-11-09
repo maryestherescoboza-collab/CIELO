@@ -23,7 +23,7 @@ interface CursoDetalleHeaderProps {
     setBuscar: (val: string) => void;
     isDirty: boolean;
     isSaving: boolean;
-    saveStatus?: 'idle' | 'unsaved' | 'saving' | 'saved' | 'error';
+    saveStatus?: 'idle' | 'unsaved' | 'saving' | 'verifying' | 'saved' | 'error';
     saveError?: string | null;
     onRetrySave?: () => void;
     onSave: () => void;
@@ -167,19 +167,19 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <CieloPill
                             as="button"
                             onClick={saveStatus === 'error' ? (onRetrySave || onSave) : onSave}
-                            disabled={isSaving || saveStatus === 'saving' || (saveStatus === 'saved' && !isDirty)}
-                            variant={saveStatus === 'error' ? 'danger' : isSaving || saveStatus === 'saving' ? 'disabled' : isDirty ? 'primary' : 'disabled'}
+                            disabled={isSaving || saveStatus === 'saving' || saveStatus === 'verifying' || (saveStatus === 'saved' && !isDirty)}
+                            variant={saveStatus === 'error' ? 'danger' : isSaving || saveStatus === 'saving' || saveStatus === 'verifying' ? 'disabled' : isDirty ? 'primary' : 'disabled'}
                             className={`gap-3 px-4.5 min-h-10 border transition-all ${
                                 saveStatus === 'error'
                                     ? 'bg-rose-600 border-rose-700 text-white cursor-pointer hover:bg-rose-700 shadow-sm'
-                                    : (isSaving || saveStatus === 'saving')
+                                    : (isSaving || saveStatus === 'saving' || saveStatus === 'verifying')
                                     ? 'bg-attention border-attention text-white cursor-wait'
                                     : isDirty
                                     ? 'bg-primary border-primary text-white cursor-pointer hover:bg-primary/90'
                                     : 'bg-white text-emerald-700 border-emerald-200 cursor-default'
                             }`}
                         >
-                            {isSaving || saveStatus === 'saving' ? (
+                            {isSaving || saveStatus === 'saving' || saveStatus === 'verifying' ? (
                                 <Loader2 size={16} className="animate-spin" />
                             ) : saveStatus === 'error' ? (
                                 <AlertCircle size={16} />
@@ -188,7 +188,9 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             ) : (
                                 <Check size={16} className="text-emerald-600 font-bold" />
                             )}
-                            {isSaving || saveStatus === 'saving'
+                            {saveStatus === 'verifying'
+                                ? 'VERIFICANDO EN SUPABASE...'
+                                : isSaving || saveStatus === 'saving'
                                 ? 'GUARDANDO...'
                                 : saveStatus === 'error'
                                 ? 'ERROR AL GUARDAR (REINTENTAR)'

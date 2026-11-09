@@ -404,8 +404,8 @@ const PortalEvidenciaForm: React.FC<Props> = ({
                 ) : null}
 
                 {error === 'SESSION_EXPIRED' ? (
-                    <div className="mb-5 text-center bg-[#FDECEA] border border-[#F5C6C0] rounded-xl px-4 py-4">
-                        <p className="text-xs font-bold text-[#C0392B] mb-3">Tu sesión de Drive expiró al recargar la página.</p>
+                    <div className="mb-5 text-center bg-[#DB5B48]/12 border border-[#DB5B48]/35 rounded-xl px-4 py-4">
+                        <p className="text-xs font-bold text-[#9E3525] mb-3">Tu sesión de Drive expiró al recargar la página.</p>
                         <button
                             type="button"
                             onClick={async () => {
@@ -417,13 +417,13 @@ const PortalEvidenciaForm: React.FC<Props> = ({
                                     setError(e.message || 'Error al autorizar.');
                                 }
                             }}
-                            className="inline-block px-4 py-2 bg-[#C0392B] text-white text-xs font-bold rounded-full hover:bg-opacity-90 transition-colors"
+                            className="inline-block px-4 py-2 bg-[#DB5B48] text-white text-xs font-bold rounded-full hover:bg-[#c74e3c] transition-colors"
                         >
                             Volver a autorizar
                         </button>
                     </div>
                 ) : error ? (
-                    <p className="text-xs font-bold text-[#C0392B] bg-[#FDECEA] border border-[#F5C6C0] rounded-xl px-3 py-2.5 mb-5">
+                    <p className="text-xs font-bold text-[#9E3525] bg-[#DB5B48]/12 border border-[#DB5B48]/35 rounded-xl px-3 py-2.5 mb-5">
                         {error}
                     </p>
                 ) : null}
@@ -433,7 +433,7 @@ const PortalEvidenciaForm: React.FC<Props> = ({
                         type="button"
                         onClick={onCerrar}
                         disabled={guardando}
-                        className="flex-1 h-11 rounded-full border border-[#D8D7E0] text-sm font-bold text-[#4E5566] hover:bg-[#F1F1EC] disabled:opacity-40"
+                        className="flex-1 h-11 rounded-full border border-[#BFC9A6]/60 bg-[#BFC9A6]/20 text-sm font-bold text-[#1B1F2A] hover:bg-[#BFC9A6]/35 disabled:opacity-40 transition-colors"
                     >
                         Cancelar
                     </button>

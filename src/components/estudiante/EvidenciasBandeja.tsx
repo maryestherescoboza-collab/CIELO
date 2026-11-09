@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Loader2, ExternalLink, X, Inbox } from 'lucide-react';
 import { evidenciasApiDocente, resolverUrls, mensajeDeExcepcion, type BandejaDocente } from '../../lib/evidenciasApi';
 import { SELLOS_INFO, selloPorValor } from '../../constants/sellos';
+import { getAsignaturaNombre } from '../../constants/asignaturas';
 import EvidenciaThumbnail from '../evidencias/EvidenciaThumbnail';
 import type { CursoConEvidencias, EvidenciaDocente, FiltroBandeja, GrupoBandeja } from '../../types/evidencias';
 
@@ -241,7 +242,7 @@ const EvidenciasBandeja: React.FC = () => {
                             className="min-h-11 w-full sm:w-auto px-3 rounded-full border border-[#D8D7E0] bg-white text-xs font-bold text-[#1B1F2A] focus:border-[#1B1F2A] focus:outline-none"
                         >
                             {curso.asignaturas.map(a => (
-                                <option key={a} value={a}>{a}</option>
+                                <option key={a} value={a}>{getAsignaturaNombre(a)}</option>
                             ))}
                         </select>
                     ) : null}

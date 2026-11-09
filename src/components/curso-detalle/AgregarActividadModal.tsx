@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PlusCircle } from 'lucide-react';
 import { CieloModal } from '../ui/CieloModal';
 import { SelectorIndicadorFragmento, type SelectorIndicadorData } from '../curriculo/SelectorIndicadorFragmento';
+import { esAsignaturaOptativa, getAsignaturaNombre } from '../../constants/asignaturas';
 import type { Curso, BCKey } from '../../types';
 
 interface AgregarActividadModalProps {
@@ -111,7 +112,8 @@ const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                     </span>
                     {curso && (
                         <span className="text-xs font-bold text-slate-700 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded-lg normal-case tracking-normal">
-                            {curso.grado} {curso.seccion} · {asignatura || curso.asignatura}
+                            {curso.grado} {curso.seccion} · {getAsignaturaNombre(asignatura || curso.asignatura)}
+                            {esAsignaturaOptativa(asignatura || curso.asignatura) ? ' (Optativa)' : ''}
                         </span>
                     )}
                 </div>

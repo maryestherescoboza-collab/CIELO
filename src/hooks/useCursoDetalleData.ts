@@ -2,7 +2,9 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { AppState, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, BCKey, CursoDocente } from '../types';
 import { calculateStudentPeriodBC, normalizeArea } from '../utils/academic';
 import { perteneceAlContextoDelCurso, esEstudianteDelCurso } from '../utils/aislamiento';
+import { sonMismaAsignatura } from '../constants/asignaturas';
 import { useAppStore } from '../store/appStore';
+import { usePersistenceStore, type PendingSaveItem } from '../store/persistenceStore';
 
 export interface AcademicWarning {
     actividadId: number;
@@ -22,8 +24,12 @@ interface Params {
 }
 
 export function useCursoDetalleData({ state, cursoId, currentUserId, currentCourseRole, onSaveCalificaciones, onSaveRecuperacionCotejo }: Params) {
-    const curso = state.cursos.find(c => c.id === cursoId);
-    const { selectedPeriodo, setSelectedPeriodo } = useAppStore();
+    const { selectedPeriodo, setSelectedPeriodo, selectedAsignatura: storeSelectedAsignatura } = useAppStore();
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const urlAsignatura = searchParams?.get('asignatura') || null;
+    const preferredAsignatura = urlAsignatura || currentCourseRole?.asignatura || storeSelectedAsignatura || '';
+    const curso = state.cursos.find(c => c.id === cursoId && (!preferredAsignatura || sonMismaAsignatura(c.asignatura, preferredAsignatura)))
+        || state.cursos.find(c => c.id === cursoId);
     const [buscar, setBuscar] = useState('');
     const [evalMode, setEvalMode] = useState<'pincel' | 'numerico' | 'libre'>('pincel');
 
@@ -36,7 +42,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
     const [activePaintColor, setActivePaintColor] = useState<number>(100);
     const [rubricTarget, setRubricTarget] = useState<{ estId: number, bc: number, bcName: BCKey } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [saveStatus, setSaveStatus] = useState<'idle' | 'unsaved' | 'saving' | 'saved' | 'error'>('idle');
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'unsaved' | 'saving' | 'verifying' | 'saved' | 'error'>('idle');
     const [saveError, setSaveError] = useState<string | null>(null);
     const [restoredFromBackupCount, setRestoredFromBackupCount] = useState<number>(0);
     const [isDragging, setIsDragging] = useState(false);
@@ -46,9 +52,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
     const [isDirty, setIsDirty] = useState(false);
 
     const sharedCourseId = curso?.sharedCourseId || String(cursoId);
-    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-    const urlAsignatura = searchParams?.get('asignatura') || null;
-    const myAsignatura = urlAsignatura || currentCourseRole?.asignatura || curso?.asignatura || '';
+    const myAsignatura = preferredAsignatura || curso?.asignatura || '';
     // Contexto institucional: el centro del propio curso es la autoridad.
     // sharedCourseId queda subordinado a este centro en todos los filtros.
     const centroContexto = curso?.centroId || null;
@@ -255,12 +259,14 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         if (pendingCalifsRef.current.size === 0 && pendingRecsRef.current.size === 0) {
             setIsDirty(false);
             setSaveStatus('saved');
+            usePersistenceStore.getState().setNavigationLock(false, null, cursoId);
             return true;
         }
 
         setIsSaving(true);
         setSaveStatus('saving');
         setSaveError(null);
+        usePersistenceStore.getState().setNavigationLock(true, 'Guardando calificaciones en el servidor...', cursoId);
 
         // Snapshot inmutable de las ediciones pendientes al momento de iniciar la petición
         const califsToSave: CalificacionActividad[] = [];
@@ -268,6 +274,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         pendingCalifsRef.current.forEach(({ calif, timestamp }, key) => {
             califsToSave.push(calif);
             flightCalifs.set(key, timestamp);
+            usePersistenceStore.getState().updateItemStatus(key, 'saving');
         });
 
         const recsToSave: RecuperacionBC[] = [];
@@ -275,6 +282,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         pendingRecsRef.current.forEach(({ rec, timestamp }, key) => {
             recsToSave.push(rec);
             flightRecs.set(key, timestamp);
+            usePersistenceStore.getState().updateItemStatus(key, 'saving');
         });
 
         inFlightCalifsRef.current = flightCalifs;
@@ -282,21 +290,30 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
 
         try {
             console.log(`[AUTOSAVE] Persistiendo en Supabase: ${califsToSave.length} calificaciones, ${recsToSave.length} recuperaciones.`);
+            setSaveStatus('verifying');
+            flightCalifs.forEach((_, key) => usePersistenceStore.getState().updateItemStatus(key, 'verifying'));
+            flightRecs.forEach((_, key) => usePersistenceStore.getState().updateItemStatus(key, 'verifying'));
+
             await onSaveCalificaciones(califsToSave, recsToSave, cursoId);
 
-            // ÉXITO CONFIRMADO: remover de pendientes ÚNICAMENTE las entradas cuya marca temporal no haya cambiado
+            // ÉXITO Y VERIFICACIÓN CONFIRMADA: remover de pendientes ÚNICAMENTE las entradas cuya marca temporal no haya cambiado
+            const confirmedIds: string[] = [];
             flightCalifs.forEach((sentTs, key) => {
                 const current = pendingCalifsRef.current.get(key);
                 if (current && current.timestamp === sentTs) {
                     pendingCalifsRef.current.delete(key);
+                    confirmedIds.push(key);
                 }
             });
             flightRecs.forEach((sentTs, key) => {
                 const current = pendingRecsRef.current.get(key);
                 if (current && current.timestamp === sentTs) {
                     pendingRecsRef.current.delete(key);
+                    confirmedIds.push(key);
                 }
             });
+
+            usePersistenceStore.getState().removeItems(confirmedIds);
 
             // Actualizar almacenamiento persistente seguro
             const remaining = Array.from(pendingCalifsRef.current.values()).map(x => x.calif);
@@ -306,11 +323,13 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                 setIsDirty(false);
                 setSaveStatus('saved');
                 setSaveError(null);
+                usePersistenceStore.getState().setNavigationLock(false, null, cursoId);
             } else {
                 // Se registraron nuevas ediciones mientras la petición estaba en vuelo
                 console.log(`[AUTOSAVE] Quedan ${pendingCalifsRef.current.size} modificaciones posteriores; programando siguiente guardado.`);
                 setIsDirty(true);
                 setSaveStatus('unsaved');
+                usePersistenceStore.getState().setNavigationLock(true, 'Guardando calificaciones pendientes...', cursoId);
                 if (timerRef.current) clearTimeout(timerRef.current);
                 timerRef.current = setTimeout(() => {
                     executeSave();
@@ -319,10 +338,13 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
             return true;
         } catch (err: any) {
             console.error("[AUTOSAVE] Error al persistir calificaciones en Supabase:", err);
-            // Conservar todas las ediciones en pendingCalifsRef, localCalifs y almacenamiento persistente; no perder nada
+            // Conservar todas las ediciones en pendingCalifsRef, localCalifs y cola persistente
             setIsDirty(true);
             setSaveStatus('error');
             setSaveError(err?.message || 'Error al persistir calificaciones en el servidor');
+            flightCalifs.forEach((_, key) => usePersistenceStore.getState().updateItemStatus(key, 'error', { lastError: err?.message }));
+            flightRecs.forEach((_, key) => usePersistenceStore.getState().updateItemStatus(key, 'error', { lastError: err?.message }));
+            usePersistenceStore.getState().setNavigationLock(true, 'Error al guardar calificaciones (reintentando)', cursoId);
             return false;
         } finally {
             inFlightCalifsRef.current.clear();
@@ -543,6 +565,26 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
 
             pendingCalifsRef.current.set(key, { calif: updatedCalif, timestamp: getNextTimestamp() });
 
+            // Registrar en la cola persistente global
+            usePersistenceStore.getState().enqueueItems([{
+                id: key,
+                tipo: 'calificacion',
+                cursoId: cursoId,
+                actividadId: actId,
+                estudianteId: estId,
+                puntaje: val,
+                periodo: updatedCalif.periodo,
+                asignatura: updatedCalif.asignatura,
+                competencias: updatedCalif.competencias,
+                descriptores: updatedCalif.descriptores,
+                sharedCourseId: updatedCalif.sharedCourseId,
+                userId: currentUserId!,
+                timestamp: Date.now(),
+                status: 'pending',
+                attempts: 0
+            }]);
+            usePersistenceStore.getState().setNavigationLock(true, 'Hay calificaciones pendientes de guardar y verificar', cursoId);
+
             // Almacenamiento seguro persistente (sessionStorage + localStorage)
             const pendingList = Array.from(pendingCalifsRef.current.values()).map(x => x.calif);
             persistPendingToStorage(pendingList);
@@ -588,6 +630,31 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                 pendingCalifsRef.current.set(key, { calif: updatedCalif, timestamp: getNextTimestamp() });
             });
 
+            // Registrar lote en la cola persistente global
+            const queueItems: PendingSaveItem[] = updates.filter(u => u.estId > 0 && u.actId > 0).map(u => {
+                const key = `${u.estId}_${u.actId}`;
+                const item = map.get(key)!;
+                return {
+                    id: key,
+                    tipo: 'calificacion',
+                    cursoId: cursoId,
+                    actividadId: u.actId,
+                    estudianteId: u.estId,
+                    puntaje: u.val,
+                    periodo: item.periodo,
+                    asignatura: item.asignatura,
+                    competencias: item.competencias,
+                    descriptores: item.descriptores,
+                    sharedCourseId: item.sharedCourseId,
+                    userId: currentUserId!,
+                    timestamp: Date.now(),
+                    status: 'pending',
+                    attempts: 0
+                };
+            });
+            usePersistenceStore.getState().enqueueItems(queueItems);
+            usePersistenceStore.getState().setNavigationLock(true, 'Hay calificaciones pendientes de guardar y verificar', cursoId);
+
             // Almacenamiento seguro persistente (sessionStorage + localStorage)
             const pendingList = Array.from(pendingCalifsRef.current.values()).map(x => x.calif);
             persistPendingToStorage(pendingList);
@@ -622,6 +689,23 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                 };
 
             pendingRecsRef.current.set(key, { rec: updatedRec, timestamp: getNextTimestamp() });
+
+            usePersistenceStore.getState().enqueueItems([{
+                id: key,
+                tipo: 'recuperacion',
+                cursoId: cursoId,
+                estudianteId: estId,
+                bc,
+                puntaje: val,
+                periodo: selectedPeriodo,
+                userId: currentUserId!,
+                asignatura: myAsignatura,
+                sharedCourseId: sharedCourseId,
+                timestamp: Date.now(),
+                status: 'pending',
+                attempts: 0
+            }]);
+            usePersistenceStore.getState().setNavigationLock(true, 'Hay recuperaciones pendientes de guardar y verificar', cursoId);
 
             if (idx >= 0) return prev.map((r, i) => i === idx ? updatedRec : r);
             return [...prev, updatedRec];
@@ -680,7 +764,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
     }, [onSaveRecuperacionCotejo, localRecCotejo, cursoId]);
 
     const discardCotejo = useCallback(() => {
-        setLocalRecCotejo(state.recuperacionesCotejo.filter(r => r.cursoId === cursoId && (!r.asignatura || r.asignatura === myAsignatura)));
+        setLocalRecCotejo(state.recuperacionesCotejo.filter(r => r.cursoId === cursoId && (!r.asignatura || normalizeArea(r.asignatura) === normalizeArea(myAsignatura))));
         setIsDirtyCotejo(false);
     }, [state.recuperacionesCotejo, cursoId, myAsignatura]);
 

@@ -159,7 +159,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                                         >
                                             Global (Todos)
                                         </button>
-                                        {state.cursos.map(c => (
+                                        {Array.from(new Map(state.cursos.map(c => [c.id, c])).values()).map(c => (
                                             <button
                                                 key={c.id}
                                                 onClick={() => { setSelectedCourseId(c.id); setIsSelectOpen(false); }}

@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Download, FileDown } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { getAsignaturaNombre } from '../../constants/asignaturas';
 import { estudiantesDelCurso, obtenerDocenteResponsable } from '../../utils/aislamiento';
+import { ensureCourseStudentsSWR } from '../../cache/estudianteCache';
 import type { Curso } from '../../types';
 import BoletinesPrintOverlay from './BoletinesPrintOverlay';
 
@@ -13,6 +14,7 @@ interface Props {
 
 export default function CentroBoletines({ centroId, centroNombre }: Props) {
     const state = useAppStore(s => s.state);
+    const session = useAppStore(s => s.session);
 
     const cursosCentro = useMemo(() => {
         const seen = new Set<string>();
@@ -34,6 +36,12 @@ export default function CentroBoletines({ centroId, centroNombre }: Props) {
         () => cursosCentro.find(c => c.id === selectedCursoId) || null,
         [cursosCentro, selectedCursoId]
     );
+
+    useEffect(() => {
+        if (session?.user?.id && selectedCurso?.id) {
+            void ensureCourseStudentsSWR(session.user.id, centroId, selectedCurso.id);
+        }
+    }, [session?.user?.id, centroId, selectedCurso?.id]);
 
     const estudiantesCurso = useMemo(() =>
         selectedCurso

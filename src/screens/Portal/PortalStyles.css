@@ -54,9 +54,9 @@
   background: repeating-linear-gradient(
     45deg,
     #1E1E24 0px,
-    #1E1E24 1.5px,
-    transparent 1.5px,
-    transparent 5.5px
+    #1E1E24 0.85px,
+    transparent 0.85px,
+    transparent 2.4px
   );
 }
 

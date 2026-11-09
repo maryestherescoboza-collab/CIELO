@@ -1,20 +1,26 @@
 import { useState } from 'react';
-import { EyeOff, GraduationCap, Users, Clock, Plus, Layers, ChevronRight, Search, FileText, ShieldAlert } from 'lucide-react';
+import { EyeOff, GraduationCap, Users, Clock, Plus, Layers, ChevronRight, Search, FileText, ShieldAlert, Check, X } from 'lucide-react';
 import type { Curso, AppState } from '../../types';
-import { getAsignaturaNombre, ASIGNATURAS_CATALOGO } from '../../constants/asignaturas';
+import {
+    getAsignaturaNombre,
+    ASIGNATURAS_CATALOGO,
+    OPCION_AGREGAR_OPTATIVA,
+    crearAsignaturaOptativaId,
+    esAsignaturaOptativa
+} from '../../constants/asignaturas';
 import { CieloModal } from '../ui/CieloModal';
 
 interface Props {
     curso: any; // Extended with count and docentesVinculadosRel
     isSelected: boolean;
     state: AppState;
-    editingDiasId: number | null;
-    editingAsignaturaId: number | null;
+    editingDiasId: string | number | null;
+    editingAsignaturaId: string | number | null;
     currentUserId?: string;
-    onHide: (id: number) => void;
+    onHide: (id: number, asignatura?: string) => void;
     onSelect: (id: number, path?: string, asignatura?: string, cursoDocenteId?: number) => void;
-    onEditDias: (id: number | null) => void;
-    onEditAsignatura: (id: number | null) => void;
+    onEditDias: (id: string | number | null) => void;
+    onEditAsignatura: (id: string | number | null) => void;
     onSaveDias: (c: Curso, d: string) => void;
     onSaveAsignatura: (c: Curso, newAsignatura: string) => void;
     onOpenLinkModal: (id: number) => void;
@@ -44,8 +50,12 @@ export function CourseCard({
     const isTutorDeEsteCurso = state.cursoDocentes?.some(cd => cd.cursoId === curso.id && cd.userId === currentUserId && cd.rol === 'tutor');
     const [avisoBoletines, setAvisoBoletines] = useState(false);
     const [confirmHide, setConfirmHide] = useState(false);
+    const [inlineOptativaMode, setInlineOptativaMode] = useState(false);
+    const [inlineOptativaNombre, setInlineOptativaNombre] = useState('');
     const displayAsignatura = myLink ? myLink.asignatura : curso.asignatura;
     const displayDiasSemana = myLink ? myLink.diasSemana : (curso.diasSemana || []);
+    const isOptativa = esAsignaturaOptativa(displayAsignatura);
+    const cardKey = `${curso.id}-${displayAsignatura || ''}`;
 
     return (
         <div className={`group flex flex-col h-full bg-white border border-(--border-soft) rounded-(--radius-md) shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${isSelected ? 'ring-2 ring-(--primary)' : 'hover:border-(--primary)/30'}`}>
@@ -75,37 +85,131 @@ export function CourseCard({
 
                 <h3 className="text-lg font-black text-(--ink) tracking-tight leading-snug group-hover:text-(--primary) transition-colors mb-3 font-notion-title">{curso.nombre}</h3>
 
-                <div className="inline-flex items-center gap-2 mb-5">
-                    {editingAsignaturaId === curso.id ? (
-                        <select
-                            value={displayAsignatura || ''}
-                            onChange={(e) => {
-                                e.stopPropagation();
-                                onSaveAsignatura(curso, e.target.value);
-                                onEditAsignatura(null);
-                            }}
-                            onBlur={() => onEditAsignatura(null)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-3 py-1.5 text-xs rounded-lg font-bold bg-white border border-(--primary) text-(--ink) outline-none focus:ring-2 focus:ring-(--primary)/50 transition-all"
-                            autoFocus
-                        >
-                            {ASIGNATURAS_CATALOGO.map(asig => (
-                                <option key={asig.id} value={asig.id}>
-                                    {asig.nombre}
-                                </option>
-                            ))}
-                        </select>
+                <div className="inline-flex items-center gap-2 mb-5 flex-wrap">
+                    {(editingAsignaturaId === cardKey || editingAsignaturaId === curso.id) ? (
+                        inlineOptativaMode ? (
+                            <div
+                                className="flex items-center gap-1.5 w-full"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    maxLength={80}
+                                    placeholder="Nombre de asignatura optativa..."
+                                    value={inlineOptativaNombre}
+                                    onChange={(e) => setInlineOptativaNombre(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            const idOpt = crearAsignaturaOptativaId(inlineOptativaNombre);
+                                            if (idOpt) {
+                                                onSaveAsignatura(curso, idOpt);
+                                            }
+                                            setInlineOptativaMode(false);
+                                            setInlineOptativaNombre('');
+                                            onEditAsignatura(null);
+                                        } else if (e.key === 'Escape') {
+                                            setInlineOptativaMode(false);
+                                            setInlineOptativaNombre('');
+                                            onEditAsignatura(null);
+                                        }
+                                    }}
+                                    className="px-3 py-1 text-xs rounded-lg font-bold bg-white border border-(--primary) text-(--ink) outline-none focus:ring-2 focus:ring-(--primary)/50 transition-all min-w-42"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const idOpt = crearAsignaturaOptativaId(inlineOptativaNombre);
+                                        if (idOpt) {
+                                            onSaveAsignatura(curso, idOpt);
+                                        }
+                                        setInlineOptativaMode(false);
+                                        setInlineOptativaNombre('');
+                                        onEditAsignatura(null);
+                                    }}
+                                    className="p-1.5 rounded-lg bg-(--primary) text-white hover:opacity-90 transition-all"
+                                    title="Guardar asignatura optativa"
+                                >
+                                    <Check size={12} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setInlineOptativaMode(false);
+                                        setInlineOptativaNombre('');
+                                        onEditAsignatura(null);
+                                    }}
+                                    className="p-1.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-all"
+                                    title="Cancelar"
+                                >
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        ) : (
+                            <select
+                                value={displayAsignatura || ''}
+                                onChange={(e) => {
+                                    e.stopPropagation();
+                                    const val = e.target.value;
+                                    if (val === OPCION_AGREGAR_OPTATIVA) {
+                                        setInlineOptativaNombre(isOptativa ? getAsignaturaNombre(displayAsignatura) : '');
+                                        setInlineOptativaMode(true);
+                                        return;
+                                    }
+                                    onSaveAsignatura(curso, val);
+                                    onEditAsignatura(null);
+                                }}
+                                onBlur={() => {
+                                    if (!inlineOptativaMode) onEditAsignatura(null);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="px-3 py-1.5 text-xs rounded-lg font-bold bg-white border border-(--primary) text-(--ink) outline-none focus:ring-2 focus:ring-(--primary)/50 transition-all"
+                                autoFocus
+                            >
+                                <optgroup label="Asignaturas Oficiales">
+                                    {ASIGNATURAS_CATALOGO.map(asig => (
+                                        <option key={asig.id} value={asig.id}>
+                                            {asig.nombre}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                                {isOptativa && displayAsignatura && (
+                                    <optgroup label="Asignatura Optativa Actual">
+                                        <option value={displayAsignatura}>
+                                            {getAsignaturaNombre(displayAsignatura)} (Optativa)
+                                        </option>
+                                    </optgroup>
+                                )}
+                                <optgroup label="Personalizada">
+                                    <option value={OPCION_AGREGAR_OPTATIVA}>+ Agregar asignatura optativa</option>
+                                </optgroup>
+                            </select>
+                        )
                     ) : (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onEditAsignatura(curso.id);
-                            }}
-                            className="px-3 py-1 rounded-full text-xs font-bold tracking-[0.08em] text-(--primary) bg-(--primary)/10 border border-(--primary)/20 hover:bg-(--primary) hover:text-white transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50"
-                            title="Modificar asignatura"
-                        >
-                            {getAsignaturaNombre(displayAsignatura)}
-                        </button>
+                        <>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setInlineOptativaMode(false);
+                                    onEditAsignatura(cardKey);
+                                }}
+                                className="px-3 py-1 rounded-full text-xs font-bold tracking-[0.08em] text-(--primary) bg-(--primary)/10 border border-(--primary)/20 hover:bg-(--primary) hover:text-white transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50"
+                                title="Modificar asignatura"
+                            >
+                                {getAsignaturaNombre(displayAsignatura)}
+                            </button>
+                            {isOptativa && (
+                                <span
+                                    className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80"
+                                    title="Asignatura optativa personalizada"
+                                >
+                                    Optativa
+                                </span>
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -123,7 +227,7 @@ export function CourseCard({
                         </div>
                         <div className="flex-1">
                             <span className="mr-1">Días:</span>
-                            {editingDiasId === curso.id ? (
+                            {(editingDiasId === cardKey || editingDiasId === curso.id) ? (
                                 <div className="absolute left-0 bottom-full mb-3 bg-white border border-(--border-soft) shadow-sm rounded-xl p-4 z-50 w-56 animate-in slide-in-from-bottom-2 duration-200">
                                     <div className="flex gap-1.5 flex-wrap mb-4">
                                         {['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb'].map(d => (
@@ -142,7 +246,7 @@ export function CourseCard({
                                     <button onClick={(e) => { e.stopPropagation(); onEditDias(null); }} className="w-full text-center text-xs font-bold uppercase tracking-widest py-2.5 bg-(--primary) text-white rounded-xl shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 focus-visible:ring-offset-2 hover:opacity-90 active:scale-95 transition-all">Listo</button>
                                 </div>
                             ) : (
-                                <button onClick={(e) => { e.stopPropagation(); onEditDias(curso.id); }} className="text-(--ink) border-b border-dotted border-(--border-soft) hover:border-(--primary) hover:text-(--primary) transition-all font-semibold outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 rounded-sm">
+                                <button onClick={(e) => { e.stopPropagation(); onEditDias(cardKey); }} className="text-(--ink) border-b border-dotted border-(--border-soft) hover:border-(--primary) hover:text-(--primary) transition-all font-semibold outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 rounded-sm">
                                     {displayDiasSemana.length ? displayDiasSemana.join(', ') : 'Click para asignar días'}
                                 </button>
                             )}
@@ -162,7 +266,7 @@ export function CourseCard({
                                                 key={idx}
                                                 className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white shadow-sm ring-1 ring-(--border-soft) hover:z-10 transition-all hover:scale-110 cursor-help"
                                                 style={{ background: profile.avatarColor || '#64748b' }}
-                                                title={`${profile.nombreDocente} - ${cd.asignatura}`}
+                                                title={`${profile.nombreDocente} - ${getAsignaturaNombre(cd.asignatura)}`}
                                             >
                                                 {(profile.nombreDocente || 'D').substring(0, 2).toUpperCase()}
                                             </div>
@@ -270,7 +374,7 @@ export function CourseCard({
                         onClick={(e) => {
                             e.stopPropagation();
                             setConfirmHide(false);
-                            onHide(curso.id);
+                            onHide(curso.id, displayAsignatura);
                         }}
                         className="flex-1 py-2.5 bg-[#EF4444] text-white rounded-xl shadow-sm text-xs font-bold uppercase tracking-widest outline-none focus-visible:ring-2 focus-visible:ring-[#EF4444]/50 hover:opacity-90 active:scale-[0.98] transition-all"
                     >

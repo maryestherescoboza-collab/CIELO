@@ -6,7 +6,6 @@ import {
   Link2,
   Link2Off,
   Loader2,
-  PhoneCall,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAppStore } from '../../store/appStore';
@@ -249,11 +248,11 @@ export function FichaActividadesPanel({ notaId }: FichaActividadesPanelProps) {
                     {/* ── Solicitar subir producto ── */}
                     <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#2E3330]/5 pt-3">
                       <div className="min-w-0 flex items-center gap-2">
-                        <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          actividad.requiere_producto ? 'bg-[#689C63]/15 text-[#4a7a46]' : 'bg-[#2E3330]/5 text-[#2E3330]/40'
-                        }`}>
-                          {actividad.requiere_producto ? <Check size={14} /> : <PhoneCall size={14} />}
-                        </span>
+                        {actividad.requiere_producto && (
+                          <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-[#689C63]/15 text-[#4a7a46]">
+                            <Check size={13} />
+                          </span>
+                        )}
                         <span className="text-[12px] font-semibold text-[#2E3330]/75 leading-tight">
                           {actividad.requiere_producto
                             ? 'El estudiante ve “Entregar producto” dentro de esta ficha'

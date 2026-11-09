@@ -25,7 +25,6 @@ import {
     CircleAlert,
     Scale,
     Link2,
-    PhoneCall,
 } from 'lucide-react';
 
 import type {
@@ -1198,8 +1197,7 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                         className="mt-0.5"
                     />
                     <div>
-                        <span className="flex items-center gap-1.5 text-[12px] font-bold text-[#2E3330]">
-                            <PhoneCall size={13} className="text-[#689C63]" />
+                        <span className="block text-[12px] font-bold text-[#2E3330]">
                             Solicitar subir producto (Evidencia)
                         </span>
                         <span className="block text-[11px] text-[#2E3330]/50 mt-0.5 leading-relaxed">

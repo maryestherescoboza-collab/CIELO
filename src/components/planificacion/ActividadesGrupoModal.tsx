@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/appStore';
 import { CieloModal } from '../ui/CieloModal';
 import { supabase } from '../../lib/supabase';
 import type { GrupoActividades } from '../../hooks/useAgruparActividades';
+import { getAsignaturaNombre } from '../../constants/asignaturas';
 
 interface Props {
     selectedGroupData: GrupoActividades | null;
@@ -119,7 +120,7 @@ export function ActividadesGrupoModal({ selectedGroupData, onClose }: Props) {
                                 Actividades de {selectedGroupData.cursoName}
                             </h2>
                             <p className="text-sm font-bold text-(--ink-soft)">
-                                {selectedGroupData.asignatura} • {selectedGroupData.periodo}
+                                {getAsignaturaNombre(selectedGroupData.asignatura)} • {selectedGroupData.periodo}
                             </p>
                         </div>
                         <button 
@@ -160,7 +161,7 @@ export function ActividadesGrupoModal({ selectedGroupData, onClose }: Props) {
                                         if (!c) return null;
                                         return (
                                             <option key={cd.id} value={`${c.id}|${cd.asignatura}`}>
-                                                {c.grado} {c.seccion} • {cd.asignatura}
+                                                {c.grado} {c.seccion} • {getAsignaturaNombre(cd.asignatura)}
                                             </option>
                                         );
                                     })}

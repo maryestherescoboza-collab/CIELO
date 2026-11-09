@@ -22,8 +22,9 @@ import type {
     CursoDocente
 } from '../types';
 
-import { getAsignaturaNombre } from '../constants/asignaturas';
+import { getAsignaturaNombre, sonMismaAsignatura } from '../constants/asignaturas';
 import { normalizeArea } from '../utils/academic';
+import { esEstudianteDelCurso } from '../utils/aislamiento';
 import { RubricaRow, COMPETENCIAS, NIVEL_FIELDS, toRichHtml } from '../components/RubricaRow';
 import { CieloPill } from '../components/ui/CieloPill';
 import { useTemplateCapture } from '../hooks/useTemplateCapture';
@@ -115,8 +116,24 @@ export default function Rubrica({
         }
     }, [readOnly, contextReady, loadRubricaCotejoData]);
 
-    const [selectedCursoId, setSelectedCursoId] = useState(cursosStore[0]?.id ?? 0);
-    const [selectedAsignatura, setSelectedAsignatura] = useState(cursosStore[0]?.asignatura ?? '');
+    const storeSelectedCursoId = useAppStore(s => s.selectedCursoId);
+    const storeSelectedAsignatura = useAppStore(s => s.selectedAsignatura);
+    const initialCurso = cursosStore.find(c =>
+        c.id === storeSelectedCursoId && (!storeSelectedAsignatura || sonMismaAsignatura(c.asignatura, storeSelectedAsignatura))
+    ) || cursosStore.find(c => c.id === storeSelectedCursoId) || cursosStore[0];
+
+    const [selectedCursoId, setSelectedCursoId] = useState(initialCurso?.id ?? 0);
+    const [selectedAsignatura, setSelectedAsignatura] = useState(initialCurso?.asignatura ?? '');
+
+    useEffect(() => {
+        if (!selectedCursoId && cursosStore.length > 0) {
+            const preferred = cursosStore.find(c =>
+                c.id === storeSelectedCursoId && (!storeSelectedAsignatura || sonMismaAsignatura(c.asignatura, storeSelectedAsignatura))
+            ) || cursosStore.find(c => c.id === storeSelectedCursoId) || cursosStore[0];
+            setSelectedCursoId(preferred.id);
+            setSelectedAsignatura(preferred.asignatura ?? '');
+        }
+    }, [cursosStore, selectedCursoId, storeSelectedCursoId, storeSelectedAsignatura]);
 
     useEffect(() => {
         if (!readOnly && contextReady && selectedCursoId) {
@@ -181,13 +198,12 @@ export default function Rubrica({
         actividades,
         rubricaPlantillas
     } = useMemo(() => {
-        const curso = cursosStore.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || 
+        const curso = cursosStore.find(c => c.id === selectedCursoId && sonMismaAsignatura(c.asignatura, selectedAsignatura)) || 
                       cursosStore.find(c => c.id === selectedCursoId);
         
-        const ests = estudiantesStore.filter((estudiante) => 
-            estudiante.cursoId === selectedCursoId || 
-            (curso?.sharedCourseId && estudiante.sharedCourseId === curso.sharedCourseId)
-        );
+        const ests = curso
+            ? estudiantesStore.filter((estudiante) => esEstudianteDelCurso(cursosStore, curso, estudiante, curso.centroId))
+            : [];
         
         const targetAsig = selectedAsignatura || currentCourseRole?.asignatura || curso?.asignatura;
         const acts = actividadesStore.filter((actividad) => 

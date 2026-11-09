@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, CheckCircle, X, ClipboardCheck, BookMarked, Loader2, ChevronRight, ChevronLeft, Sparkles, RefreshCw, FileDown } from 'lucide-react';
 import type { AppState, CriterioCotejo, EvaluacionCotejo, CursoDocente } from '../types';
-import { getAsignaturaNombre } from '../constants/asignaturas';
+import { getAsignaturaNombre, sonMismaAsignatura } from '../constants/asignaturas';
+import { normalizeArea } from '../utils/academic';
+import { esEstudianteDelCurso } from '../utils/aislamiento';
 import { CieloPill } from '../components/ui/CieloPill';
 import GenerarInstrumentoModal from '../components/evaluacion/GenerarInstrumentoModal';
 import ExportarInstrumentoModal from '../components/evaluacion/ExportarInstrumentoModal';
@@ -52,8 +54,14 @@ export default function Cotejo({
     readOnly = false,
     initialDatos,
 }: Props) {
-    const [selectedCursoId, setSelectedCursoId] = useState(state?.cursos[0]?.id ?? 0);
-    const [selectedAsignatura, setSelectedAsignatura] = useState(state?.cursos[0]?.asignatura ?? '');
+    const storeSelectedCursoId = useAppStore(s => s.selectedCursoId);
+    const storeSelectedAsignatura = useAppStore(s => s.selectedAsignatura);
+    const initialCurso = state?.cursos?.find(c =>
+        c.id === storeSelectedCursoId && (!storeSelectedAsignatura || sonMismaAsignatura(c.asignatura, storeSelectedAsignatura))
+    ) || state?.cursos?.find(c => c.id === storeSelectedCursoId) || state?.cursos[0];
+
+    const [selectedCursoId, setSelectedCursoId] = useState(initialCurso?.id ?? 0);
+    const [selectedAsignatura, setSelectedAsignatura] = useState(initialCurso?.asignatura ?? '');
     const [selectedActId, setSelectedActId] = useState<number | null>(null);
     const [selectedEstId, setSelectedEstId] = useState<number | null>(null);
     const [respuestas, setRespuestas] = useState<Record<number, number | null>>({});
@@ -86,8 +94,8 @@ export default function Cotejo({
     const { startCapture, captureOverlay, isCapturing } = useTemplateCapture();
     const [captureFileId, setCaptureFileId] = useState<string | undefined>(undefined);
 
-    const currentCourse = state?.cursos?.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || state?.cursos?.find(c => c.id === selectedCursoId);
-    const asignaturaName = getAsignaturaNombre(selectedAsignatura || currentCourseRole?.asignatura) || currentCourse?.asignatura || 'Asignatura';
+    const currentCourse = state?.cursos?.find(c => c.id === selectedCursoId && sonMismaAsignatura(c.asignatura, selectedAsignatura)) || state?.cursos?.find(c => c.id === selectedCursoId);
+    const asignaturaName = getAsignaturaNombre(selectedAsignatura || currentCourseRole?.asignatura || currentCourse?.asignatura) || 'Asignatura';
     const asignaturaNombre = asignaturaName;
     const courseName = currentCourse?.nombre || 'Curso';
     const captureFileName = `Cotejo - ${asignaturaName} - ${courseName} - ${new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()).replace(/\//g, '-')}.png`;
@@ -188,7 +196,7 @@ export default function Cotejo({
                 (actividad.cursoId === selectedCursoId ||
                  (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
                 (actividad.userId === session?.user?.id || !actividad.userId) &&
-                (!selectedAsignatura || actividad.asignatura === selectedAsignatura) &&
+                (!selectedAsignatura || normalizeArea(actividad.asignatura) === normalizeArea(selectedAsignatura)) &&
                 actividad.periodo === selectedPeriodo
             );
 
@@ -316,6 +324,16 @@ export default function Cotejo({
     }, [readOnly, contextReady, loadRubricaCotejoData]);
 
     useEffect(() => {
+        if (!selectedCursoId && state?.cursos && state.cursos.length > 0) {
+            const preferred = state.cursos.find(c =>
+                c.id === storeSelectedCursoId && (!storeSelectedAsignatura || sonMismaAsignatura(c.asignatura, storeSelectedAsignatura))
+            ) || state.cursos.find(c => c.id === storeSelectedCursoId) || state.cursos[0];
+            setSelectedCursoId(preferred.id);
+            setSelectedAsignatura(preferred.asignatura ?? '');
+        }
+    }, [state?.cursos, selectedCursoId, storeSelectedCursoId, storeSelectedAsignatura]);
+
+    useEffect(() => {
         if (!readOnly && contextReady && selectedCursoId) {
             loadCursoData(selectedCursoId, selectedPeriodo);
         }
@@ -364,18 +382,19 @@ export default function Cotejo({
         }
     }, [selectedEstId, selectedActId, selectedPlantillaId, state?.cursoDetalle, multiEvaluations]);
 
-    const selectedCurso = state?.cursos.find(c => c.id === selectedCursoId && c.asignatura === selectedAsignatura) || state?.cursos.find(c => c.id === selectedCursoId);
+    const selectedCurso = state?.cursos.find(c => c.id === selectedCursoId && sonMismaAsignatura(c.asignatura, selectedAsignatura)) || state?.cursos.find(c => c.id === selectedCursoId);
+    const targetAsig = selectedAsignatura || currentCourseRole?.asignatura || selectedCurso?.asignatura;
     const actividades = state?.actividades.filter(a => 
         (a.cursoId === selectedCursoId || 
          (selectedCurso?.sharedCourseId && a.sharedCourseId === selectedCurso.sharedCourseId)) &&
         (a.userId === session?.user?.id || !a.userId) &&
-        (!a.asignatura || a.asignatura === selectedAsignatura) &&
+        Boolean(a.asignatura) &&
+        (!targetAsig || normalizeArea(a.asignatura) === normalizeArea(targetAsig)) &&
         a.periodo === selectedPeriodo
     ) || [];
-    const estudiantes = state?.estudiantes.filter(e => 
-        e.cursoId === selectedCursoId || 
-        (selectedCurso?.sharedCourseId && e.sharedCourseId === selectedCurso.sharedCourseId)
-    ) || [];
+    const estudiantes = (selectedCurso && state?.estudiantes)
+        ? state.estudiantes.filter(e => esEstudianteDelCurso(state.cursos, selectedCurso, e, selectedCurso.centroId))
+        : [];
     const sortedEsts = [...estudiantes].sort((a, b) => {
         const numA = a.numeroLista || 0;
         const numB = b.numeroLista || 0;

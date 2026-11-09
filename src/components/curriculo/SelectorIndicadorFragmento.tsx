@@ -19,6 +19,7 @@ import {
     mismaAsignatura,
     normalizarTexto,
 } from '../../lib/curriculo';
+import { esAsignaturaOptativa, getAsignaturaNombre } from '../../constants/asignaturas';
 import type { FilaIndicador, FilaContenido, BloqueCF } from '../../types/especificaciones';
 import type { BCKey } from '../../types';
 import { CieloPill } from '../ui/CieloPill';
@@ -284,12 +285,15 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
             setError(null);
             try {
                 const gradoCanonico = claveGrado(grado) || grado;
+                const espCacheKey = `${cursoId}__${asignatura}__${periodo || ''}`.toLowerCase();
+                const isOptativa = esAsignaturaOptativa(asignatura);
 
-                // Indicadores
-                let indsFiltrados: FilaIndicador[] = [];
-                if (cacheIndicadores.has(cacheKey)) {
-                    indsFiltrados = cacheIndicadores.get(cacheKey)!;
-                } else {
+                // 1. Tarea concurrente: curr_indicadores (se omite en asignaturas optativas para no realizar peticiones innecesarias al catálogo oficial)
+                const fetchIndicadoresPromise = (async (): Promise<FilaIndicador[]> => {
+                    if (isOptativa) return [];
+                    if (cacheIndicadores.has(cacheKey)) {
+                        return cacheIndicadores.get(cacheKey)!;
+                    }
                     let qInds = supabase
                         .from('curr_indicadores')
                         .select('id, grado, asignatura, competencia, codigo, descripcion, is_active')
@@ -303,7 +307,6 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
 
                     let rawInds = (resInds.data as FilaIndicador[]) || [];
                     if (rawInds.length === 0 && grado && grado !== gradoCanonico) {
-                        // Reintento seguro con el grado literal antes de descartar
                         const retryInds = await supabase
                             .from('curr_indicadores')
                             .select('id, grado, asignatura, competencia, codigo, descripcion, is_active')
@@ -314,15 +317,17 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                             rawInds = retryInds.data as FilaIndicador[];
                         }
                     }
-                    indsFiltrados = filtrarIndicadores(rawInds, grado, asignatura);
-                    cacheIndicadores.set(cacheKey, indsFiltrados);
-                }
+                    const inds = filtrarIndicadores(rawInds, grado, asignatura);
+                    cacheIndicadores.set(cacheKey, inds);
+                    return inds;
+                })();
 
-                // Contenidos
-                let contsFiltrados: FilaContenido[] = [];
-                if (cacheContenidos.has(cacheKey)) {
-                    contsFiltrados = cacheContenidos.get(cacheKey)!;
-                } else {
+                // 2. Tarea concurrente: curr_contenidos (se omite en asignaturas optativas)
+                const fetchContenidosPromise = (async (): Promise<FilaContenido[]> => {
+                    if (isOptativa) return [];
+                    if (cacheContenidos.has(cacheKey)) {
+                        return cacheContenidos.get(cacheKey)!;
+                    }
                     let qConts = supabase
                         .from('curr_contenidos')
                         .select('id, grado, asignatura, contenido, contenido_json');
@@ -337,7 +342,6 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
 
                     let rawConts = (resConts.data as FilaContenido[]) || [];
                     if (rawConts.length === 0 && grado && grado !== gradoCanonico) {
-                        // Reintento seguro con el grado literal antes de descartar
                         const retryConts = await supabase
                             .from('curr_contenidos')
                             .select('id, grado, asignatura, contenido, contenido_json')
@@ -347,41 +351,48 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                             rawConts = retryConts.data as FilaContenido[];
                         }
                     }
-                    contsFiltrados = filtrarContenidos(rawConts, grado, asignatura);
-                    cacheContenidos.set(cacheKey, contsFiltrados);
-                }
+                    const conts = filtrarContenidos(rawConts, grado, asignatura);
+                    cacheContenidos.set(cacheKey, conts);
+                    return conts;
+                })();
 
-                // Consultar si hay planificación operativa guardada en pc_especificaciones (con caché en memoria)
-                let planPeriodoEncontrado: {
+                // 3. Tarea concurrente: pc_especificaciones + pc_especificacion_periodos
+                const fetchEspecificacionesPromise = (async (): Promise<{
                     contenidos: Array<{ contenido_id?: string; contenido?: string }>;
                     indicadores: Array<{ curr_indicador_id?: string; codigo?: string | null }>;
                     periodo?: string;
-                } | null = null;
-
-                const espCacheKey = `${cursoId}__${asignatura}__${periodo || ''}`.toLowerCase();
-                if (cacheEspecificaciones.has(espCacheKey)) {
-                    planPeriodoEncontrado = cacheEspecificaciones.get(espCacheKey);
-                } else if (cursoId) {
+                } | null> => {
+                    if (cacheEspecificaciones.has(espCacheKey)) {
+                        return cacheEspecificaciones.get(espCacheKey);
+                    }
+                    if (!cursoId) return null;
                     try {
                         const { data: espData } = await supabase
                             .from('pc_especificaciones')
-                            .select('id, grado, asignatura')
+                            .select('id, grado, asignatura, pc_especificacion_periodos(id, periodo, contenidos, indicadores)')
                             .eq('curso_id', cursoId);
 
-                        const esp = espData?.find((e) => mismaAsignatura(e.asignatura, asignatura));
-                        if (esp?.id) {
-                            const { data: perData } = await supabase
-                                .from('pc_especificacion_periodos')
-                                .select('id, periodo, contenidos, indicadores')
-                                .eq('especificacion_id', esp.id);
+                        const esp = espData?.find((e: any) => mismaAsignatura(e.asignatura, asignatura));
+                        let planPeriodo: any = null;
+                        if (esp) {
+                            let perData: any[] = [];
+                            if (Array.isArray((esp as any).pc_especificacion_periodos)) {
+                                perData = (esp as any).pc_especificacion_periodos;
+                            } else if (esp.id) {
+                                // Fallback seguro
+                                const { data: fbPer } = await supabase
+                                    .from('pc_especificacion_periodos')
+                                    .select('id, periodo, contenidos, indicadores')
+                                    .eq('especificacion_id', esp.id);
+                                if (fbPer) perData = fbPer;
+                            }
 
-                            if (perData && perData.length > 0) {
+                            if (perData.length > 0) {
                                 const pTarget = periodo
                                     ? perData.find((p) => p.periodo === periodo) || perData[0]
                                     : perData[0];
-
                                 if (pTarget) {
-                                    planPeriodoEncontrado = {
+                                    planPeriodo = {
                                         contenidos: (pTarget.contenidos as any[]) || [],
                                         indicadores: (pTarget.indicadores as any[]) || [],
                                         periodo: pTarget.periodo,
@@ -389,16 +400,31 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                                 }
                             }
                         }
-                        cacheEspecificaciones.set(espCacheKey, planPeriodoEncontrado);
+                        cacheEspecificaciones.set(espCacheKey, planPeriodo);
+                        return planPeriodo;
                     } catch (planErr) {
                         console.warn('[SelectorIndicadorFragmento] No se pudo cargar pc_especificaciones:', planErr);
+                        return null;
                     }
-                }
+                })();
+
+                // Ejecución 100% paralela de las tres fuentes
+                const [indsFiltrados, contsFiltrados, planPeriodoEncontrado] = await Promise.all([
+                    fetchIndicadoresPromise,
+                    fetchContenidosPromise,
+                    fetchEspecificacionesPromise
+                ]);
 
                 if (isMounted) {
                     setIndicadores(indsFiltrados);
                     setContenidos(contsFiltrados);
                     setPeriodoPlan(planPeriodoEncontrado);
+
+                    if (isOptativa && indsFiltrados.length === 0) {
+                        setIsManual(true);
+                    } else if (!isOptativa && indsFiltrados.length > 0) {
+                        setIsManual(false);
+                    }
 
                     // Seleccionar por defecto el primer contenido o el planificado en este período
                     if (contsFiltrados.length > 0 && !selectedContenidoId) {
@@ -836,19 +862,17 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                                 className="w-full bg-white border border-slate-300 rounded-xl pl-8 pr-3 py-2 text-xs text-[#1E2421] placeholder:text-slate-400 outline-none focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 font-medium transition-all"
                             />
                         </div>
-                        {(indicadores.length > 0 || contenidos.length > 0) && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsManual(true);
-                                    emitChange(null, null, manualText);
-                                }}
-                                disabled={disabled}
-                                className="text-xs font-bold uppercase tracking-wider text-[#689C63] hover:text-[#527e4e] transition-colors cursor-pointer shrink-0 px-1 py-1"
-                            >
-                                Escribir manualmente
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsManual(true);
+                                emitChange(null, null, manualText);
+                            }}
+                            disabled={disabled}
+                            className="text-xs font-bold uppercase tracking-wider text-[#689C63] hover:text-[#527e4e] transition-colors cursor-pointer shrink-0 px-1 py-1"
+                        >
+                            Escribir manualmente
+                        </button>
                     </div>
 
                     {/* CONTENIDOS CURRICULARES: Presentación compacta, minimalista y visual en cuadrícula */}
@@ -1094,14 +1118,23 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                 /* Modo manual */
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-700">Redacción manual del indicador</span>
-                        <button
-                            type="button"
-                            onClick={() => setIsManual(false)}
-                            className="text-xs font-bold uppercase tracking-wider text-[#689C63] hover:text-[#527e4e] transition-colors cursor-pointer"
-                        >
-                            Ver catálogo curricular
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-700">Redacción manual del indicador</span>
+                            {esAsignaturaOptativa(asignatura) && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80">
+                                    {getAsignaturaNombre(asignatura)} · Optativa
+                                </span>
+                            )}
+                        </div>
+                        {indicadores.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setIsManual(false)}
+                                className="text-xs font-bold uppercase tracking-wider text-[#689C63] hover:text-[#527e4e] transition-colors cursor-pointer"
+                            >
+                                Ver catálogo curricular
+                            </button>
+                        )}
                     </div>
                     <textarea
                         rows={3}
@@ -1112,8 +1145,10 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                         onChange={handleManualChange}
                     />
                     {indicadores.length === 0 && !cargando && (
-                        <p className="text-[10px] text-slate-400">
-                            No se encontraron indicadores curriculares para {grado || 'este grado'}. Puedes escribir el indicador manualmente.
+                        <p className="text-[11px] text-slate-500">
+                            {esAsignaturaOptativa(asignatura)
+                                ? `Esta asignatura optativa (${getAsignaturaNombre(asignatura)}) permite redactar libremente el indicador de logro a evaluar.`
+                                : `No se encontraron indicadores curriculares para ${grado || 'este grado'}. Puedes escribir el indicador manualmente.`}
                         </p>
                     )}
                 </div>

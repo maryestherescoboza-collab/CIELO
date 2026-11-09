@@ -5,7 +5,7 @@ import { usePortal } from './portalContext';
 import type { Periodo } from './PortalLayout';
 import { COMPETENCIAS_LABEL } from '../../types';
 import { INDICADORES_RECUPERACION, TITULOS_RECUPERACION } from '../../constants/recuperacionCotejo';
-import { sonMismaAsignatura, SIETE_ASIGNATURAS_OFICIALES } from '../../constants/asignaturas';
+import { sonMismaAsignatura, getAsignaturaNombre } from '../../constants/asignaturas';
 
 interface CotejoItem {
   id: number;
@@ -105,7 +105,6 @@ export default function PortalRecuperaciones() {
     mostrar_recuperacion: true,
     published_until: null,
   };
-  const activeOficial = SIETE_ASIGNATURAS_OFICIALES.find(o => sonMismaAsignatura(o.nombre, activeMateria));
 
   useEffect(() => {
     if (!sessionToken || !activeMateria) return;
@@ -253,9 +252,8 @@ export default function PortalRecuperaciones() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-stone-200 bg-stone-50 shadow-xs">
-            <span className="text-xs">{activeOficial?.icono || '📖'}</span>
-            <span className="text-xs font-bold text-stone-900">{activeMateria}</span>
+          <div className="flex items-center px-3.5 py-1.5 rounded-full border border-[#537BAC]/30 bg-[#537BAC]/12 shadow-xs">
+            <span className="text-xs font-bold text-[#1B1F2A]">{getAsignaturaNombre(activeMateria)}</span>
           </div>
         </div>
       </section>
@@ -264,13 +262,13 @@ export default function PortalRecuperaciones() {
       <section className="space-y-3" data-purpose="academic-metrics">
         <div className="flex items-center justify-between pt-1">
           <h2 className="text-xs font-bold tracking-wider text-black uppercase">Período Académico</h2>
-          <div className="flex gap-1.5 p-1 rounded-full border border-stone-200 bg-stone-50">
+          <div className="flex gap-1.5 p-1 rounded-full border border-[#BFC9A6]/55 bg-[#FCFCFA]">
             {(['P1', 'P2', 'P3', 'P4'] as Periodo[]).map(p => (
               <button
                 key={p}
                 onClick={() => setSelectedPeriodo(p)}
                 className={`w-7 h-7 rounded-full text-xs flex items-center justify-center border-2 transition ${selectedPeriodo === p
-                    ? 'bg-[#EB8847] text-white font-bold border-transparent'
+                    ? 'bg-[#EB8847] text-white font-bold border-transparent shadow-2xs'
                     : 'text-[#5F665E] font-medium hover:bg-[#EB8847]/15 border-transparent'
                   }`}
               >
@@ -288,8 +286,8 @@ export default function PortalRecuperaciones() {
       )}
 
       {error && !loading && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-center">
-          <p className="text-red-600 text-xs font-bold">{error}</p>
+        <div className="p-4 bg-[#DB5B48]/12 border border-[#DB5B48]/35 rounded-xl text-center">
+          <p className="text-[#DB5B48] text-xs font-bold">{error}</p>
         </div>
       )}
 
@@ -307,8 +305,8 @@ export default function PortalRecuperaciones() {
 
           {/* Teacher visibility toggle check */}
           {!activeAsignaturaConfig.mostrar_recuperacion ? (
-            <div className="p-4 bg-stone-50 border border-stone-200 rounded-xl text-center">
-              <p className="text-xs text-stone-500 italic">
+            <div className="p-4 bg-[#FCFCFA] border border-[#BFC9A6]/60 rounded-xl text-center">
+              <p className="text-xs text-[#5F665E] italic">
                 La visualización de recuperaciones para esta asignatura no está habilitada por el docente.
               </p>
             </div>
@@ -316,7 +314,7 @@ export default function PortalRecuperaciones() {
             <>
               {/* Congratulations Banner if all evaluated competencies are passed */}
               {bloques.length === 0 && totalEvaluatedBcs > 0 && passedBcs.length === totalEvaluatedBcs && (
-                <div className="bg-[#689C63]/10 border border-[#689C63]/30 rounded-xl p-3.5 flex items-start gap-2.5 mb-4">
+                <div className="bg-[#689C63]/12 border border-[#689C63]/35 rounded-xl p-3.5 flex items-start gap-2.5 mb-4">
                   <span className="material-symbols-outlined text-[#689C63] text-[20px] shrink-0">verified</span>
                   <div>
                     <p className="text-xs text-[#2E3330] font-bold">¡Felicidades!</p>
@@ -338,7 +336,7 @@ export default function PortalRecuperaciones() {
                   {bloques.map(({ key, nombre, indicadores, logradas, totalActividades, resultados, color, fecha, actividadesEvaluadas, pendiente }) => (
                     <div
                       key={key}
-                      className="border border-[#E4E3EC] bg-white rounded-xl p-4 shadow-xs flex flex-col justify-between break-inside-avoid"
+                      className="border border-[#BFC9A6]/50 bg-[#FCFCFA] rounded-xl p-4 shadow-xs flex flex-col justify-between break-inside-avoid"
                     >
                       <div>
                         {/* Competency Badge */}
@@ -350,7 +348,7 @@ export default function PortalRecuperaciones() {
                             Competencia {nombre.toLowerCase()}
                           </div>
                           {fecha && (
-                            <span className="text-[10px] text-[#8A8FA0] font-mono">
+                            <span className="text-[10px] text-[#5F665E] font-mono bg-[#BFC9A6]/25 px-2 py-0.5 rounded-full">
                               {fecha}
                             </span>
                           )}
@@ -362,7 +360,7 @@ export default function PortalRecuperaciones() {
                             <div key={indicador} className="text-[11px] text-[#4E5566] leading-normal flex items-start gap-2">
                               <span
                                 className="material-symbols-outlined text-[15px] mt-0.5 shrink-0"
-                                style={{ color: logradas[i] > 0 ? color : '#CBD5E1' }}
+                                style={{ color: logradas[i] > 0 ? color : '#BFC9A6' }}
                               >
                                 {logradas[i] > 0 ? 'check_circle' : 'radio_button_unchecked'}
                               </span>
@@ -375,15 +373,15 @@ export default function PortalRecuperaciones() {
 
                         {/* Activities requiring recovery */}
                         {actividadesEvaluadas.length > 0 && (
-                          <div className="pt-2.5 border-t border-dashed border-[#EFEEF4] mb-3">
-                            <span className="text-[9.5px] font-bold uppercase tracking-wider text-[#8A8FA0] block mb-1.5">
+                          <div className="pt-2.5 border-t border-dashed border-[#BFC9A6]/50 mb-3">
+                            <span className="text-[9.5px] font-bold uppercase tracking-wider text-[#5F665E] block mb-1.5">
                               Actividades a recuperar
                             </span>
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                               {actividadesEvaluadas.map(act => (
-                                <div key={act.id} className="flex items-center justify-between text-[10.5px] bg-[#F8F8FB] px-2.5 py-1.5 rounded border border-[#EFEEF4]">
-                                  <span className="font-medium text-[#1B1F2A] truncate pr-2">{act.nombre}</span>
-                                  <span className="text-[10px] font-mono text-stone-500 shrink-0">
+                                <div key={act.id} className="flex items-center justify-between text-[10.5px] bg-[#DEAE4D]/12 px-2.5 py-1.5 rounded-lg border border-[#DEAE4D]/35">
+                                  <span className="font-semibold text-[#1B1F2A] truncate pr-2">{act.nombre}</span>
+                                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-[#DB5B48]/15 text-[#9E3525] border border-[#DB5B48]/30 shrink-0">
                                     {act.puntaje !== null ? `${act.puntaje} pts` : '—'}
                                   </span>
                                 </div>
@@ -394,19 +392,24 @@ export default function PortalRecuperaciones() {
                       </div>
 
                       {/* Bottom Footer: Recovery Result */}
-                      <div className="mt-3 pt-2.5 border-t border-[#EFEEF4] flex items-baseline justify-between">
-                        <div className="text-[10.5px] text-[#8A8FA0] font-medium">
+                      <div className="mt-3 pt-2.5 border-t border-[#BFC9A6]/45 flex items-center justify-between">
+                        <div className="text-[10.5px] text-[#5F665E] font-medium">
                           {pendiente ? 'Estado' : 'Resultado de recuperación'}
                         </div>
-                        <div className="font-['Space_Grotesk'] text-[14px] font-bold" style={{ color: pendiente ? '#8A8FA0' : color }}>
-                          {pendiente ? (
-                            'Pendiente de evaluación'
-                          ) : activeAsignaturaConfig.mostrar_puntajes ? (
-                            resultados !== null && resultados !== undefined ? `${fmt(resultados)} puntos` : '—'
-                          ) : (
-                            resultados !== null && resultados !== undefined ? 'Calificado' : '—'
-                          )}
-                        </div>
+                        {pendiente ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#DEAE4D]/20 text-[#7A5612] border border-[#DEAE4D]/45">
+                            Pendiente de evaluación
+                          </span>
+                        ) : (
+                          <div
+                            className="font-['Space_Grotesk'] text-[13px] font-bold px-2.5 py-0.5 rounded-full"
+                            style={{ backgroundColor: `${color}18`, color }}
+                          >
+                            {activeAsignaturaConfig.mostrar_puntajes
+                              ? resultados !== null && resultados !== undefined ? `${fmt(resultados)} puntos` : '—'
+                              : resultados !== null && resultados !== undefined ? 'Calificado' : '—'}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

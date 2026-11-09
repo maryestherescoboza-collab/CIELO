@@ -1,16 +1,19 @@
 import { useState, useMemo, useCallback } from 'react';
 import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
 import type { AppState } from '../types';
+import { esEstudianteDelCurso } from '../utils/aislamiento';
 
 export function useCursosData(state: AppState) {
     const [showModal, setShowModal] = useState(false);
-    const [editingDiasId, setEditingDiasId] = useState<number | null>(null);
+    const [editingDiasId, setEditingDiasId] = useState<string | number | null>(null);
     const [linkingCourseId, setLinkingCourseId] = useState<number | null>(null);
     const [teacherSearch, setTeacherSearch] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
     const [form, setForm] = useState({
         asignatura: ASIGNATURAS_CATALOGO[0].id,
+        esOptativa: false,
+        asignaturaOptativaNombre: '',
         grado: '1ro',
         seccion: 'A',
         diasSemana: ['Lun'],
@@ -20,6 +23,8 @@ export function useCursosData(state: AppState) {
     const resetForm = useCallback(() => {
         setForm({
             asignatura: ASIGNATURAS_CATALOGO[0].id,
+            esOptativa: false,
+            asignaturaOptativaNombre: '',
             grado: '1ro',
             seccion: 'A',
             diasSemana: ['Lun'],
@@ -30,7 +35,9 @@ export function useCursosData(state: AppState) {
     const cursosWithCounts = useMemo(() => {
         return state.cursos.map(c => ({
             ...c,
-            count: state.estudiantes.filter(e => e.sharedCourseId === c.sharedCourseId).length,
+            count: state.estudiantes.filter(e =>
+                esEstudianteDelCurso(state.cursos, c, e, c.centroId)
+            ).length,
             docentesVinculadosRel: state.cursoDocentes?.filter(cd => cd.cursoId === c.id) || []
         }));
     }, [state.cursos, state.estudiantes, state.cursoDocentes]);

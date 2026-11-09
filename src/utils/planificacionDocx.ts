@@ -232,17 +232,18 @@ function parrafoDesdeElemento(el: HTMLElement, estiloBase: EstiloTexto): Paragra
     });
 }
 
-function construirLista(el: HTMLElement): Paragraph[] {
+function construirLista(el: HTMLElement, estiloBase?: EstiloTexto): Paragraph[] {
     const salida: Paragraph[] = [];
     const ordenada = el.tagName === 'OL';
     for (const item of Array.from(el.children)) {
         if (item.tagName !== 'LI') continue;
         const crudos: RunCrudo[] = [];
-        recolectarRuns(item, {}, crudos, item.classList.contains('placeholder'));
+        recolectarRuns(item, estiloBase || {}, crudos, item.classList.contains('placeholder'));
         const recortados = recortarExtremos(crudos);
         if (recortados.length === 0) continue;
         salida.push(new Paragraph({
             children: runsATextRuns(recortados),
+            spacing: { before: 30, after: 30 },
             ...(ordenada
                 ? { numbering: { reference: 'lista-planificacion', level: 0 } }
                 : { bullet: { level: 0 } }),
@@ -254,7 +255,9 @@ function construirLista(el: HTMLElement): Paragraph[] {
 function construirCelda(celda: HTMLTableCellElement): TableCell {
     const esTituloSeccion = celda.classList.contains('section-title');
     const esEtiqueta = celda.classList.contains('label') || celda.classList.contains('label-sm');
-    const shading = esTituloSeccion ? COLOR_AZUL : esEtiqueta ? COLOR_ETIQUETA : undefined;
+    const esFilaEstudiante = celda.parentElement?.classList.contains('student-row');
+    const esFilaMetacognicion = celda.parentElement?.classList.contains('metacognicion-row');
+    const shading = esTituloSeccion ? COLOR_AZUL : (esEtiqueta || esFilaEstudiante || esFilaMetacognicion) ? COLOR_ETIQUETA : undefined;
     const color = esTituloSeccion ? 'FFFFFF' : esEtiqueta ? COLOR_AZUL : COLOR_TINTA;
 
     const estiloBase: EstiloTexto = {
@@ -315,7 +318,7 @@ function construirBloques(raiz: HTMLElement, estiloBase: EstiloTexto): (Paragrap
             }
             case 'UL':
             case 'OL':
-                salida.push(...construirLista(el));
+                salida.push(...construirLista(el, estiloBase));
                 break;
             case 'HR':
                 break;

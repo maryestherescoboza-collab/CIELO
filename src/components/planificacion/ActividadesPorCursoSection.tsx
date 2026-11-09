@@ -3,6 +3,7 @@ import { BookOpen, ChevronRight } from 'lucide-react';
 import { useAgruparActividades } from '../../hooks/useAgruparActividades';
 import type { GrupoActividades } from '../../hooks/useAgruparActividades';
 import { ActividadesGrupoModal } from './ActividadesGrupoModal';
+import { getAsignaturaNombre } from '../../constants/asignaturas';
 
 interface Props {
     cursoId?: number; // Opcional, si se provee filtra por curso
@@ -49,7 +50,7 @@ export function ActividadesPorCursoSection({ cursoId, periodo, hideTitle }: Prop
                             </div>
                             <div>
                                 <h3 className="text-sm font-bold text-(--ink)">
-                                    Actividades de {data.cursoName}, {data.asignatura} {data.periodo}
+                                    Actividades de {data.cursoName}, {getAsignaturaNombre(data.asignatura)} {data.periodo}
                                 </h3>
                                 <p className="text-xs text-(--ink-soft) font-medium">
                                     {data.actividades.length} {data.actividades.length === 1 ? 'actividad' : 'actividades'}

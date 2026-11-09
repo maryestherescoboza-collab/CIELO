@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
 import type { AppState, Skill, CursoDocente } from '../types';
 import { useAppStore } from '../store/appStore';
+import { normalizeArea } from '../utils/academic';
+import { sonMismaAsignatura } from '../constants/asignaturas';
+import { esEstudianteDelCurso } from '../utils/aislamiento';
 
 interface Params {
     state: AppState;
@@ -16,7 +19,11 @@ export function useEstudianteData({ state, selectedId, currentCourseRole, curren
     const [habilidades, setHabilidades] = useState<Record<number, Skill[]>>({});
 
     const est = state.estudiantes.find(e => e.id === selectedId);
-    const curso = est ? state.cursos.find(c => c.id === est.cursoId) : null;
+    const preferredAsig = currentCourseRole?.asignatura;
+    const curso = est
+        ? (state.cursos.find(c => c.id === est.cursoId && (!preferredAsig || sonMismaAsignatura(c.asignatura, preferredAsig)))
+            || state.cursos.find(c => c.id === est.cursoId))
+        : null;
 
     const studentHabilidades = est ? habilidades[est.id] || [] : [];
 
@@ -48,7 +55,7 @@ export function useEstudianteData({ state, selectedId, currentCourseRole, curren
             const actCurso = state.cursos.find(c => c.id === a.cursoId);
             const isMatch = ((actCurso?.sharedCourseId && actCurso?.sharedCourseId === est.sharedCourseId) || a.cursoId === curso.id) && a.periodo === periodo;
             const actAsignatura = a.asignatura || actCurso?.asignatura || '';
-            const matchesRole = !currentCourseRole || actAsignatura === currentCourseRole.asignatura;
+            const matchesRole = !currentCourseRole || sonMismaAsignatura(actAsignatura, currentCourseRole.asignatura) || normalizeArea(actAsignatura) === normalizeArea(currentCourseRole.asignatura);
             return isMatch && matchesRole;
         });
         
@@ -61,14 +68,14 @@ export function useEstudianteData({ state, selectedId, currentCourseRole, curren
         
         const prom = gradedActs.length > 0 ? (sum / gradedActs.length).toFixed(1) : '0.0';
 
-        const filteredEsts = state.estudiantes.filter(e => e.sharedCourseId === curso.sharedCourseId || e.cursoId === curso.id);
+        const filteredEsts = state.estudiantes.filter(e => esEstudianteDelCurso(state.cursos, curso, e, curso.centroId));
 
         const rankings = filteredEsts.map(e => {
             const eActs = state.actividades.filter(a => {
                 const actCurso = state.cursos.find(cx => cx.id === a.cursoId);
                 const isMatch = ((actCurso?.sharedCourseId && actCurso?.sharedCourseId === est.sharedCourseId) || a.cursoId === curso.id) && a.periodo === periodo;
                 const actAsignatura = a.asignatura || actCurso?.asignatura || '';
-                const matchesRole = !currentCourseRole || actAsignatura === currentCourseRole.asignatura;
+                const matchesRole = !currentCourseRole || sonMismaAsignatura(actAsignatura, currentCourseRole.asignatura) || normalizeArea(actAsignatura) === normalizeArea(currentCourseRole.asignatura);
                 return isMatch && matchesRole;
             });
             const eGradedActs = eActs.filter(a => {
@@ -89,7 +96,7 @@ export function useEstudianteData({ state, selectedId, currentCourseRole, curren
             const actCurso = state.cursos.find(c => c.id === a.cursoId);
             const isMatch = ((actCurso?.sharedCourseId && actCurso?.sharedCourseId === est.sharedCourseId) || a.cursoId === curso.id) && a.periodo === periodo;
             const actAsignatura = a.asignatura || actCurso?.asignatura || '';
-            const matchesRole = !currentCourseRole || actAsignatura === currentCourseRole.asignatura;
+            const matchesRole = !currentCourseRole || sonMismaAsignatura(actAsignatura, currentCourseRole.asignatura) || normalizeArea(actAsignatura) === normalizeArea(currentCourseRole.asignatura);
             return isMatch && matchesRole;
         }).sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
         console.log(`[DIAG][SCREEN] Estudiante cursoId=${curso.id} estudianteId=${est.id} sharedCourseId=${est.sharedCourseId ?? 'sin-shared'} periodo=${periodo} actividadesConsumidas=${res.length} calificacionesGlobal=${state.calificaciones.length} ts=${new Date().toISOString()}`);

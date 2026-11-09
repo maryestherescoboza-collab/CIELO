@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Loader2, ArrowLeft, Send, Route as RouteIcon, Check, CheckCircle2, PhoneCall, PackageOpen } from 'lucide-react';
+import { Loader2, ArrowLeft, Send, Route as RouteIcon, Check, CheckCircle2, PackageOpen } from 'lucide-react';
 import { rutaApiPortal } from '../../lib/rutaApi';
 import type { ResumenRutaEstudiante } from '../../types/rutas';
 import type { ActividadProductoFicha } from '../../types/evidencias';
@@ -229,13 +229,13 @@ export default function PortalFichaDetalle() {
 
   return (
     <div className="pt-2 px-5 pb-10">
-      <button onClick={() => navigate(rutaPortal(token, 'fichas'))} className="flex items-center text-xs font-bold mb-6 text-neutral-600 hover:text-black transition-colors">
+      <button onClick={() => navigate(rutaPortal(token, 'fichas'))} className="inline-flex items-center text-xs font-bold mb-6 px-3.5 py-1.5 rounded-full bg-[#BFC9A6]/25 border border-[#BFC9A6]/55 text-[#1B1F2A] hover:bg-[#BFC9A6]/40 transition-colors">
         <ArrowLeft size={14} className="mr-1.5" /> Volver a Fichas
       </button>
 
-      <article className="bg-white border border-neutral-200 rounded-2xl p-6 md:p-8 shadow-sm mb-8">
+      <article className="bg-[#FCFCFA] border border-[#BFC9A6]/55 rounded-2xl p-6 md:p-8 shadow-sm mb-8">
         <h1 className="text-xl md:text-2xl font-bold text-black mb-2 tracking-tight">{ficha.titulo || 'Sin título'}</h1>
-        <p className="text-xs font-bold text-neutral-500 mb-8 pb-4 border-b border-neutral-100">
+        <p className="text-xs font-bold text-[#5F665E] mb-8 pb-4 border-b border-[#BFC9A6]/40">
           Última actualización: {new Date(ficha.actualizado_en).toLocaleDateString()}
         </p>
 
@@ -255,12 +255,12 @@ export default function PortalFichaDetalle() {
           (`PortalEvidenciaForm` -> `portal_crear_evidencia`): Google Drive o
           archivo local. */}
       {productos.length > 0 && (
-        <section className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm mb-8">
+        <section className="bg-[#FCFCFA] border border-[#BFC9A6]/55 rounded-2xl p-6 shadow-sm mb-8">
           <h2 className="flex items-center gap-2 text-base font-bold text-black mb-1">
-            <PackageOpen size={17} className="text-neutral-500" />
+            <PackageOpen size={17} className="text-[#689C63]" />
             Productos que debes entregar
           </h2>
-          <p className="text-xs text-neutral-500 mb-5">
+          <p className="text-xs text-[#5F665E] mb-5">
             Tu docente pidió un producto para esta ficha. Entrégalo aquí mismo.
           </p>
 
@@ -270,22 +270,31 @@ export default function PortalFichaDetalle() {
                 key={producto.actividad_id}
                 className={`rounded-2xl border p-4 ${
                   producto.entregado
-                    ? 'border-[#689C63]/40 bg-[#689C63]/8'
-                    : 'border-[#DEAE4D]/40 bg-[#DEAE4D]/10'
+                    ? 'border-[#689C63]/40 bg-[#689C63]/10'
+                    : 'border-[#DEAE4D]/45 bg-[#DEAE4D]/12'
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                      producto.entregado ? 'bg-[#689C63] text-white' : 'bg-[#DEAE4D] text-white'
-                    }`}
-                  >
-                    {producto.entregado ? <CheckCircle2 size={17} /> : <PhoneCall size={17} />}
-                  </span>
+                  {producto.entregado && (
+                    <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-[#689C63] text-white">
+                      <CheckCircle2 size={17} />
+                    </span>
+                  )}
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-black">{producto.actividad}</p>
-                    <p className="text-[11px] text-neutral-500">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-bold text-black">{producto.actividad}</p>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                          producto.entregado
+                            ? 'bg-[#BFC9A6]/35 border-[#689C63]/35 text-[#2E4E2B]'
+                            : 'bg-[#DEAE4D]/25 border-[#DEAE4D]/50 text-[#7A5211]'
+                        }`}
+                      >
+                        {producto.entregado ? 'Entregado' : 'Pendiente de entrega'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-600 mt-0.5">
                       {[producto.asignatura, producto.periodo]
                         .filter(Boolean)
                         .join(' · ') || 'Actividad de la ficha'}
@@ -314,9 +323,8 @@ export default function PortalFichaDetalle() {
                     ) : (
                       <button
                         onClick={() => setActividadEntregando(producto)}
-                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#689C63] hover:bg-[#588554] px-4 py-2 text-xs font-bold text-white active:scale-95 transition-all shadow-2xs"
+                        className="mt-3 inline-flex items-center justify-center rounded-xl bg-[#689C63] hover:bg-[#588554] px-4 py-2 text-xs font-bold text-white active:scale-95 transition-all"
                       >
-                        <PhoneCall size={15} />
                         Entregar producto
                       </button>
                     )}
@@ -332,7 +340,7 @@ export default function PortalFichaDetalle() {
       {rutas.length > 0 && (
         <section className="mb-8">
           <h2 className="flex items-center gap-2 text-sm font-bold text-black mb-3">
-            <RouteIcon size={15} className="text-neutral-500" />
+            <RouteIcon size={15} className="text-[#537BAC]" />
             Rutas de aprendizaje
           </h2>
           <div className="space-y-2">
@@ -345,16 +353,16 @@ export default function PortalFichaDetalle() {
                 <button
                   key={ruta.id}
                   onClick={() => navigate(rutaPortal(token, 'fichas', id ?? '', 'ruta', ruta.id))}
-                  className="w-full flex items-center gap-3 p-4 text-left bg-white border border-neutral-200 rounded-2xl hover:border-black transition-colors group"
+                  className="w-full flex items-center gap-3 p-4 text-left bg-[#FCFCFA] border border-[#BFC9A6]/55 rounded-2xl hover:border-[#537BAC] transition-colors group"
                 >
                   <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    completo ? 'bg-black text-white' : 'bg-neutral-100 text-black'
+                    completo ? 'bg-[#689C63] text-white' : 'bg-[#537BAC]/15 text-[#2C4F7C]'
                   }`}>
                     {completo ? <Check size={16} /> : <RouteIcon size={16} />}
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-bold text-black truncate">{ruta.titulo}</span>
-                    <span className="block text-[11px] text-neutral-500">
+                    <span className="block text-[11px] text-[#5F665E]">
                       {ruta.total_etapas} etapa{ruta.total_etapas === 1 ? '' : 's'} ·{' '}
                       {ruta.total_actividades} actividade{ruta.total_actividades === 1 ? '' : 's'}
                       {ruta.total_actividades > 0 && ` · ${porcentaje}%`}
@@ -366,9 +374,9 @@ export default function PortalFichaDetalle() {
                     )}
                   </span>
                   {ruta.total_actividades > 0 && (
-                    <span className="hidden sm:block w-16 h-1.5 rounded-full bg-neutral-100 overflow-hidden shrink-0">
+                    <span className="hidden sm:block w-16 h-1.5 rounded-full bg-[#BFC9A6]/35 overflow-hidden shrink-0">
                       <span
-                        className="block h-full rounded-full bg-black transition-all"
+                        className="block h-full rounded-full bg-[#689C63] transition-all"
                         style={{ width: `${porcentaje}%` }}
                       />
                     </span>
@@ -381,20 +389,20 @@ export default function PortalFichaDetalle() {
       )}
 
       {/* Comentarios */}
-      <section className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+      <section className="bg-[#FCFCFA] border border-[#BFC9A6]/55 rounded-2xl p-6 shadow-sm">
         <h2 className="text-base font-bold text-black mb-6">Comentarios</h2>
         
         <div className="space-y-4 mb-6 max-h-100 overflow-y-auto pr-2 custom-scrollbar">
           {comentarios.length === 0 ? (
-            <p className="text-sm text-neutral-500 text-center py-4">No hay comentarios aún. Escribe el primero.</p>
+            <p className="text-sm text-[#5F665E] text-center py-4">No hay comentarios aún. Escribe el primero.</p>
           ) : (
             comentarios.map(com => (
-              <div key={com.id} className={`p-4 rounded-xl text-sm ${com.es_propio ? 'bg-blue-50 border border-blue-100' : com.es_docente ? 'bg-neutral-100 border border-neutral-200' : 'bg-white border border-neutral-100'}`}>
+              <div key={com.id} className={`p-4 rounded-xl text-sm ${com.es_propio ? 'bg-[#537BAC]/10 border border-[#537BAC]/30' : com.es_docente ? 'bg-[#BFC9A6]/20 border border-[#BFC9A6]/55' : 'bg-white border border-neutral-100'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <span className={`font-bold ${com.es_docente ? 'text-black' : 'text-neutral-800'}`}>
-                    {com.autor_nombre} {com.es_docente && <span className="ml-1 text-[10px] bg-black text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider">Docente</span>}
+                    {com.autor_nombre} {com.es_docente && <span className="ml-1 text-[10px] bg-[#537BAC] text-white px-2 py-0.5 rounded-full uppercase tracking-wider">Docente</span>}
                   </span>
-                  <span className="text-[10px] text-neutral-500 font-bold">{new Date(com.created_at).toLocaleDateString()}</span>
+                  <span className="text-[10px] text-[#5F665E] font-bold">{new Date(com.created_at).toLocaleDateString()}</span>
                 </div>
                 <p className="text-neutral-700 whitespace-pre-wrap leading-relaxed">{com.texto}</p>
               </div>

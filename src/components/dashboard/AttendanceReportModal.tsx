@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { useAppStore } from '../../store/appStore';
 import { supabase } from '../../lib/supabase';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getAsignaturaNombre } from '../../constants/asignaturas';
+import { esEstudianteDelCurso } from '../../utils/aislamiento';
 
 interface AttendanceReportModalProps {
     date: string; // "YYYY-MM-DD"
@@ -149,11 +151,7 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
         if (!course) return [];
 
         return (state.estudiantes || [])
-            .filter(e => {
-                const eShared = e.sharedCourseId || (state.cursos || []).find(cx => cx.id === e.cursoId)?.sharedCourseId;
-                const cShared = course.sharedCourseId;
-                return e.cursoId === course.id || (cShared && eShared === cShared);
-            })
+            .filter(e => esEstudianteDelCurso(state.cursos || [], course, e, course.centroId))
             .sort((a, b) => {
                 if (a.numeroLista != null && b.numeroLista != null) return a.numeroLista - b.numeroLista;
                 return (a.nombre || '').localeCompare(b.nombre || '');
@@ -278,7 +276,7 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
                                                 : 'bg-white border-[#e6e8e2] text-[#58625a] hover:bg-[#f9faf8] hover:border-[#dce3ec]'
                                         }`}
                                     >
-                                        {c.grado} {c.seccion} · {cd.asignatura || 'Sin asignatura'}
+                                        {c.grado} {c.seccion} · {getAsignaturaNombre(cd.asignatura) || 'Sin asignatura'}
                                     </button>
                                 );
                             })}

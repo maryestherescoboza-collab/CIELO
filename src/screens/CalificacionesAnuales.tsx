@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, Printer, GraduationCap, Users } from 'lucide-react';
-import { getAsignaturaNombre } from '../constants/asignaturas';
+import { getAsignaturaNombre, sonMismaAsignatura } from '../constants/asignaturas';
 import type { AppState, BCKey, Screen, CursoDocente } from '../types';
 import { calculateStudentPeriodBC } from '../utils/academic';
 import { esEstudianteDelCurso } from '../utils/aislamiento';
@@ -22,7 +22,8 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
         }
     }, [contextReady, cursoId, loadCursoData]);
 
-    const curso = state.cursos.find(c => c.id === cursoId);
+    const curso = state.cursos.find(c => c.id === cursoId && (!currentCourseRole?.asignatura || sonMismaAsignatura(c.asignatura, currentCourseRole.asignatura)))
+        || state.cursos.find(c => c.id === cursoId);
     const [editingExtra, setEditingExtra] = useState<Record<number, Record<string, number>>>({});
 
     // Aislamiento institucional: el centro del curso (o el contexto activo)
@@ -158,7 +159,7 @@ export default function CalificacionesAnuales({ state, currentCourseRole, cursoI
                 isAproved
             };
         });
-    }, [students, state.calificaciones, state.actividades, state.recuperaciones, state.cursos, editingExtra, cursoId, curso, centroContexto, cursosCentro]);
+    }, [students, state.calificaciones, state.actividades, state.recuperaciones, state.cursos, editingExtra, cursoId, curso, centroContexto, cursosCentro, currentCourseRole?.asignatura]);
 
     const handleManualInput = (estId: number, field: string, value: string) => {
         const val = parseFloat(value) || 0;

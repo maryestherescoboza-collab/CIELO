@@ -9,6 +9,7 @@ import EstudianteSubnav, { type SubseccionEstudiante } from '../components/estud
 import EvidenciasBandeja from '../components/estudiante/EvidenciasBandeja';
 import PerfilTab from '../components/estudiante/PerfilTab';
 import type { CursoDocente, Estudiante as EstudianteType } from '../types';
+import { sonMismaAsignatura } from '../constants/asignaturas';
 
 export default function Estudiante() {
     const { id } = useParams();
@@ -18,7 +19,9 @@ export default function Estudiante() {
         state, 
         session,
         selectedEstudianteId,
-        setSelectedEstudianteId
+        setSelectedEstudianteId,
+        selectedCursoDocenteId,
+        selectedAsignatura
     } = useAppStore();
     const { loadCursoData, contextReady } = useSupabaseData(true);
 
@@ -36,15 +39,30 @@ export default function Estudiante() {
     const selectedId = Number(id) || selectedEstudianteId || (state.estudiantes && state.estudiantes.length > 0 ? state.estudiantes[0].id : 0);
 
     const estBase = state.estudiantes.find(e => e.id === selectedId);
-    const cursoBase = estBase ? state.cursos.find(c => c.id === estBase.cursoId) : null;
-    const currentCourseRole = state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoBase?.id && cd.userId === session?.user?.id);
+    const currentCourseRole = (selectedCursoDocenteId
+        ? state.cursoDocentes.find((cd: CursoDocente) => cd.id === selectedCursoDocenteId && (!estBase || cd.cursoId === estBase.cursoId))
+        : undefined
+    ) || (selectedAsignatura && estBase
+        ? state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === estBase.cursoId && cd.userId === session?.user?.id && sonMismaAsignatura(cd.asignatura, selectedAsignatura))
+        : undefined
+    ) || state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === estBase?.cursoId && cd.userId === session?.user?.id);
+    const preferredAsignatura = currentCourseRole?.asignatura || selectedAsignatura;
+    const cursoBase = estBase
+        ? (state.cursos.find(c => c.id === estBase.cursoId && (!preferredAsignatura || sonMismaAsignatura(c.asignatura, preferredAsignatura)))
+            || state.cursos.find(c => c.id === estBase.cursoId))
+        : null;
     const isTutor = !currentCourseRole || currentCourseRole.rol === 'tutor' || currentCourseRole.esTutor;
 
     useEffect(() => {
-        if (contextReady && cursoBase?.id) {
+        if (!contextReady || !session?.user?.id) return;
+        if (cursoBase?.id) {
             loadCursoData(cursoBase.id);
+        } else if (state.cursos.length > 0 && state.estudiantes.length === 0) {
+            // Si aún no hay estudiante seleccionado o la lista está vacía, asegurar la carga/hidratación de los cursos del docente
+            const uniqueIds = Array.from(new Set(state.cursos.map(c => Number(c.id)).filter(id => id > 0)));
+            uniqueIds.forEach(cId => { void loadCursoData(cId); });
         }
-    }, [contextReady, cursoBase?.id, loadCursoData]);
+    }, [contextReady, session?.user?.id, cursoBase?.id, state.cursos, state.estudiantes.length, loadCursoData]);
 
     const {
         periodo,

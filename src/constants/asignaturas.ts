@@ -91,12 +91,76 @@ export const getMensajeDocenteNoUsaCielo = (nombreAsignatura: string): string =>
   return `Tu docente de ${nombre} aún no evalúa a sus estudiantes con CIELO`;
 };
 
+export const OPCION_AGREGAR_OPTATIVA = '__agregar_optativa__';
+export const PREFIJO_ASIGNATURA_OPTATIVA = 'optativa:';
+
+/**
+ * Limpia el prefijo interno `optativa:` si está presente.
+ */
+export const limpiarPrefijoOptativa = (valor: string | null | undefined): string => {
+  if (!valor) return '';
+  const trimmed = String(valor).trim();
+  if (trimmed.toLowerCase().startsWith(PREFIJO_ASIGNATURA_OPTATIVA)) {
+    return trimmed.slice(PREFIJO_ASIGNATURA_OPTATIVA.length).trim();
+  }
+  return trimmed;
+};
+
+/**
+ * Crea el identificador interno para una asignatura optativa personalizada.
+ * Ejemplo: "Robótica Educativa" -> "optativa:Robótica Educativa"
+ */
+export const crearAsignaturaOptativaId = (nombre: string): string => {
+  const limpio = limpiarPrefijoOptativa(nombre).replace(/\s+/g, ' ').trim();
+  return limpio ? `${PREFIJO_ASIGNATURA_OPTATIVA}${limpio}` : '';
+};
+
+/**
+ * Determina si un identificador o nombre corresponde a una asignatura oficial del catálogo de CIELO.
+ */
+export const esAsignaturaOficial = (idOrNombre: string | null | undefined): boolean => {
+  if (!idOrNombre) return false;
+  const raw = String(idOrNombre).trim();
+  if (!raw || raw.toLowerCase().startsWith(PREFIJO_ASIGNATURA_OPTATIVA)) return false;
+  const norm = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return ASIGNATURAS_CATALOGO.some(a => {
+    const idNorm = a.id.toLowerCase();
+    const nombreNorm = a.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return norm === idNorm || norm === nombreNorm;
+  });
+};
+
+/**
+ * Determina si una asignatura es optativa / personalizada (creada por el docente).
+ */
+export const esAsignaturaOptativa = (idOrNombre: string | null | undefined): boolean => {
+  if (!idOrNombre) return false;
+  const raw = String(idOrNombre).trim();
+  if (!raw || raw === 'Sin Asignatura' || raw === 'otra' || raw === OPCION_AGREGAR_OPTATIVA) return false;
+  if (raw.toLowerCase().startsWith(PREFIJO_ASIGNATURA_OPTATIVA)) return true;
+  return !esAsignaturaOficial(raw);
+};
+
 export const sonMismaAsignatura = (a: string | null | undefined, b: string | null | undefined): boolean => {
   if (!a || !b) return false;
-  const clean = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const clean = (s: string) =>
+    limpiarPrefijoOptativa(s)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .toLowerCase()
+      .trim();
   const ca = clean(a);
   const cb = clean(b);
+  if (!ca || !cb) return false;
   if (ca === cb) return true;
+
+  // Si alguna de las dos está marcada explícitamente como optativa, exigir coincidencia exacta normalizada
+  const optA = String(a).trim().toLowerCase().startsWith(PREFIJO_ASIGNATURA_OPTATIVA);
+  const optB = String(b).trim().toLowerCase().startsWith(PREFIJO_ASIGNATURA_OPTATIVA);
+  if (optA || optB) {
+    return ca === cb;
+  }
 
   // Lengua Española / Español: NUNCA debe coincidir con Lenguas Extranjeras (Inglés o Francés)
   const esEspanolA = (ca.includes('lengua') || ca.includes('espanol')) && !ca.includes('ingl') && !ca.includes('extranjer') && !ca.includes('franc');
@@ -132,12 +196,20 @@ export const sonMismaAsignatura = (a: string | null | undefined, b: string | nul
 
 export const getAsignaturaNombre = (id: string | null | undefined): string => {
   if (!id) return 'Sin Asignatura';
-  const found = ASIGNATURAS_CATALOGO.find(a => a.id === id);
-  return found ? found.nombre : id;
+  const raw = String(id).trim();
+  if (raw.toLowerCase().startsWith(PREFIJO_ASIGNATURA_OPTATIVA)) {
+    return limpiarPrefijoOptativa(raw) || 'Asignatura Optativa';
+  }
+  const found = ASIGNATURAS_CATALOGO.find(a => a.id === raw);
+  return found ? found.nombre : raw;
 };
 
 export const getAsignaturaId = (nombre: string | null | undefined): string => {
   if (!nombre) return 'otra';
-  const found = ASIGNATURAS_CATALOGO.find(a => a.nombre.toLowerCase() === nombre.toLowerCase());
+  const raw = String(nombre).trim();
+  if (raw.toLowerCase().startsWith(PREFIJO_ASIGNATURA_OPTATIVA)) {
+    return crearAsignaturaOptativaId(raw);
+  }
+  const found = ASIGNATURAS_CATALOGO.find(a => a.nombre.toLowerCase() === raw.toLowerCase() || a.id.toLowerCase() === raw.toLowerCase());
   return found ? found.id : 'otra';
 };

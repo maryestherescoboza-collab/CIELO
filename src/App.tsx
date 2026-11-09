@@ -31,6 +31,7 @@ import { useIncidenciaActions } from './hooks/useIncidenciaActions';
 import { useSecuenciaActions } from './hooks/useSecuenciaActions';
 import PortalApp from './screens/Portal/PortalApp';
 import PortalGeneral from './screens/Portal/PortalGeneral';
+import PortalRecuperarClave from './screens/Portal/PortalRecuperarClave';
 import { usePostActions } from './hooks/usePostActions';
 import { useTareaActions } from './hooks/useTareaActions';
 import { useCentroActions } from './hooks/useCentroActions';
@@ -44,6 +45,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { analizarRolAcceso } from './utils/autorizacion';
 import { PORTAL_FAMILIA_ENABLED } from './config/features';
 import { normalizeArea } from './utils/academic';
+import { sonMismaAsignatura } from './constants/asignaturas';
 
 export default function App() {
   useSupabaseAuth();
@@ -69,6 +71,7 @@ export default function App() {
     selectedCursoDocenteId: s.selectedCursoDocenteId
   })));
 
+  const selectedAsignatura = useAppStore(s => s.selectedAsignatura);
   const actions = {
     ...useCourseActions(),
     ...useStudentActions(),
@@ -161,6 +164,8 @@ export default function App() {
     }
 
     // 2. Fallback to first match (legacy behavior)
+    const asigMatched = selectedAsignatura ? state.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session.user.id && sonMismaAsignatura(cd.asignatura, selectedAsignatura)) : undefined;
+    if (asigMatched) return asigMatched;
     const linked = state.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session.user.id);
     if (linked) return linked;
 
@@ -170,12 +175,12 @@ export default function App() {
       return { id: -1, cursoId: selectedCursoId, userId: session.user.id, rol: 'tutor' as const, asignatura: curso.asignatura, createdAt: curso.createdAt };
     }
     return null;
-  }, [selectedCursoId, session?.user?.id, state.cursoDocentes, state.cursos, selectedCursoDocenteId]);
+  }, [selectedCursoId, session?.user?.id, state.cursoDocentes, state.cursos, selectedCursoDocenteId, selectedAsignatura]);
 
   const visibleActividades = useMemo(() => {
     const isMine = (a: any) => a.userId === session?.user?.id || !a.userId;
     if (!selectedCursoId) return state.actividades.filter(isMine);
-    const targetAsig = currentCourseRole?.asignatura || state.cursos.find((c: any) => c.id === selectedCursoId)?.asignatura;
+    const targetAsig = currentCourseRole?.asignatura || selectedAsignatura || state.cursos.find((c: any) => c.id === selectedCursoId)?.asignatura;
     const baseFilter = (a: any) => a.cursoId === selectedCursoId && isMine(a);
     if (!targetAsig) return state.actividades.filter(baseFilter);
     return state.actividades.filter((a: any) => 
@@ -183,19 +188,19 @@ export default function App() {
       Boolean(a.asignatura) && 
       normalizeArea(a.asignatura) === normalizeArea(targetAsig)
     );
-  }, [state.actividades, state.cursos, selectedCursoId, currentCourseRole, session?.user?.id]);
+  }, [state.actividades, state.cursos, selectedCursoId, currentCourseRole, selectedAsignatura, session?.user?.id]);
 
   const visibleCalificaciones = useMemo(() => {
     const baseFilter = (c: any) => c.cursoId === selectedCursoId;
     if (!selectedCursoId) return state.calificaciones;
-    const targetAsig = currentCourseRole?.asignatura || state.cursos.find((c: any) => c.id === selectedCursoId)?.asignatura;
+    const targetAsig = currentCourseRole?.asignatura || selectedAsignatura || state.cursos.find((c: any) => c.id === selectedCursoId)?.asignatura;
     if (!targetAsig) return state.calificaciones.filter(baseFilter);
     return state.calificaciones.filter((c: any) => 
       baseFilter(c) && 
       Boolean(c.asignatura) && 
       normalizeArea(c.asignatura) === normalizeArea(targetAsig)
     );
-  }, [state.calificaciones, state.cursos, selectedCursoId, currentCourseRole]);
+  }, [state.calificaciones, state.cursos, selectedCursoId, currentCourseRole, selectedAsignatura]);
 
   const activeInstituto = useMemo(() => {
     if (currentUserProfile?.centro?.nombre) {
@@ -303,6 +308,7 @@ export default function App() {
       >
         <Routes>
           <Route path="/portal" element={<PortalGeneral />} />
+          <Route path="/portal/recuperar/:recoveryToken" element={<PortalRecuperarClave />} />
           <Route path="/portal/:token/*" element={<PortalApp />} />
           <Route path="*" element={<Navigate to="/portal" replace />} />
         </Routes>

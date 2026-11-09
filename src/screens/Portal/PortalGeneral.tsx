@@ -30,6 +30,13 @@ export default function PortalGeneral() {
       return;
     }
 
+    // Si el usuario pegó un enlace de recuperación de clave (/portal/recuperar/:uuid)
+    const recoveryMatch = trimmed.match(/\/portal\/recuperar\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+    if (recoveryMatch && recoveryMatch[1]) {
+      navigate(`/portal/recuperar/${recoveryMatch[1].toLowerCase()}`);
+      return;
+    }
+
     // Si el usuario pegó la URL completa o directamente el código UUID
     const match = trimmed.match(UUID_REGEX);
     if (match && match[0]) {

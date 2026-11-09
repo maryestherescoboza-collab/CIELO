@@ -4,6 +4,8 @@ import type { AppState, CalificacionActividad, RecuperacionBC } from '../types';
 import { PERIODOS_ACADEMICOS } from '../cache/academicCache';
 import { SELLOS_INFO } from '../constants/sellos';
 import { normalizeArea } from '../utils/academic';
+import { getAsignaturaNombre, sonMismaAsignatura } from '../constants/asignaturas';
+import { esEstudianteDelCurso } from '../utils/aislamiento';
 import { useSupabaseData } from '../hooks/useSupabaseData';
 
 type Paso = 'curso' | 'periodo' | 'actividad' | 'captura' | 'final';
@@ -17,6 +19,7 @@ interface SellosProps {
 const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) => {
     const [paso, setPaso] = useState<Paso>('curso');
     const [cursoId, setCursoId] = useState<number | null>(null);
+    const [asignatura, setAsignatura] = useState<string | null>(null);
     const [periodo, setPeriodo] = useState<string | null>(null);
     const [actividadId, setActividadId] = useState<number | null>(null);
     const [indice, setIndice] = useState(0);
@@ -40,15 +43,16 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
     const calificaciones = state.calificaciones ?? [];
 
     const curso = useMemo(
-        () => cursos.find(c => c.id === cursoId) ?? null,
-        [cursos, cursoId]
+        () => cursos.find(c => c.id === cursoId && (!asignatura || sonMismaAsignatura(c.asignatura, asignatura)))
+            ?? cursos.find(c => c.id === cursoId)
+            ?? null,
+        [cursos, cursoId, asignatura]
     );
 
     const estudiantesCurso = useMemo(
-        () => estudiantes
-            .filter(e => e.cursoId === cursoId)
+        () => (curso ? estudiantes.filter(e => esEstudianteDelCurso(cursos, curso, e, curso.centroId)) : [])
             .sort((a, b) => (a.numeroLista || 0) - (b.numeroLista || 0)),
-        [estudiantes, cursoId]
+        [estudiantes, cursos, curso]
     );
 
     const actividadesCurso = useMemo(
@@ -137,6 +141,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
     const reiniciar = useCallback(() => {
         setPaso('curso');
         setCursoId(null);
+        setAsignatura(null);
         setPeriodo(null);
         setActividadId(null);
         setIndice(0);
@@ -157,11 +162,11 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
         ) : (
             <ul className="flex flex-col gap-3">
                 {cursos.map(c => {
-                    const n = estudiantes.filter(e => e.cursoId === c.id).length;
+                    const n = estudiantes.filter(e => esEstudianteDelCurso(cursos, c, e, c.centroId)).length;
                     return (
-                        <li key={c.id}>
+                        <li key={`${c.id}-${c.asignatura}`}>
                             <button
-                                onClick={() => { setCursoId(c.id); setPeriodo(null); setActividadId(null); setIndice(0); setPaso('periodo'); }}
+                                onClick={() => { setCursoId(c.id); setAsignatura(c.asignatura); setPeriodo(null); setActividadId(null); setIndice(0); setPaso('periodo'); }}
                                 className="w-full flex items-center gap-3 text-left rounded-xl border border-[#1C2220] bg-white p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-sm active:scale-[0.98] group"
                             >
                                 <span
@@ -173,7 +178,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                                 <span className="flex-1 min-w-0">
                                     <span className="block font-extrabold text-[#1C2220] truncate text-[15px]">{c.nombre}</span>
                                     <span className="block text-[11px] font-bold text-gray-500 truncate mt-0.5">
-                                        {c.asignatura} • {c.grado} {c.seccion} • {n} estudiante{n === 1 ? '' : 's'}
+                                        {getAsignaturaNombre(c.asignatura)} • {c.grado} {c.seccion} • {n} estudiante{n === 1 ? '' : 's'}
                                     </span>
                                 </span>
                                 <ChevronRight size={20} className="shrink-0 text-[#1C2220]" strokeWidth={2.5} />
@@ -300,7 +305,7 @@ const Sellos: React.FC<SellosProps> = ({ state, userId, onSaveCalificaciones }) 
                         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500 font-medium">
                             <span>{curso.grado}</span>
                             <span>•</span>
-                            <span className="text-[#1C2220] font-semibold">{curso.asignatura}</span>
+                            <span className="text-[#1C2220] font-semibold">{getAsignaturaNombre(curso.asignatura)}</span>
                             <span>•</span>
                             <span className="bg-white px-2 py-0.5 rounded-full text-[11px] font-bold border border-gray-300">{curso.seccion}</span>
                         </div>

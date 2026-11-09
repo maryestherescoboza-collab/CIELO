@@ -8,13 +8,14 @@ import RecuperacionCotejoModal from '../components/curso-detalle/RecuperacionCot
 import VincularDocentesModal from '../components/curso-detalle/VincularDocentesModal';
 import AgregarActividadModal from '../components/curso-detalle/AgregarActividadModal';
 import ActivityWorkspace from '../components/curso-detalle/workspace/ActivityWorkspace';
+import { PersistenceBanner } from '../components/curso-detalle/PersistenceBanner';
 import { CieloModal } from '../components/ui/CieloModal';
 import { AlertTriangle } from 'lucide-react';
 import type { BCKey, Curso, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, CursoDocente, Estudiante } from '../types';
 import { BC_ICONS, BC_COLOR_THEMES } from '../constants/competencias';
 import { PRODUCTO_FINAL_NAME } from '../constants/productoFinal';
-import { getGradeClass } from '../utils/academic';
-import { getAsignaturaNombre } from '../constants/asignaturas';
+import { getGradeClass, normalizeArea } from '../utils/academic';
+import { getAsignaturaNombre, sonMismaAsignatura } from '../constants/asignaturas';
 
 import { useSupabaseData } from '../hooks/useSupabaseData';
 
@@ -59,11 +60,12 @@ export default function CursoDetalle(props: Props) {
     const searchParams = new URLSearchParams(window.location.search);
     const urlAsignatura = searchParams.get('asignatura');
 
+    const targetAsignatura = urlAsignatura || store.selectedAsignatura;
     const currentCourseRole = props.currentCourseRole || state.cursoDocentes.find((cd: CursoDocente) => 
         cd.cursoId === cursoId && 
         cd.userId === currentUserId &&
-        (!urlAsignatura || cd.asignatura === urlAsignatura)
-    ) || (urlAsignatura ? undefined : state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoId && cd.userId === currentUserId));
+        (!targetAsignatura || sonMismaAsignatura(cd.asignatura, targetAsignatura))
+    ) || state.cursoDocentes.find((cd: CursoDocente) => cd.cursoId === cursoId && cd.userId === currentUserId);
 
     const {
         curso,
@@ -189,13 +191,11 @@ export default function CursoDetalle(props: Props) {
     };
 
     const handleBack = async () => {
-        if (isDirty) {
+        if (isDirty || saveStatus === 'saving' || saveStatus === 'verifying') {
             const saved = await flushSave();
             if (!saved) {
-                const proceed = window.confirm(
-                    'No se pudieron confirmar todas las calificaciones en el servidor. Si sales ahora, algunas modificaciones recientes podrían no guardarse. ¿Deseas salir de todas formas?'
-                );
-                if (!proceed) return;
+                alert('CIELO no ha podido confirmar el guardado de todas las calificaciones en Supabase. Por favor espera o verifica tu conexión antes de salir.');
+                return;
             }
         }
         navigate('/cursos');
@@ -212,7 +212,7 @@ export default function CursoDetalle(props: Props) {
             a.cursoId === cursoId && 
             a.nombre === PRODUCTO_FINAL_NAME && 
             a.periodo === selectedPeriodo &&
-            (!a.asignatura || a.asignatura === myAsignatura) &&
+            (!a.asignatura || normalizeArea(a.asignatura) === normalizeArea(myAsignatura)) &&
             (a.userId === currentUserId || !a.userId)
         );
         
@@ -353,6 +353,13 @@ export default function CursoDetalle(props: Props) {
                 isExportingInstrumento={isExportingInstrumento}
             />
 
+            <PersistenceBanner 
+                saveStatus={saveStatus}
+                saveError={saveError}
+                isDirty={isDirty || isDirtyCotejo}
+                onRetry={retrySave}
+            />
+
             {restoredFromBackupCount > 0 && (
                 <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2 flex items-center justify-between text-xs text-emerald-800 font-medium">
                     <span>
@@ -370,7 +377,7 @@ export default function CursoDetalle(props: Props) {
             <GradeTable 
                 actividades={actividades}
                 estudiantes={enhancedEstudiantes}
-                estudiantesRealesCurso={state.estudiantes.filter(e => Number(e.cursoId) === cursoId)}
+                estudiantesRealesCurso={allCourseStudents}
                 bcSel={bcSel}
                 isDragging={isDragging}
                 evalMode={evalMode}

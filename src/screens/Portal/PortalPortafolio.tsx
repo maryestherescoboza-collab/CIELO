@@ -16,7 +16,7 @@ import { usePortal, rutaPortal } from './portalContext';
 import { evidenciasApiPortal, resolverUrls, mensajeDeExcepcion } from '../../lib/evidenciasApi';
 import { obtenerEstadoDrive, type EstadoDrive } from '../../lib/portalDriveApi';
 import { selloPorValor } from '../../constants/sellos';
-import { sonMismaAsignatura, SIETE_ASIGNATURAS_OFICIALES } from '../../constants/asignaturas';
+import { sonMismaAsignatura, getAsignaturaNombre } from '../../constants/asignaturas';
 import PortalEvidenciaForm from './PortalEvidenciaForm';
 import type { ActividadParaEvidencia, EvidenciaPortafolio } from '../../types/evidencias';
 
@@ -205,11 +205,6 @@ const PortalPortafolio: React.FC = () => {
         { k: 'revisada', label: 'Revisadas', count: revisadasCount },
     ] as const;
 
-    const activeOficial = useMemo(() => {
-        if (!selectedAsignatura) return null;
-        return SIETE_ASIGNATURAS_OFICIALES.find(o => sonMismaAsignatura(o.nombre, selectedAsignatura));
-    }, [selectedAsignatura]);
-
     return (
         <div className="p-3.5 sm:p-5 pb-24 max-w-xl mx-auto">
             {/* Contenedor principal con estética idéntica al mockup */}
@@ -223,14 +218,13 @@ const PortalPortafolio: React.FC = () => {
                                 Evidencias
                             </h1>
                             {selectedAsignatura && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-stone-200 bg-stone-50 text-[11px] font-bold text-stone-800">
-                                    <span>{activeOficial?.icono || '📖'}</span>
-                                    <span>{selectedAsignatura}</span>
+                                <span className="inline-flex items-center justify-center px-3 py-0.5 rounded-full border border-[#537BAC]/30 bg-[#537BAC]/12 text-[11px] font-bold text-[#1B1F2A]">
+                                    <span>{getAsignaturaNombre(selectedAsignatura)}</span>
                                 </span>
                             )}
                         </div>
                         <p className="text-sm text-[#767A76] mt-1 leading-snug">
-                            {selectedAsignatura ? `Actividades y archivos de ${selectedAsignatura}` : 'Actividades y archivos del curso'}
+                            {selectedAsignatura ? `Actividades y archivos de ${getAsignaturaNombre(selectedAsignatura)}` : 'Actividades y archivos del curso'}
                         </p>
                     </div>
 
@@ -238,9 +232,9 @@ const PortalPortafolio: React.FC = () => {
                         onClick={() => abrirForm()}
                         aria-label="Agregar evidencia"
                         title="Agregar evidencia"
-                        className="text-[#537BAC] hover:text-[#43648C] active:scale-95 transition-all p-0.5 mt-0.5 shrink-0"
+                        className="w-9 h-9 rounded-full bg-[#537BAC]/12 border border-[#537BAC]/30 text-[#537BAC] hover:bg-[#537BAC] hover:text-white active:scale-95 transition-all flex items-center justify-center mt-0.5 shrink-0"
                     >
-                        <PlusCircle size={26} strokeWidth={1.8} />
+                        <PlusCircle size={20} strokeWidth={2} />
                     </button>
                 </div>
 
@@ -248,7 +242,7 @@ const PortalPortafolio: React.FC = () => {
                 {drive ? (
                     <button
                         onClick={() => navigate(rutaPortal(token, 'drive'))}
-                        className="w-full flex items-center justify-between border border-[#E5E7EB] rounded-2xl p-4 mb-4 hover:bg-[#FAFAF7] active:scale-[0.995] transition-all bg-white text-left group"
+                        className="w-full flex items-center justify-between border border-[#537BAC]/25 rounded-2xl p-4 mb-4 bg-[#FCFCFA] hover:bg-[#537BAC]/8 active:scale-[0.995] transition-all text-left group"
                     >
                         <div className="flex items-center gap-3.5 min-w-0">
                             <Cloud size={22} strokeWidth={1.6} className="text-[#537BAC] shrink-0" />
@@ -265,21 +259,21 @@ const PortalPortafolio: React.FC = () => {
                                 </p>
                             </div>
                         </div>
-                        <ExternalLink size={16} strokeWidth={1.8} className="text-[#6B7280] shrink-0 ml-2 group-hover:text-[#1B1F2A] transition-colors" />
+                        <ExternalLink size={16} strokeWidth={1.8} className="text-[#537BAC] shrink-0 ml-2 group-hover:text-[#1B1F2A] transition-colors" />
                     </button>
                 ) : null}
 
-                {/* 3. Filtros: "Todas 2" (píldora oscura) / "Por revisar 2" / "Revisadas 0" */}
-                <div className="flex items-center gap-4 overflow-x-auto no-scrollbar py-1">
+                {/* 3. Filtros: "Todas" / "Por revisar" / "Revisadas" */}
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
                     {FILTROS.map(f => {
                         const activo = filtro === f.k;
                         return (
                             <button
                                 key={f.k}
                                 onClick={() => setFiltro(f.k)}
-                                className={`shrink-0 text-xs font-bold transition-all ${activo
-                                        ? 'bg-[#537BAC] text-white px-4 py-2 rounded-full'
-                                        : 'text-[#1B1F2A] hover:text-[#537BAC] py-2 px-1'
+                                className={`shrink-0 text-xs font-bold transition-all px-3.5 py-1.5 rounded-full border ${activo
+                                        ? 'bg-[#537BAC] text-white border-[#537BAC]'
+                                        : 'bg-[#FCFCFA] text-[#1B1F2A] border-[#BFC9A6]/50 hover:bg-[#BFC9A6]/25'
                                     }`}
                             >
                                 {f.label} {f.count}
@@ -430,7 +424,7 @@ const PortalPortafolio: React.FC = () => {
                                                                         setMenuAbiertoId(null);
                                                                         setEvidenciaAEliminar(ev);
                                                                     }}
-                                                                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#C0392B] hover:bg-[#FDECEA] transition-colors text-left"
+                                                                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-[#DB5B48] hover:bg-[#DB5B48]/12 transition-colors text-left"
                                                                 >
                                                                     <Trash2 size={13} />
                                                                     Retirar evidencia
@@ -455,7 +449,7 @@ const PortalPortafolio: React.FC = () => {
             </div>
 
             {error && evidencias.length > 0 ? (
-                <p className="text-xs font-bold text-[#C0392B] mt-4 text-center">{error}</p>
+                <p className="text-xs font-bold text-[#DB5B48] mt-4 text-center">{error}</p>
             ) : null}
 
             {/* Modal de confirmación para retirar evidencia */}
@@ -465,12 +459,12 @@ const PortalPortafolio: React.FC = () => {
                     onClick={() => setEvidenciaAEliminar(null)}
                 >
                     <div
-                        className="w-full max-w-sm bg-white rounded-2xl p-5 border border-[#E5E7EB] shadow-xl animate-in zoom-in-95 duration-150"
+                        className="w-full max-w-sm bg-[#FCFCFA] rounded-2xl p-5 border border-[#BFC9A6]/60 shadow-xl animate-in zoom-in-95 duration-150"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between gap-3 mb-3">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-full bg-[#FDECEA] flex items-center justify-center text-[#C0392B]">
+                                <div className="w-8 h-8 rounded-full bg-[#DB5B48]/15 flex items-center justify-center text-[#DB5B48]">
                                     <Trash2 size={16} />
                                 </div>
                                 <h3 className="text-sm font-black text-[#1B1F2A]">Retirar evidencia</h3>
@@ -478,7 +472,7 @@ const PortalPortafolio: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setEvidenciaAEliminar(null)}
-                                className="w-7 h-7 rounded-full flex items-center justify-center text-[#767A76] hover:bg-[#F1F1EC]"
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-[#767A76] hover:bg-[#BFC9A6]/25"
                             >
                                 <X size={15} />
                             </button>
@@ -493,7 +487,7 @@ const PortalPortafolio: React.FC = () => {
                                 type="button"
                                 onClick={() => setEvidenciaAEliminar(null)}
                                 disabled={borrando !== null}
-                                className="flex-1 h-10 rounded-full border border-[#D8D7E0] text-xs font-bold text-[#4E5566] hover:bg-[#F1F1EC] active:scale-95 transition-all"
+                                className="flex-1 h-10 rounded-full border border-[#BFC9A6]/60 bg-[#BFC9A6]/20 text-xs font-bold text-[#1B1F2A] hover:bg-[#BFC9A6]/35 active:scale-95 transition-all"
                             >
                                 Cancelar
                             </button>
@@ -501,7 +495,7 @@ const PortalPortafolio: React.FC = () => {
                                 type="button"
                                 onClick={() => retirar(evidenciaAEliminar.id)}
                                 disabled={borrando !== null}
-                                className="flex-1 h-10 rounded-full bg-[#C0392B] text-white text-xs font-bold hover:bg-[#a93226] active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                                className="flex-1 h-10 rounded-full bg-[#DB5B48] text-white text-xs font-bold hover:bg-[#c74e3c] active:scale-95 transition-all flex items-center justify-center gap-1.5"
                             >
                                 {borrando === evidenciaAEliminar.id ? (
                                     <Loader2 size={14} className="animate-spin" />

@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   Tag
 } from 'lucide-react';
-import { sonMismaAsignatura, SIETE_ASIGNATURAS_OFICIALES } from '../../constants/asignaturas';
 
 export interface PortalIncidencia {
   id: number;
@@ -33,30 +32,30 @@ const CATEGORIAS_CONFIG: Record<string, { icon: React.ElementType; label: string
   Conducta: {
     icon: ShieldAlert,
     label: 'Conducta',
-    badgeBg: 'bg-orange-50 border-orange-200 text-orange-700',
-    badgeText: 'text-orange-700',
-    iconBg: 'bg-orange-100 text-orange-600 border-orange-200',
+    badgeBg: 'bg-[#EB8847]/15 border-[#EB8847]/40 text-[#8F4718]',
+    badgeText: 'text-[#8F4718]',
+    iconBg: 'bg-[#EB8847]/20 text-[#8F4718] border-[#EB8847]/40',
   },
   Académico: {
     icon: Bookmark,
     label: 'Académico',
-    badgeBg: 'bg-blue-50 border-blue-200 text-blue-700',
-    badgeText: 'text-blue-700',
-    iconBg: 'bg-blue-100 text-blue-600 border-blue-200',
+    badgeBg: 'bg-[#537BAC]/15 border-[#537BAC]/40 text-[#2C4F7C]',
+    badgeText: 'text-[#2C4F7C]',
+    iconBg: 'bg-[#537BAC]/20 text-[#2C4F7C] border-[#537BAC]/40',
   },
   Salud: {
     icon: AlertCircle,
     label: 'Salud y Bienestar',
-    badgeBg: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-    badgeText: 'text-emerald-700',
-    iconBg: 'bg-emerald-100 text-emerald-600 border-emerald-200',
+    badgeBg: 'bg-[#689C63]/15 border-[#689C63]/40 text-[#2E572A]',
+    badgeText: 'text-[#2E572A]',
+    iconBg: 'bg-[#689C63]/20 text-[#2E572A] border-[#689C63]/40',
   },
   Otro: {
     icon: FileText,
     label: 'Otro',
-    badgeBg: 'bg-amber-50 border-amber-200 text-amber-700',
-    badgeText: 'text-amber-700',
-    iconBg: 'bg-amber-100 text-amber-600 border-amber-200',
+    badgeBg: 'bg-[#DEAE4D]/20 border-[#DEAE4D]/45 text-[#7A5612]',
+    badgeText: 'text-[#7A5612]',
+    iconBg: 'bg-[#DEAE4D]/25 text-[#7A5612] border-[#DEAE4D]/45',
   },
 };
 
@@ -106,11 +105,6 @@ export default function PortalIncidencias() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filtroCategoria, setFiltroCategoria] = useState<CategoriaFiltro>('Todas');
-
-  const activeOficial = useMemo(() => {
-    if (!selectedAsignatura) return null;
-    return SIETE_ASIGNATURAS_OFICIALES.find((a) => sonMismaAsignatura(a.nombre, selectedAsignatura)) || null;
-  }, [selectedAsignatura]);
 
   const cargarIncidencias = useCallback(async (isRefresh = false) => {
     if (!sessionToken) return;
@@ -203,9 +197,8 @@ export default function PortalIncidencias() {
 
           <div className="flex items-center gap-2">
             {selectedAsignatura && (
-              <div className="hidden xs:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-stone-200 bg-stone-50 shadow-2xs">
-                <span className="text-xs">{activeOficial?.icono || '📖'}</span>
-                <span className="text-xs font-bold text-stone-800 truncate max-w-30">{selectedAsignatura}</span>
+              <div className="hidden xs:flex items-center px-3.5 py-1.5 rounded-full border border-[#537BAC]/30 bg-[#537BAC]/12 shadow-2xs">
+                <span className="text-xs font-bold text-[#1B1F2A] truncate max-w-30">{selectedAsignatura}</span>
               </div>
             )}
 
@@ -213,24 +206,24 @@ export default function PortalIncidencias() {
               onClick={() => cargarIncidencias(true)}
               disabled={loading || refreshing}
               title="Actualizar incidencias"
-              className="w-8 h-8 rounded-full border border-stone-200 bg-stone-50 hover:bg-stone-100 active:scale-95 flex items-center justify-center text-stone-600 transition"
+              className="w-8 h-8 rounded-full border border-[#BFC9A6]/60 bg-[#BFC9A6]/20 hover:bg-[#BFC9A6]/35 active:scale-95 flex items-center justify-center text-[#1B1F2A] transition"
             >
-              <RefreshCw size={14} className={refreshing ? 'animate-spin text-stone-900' : ''} />
+              <RefreshCw size={14} className={refreshing ? 'animate-spin text-[#537BAC]' : ''} />
             </button>
           </div>
         </div>
 
         {/* Banner descriptivo */}
-        <div className="bg-stone-50 border border-stone-200/90 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+        <div className="bg-[#FCFCFA] border border-[#BFC9A6]/60 rounded-2xl p-3.5 flex items-center justify-between gap-3">
           <div className="space-y-0.5">
             <h2 className="text-xs font-black uppercase tracking-wider text-stone-900 font-mono flex items-center gap-1.5">
               <span>Bitácora de Incidencias</span>
             </h2>
-            <p className="text-[11px] text-stone-500">
+            <p className="text-[11px] text-[#5F665E]">
               Seguimiento pedagógico y formativo registrado por tus docentes.
             </p>
           </div>
-          <div className="px-2.5 py-1 rounded-full border border-stone-300 bg-white text-[11px] font-black font-mono text-stone-800 shrink-0">
+          <div className="px-2.5 py-1 rounded-full border border-[#537BAC]/30 bg-[#537BAC]/12 text-[11px] font-black font-mono text-[#2C4F7C] shrink-0">
             {incidencias.length} {incidencias.length === 1 ? 'registro' : 'registros'}
           </div>
         </div>
@@ -249,12 +242,12 @@ export default function PortalIncidencias() {
                 className={`
                   inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shrink-0
                   ${isSelected
-                    ? 'bg-[#1E1E24] text-white shadow-xs scale-[1.02]'
-                    : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900'}
+                    ? 'bg-[#537BAC] text-white shadow-xs scale-[1.02]'
+                    : 'bg-[#BFC9A6]/20 border border-[#BFC9A6]/55 text-[#1B1F2A] hover:bg-[#BFC9A6]/35'}
                 `}
               >
                 <span>{cat}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-600'}`}>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected ? 'bg-white/25 text-white' : 'bg-[#FCFCFA] text-[#4E5540]'}`}>
                   {count}
                 </span>
               </button>
@@ -270,15 +263,15 @@ export default function PortalIncidencias() {
           <p className="text-xs font-bold text-stone-600">Cargando tus incidencias...</p>
         </div>
       ) : error ? (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-center space-y-3">
-          <AlertCircle className="text-rose-600 mx-auto" size={32} />
+        <div className="bg-[#DB5B48]/12 border border-[#DB5B48]/35 rounded-2xl p-6 text-center space-y-3">
+          <AlertCircle className="text-[#DB5B48] mx-auto" size={32} />
           <div className="space-y-1">
-            <h3 className="text-sm font-black text-rose-900">No se pudieron cargar las incidencias</h3>
-            <p className="text-xs text-rose-700">{error}</p>
+            <h3 className="text-sm font-black text-[#1B1F2A]">No se pudieron cargar las incidencias</h3>
+            <p className="text-xs text-[#9E3525]">{error}</p>
           </div>
           <button
             onClick={() => cargarIncidencias(true)}
-            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition shadow-xs"
+            className="px-4 py-2 bg-[#DB5B48] hover:bg-[#c74e3c] text-white text-xs font-bold rounded-xl transition shadow-xs"
           >
             Reintentar
           </button>
@@ -306,13 +299,13 @@ export default function PortalIncidencias() {
         </div>
       ) : incidenciasFiltradas.length === 0 ? (
         /* ESTADO CUANDO EL FILTRO NO COINCIDE */
-        <div className="bg-stone-50 border border-stone-200 rounded-2xl p-6 text-center space-y-2">
-          <p className="text-xs font-bold text-stone-700">
+        <div className="bg-[#FCFCFA] border border-[#BFC9A6]/60 rounded-2xl p-6 text-center space-y-2">
+          <p className="text-xs font-bold text-[#2E3330]">
             No tienes incidencias registradas en la categoría «{filtroCategoria}».
           </p>
           <button
             onClick={() => setFiltroCategoria('Todas')}
-            className="text-xs text-[#1E1E24] font-bold underline"
+            className="px-3.5 py-1.5 rounded-full bg-[#537BAC]/15 border border-[#537BAC]/35 text-xs text-[#2C4F7C] font-bold hover:bg-[#537BAC]/25 transition"
           >
             Ver todas las incidencias
           </button>
@@ -328,7 +321,7 @@ export default function PortalIncidencias() {
             return (
               <article
                 key={inc.id}
-                className="bg-white border border-stone-200 hover:border-stone-300 rounded-2xl p-4 sm:p-4.5 shadow-2xs space-y-3 transition-all"
+                className="bg-[#FCFCFA] border border-[#BFC9A6]/55 hover:border-[#537BAC]/40 rounded-2xl p-4 sm:p-4.5 shadow-2xs space-y-3 transition-all"
               >
                 {/* Cabecera de la tarjeta: Categoría, Fecha y Gravedad */}
                 <div className="flex items-start justify-between gap-2.5">
@@ -344,8 +337,8 @@ export default function PortalIncidencias() {
                   </div>
 
                   <div className="flex flex-col items-end gap-1 shrink-0">
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-stone-500 font-mono">
-                      <Calendar size={12} className="text-stone-400" />
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-[#5F665E] font-mono">
+                      <Calendar size={12} className="text-[#537BAC]" />
                       <span>{formatearFechaLegible(inc.fecha)}</span>
                     </div>
                     {gravConfig && (
@@ -358,23 +351,23 @@ export default function PortalIncidencias() {
 
                 {/* Motivo / Descripción */}
                 <div className="pt-0.5">
-                  <p className="text-xs sm:text-[13px] font-medium text-stone-800 leading-relaxed">
+                  <p className="text-xs sm:text-[13px] font-medium text-[#1B1F2A] leading-relaxed">
                     {inc.descripcion}
                   </p>
                 </div>
 
                 {/* Medidas tomadas (acciones_tomadas) */}
                 {Array.isArray(inc.acciones_tomadas) && inc.acciones_tomadas.length > 0 && (
-                  <div className="pt-1 border-t border-stone-100 space-y-1.5">
-                    <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider font-mono flex items-center gap-1">
-                      <Tag size={11} className="text-stone-400" />
+                  <div className="pt-2 border-t border-[#BFC9A6]/40 space-y-1.5">
+                    <span className="text-[10px] font-bold text-[#5F665E] uppercase tracking-wider font-mono flex items-center gap-1">
+                      <Tag size={11} className="text-[#689C63]" />
                       <span>Medidas formativas tomadas</span>
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {inc.acciones_tomadas.map((accion, idx) => (
                         <span
                           key={idx}
-                          className="px-2.5 py-0.8 bg-stone-100 border border-stone-200 text-stone-700 text-[10px] font-bold rounded-full"
+                          className="px-2.5 py-0.5 bg-[#BFC9A6]/25 border border-[#BFC9A6]/60 text-[#2E3330] text-[10px] font-bold rounded-full"
                         >
                           {accion}
                         </span>
@@ -385,11 +378,11 @@ export default function PortalIncidencias() {
 
                 {/* Acuerdos o compromisos */}
                 {inc.acuerdos && inc.acuerdos.trim() && (
-                  <div className="bg-stone-50 border border-stone-200/90 rounded-xl p-2.5 text-xs text-stone-700 space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-stone-500 font-mono block">
+                  <div className="bg-[#537BAC]/10 border border-[#537BAC]/25 rounded-xl p-2.5 text-xs text-[#1B1F2A] space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#2C4F7C] font-mono block">
                       Acuerdos y compromisos:
                     </span>
-                    <p className="italic text-stone-800 text-[11.5px] leading-relaxed">
+                    <p className="italic text-[#1B1F2A] text-[11.5px] leading-relaxed">
                       «{inc.acuerdos}»
                     </p>
                   </div>
@@ -399,7 +392,6 @@ export default function PortalIncidencias() {
           })}
         </section>
       )}
-
     </div>
   );
 }

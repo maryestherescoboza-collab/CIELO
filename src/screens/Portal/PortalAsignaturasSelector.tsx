@@ -3,6 +3,7 @@ import {
   SIETE_ASIGNATURAS_OFICIALES, 
   ASIGNATURAS_CATALOGO,
   getMensajeDocenteNoUsaCielo, 
+  getAsignaturaNombre,
   sonMismaAsignatura,
   type AsignaturaOficial 
 } from '../../constants/asignaturas';
@@ -247,10 +248,11 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
     asignaturas.forEach((pub) => {
       if (!list.some((it) => sonMismaAsignatura(it.nombre, pub.asignatura)) && pub.tiene_docente) {
         const cat = ASIGNATURAS_CATALOGO.find((c) => sonMismaAsignatura(c.nombre, pub.asignatura) || sonMismaAsignatura(c.id, pub.asignatura));
+        const cleanName = getAsignaturaNombre(pub.asignatura);
         list.push({
-          id: cat?.id || pub.asignatura.toLowerCase().replace(/\s+/g, '_'),
-          nombre: pub.asignatura,
-          nombreCorto: pub.asignatura,
+          id: cat?.id || cleanName.toLowerCase().replace(/\s+/g, '_'),
+          nombre: cleanName,
+          nombreCorto: cleanName,
           icono: '📖',
           color: '#8B5CF6',
           bgColor: '#F5F3FF',

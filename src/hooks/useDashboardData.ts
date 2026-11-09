@@ -1,5 +1,8 @@
 import { useMemo } from 'react';
 import type { AppState, BCKey } from '../types';
+import { esEstudianteDelCurso } from '../utils/aislamiento';
+import { sonMismaAsignatura } from '../constants/asignaturas';
+import { normalizeArea } from '../utils/academic';
 
 export function useDashboardData(state: AppState, selectedCourseId: number | 'all', userId?: string, currentCourseRole?: any) {
     const today = new Date().toISOString().split('T')[0];
@@ -14,7 +17,12 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
             state.cursos.some(c => c.id === e.cursoId)
         );
         if (selectedCourseId !== 'all') {
-            res = res.filter(e => e.cursoId === selectedCourseId);
+            const targetCurso = state.cursos.find(c => c.id === selectedCourseId);
+            if (targetCurso) {
+                res = res.filter(e => esEstudianteDelCurso(state.cursos, targetCurso, e, targetCurso.centroId));
+            } else {
+                res = res.filter(e => e.cursoId === selectedCourseId);
+            }
         }
         return res;
     }, [state.estudiantes, sharedCourseIds, state.cursos, selectedCourseId]);
@@ -26,7 +34,10 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
         
         // Isolate by subject if a specific role context is provided
         if (selectedCourseId !== 'all' && currentCourseRole && currentCourseRole.rol !== 'tutor') {
-            return courseFiltered.filter(a => a.asignatura === currentCourseRole.asignatura);
+            return courseFiltered.filter(a =>
+                Boolean(a.asignatura) &&
+                (sonMismaAsignatura(a.asignatura, currentCourseRole.asignatura) || normalizeArea(a.asignatura) === normalizeArea(currentCourseRole.asignatura))
+            );
         }
         return courseFiltered;
     }, [state.actividades, selectedCourseId, userId, currentCourseRole]);
@@ -44,7 +55,8 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
     const totalEstudiantes = myStudents.length;
     const actividadesEvaluadas = filteredCalificaciones.filter(c => c.puntaje !== null).length;
     const incidenciasCount = filteredIncidencias.length;
-    const totalCursos = selectedCourseId === 'all' ? state.cursos.length : 1;
+    const uniqueCourseIds = new Set(state.cursos.map(c => c.id));
+    const totalCursos = selectedCourseId === 'all' ? uniqueCourseIds.size : 1;
 
     const avgBC = (bc: BCKey) => {
         const actsBc = filteredActividades.filter(a => a.bcAsignados?.includes(bc));

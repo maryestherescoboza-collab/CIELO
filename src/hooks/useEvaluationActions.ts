@@ -240,6 +240,46 @@ export function useEvaluationActions() {
                     throw new Error('[CALIFICACIONES] Supabase no confirmó la persistencia de las calificaciones enviadas');
                 }
                 console.log(`[CALIFICACIONES] OK: Supabase confirmó el UPSERT de ${califsResult.data.length} calificaciones.`);
+
+                // FASE 3: Verificación estricta de lectura real en PostgreSQL (Post-write verification)
+                // Comprobamos directamente contra la base de datos que cada calificación fue almacenada
+                // con el estudianteId, actividadId y puntaje exactos.
+                const actividadIds = Array.from(new Set(validCalifs.map(c => c.actividadId)));
+                const estudianteIds = Array.from(new Set(validCalifs.map(c => c.estudianteId)));
+
+                const { data: verifiedRows, error: verifyErr } = await supabase
+                    .from('calificaciones')
+                    .select('id, estudiante_id, actividad_id, puntaje')
+                    .in('actividad_id', actividadIds)
+                    .in('estudiante_id', estudianteIds);
+
+                if (verifyErr || !Array.isArray(verifiedRows)) {
+                    console.error('[CALIFICACIONES] Error al verificar lectura real en Supabase:', verifyErr);
+                    throw new Error(`[CALIFICACIONES] Error en verificación post-escritura: ${verifyErr?.message || 'Lectura fallida'}`);
+                }
+
+                // Mapa de verificación: `${estudiante_id}_${actividad_id}` -> puntaje en Supabase
+                const verifiedMap = new Map<string, number | null>();
+                verifiedRows.forEach(row => {
+                    const key = `${row.estudiante_id}_${row.actividad_id}`;
+                    verifiedMap.set(key, row.puntaje !== null ? Number(row.puntaje) : null);
+                });
+
+                const discrepancias: string[] = [];
+                validCalifs.forEach(expected => {
+                    const key = `${expected.estudianteId}_${expected.actividadId}`;
+                    const remotePuntaje = verifiedMap.get(key);
+                    const expectedPuntaje = expected.puntaje !== null ? Number(expected.puntaje) : null;
+                    if (remotePuntaje === undefined || remotePuntaje !== expectedPuntaje) {
+                        discrepancias.push(`Estudiante ${expected.estudianteId}, Actividad ${expected.actividadId}: esperado ${expectedPuntaje}, almacenado en BD ${remotePuntaje}`);
+                    }
+                });
+
+                if (discrepancias.length > 0) {
+                    console.error('[CALIFICACIONES] Discrepancias en verificación post-escritura:', discrepancias);
+                    throw new Error(`[CALIFICACIONES] Verificación fallida: ${discrepancias.length} calificación(es) no coinciden exactamente con lo almacenado en Supabase.`);
+                }
+                console.log(`[CALIFICACIONES] Verificación exitosa: ${validCalifs.length} calificaciones validadas campo por campo contra la BD.`);
             }
 
             console.log('[DEBUG] 6. Supabase responde exitosamente (upsert resuelto).');

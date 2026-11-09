@@ -1,16 +1,27 @@
 import React from 'react';
-import { getAsignaturaNombre } from '../../constants/asignaturas';
+import { getAsignaturaNombre, sonMismaAsignatura } from '../../constants/asignaturas';
+import { normalizeArea } from '../../utils/academic';
 import type { Skill, AppState, Competencia, DescriptorRubrica, CriterioCotejo } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
 import RecuperacionPerfil from './RecuperacionPerfil';
 import { QRCodeSVG } from 'qrcode.react';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
-import { FileDown, QrCode, ExternalLink, Copy, Check, X, Loader2 } from 'lucide-react';
+import { FileDown, QrCode, ExternalLink, Copy, Check, X, Loader2, KeyRound, Download, RefreshCw, ShieldCheck } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import {
     exportarInformeCurricularPdf,
     obtenerPortalAccessTokenEstudiante,
     construirUrlPortalEstudiante,
+    construirUrlRecuperacionPortal,
 } from '../../utils/informeCurricularPdf';
+
+interface RecuperacionQrEstado {
+    recovery_token: string | null;
+    estado: 'pendiente' | 'utilizado' | 'vencido';
+    created_at: string;
+    expires_at: string;
+    used_at: string | null;
+}
 
 interface PerfilTabProps {
     est: any;
@@ -43,10 +54,18 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
 }) => {
     const [qrModalOpen, setQrModalOpen] = React.useState(false);
     const [qrAccessByStudent, setQrAccessByStudent] = React.useState<Record<number, string>>({});
+    const [hasPinByStudent, setHasPinByStudent] = React.useState<Record<number, boolean>>({});
+    const [recoveryQrByStudent, setRecoveryQrByStudent] = React.useState<Record<number, RecuperacionQrEstado | null>>({});
+    const [activeQrTab, setActiveQrTab] = React.useState<'acceso' | 'recuperacion'>('acceso');
     const [isGeneratingQr, setIsGeneratingQr] = React.useState(false);
+    const [isGeneratingRecoveryQr, setIsGeneratingRecoveryQr] = React.useState(false);
     const [qrError, setQrError] = React.useState<string | null>(null);
+    const [recoveryQrError, setRecoveryQrError] = React.useState<string | null>(null);
     const [copiedLink, setCopiedLink] = React.useState(false);
+    const [copiedRecoveryLink, setCopiedRecoveryLink] = React.useState(false);
     const [isExportingPdf, setIsExportingPdf] = React.useState(false);
+    const qrSvgWrapRef = React.useRef<HTMLDivElement | null>(null);
+    const recoveryQrSvgWrapRef = React.useRef<HTMLDivElement | null>(null);
 
     const currentStudentId = Number(est?.id);
     const activeQrToken =
@@ -54,11 +73,26 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
             ? (qrAccessByStudent[currentStudentId] ?? null)
             : null;
     const portalUrl = activeQrToken ? construirUrlPortalEstudiante(activeQrToken) : null;
+    const currentStudentHasPin =
+        Number.isFinite(currentStudentId) && currentStudentId > 0
+            ? Boolean(hasPinByStudent[currentStudentId])
+            : false;
+    const activeRecoveryState =
+        Number.isFinite(currentStudentId) && currentStudentId > 0
+            ? (recoveryQrByStudent[currentStudentId] ?? null)
+            : null;
+    const recoveryPortalUrl =
+        activeRecoveryState?.estado === 'pendiente' && activeRecoveryState.recovery_token
+            ? construirUrlRecuperacionPortal(activeRecoveryState.recovery_token)
+            : null;
 
     React.useEffect(() => {
         setQrModalOpen(false);
         setQrError(null);
+        setRecoveryQrError(null);
         setCopiedLink(false);
+        setCopiedRecoveryLink(false);
+        setActiveQrTab('acceso');
     }, [est?.id]);
 
     React.useEffect(() => {
@@ -104,20 +138,24 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
         }
     };
 
-    const handleGenerateQR = async () => {
-        if (!PORTAL_FAMILIA_ENABLED || !est?.id) return;
-
-        const targetStudentId = Number(est.id);
-        setQrError(null);
-        setCopiedLink(false);
-        setQrModalOpen(true);
-
-        if (qrAccessByStudent[targetStudentId]) {
-            return;
-        }
-
+    const cargarEstadoQrEstudiante = React.useCallback(async (targetStudentId: number) => {
         setIsGeneratingQr(true);
+        setQrError(null);
         try {
+            const { data: estadoData, error: estadoError } = await supabase.rpc('portal_obtener_estado_qr_estudiante', {
+                p_estudiante_id: targetStudentId,
+            });
+
+            if (!estadoError && estadoData && !estadoData.error && typeof estadoData.access_token === 'string') {
+                saveStudentToken(targetStudentId, estadoData.access_token);
+                setHasPinByStudent(prev => ({ ...prev, [targetStudentId]: Boolean(estadoData.has_pin) }));
+                setRecoveryQrByStudent(prev => ({
+                    ...prev,
+                    [targetStudentId]: estadoData.recuperacion ?? null,
+                }));
+                return;
+            }
+
             const resolvedToken = await obtenerPortalAccessTokenEstudiante(
                 est,
                 curso,
@@ -136,6 +174,58 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
         } finally {
             setIsGeneratingQr(false);
         }
+    }, [est, curso, state, qrAccessByStudent, saveStudentToken]);
+
+    const handleGenerateQR = async () => {
+        if (!PORTAL_FAMILIA_ENABLED || !est?.id) return;
+
+        const targetStudentId = Number(est.id);
+        setQrError(null);
+        setRecoveryQrError(null);
+        setCopiedLink(false);
+        setCopiedRecoveryLink(false);
+        setQrModalOpen(true);
+
+        await cargarEstadoQrEstudiante(targetStudentId);
+    };
+
+    const handleGenerateRecoveryQR = async () => {
+        if (!PORTAL_FAMILIA_ENABLED || !est?.id) return;
+
+        const targetStudentId = Number(est.id);
+        setRecoveryQrError(null);
+        setCopiedRecoveryLink(false);
+        setIsGeneratingRecoveryQr(true);
+
+        try {
+            const { data, error } = await supabase.rpc('portal_generar_qr_recuperacion', {
+                p_estudiante_id: targetStudentId,
+            });
+
+            if (error) throw error;
+
+            if (!data || !data.success) {
+                setRecoveryQrError(data?.error || 'No se pudo generar el QR de recuperación.');
+                return;
+            }
+
+            if (typeof data.access_token === 'string') {
+                saveStudentToken(targetStudentId, data.access_token);
+            }
+            if (typeof data.has_pin === 'boolean') {
+                setHasPinByStudent(prev => ({ ...prev, [targetStudentId]: Boolean(data.has_pin) }));
+            }
+            setRecoveryQrByStudent(prev => ({
+                ...prev,
+                [targetStudentId]: data.recuperacion ?? null,
+            }));
+            setActiveQrTab('recuperacion');
+        } catch (err) {
+            console.error("Error generating recovery QR:", err);
+            setRecoveryQrError('Ocurrió un error al generar el QR de recuperación.');
+        } finally {
+            setIsGeneratingRecoveryQr(false);
+        }
     };
 
     const handleCopyPortalUrl = async () => {
@@ -146,6 +236,103 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
             setTimeout(() => setCopiedLink(false), 2000);
         } catch {
             // Fallback silencioso
+        }
+    };
+
+    const handleCopyRecoveryUrl = async () => {
+        if (!recoveryPortalUrl) return;
+        try {
+            await navigator.clipboard.writeText(recoveryPortalUrl);
+            setCopiedRecoveryLink(true);
+            setTimeout(() => setCopiedRecoveryLink(false), 2000);
+        } catch {
+            // Fallback silencioso
+        }
+    };
+
+    const handleDownloadQrImage = (wrapEl: HTMLDivElement | null, tipo: 'Acceso' | 'Recuperacion') => {
+        if (!wrapEl) return;
+        const svgEl = wrapEl.querySelector('svg');
+        if (!svgEl) return;
+
+        try {
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svgEl);
+            const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const size = 640;
+                const padding = 48;
+                canvas.width = size;
+                canvas.height = size + 84;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.fillStyle = tipo === 'Recuperacion' ? '#8F641B' : '#1B1F2A';
+                    ctx.font = 'bold 20px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(
+                        tipo === 'Recuperacion'
+                            ? 'CIELO · QR DE RECUPERACIÓN DE CLAVE'
+                            : 'CIELO · QR DE ACCESO AL PORTAL',
+                        canvas.width / 2,
+                        36
+                    );
+
+                    ctx.drawImage(img, padding, 56, size - padding * 2, size - padding * 2);
+
+                    ctx.fillStyle = '#1B1F2A';
+                    ctx.font = 'bold 22px sans-serif';
+                    ctx.fillText(`${est.nombre || ''} ${est.apellido || ''}`.trim(), canvas.width / 2, size + 24);
+
+                    ctx.fillStyle = '#6B7280';
+                    ctx.font = '16px sans-serif';
+                    ctx.fillText(
+                        tipo === 'Recuperacion'
+                            ? 'Escanear para establecer una nueva clave (uso único)'
+                            : `${curso?.grado || ''} ${curso?.seccion || ''}`.trim(),
+                        canvas.width / 2,
+                        size + 52
+                    );
+
+                    const pngUrl = canvas.toDataURL('image/png');
+                    const a = document.createElement('a');
+                    const safeName = `${est.nombre || 'Estudiante'}_${est.apellido || ''}`
+                        .trim()
+                        .replace(/\s+/g, '_')
+                        .replace(/[^a-zA-Z0-9_-]/g, '');
+                    a.href = pngUrl;
+                    a.download = `QR_${tipo}_${safeName || 'Estudiante'}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }
+                URL.revokeObjectURL(url);
+            };
+            img.src = url;
+        } catch (e) {
+            console.error('Error al descargar imagen QR:', e);
+        }
+    };
+
+    const formatearFechaHoraCorta = (iso: string | null | undefined) => {
+        if (!iso) return '—';
+        try {
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return '—';
+            return d.toLocaleString('es-DO', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        } catch {
+            return '—';
         }
     };
 
@@ -260,7 +447,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
             const actCurso = state.cursos.find(c => c.id === a.cursoId);
             const isMatch = (actCurso?.sharedCourseId === est.sharedCourseId || a.cursoId === curso.id) && a.periodo === periodo;
             const actAsignatura = a.asignatura || actCurso?.asignatura || '';
-            const matchesRole = isTutor || !currentAsignatura || actAsignatura === currentAsignatura;
+            const matchesRole = isTutor || !currentAsignatura || sonMismaAsignatura(actAsignatura, currentAsignatura) || normalizeArea(actAsignatura) === normalizeArea(currentAsignatura);
             const matchesUser = isTutor || !currentUserId || a.userId === currentUserId || !a.userId;
             return isMatch && matchesRole && matchesUser;
         });
@@ -390,7 +577,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                         aria-labelledby="modal-qr-estudiante-titulo"
                                     >
                                         <div
-                                            className="w-full max-w-sm sm:max-w-md max-h-[92vh] overflow-y-auto bg-white rounded-2xl sm:rounded-3xl border border-(--border-unificado) shadow-lg px-5 py-6 sm:px-7 sm:py-7 text-center relative"
+                                            className="w-full max-w-md sm:max-w-lg max-h-[92vh] overflow-y-auto bg-white rounded-2xl sm:rounded-3xl border border-(--border-unificado) shadow-lg px-5 py-6 sm:px-7 sm:py-7 text-center relative"
                                             onClick={e => e.stopPropagation()}
                                         >
                                             <button
@@ -417,88 +604,344 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
                                                 </p>
                                             </div>
 
-                                            <div className="mt-5 mb-4 flex flex-col items-center justify-center">
-                                                {isGeneratingQr && !portalUrl ? (
-                                                    <div className="w-48 h-48 sm:w-52 sm:h-52 rounded-2xl bg-(--linen)/40 border border-(--border-unificado) flex flex-col items-center justify-center gap-2.5 p-4">
-                                                        <Loader2 size={26} className="animate-spin text-(--ink-soft)" />
-                                                        <span className="text-xs font-medium text-(--ink-soft)">
-                                                            Generando código QR...
-                                                        </span>
-                                                    </div>
-                                                ) : portalUrl ? (
-                                                    <>
-                                                        <a
-                                                            href={portalUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            title={`Abrir el portal de ${est.nombre} ${est.apellido || ''} en una nueva pestaña`}
-                                                            className="group inline-flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-(--border-unificado) hover:border-(--ink) shadow-xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-(--ink)/20"
-                                                        >
-                                                            <QRCodeSVG
-                                                                value={portalUrl}
-                                                                size={184}
-                                                                level="M"
-                                                                marginSize={2}
-                                                                bgColor="#FFFFFF"
-                                                                fgColor="#000000"
-                                                                className="w-40 h-40 sm:w-46 sm:h-46"
-                                                            />
-                                                            <span className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-semibold text-(--ink-soft) group-hover:text-(--ink) transition-colors">
-                                                                <span>Haz clic en el QR para abrir el portal</span>
-                                                                <ExternalLink size={12} />
-                                                            </span>
-                                                        </a>
-                                                        <p className="text-xs text-(--ink-soft) mt-3 leading-relaxed max-w-xs">
-                                                            Escanea este código desde un teléfono o haz clic sobre él para acceder al portal individual del estudiante.
-                                                        </p>
-                                                    </>
-                                                ) : (
-                                                    <div className="w-full rounded-xl bg-(--linen)/50 border border-(--border-unificado) p-4">
-                                                        <p className="text-xs text-(--ink) font-medium mb-3">
-                                                            {qrError || 'No se pudo cargar el código QR de este estudiante.'}
-                                                        </p>
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleGenerateQR}
-                                                            className="px-4 py-2 bg-(--ink) text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
-                                                        >
-                                                            Reintentar
-                                                        </button>
-                                                    </div>
-                                                )}
+                                            {/* Selector visual entre QR de Acceso y QR de Recuperación */}
+                                            <div className="mt-4 grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-(--linen)/50 border border-(--border-unificado)">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveQrTab('acceso')}
+                                                    className={`py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                                        activeQrTab === 'acceso'
+                                                            ? 'bg-[#1B1F2A] text-white shadow-2xs'
+                                                            : 'text-(--ink-soft) hover:text-(--ink)'
+                                                    }`}
+                                                >
+                                                    <QrCode size={13} />
+                                                    <span>QR de Acceso</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveQrTab('recuperacion')}
+                                                    className={`py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                                        activeQrTab === 'recuperacion'
+                                                            ? 'bg-[#8F641B] text-white shadow-2xs'
+                                                            : 'text-(--ink-soft) hover:text-(--ink)'
+                                                    }`}
+                                                >
+                                                    <KeyRound size={13} />
+                                                    <span>QR de Recuperación</span>
+                                                </button>
                                             </div>
 
-                                            {portalUrl && (
-                                                <div className="mt-4 pt-4 border-t border-(--border-unificado) text-left">
-                                                    <label className="block text-[10px] font-bold text-(--ink-soft) uppercase tracking-widest mb-1.5">
-                                                        Enlace directo del estudiante
-                                                    </label>
-                                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                                        <input
-                                                            type="text"
-                                                            readOnly
-                                                            value={portalUrl}
-                                                            onFocus={e => e.currentTarget.select()}
-                                                            className="text-xs px-3 py-2 border border-(--border-unificado) rounded-xl bg-(--bg-main) w-full min-w-0 text-(--ink) font-mono focus:outline-none"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleCopyPortalUrl}
-                                                            className="min-h-9 px-3.5 py-2 bg-(--linen) hover:bg-(--linen)/80 text-(--ink) text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                                            {activeQrTab === 'acceso' ? (
+                                                <>
+                                                    <div className="mt-4 flex items-center justify-center gap-2">
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-(--ink)">
+                                                            <ShieldCheck size={12} className="text-[#537BAC]" />
+                                                            <span>QR de Acceso Permanente</span>
+                                                        </span>
+                                                        <span
+                                                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                                currentStudentHasPin
+                                                                    ? 'bg-[#689C63]/15 text-[#4B7547]'
+                                                                    : 'bg-amber-50 text-[#8F641B] border border-amber-200'
+                                                            }`}
                                                         >
-                                                            {copiedLink ? (
-                                                                <>
-                                                                    <Check size={13} className="text-[#689C63]" />
-                                                                    <span>Copiado</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Copy size={13} />
-                                                                    <span>Copiar</span>
-                                                                </>
-                                                            )}
-                                                        </button>
+                                                            {currentStudentHasPin ? 'Clave configurada' : 'Primer acceso pendiente'}
+                                                        </span>
                                                     </div>
+
+                                                    <div className="mt-4 mb-4 flex flex-col items-center justify-center">
+                                                        {isGeneratingQr && !portalUrl ? (
+                                                            <div className="w-48 h-48 sm:w-52 sm:h-52 rounded-2xl bg-(--linen)/40 border border-(--border-unificado) flex flex-col items-center justify-center gap-2.5 p-4">
+                                                                <Loader2 size={26} className="animate-spin text-(--ink-soft)" />
+                                                                <span className="text-xs font-medium text-(--ink-soft)">
+                                                                    Generando código QR...
+                                                                </span>
+                                                            </div>
+                                                        ) : portalUrl ? (
+                                                            <>
+                                                                <div ref={qrSvgWrapRef} className="inline-flex flex-col items-center">
+                                                                    <a
+                                                                        href={portalUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        title={`Abrir el portal de ${est.nombre} ${est.apellido || ''} en una nueva pestaña`}
+                                                                        className="group inline-flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-(--border-unificado) hover:border-(--ink) shadow-xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-(--ink)/20"
+                                                                    >
+                                                                        <QRCodeSVG
+                                                                            value={portalUrl}
+                                                                            size={184}
+                                                                            level="M"
+                                                                            marginSize={2}
+                                                                            bgColor="#FFFFFF"
+                                                                            fgColor="#000000"
+                                                                            className="w-40 h-40 sm:w-46 sm:h-46"
+                                                                        />
+                                                                        <span className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-semibold text-(--ink-soft) group-hover:text-(--ink) transition-colors">
+                                                                            <span>Haz clic en el QR para abrir el portal</span>
+                                                                            <ExternalLink size={12} />
+                                                                        </span>
+                                                                    </a>
+                                                                </div>
+
+                                                                <div className="mt-3 flex items-center justify-center gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleDownloadQrImage(qrSvgWrapRef.current, 'Acceso')}
+                                                                        className="px-3 py-1.5 rounded-lg border border-(--border-unificado) bg-(--linen)/50 hover:bg-(--linen) text-(--ink) text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                                                                    >
+                                                                        <Download size={12} />
+                                                                        <span>Descargar QR</span>
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setActiveQrTab('recuperacion')}
+                                                                        className="px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100/80 text-[#8F641B] text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                                                                    >
+                                                                        <KeyRound size={12} />
+                                                                        <span>Recuperar clave</span>
+                                                                    </button>
+                                                                </div>
+
+                                                                <p className="text-xs text-(--ink-soft) mt-3 leading-relaxed max-w-xs">
+                                                                    {currentStudentHasPin
+                                                                        ? 'Este es el QR habitual del estudiante. Al escanearlo solicitará la clave de seguridad que el usuario configuró.'
+                                                                        : 'En el primer acceso mediante este QR, el estudiante o su familia establecerá su propia clave de seguridad.'}
+                                                                </p>
+                                                            </>
+                                                        ) : (
+                                                            <div className="w-full rounded-xl bg-(--linen)/50 border border-(--border-unificado) p-4">
+                                                                <p className="text-xs text-(--ink) font-medium mb-3">
+                                                                    {qrError || 'No se pudo cargar el código QR de este estudiante.'}
+                                                                </p>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleGenerateQR}
+                                                                    className="px-4 py-2 bg-(--ink) text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+                                                                >
+                                                                    Reintentar
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {portalUrl && (
+                                                        <div className="mt-4 pt-4 border-t border-(--border-unificado) text-left">
+                                                            <label className="block text-[10px] font-bold text-(--ink-soft) uppercase tracking-widest mb-1.5">
+                                                                Enlace directo del estudiante
+                                                            </label>
+                                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    readOnly
+                                                                    value={portalUrl}
+                                                                    onFocus={e => e.currentTarget.select()}
+                                                                    className="text-xs px-3 py-2 border border-(--border-unificado) rounded-xl bg-(--bg-main) w-full min-w-0 text-(--ink) font-mono focus:outline-none"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleCopyPortalUrl}
+                                                                    className="min-h-9 px-3.5 py-2 bg-(--linen) hover:bg-(--linen)/80 text-(--ink) text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                                                                >
+                                                                    {copiedLink ? (
+                                                                        <>
+                                                                            <Check size={13} className="text-[#689C63]" />
+                                                                            <span>Copiado</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Copy size={13} />
+                                                                            <span>Copiar</span>
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <div className="mt-4 text-left">
+                                                    {/* Encabezado diferencial del QR de recuperación */}
+                                                    <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 mb-4">
+                                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#8F641B]">
+                                                                <KeyRound size={13} />
+                                                                <span>QR de Recuperación de Clave</span>
+                                                            </span>
+
+                                                            {activeRecoveryState && (
+                                                                <span
+                                                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                                        activeRecoveryState.estado === 'pendiente'
+                                                                            ? 'bg-amber-200/80 text-[#7A5211]'
+                                                                            : activeRecoveryState.estado === 'utilizado'
+                                                                                ? 'bg-[#689C63]/20 text-[#4B7547]'
+                                                                                : 'bg-rose-100 text-rose-700'
+                                                                    }`}
+                                                                >
+                                                                    {activeRecoveryState.estado === 'pendiente'
+                                                                        ? 'Pendiente'
+                                                                        : activeRecoveryState.estado === 'utilizado'
+                                                                            ? 'Utilizado'
+                                                                            : 'Vencido'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[11px] text-(--ink-soft) leading-relaxed">
+                                                            Exclusivo para cuando el estudiante o su familia olvide su clave. Al escanearlo solicita crear una nueva clave y se desactiva tras un único uso (vigencia de 24 h).
+                                                        </p>
+                                                    </div>
+
+                                                    {recoveryQrError && (
+                                                        <div className="mb-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">
+                                                            {recoveryQrError}
+                                                        </div>
+                                                    )}
+
+                                                    {activeRecoveryState && (
+                                                        <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-(--linen)/35 border border-(--border-unificado) text-[11px] text-(--ink-soft) space-y-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="font-semibold text-(--ink)">Estado del QR:</span>
+                                                                <span className="font-bold uppercase text-(--ink)">
+                                                                    {activeRecoveryState.estado === 'pendiente'
+                                                                        ? 'Pendiente de uso'
+                                                                        : activeRecoveryState.estado === 'utilizado'
+                                                                            ? 'Utilizado'
+                                                                            : 'Vencido'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between">
+                                                                <span>Generado:</span>
+                                                                <span className="font-medium text-(--ink)">
+                                                                    {formatearFechaHoraCorta(activeRecoveryState.created_at)}
+                                                                </span>
+                                                            </div>
+                                                            {activeRecoveryState.estado === 'pendiente' && (
+                                                                <div className="flex items-center justify-between">
+                                                                    <span>Vence:</span>
+                                                                    <span className="font-medium text-(--ink)">
+                                                                        {formatearFechaHoraCorta(activeRecoveryState.expires_at)}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {activeRecoveryState.used_at && (
+                                                                <div className="flex items-center justify-between">
+                                                                    <span>Utilizado el:</span>
+                                                                    <span className="font-medium text-[#4B7547]">
+                                                                        {formatearFechaHoraCorta(activeRecoveryState.used_at)}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {recoveryPortalUrl ? (
+                                                        <div className="flex flex-col items-center text-center">
+                                                            <div
+                                                                ref={recoveryQrSvgWrapRef}
+                                                                className="inline-flex flex-col items-center p-4 bg-amber-50/40 rounded-2xl border-2 border-dashed border-[#C58F2B]"
+                                                            >
+                                                                <span className="mb-2 px-2.5 py-0.5 rounded-full bg-[#8F641B] text-white text-[9px] font-bold uppercase tracking-widest">
+                                                                    Solo restablecimiento · Uso único
+                                                                </span>
+                                                                <QRCodeSVG
+                                                                    value={recoveryPortalUrl}
+                                                                    size={180}
+                                                                    level="M"
+                                                                    marginSize={2}
+                                                                    bgColor="#FFFFFF"
+                                                                    fgColor="#1B1F2A"
+                                                                    className="w-40 h-40 sm:w-44 sm:h-44 rounded-lg"
+                                                                />
+                                                            </div>
+
+                                                            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDownloadQrImage(recoveryQrSvgWrapRef.current, 'Recuperacion')}
+                                                                    className="px-3.5 py-1.5 rounded-lg bg-[#8F641B] hover:bg-[#7A5211] text-white text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                                                                >
+                                                                    <Download size={12} />
+                                                                    <span>Descargar QR de recuperación</span>
+                                                                </button>
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleGenerateRecoveryQR}
+                                                                    disabled={isGeneratingRecoveryQr}
+                                                                    className="px-3 py-1.5 rounded-lg border border-(--border-unificado) bg-white hover:bg-(--linen)/60 text-(--ink) text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                                                                    title="Generar un nuevo QR e invalidar el anterior"
+                                                                >
+                                                                    {isGeneratingRecoveryQr ? (
+                                                                        <Loader2 size={12} className="animate-spin" />
+                                                                    ) : (
+                                                                        <RefreshCw size={12} />
+                                                                    )}
+                                                                    <span>Generar nuevo QR</span>
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="w-full mt-4 pt-4 border-t border-(--border-unificado) text-left">
+                                                                <label className="block text-[10px] font-bold text-[#8F641B] uppercase tracking-widest mb-1.5">
+                                                                    Enlace de recuperación (un solo uso)
+                                                                </label>
+                                                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        readOnly
+                                                                        value={recoveryPortalUrl}
+                                                                        onFocus={e => e.currentTarget.select()}
+                                                                        className="text-xs px-3 py-2 border border-amber-300 rounded-xl bg-amber-50/40 w-full min-w-0 text-(--ink) font-mono focus:outline-none"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={handleCopyRecoveryUrl}
+                                                                        className="min-h-9 px-3.5 py-2 bg-(--linen) hover:bg-(--linen)/80 text-(--ink) text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                                                                    >
+                                                                        {copiedRecoveryLink ? (
+                                                                            <>
+                                                                                <Check size={13} className="text-[#689C63]" />
+                                                                                <span>Copiado</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <Copy size={13} />
+                                                                                <span>Copiar</span>
+                                                                            </>
+                                                                        )}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-4 px-3 rounded-2xl bg-(--linen)/30 border border-(--border-unificado)">
+                                                            <p className="text-xs text-(--ink-soft) leading-relaxed mb-4 max-w-xs mx-auto">
+                                                                {activeRecoveryState?.estado === 'utilizado'
+                                                                    ? 'El último QR de recuperación ya fue utilizado para cambiar la clave. Si el usuario volvió a olvidarla, puedes generar uno nuevo.'
+                                                                    : activeRecoveryState?.estado === 'vencido'
+                                                                        ? 'El último QR de recuperación venció sin ser utilizado. Genera uno nuevo para entregárselo al estudiante o su familia.'
+                                                                        : 'Genera un QR temporal de un solo uso para que el estudiante o su familia pueda establecer una nueva clave de seguridad.'}
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleGenerateRecoveryQR}
+                                                                disabled={isGeneratingRecoveryQr}
+                                                                className="px-4 py-2.5 bg-[#8F641B] hover:bg-[#7A5211] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-2xs"
+                                                            >
+                                                                {isGeneratingRecoveryQr ? (
+                                                                    <>
+                                                                        <Loader2 size={14} className="animate-spin" />
+                                                                        <span>Generando QR de recuperación...</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <KeyRound size={14} />
+                                                                        <span>Generar QR de recuperación</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

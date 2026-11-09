@@ -3,6 +3,7 @@ export type CacheResource =
     | 'perfil'
     | 'plantillas'
     | 'cursos'
+    | 'estudiantes'
     | 'actividades'
     | 'calificaciones'
     | 'secuencias';
@@ -19,6 +20,7 @@ const RESOURCE_PREFIX: Record<CacheResource, string> = {
     perfil: 'perfil',
     plantillas: 'plantillas',
     cursos: 'cursos',
+    estudiantes: 'estudiantes',
     actividades: 'actividades',
     calificaciones: 'calificaciones',
     secuencias: 'secuencias',
@@ -30,6 +32,7 @@ const RESOURCE_PREFIX: Record<CacheResource, string> = {
  *  - centro:{centroId}
  *  - perfil:{userId}
  *  - curso:{cursoId}:{centroId}
+ *  - estudiantes:{userId}:{centroId}:{cursoId}
  */
 export function cacheKeyFor({ resource, centroId, userId, cursoId }: CacheKeyParts): string {
     const prefix = RESOURCE_PREFIX[resource];
@@ -43,6 +46,8 @@ export function cacheKeyFor({ resource, centroId, userId, cursoId }: CacheKeyPar
             return `${prefix}:${centroId || 'sin-centro'}:${userId || 'sin-usuario'}`;
         case 'cursos':
             return `${prefix}:${centroId || 'sin-centro'}`;
+        case 'estudiantes':
+            return `${prefix}:${userId || 'sin-usuario'}:${centroId || 'sin-centro'}:${cursoId ?? 'sin-curso'}`;
         case 'actividades':
             return `${prefix}:${cursoId ?? 'sin-curso'}:${centroId || 'sin-centro'}`;
         case 'calificaciones':
@@ -70,6 +75,12 @@ export function cacheKeyFromString(key: string): CacheKeyParts {
         case 'cursos':
             parts.centroId = rest[0] !== 'sin-centro' ? rest[0] : undefined;
             break;
+        case 'estudiantes': {
+            parts.userId = rest[0] !== 'sin-usuario' ? rest[0] : undefined;
+            parts.centroId = rest[1] !== 'sin-centro' ? rest[1] : undefined;
+            parts.cursoId = rest[2] !== 'sin-curso' && rest[2] !== undefined ? Number(rest[2]) : undefined;
+            break;
+        }
         case 'actividades':
         case 'calificaciones': {
             parts.cursoId = rest[0] !== 'sin-curso' && rest[0] !== undefined ? Number(rest[0]) : undefined;

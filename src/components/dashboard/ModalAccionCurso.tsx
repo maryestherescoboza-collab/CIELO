@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, ArrowRight, BookOpen, Clock } from 'lucide-react';
+import { getAsignaturaNombre } from '../../constants/asignaturas';
 
 interface ModalAccionCursoProps {
     show: boolean;
@@ -47,7 +48,7 @@ export const ModalAccionCurso: React.FC<ModalAccionCursoProps> = ({
                 <div className="p-5 space-y-4">
                     <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
                         <div className="text-base font-black text-slate-800">{cursoNombre}</div>
-                        <div className="text-xs font-semibold text-slate-600">{asignatura}</div>
+                        <div className="text-xs font-semibold text-slate-600">{getAsignaturaNombre(asignatura)}</div>
                         <div className="text-xs text-slate-500 flex items-center gap-1 pt-1 font-mono">
                             <Clock className="w-3.5 h-3.5 text-slate-400" />
                             <span>{inicio} – {fin}</span>

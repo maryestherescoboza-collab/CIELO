@@ -16,6 +16,7 @@ import { PERIODOS_ACADEMICOS } from '../../cache/academicCache';
 import ResumenEspecificaciones from '../../components/plan-clases/ResumenEspecificaciones';
 import LeyendaCompetenciasCF from '../../components/plan-clases/LeyendaCompetenciasCF';
 import {
+  CF_BASE,
   COLORES_BLOQUE_CF,
   bloqueDeIndicador,
   claveGrado,
@@ -24,6 +25,7 @@ import {
   filtrarContenidos,
   filtrarIndicadores,
 } from '../../lib/curriculo';
+import { esAsignaturaOptativa, getAsignaturaNombre } from '../../constants/asignaturas';
 import type {
   BloqueCF,
   CombinacionCurricular,
@@ -192,6 +194,30 @@ export default function EspecificacionesCurriculares() {
       try {
         const gradoStr = String(combo.grado || '');
         const gradoCanonico = claveGrado(combo.grado) || gradoStr;
+        const isOptativa = esAsignaturaOptativa(combo.asignatura);
+
+        if (isOptativa) {
+          // Asignatura optativa personalizada: no consultar el catálogo oficial MINERD
+          // ni crear registros artificiales en curr_*. Se proveen las 7 Competencias
+          // Fundamentales base para que el docente pueda planificar sin bloqueos.
+          const nombreOptativa = getAsignaturaNombre(combo.asignatura);
+          const cesOptativas: FilaCompetenciaEspecifica[] = CF_BASE.map((cf, idx) => ({
+            id: `optativa-ce-${idx + 1}`,
+            nivel: 'Secundaria',
+            grado: gradoCanonico,
+            asignatura: combo.asignatura,
+            bloque: cf.bloque,
+            competencia_fundamental: cf.nombre,
+            codigo: cf.codigoPorDefecto,
+            descriptor: `Aplicación de la competencia ${cf.nombre.toLowerCase()} en el desarrollo de ${nombreOptativa} (${gradoCanonico}).`,
+          }));
+          if (!cancelado) {
+            setCompetenciasCatalogo(cesOptativas);
+            setIndicadores([]);
+            setContenidos([]);
+          }
+          return;
+        }
 
         const [inds, conts, ces] = await Promise.all([
           supabase
@@ -544,7 +570,9 @@ export default function EspecificacionesCurriculares() {
    */
   const cargarPuente = useCallback(async (): Promise<Map<string, string[]>> => {
     const mapa = new Map<string, string[]>();
-    const ceIds = competenciasCatalogo.map((c) => c.id).filter(Boolean);
+    const ceIds = competenciasCatalogo
+      .map((c) => c.id)
+      .filter((id): id is string => Boolean(id) && !String(id).startsWith('optativa-'));
     if (ceIds.length === 0) return mapa;
     try {
       const { data, error } = await supabase
@@ -1273,9 +1301,15 @@ export default function EspecificacionesCurriculares() {
               </div>
             ) : contenidos.length === 0 ? (
               <div className="rounded-3xl border border-[#2E3330]/10 border-dashed p-7 text-center">
-                <p className="font-bold text-[#2E3330]">Sin contenidos curriculares disponibles</p>
+                <p className="font-bold text-[#2E3330]">
+                  {esAsignaturaOptativa(combo?.asignatura)
+                    ? 'Asignatura optativa personalizada'
+                    : 'Sin contenidos curriculares disponibles'}
+                </p>
                 <p className="text-[14px] text-[#2E3330]/60 mt-1">
-                  No hay contenidos registrados para {combo?.grado} — {combo?.asignaturaNombre}.
+                  {esAsignaturaOptativa(combo?.asignatura)
+                    ? `${combo?.asignaturaNombre} es una asignatura optativa. Puedes continuar al siguiente paso y definir los contenidos e indicadores directamente en tus secuencias y actividades.`
+                    : `No hay contenidos registrados para ${combo?.grado} — ${combo?.asignaturaNombre}.`}
                 </p>
               </div>
             ) : (
@@ -1604,9 +1638,15 @@ export default function EspecificacionesCurriculares() {
               </div>
             ) : indicadores.length === 0 ? (
               <div className="rounded-3xl border border-[#2E3330]/10 border-dashed p-7 text-center">
-                <p className="font-bold text-[#2E3330]">Sin indicadores disponibles</p>
+                <p className="font-bold text-[#2E3330]">
+                  {esAsignaturaOptativa(combo?.asignatura)
+                    ? 'Indicadores personalizados por actividad'
+                    : 'Sin indicadores disponibles'}
+                </p>
                 <p className="text-[14px] text-[#2E3330]/60 mt-1">
-                  No hay indicadores registrados para {combo?.grado} — {combo?.asignaturaNombre}.
+                  {esAsignaturaOptativa(combo?.asignatura)
+                    ? `En ${combo?.asignaturaNombre} (optativa) podrás redactar los indicadores de logro de forma personalizada al crear cada actividad o secuencia.`
+                    : `No hay indicadores registrados para ${combo?.grado} — ${combo?.asignaturaNombre}.`}
                 </p>
               </div>
             ) : (

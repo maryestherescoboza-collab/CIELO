@@ -10,6 +10,7 @@ import { TC_Flux } from '../components/icons/TerraCognitaIcons';
 import { CieloPill } from '../components/ui/CieloPill';
 import { CieloPopover } from '../components/ui/CieloPopover';
 import { computeStudentGrades } from '../utils/boletines';
+import { esEstudianteDelCurso } from '../utils/aislamiento';
 
 interface EnhancedStudent extends Estudiante {
   computedAvg: number | null;
@@ -52,23 +53,34 @@ export default function Dashboard({ docenteNombre }: Props) {
       return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredEstudiantes = useMemo(() => {
-    if (selectedCursoId === 'all') return state.estudiantes;
-    const cid = Number(selectedCursoId);
-    return state.estudiantes.filter(e => e.cursoId === cid);
-  }, [state.estudiantes, selectedCursoId]);
-
-  const filteredCalificaciones = useMemo(() => {
-    const validStudentIds = new Set(filteredEstudiantes.map(e => e.id));
-    return state.calificaciones.filter(c => validStudentIds.has(c.estudianteId) && c.userId === session?.user?.id);
-  }, [state.calificaciones, filteredEstudiantes, session?.user?.id]);
-
   // Contexto institucional del docente: garantiza que el cálculo de boletines
   // (computeStudentGrades) no arrastre actividades/calificaciones de otro centro.
   const centroContexto = useMemo(
     () => state.centroRolActual?.centro_id || state.perfiles.find(p => p.userId === session?.user?.id)?.centro_id || null,
     [state.centroRolActual, state.perfiles, session?.user?.id]
   );
+
+  const uniqueCursos = useMemo(() => {
+    const seen = new Set<number>();
+    return state.cursos.filter(c => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+  }, [state.cursos]);
+
+  const filteredEstudiantes = useMemo(() => {
+    if (selectedCursoId === 'all') return state.estudiantes;
+    const cid = Number(selectedCursoId);
+    const cursoObj = state.cursos.find(c => c.id === cid);
+    if (!cursoObj) return state.estudiantes.filter(e => e.cursoId === cid);
+    return state.estudiantes.filter(e => esEstudianteDelCurso(state.cursos, cursoObj, e, cursoObj.centroId || centroContexto));
+  }, [state.estudiantes, state.cursos, selectedCursoId, centroContexto]);
+
+  const filteredCalificaciones = useMemo(() => {
+    const validStudentIds = new Set(filteredEstudiantes.map(e => e.id));
+    return state.calificaciones.filter(c => validStudentIds.has(c.estudianteId) && c.userId === session?.user?.id);
+  }, [state.calificaciones, filteredEstudiantes, session?.user?.id]);
 
   // ── Optimized: Pre-grouped grades by student for O(1) lookup ──
   const gradesByStudent = useMemo(() => {
@@ -393,7 +405,7 @@ export default function Dashboard({ docenteNombre }: Props) {
                             >
                                 Todos los Cursos
                             </button>
-                            {state.cursos.map(c => (
+                            {uniqueCursos.map(c => (
                                 <button
                                     key={c.id}
                                     onClick={() => { setSelectedCursoId(String(c.id)); setIsSelectOpen(false); }}

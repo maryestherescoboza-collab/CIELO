@@ -27,14 +27,12 @@ export function perteneceAlContextoDelCurso(
     const cursoB = cursos.find(c => c.id === cursoIdB);
     if (!cursoB) return false;
 
-    if (!cursoAutorizado.sharedCourseId || cursoB.sharedCourseId !== cursoAutorizado.sharedCourseId) {
-        return false;
-    }
-
     const centroA = cursoAutorizado.centroId || centroContexto || null;
     const centroB = cursoB.centroId || centroContexto || null;
 
-    if (centroA && centroB) return centroA === centroB;
+    if (centroA && centroB && centroA !== centroB) {
+        return false;
+    }
 
     // Solo uno de los centros es conocible: si el contexto activo indica
     // que el curso B pertenece a otra institución, se deniega.
@@ -45,7 +43,31 @@ export function perteneceAlContextoDelCurso(
         return false;
     }
 
-    return true;
+    // 1. Coincidencia por sharedCourseId
+    if (cursoAutorizado.sharedCourseId && cursoB.sharedCourseId && cursoAutorizado.sharedCourseId === cursoB.sharedCourseId) {
+        return true;
+    }
+
+    // 2. Coincidencia por grupoId (mismo grupo académico en la base de datos)
+    if (cursoAutorizado.grupoId && cursoB.grupoId && cursoAutorizado.grupoId === cursoB.grupoId) {
+        return true;
+    }
+
+    // 3. Coincidencia por mismo centro educativo + grado + sección
+    // (Asegura que cursos con asignaturas optativas creados para la misma sección compartan el estudiantado)
+    if (
+        (centroA || centroB) &&
+        cursoAutorizado.grado &&
+        cursoB.grado &&
+        cursoAutorizado.grado === cursoB.grado &&
+        cursoAutorizado.seccion &&
+        cursoB.seccion &&
+        String(cursoAutorizado.seccion).trim().toUpperCase() === String(cursoB.seccion).trim().toUpperCase()
+    ) {
+        return true;
+    }
+
+    return false;
 }
 
 // Predicado de pertenencia institucional de un estudiante: su curso debe ser

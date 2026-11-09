@@ -16,6 +16,7 @@ import { Settings } from 'lucide-react';
 import type { Actividad, EventoCalendario } from '../types';
 import { usePlanClasesStore } from '../store/planClasesStore';
 import { cdImparteEnDia, diaDeSemana, normalizarAsignatura, normalizarDia, normalizarHora } from '../utils/diasSemana';
+import { getAsignaturaNombre } from '../constants/asignaturas';
 
 const getMinerdEventsForDate = (dateIso: string, events: EventoCalendario[]) => {
     return events.filter(e => {
@@ -215,7 +216,7 @@ export const getCourseColor = (cursoId: number | null | undefined, cursos: any[]
     if (!cursoId) return { bg: 'bg-[#f0f4f8]', border: 'border-black/5', text: 'text-[#2b405c]', dot: 'bg-[#537bac]' };
 
     const curso = cursos.find((c: any) => c.id === cursoId);
-    const targetId = curso?.grupoId ?? cursoId; 
+    const targetId = curso?.grupoId ?? cursoId;
 
     const palettes = [
         { bg: 'bg-[#e0e9f4]', border: 'border-[#b8cde4]', text: 'text-[#2b405c]', dot: 'bg-[#537bac]' }, // Blue
@@ -226,7 +227,7 @@ export const getCourseColor = (cursoId: number | null | undefined, cursos: any[]
         { bg: 'bg-[#f7dfdb]', border: 'border-[#e8b5ac]', text: 'text-[#5c2b2b]', dot: 'bg-[#b85c5c]' }, // Red
         { bg: 'bg-[#e0f4f0]', border: 'border-[#b3e0d8]', text: 'text-[#1a4a42]', dot: 'bg-[#3b8c7c]' }, // Teal
     ];
-    
+
     return palettes[targetId % palettes.length];
 };
 
@@ -256,7 +257,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
     const [view, setView] = useState<'month' | 'week'>('month');
     const [cursor, setCursor] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(iso(new Date()));
-    
+
     const fetchAllNotas = usePlanClasesStore(s => s.fetchAllNotas);
     const fichasReales = usePlanClasesStore(s => s.notas);
 
@@ -284,7 +285,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
     /** Tarjeta en ajuste: se le quita `draggable` para que el asa no la mueva. */
     const ajusteElRef = useRef<HTMLElement | null>(null);
 
-    
+
     // Modal Form State
     const [entryDate, setEntryDate] = useState(iso(new Date()));
     const [entryTime, setEntryTime] = useState<string>('10:00');
@@ -294,7 +295,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
         try {
             const saved = localStorage.getItem('cielo_intervalos_semana');
             if (saved) return JSON.parse(saved);
-        } catch (e) {}
+        } catch (e) { }
         return DEFAULT_INTERVALOS_SEMANA;
     });
 
@@ -303,7 +304,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
         try {
             const saved = localStorage.getItem('cielo_etiquetas_tiempo');
             if (saved) return JSON.parse(saved);
-        } catch (e) {}
+        } catch (e) { }
         return [];
     });
 
@@ -361,7 +362,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
             loadCalendarioData();
         }
     }, [session?.user?.id, fetchAllNotas, contextReady, loadCalendarioData]);
-    
+
     // Context data ready
 
 
@@ -373,8 +374,8 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
 
 
     // Range-aware loader hook ready
-        // Selective range fetch ready
-        // For now, assume global data is loaded or trigger a refresh if needed.
+    // Selective range fetch ready
+    // For now, assume global data is loaded or trigger a refresh if needed.
 
 
     /**
@@ -507,7 +508,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
 
     const handleMoveItem = async (item: DraggedItem | null, date: string, minutes?: number, targetId?: number | null) => {
         if (!item) return;
-        
+
         if (item.type === 'actividad') {
             const act = actividades.find((a: any) => a.id === item.id);
             if (!act) return;
@@ -516,7 +517,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
             const prevHora = act.hora_inicio;
 
             let payload: any = { fecha: date };
-            
+
             if (targetId && targetId !== item.id && date === prevFecha) {
                 const targetAct = actividades.find((a: any) => a.id === targetId);
                 if (targetAct) {
@@ -621,7 +622,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
             }));
 
             const { data, error } = await supabase.from('actividades').insert(payload).select().single();
-            
+
             if (error || !data) {
                 useAppStore.setState((s) => ({
                     state: {
@@ -659,18 +660,18 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
             const cellEvents = actividades.filter((a: any) => a.fecha === dateIso && a.tipo_calendario !== 'clase').sort((a: any, b: any) => (a.hora_inicio || "99:99").localeCompare(b.hora_inicio || "99:99"));
 
             cells.push(
-                <div 
+                <div
                     key={dateIso}
                     data-date={dateIso}
                     className={`day-cell relative p-1.5 md:p-2 border-r border-b border-[#e6e8e2] min-w-0 transition-colors ${isOutside ? 'bg-[#fbfbf9]' : ''} ${isSelected ? 'bg-[#f0f5ec]' : 'hover:bg-[#fcfdfb] group'}`}
                     onClick={() => setSelectedDate(dateIso)}
                     onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-[#f0f5ec]'); e.currentTarget.style.boxShadow = 'inset 0 0 0 2px rgba(104,156,99,.36)'; }}
                     onDragLeave={(e) => { e.currentTarget.classList.remove('bg-[#f0f5ec]'); e.currentTarget.style.boxShadow = 'none'; }}
-                    onDrop={(e) => { 
-                        e.preventDefault(); 
-                        e.currentTarget.classList.remove('bg-[#f0f5ec]'); 
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.classList.remove('bg-[#f0f5ec]');
                         e.currentTarget.style.boxShadow = 'none';
-                        handleMoveItem(draggedItem, dateIso); 
+                        handleMoveItem(draggedItem, dateIso);
                     }}
                 >
                     <span className={`w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-bold ${isToday ? 'bg-[#689c63] text-white shadow-sm' : (isOutside ? 'text-[#afb5ae]' : 'text-[#4e5750]')}`}>
@@ -689,9 +690,9 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                             {cellEvents.map((act: any) => {
                                 const c = getCourseColor(act.cursoId || (act as any).curso_id, cursos);
                                 return (
-                                    <div 
-                                        key={act.id} 
-                                        className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium leading-tight truncate border cursor-grab active:cursor-grabbing ${c.bg} ${c.border} ${c.text}`} 
+                                    <div
+                                        key={act.id}
+                                        className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium leading-tight truncate border cursor-grab active:cursor-grabbing ${c.bg} ${c.border} ${c.text}`}
                                         title={act.nombre}
                                         draggable
                                         onDragStart={(e) => { setDraggedItem({ id: act.id, type: 'actividad' }); e.stopPropagation(); setTimeout(() => (e.target as HTMLElement).style.opacity = '0.5', 0); }}
@@ -703,7 +704,7 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                             })}
                         </div>
                     )}
-                    
+
                     {(() => {
                         const cellFichas = actividades.filter((a: any) => a.fecha === dateIso && a.tipo_calendario === 'clase');
                         if (cellFichas.length === 0) return null;
@@ -712,9 +713,9 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                                 {cellFichas.map((ficha: any) => {
                                     const c = getCourseColor(ficha.cursoId || (ficha as any).curso_id, cursos);
                                     return (
-                                        <div 
-                                            key={`ficha-${ficha.id}`} 
-                                            className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium leading-tight truncate border cursor-grab active:cursor-grabbing ${c.bg} ${c.border} ${c.text}`} 
+                                        <div
+                                            key={`ficha-${ficha.id}`}
+                                            className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-medium leading-tight truncate border cursor-grab active:cursor-grabbing ${c.bg} ${c.border} ${c.text}`}
                                             title={ficha.nombre}
                                             draggable
                                             onDragStart={(e) => { setDraggedItem({ id: ficha.id, type: 'ficha' }); e.stopPropagation(); setTimeout(() => (e.target as HTMLElement).style.opacity = '0.5', 0); }}
@@ -1116,11 +1117,11 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
     const navigate = useNavigate();
 
     return (
-        <div 
+        <div
             className="w-full min-h-screen text-[#263128] font-sans bg-[#f7edcf]"
-            style={{ 
-                backgroundImage: `url('/calendar-bg.jpg')`, 
-                backgroundSize: 'cover', 
+            style={{
+                backgroundImage: `url('/calendar-bg.jpg')`,
+                backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundAttachment: 'fixed'
             }}
@@ -1132,235 +1133,235 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                             &larr; Inicio
                         </button>
                         {MOSTRAR_VISTA_SEMANAL && (
-                        <div className="border border-[#e6e8e2]/50 bg-white/50 backdrop-blur-md rounded-lg p-0.5 flex gap-0.5 shadow-sm">
-                            <button 
-                                onClick={() => setView('month')}
-                                className={`px-3 py-1 text-[12px] font-semibold rounded-md transition-all ${view === 'month' ? 'bg-white text-[#314b32] shadow-sm' : 'text-[#687169] hover:bg-white/50'}`}
-                            >
-                                Mes
-                            </button>
-                            <button 
-                                onClick={() => setView('week')}
-                                className={`px-3 py-1 text-[12px] font-semibold rounded-md transition-all ${view === 'week' ? 'bg-white text-[#314b32] shadow-sm' : 'text-[#687169] hover:bg-white/50'}`}
-                            >
-                                Semana
-                            </button>
-                        </div>
+                            <div className="border border-[#e6e8e2]/50 bg-white/50 backdrop-blur-md rounded-lg p-0.5 flex gap-0.5 shadow-sm">
+                                <button
+                                    onClick={() => setView('month')}
+                                    className={`px-3 py-1 text-[12px] font-semibold rounded-md transition-all ${view === 'month' ? 'bg-white text-[#314b32] shadow-sm' : 'text-[#687169] hover:bg-white/50'}`}
+                                >
+                                    Mes
+                                </button>
+                                <button
+                                    onClick={() => setView('week')}
+                                    className={`px-3 py-1 text-[12px] font-semibold rounded-md transition-all ${view === 'week' ? 'bg-white text-[#314b32] shadow-sm' : 'text-[#687169] hover:bg-white/50'}`}
+                                >
+                                    Semana
+                                </button>
+                            </div>
                         )}
                     </div>
                 </header>
                 <main className="max-w-360 mx-auto w-full px-7 py-4 relative z-10">
-                <section className="flex flex-wrap items-center justify-between gap-4 mb-5">
-                    <div className="flex items-center gap-2">
-                        <button 
-                            className="w-8.5 h-8.5 inline-flex items-center justify-center border border-[#e6e8e2] rounded-[9px] bg-white text-[#58625a] hover:bg-[#f4f6f1] transition-colors"
-                            onClick={() => setCursor((!MOSTRAR_VISTA_SEMANAL || view === 'month') ? new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1) : addDays(cursor, -7))}
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button 
-                            className="w-8.5 h-8.5 inline-flex items-center justify-center border border-[#e6e8e2] rounded-[9px] bg-white text-[#58625a] hover:bg-[#f4f6f1] transition-colors"
-                            onClick={() => setCursor((!MOSTRAR_VISTA_SEMANAL || view === 'month') ? new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1) : addDays(cursor, 7))}
-                        >
-                            <ChevronRight className="w-4 h-4" />
-                        </button>
-                        <h2 className="ml-3 text-[15px] font-extrabold text-[#263128] tracking-tight">{getPeriodLabel()}</h2>
-                        <button 
-                            className="ml-2 rounded-lg border border-[#dfe3dc] bg-white px-3 py-1.5 text-xs font-semibold text-[#566057] hover:bg-[#f4f6f1]"
-                            onClick={() => { setCursor(new Date()); setSelectedDate(iso(new Date())); }}
-                        >
-                            Hoy
-                        </button>
-
-
-                        {MOSTRAR_VISTA_SEMANAL && view === 'week' && (
+                    <section className="flex flex-wrap items-center justify-between gap-4 mb-5">
+                        <div className="flex items-center gap-2">
                             <button
-                                type="button"
-                                onClick={() => setIsConfigHorariosOpen(true)}
-                                className="ml-2 rounded-lg border border-[#dfe3dc] bg-white px-3 py-1.5 text-xs font-semibold text-[#566057] hover:bg-[#f4f6f1] flex items-center gap-1.5"
+                                className="w-8.5 h-8.5 inline-flex items-center justify-center border border-[#e6e8e2] rounded-[9px] bg-white text-[#58625a] hover:bg-[#f4f6f1] transition-colors"
+                                onClick={() => setCursor((!MOSTRAR_VISTA_SEMANAL || view === 'month') ? new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1) : addDays(cursor, -7))}
                             >
-                                <Settings className="w-3.5 h-3.5 text-slate-500" />
-                                Configurar horarios
+                                <ChevronLeft className="w-4 h-4" />
                             </button>
-                        )}
+                            <button
+                                className="w-8.5 h-8.5 inline-flex items-center justify-center border border-[#e6e8e2] rounded-[9px] bg-white text-[#58625a] hover:bg-[#f4f6f1] transition-colors"
+                                onClick={() => setCursor((!MOSTRAR_VISTA_SEMANAL || view === 'month') ? new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1) : addDays(cursor, 7))}
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                            <h2 className="ml-3 text-[15px] font-extrabold text-[#263128] tracking-tight">{getPeriodLabel()}</h2>
+                            <button
+                                className="ml-2 rounded-lg border border-[#dfe3dc] bg-white px-3 py-1.5 text-xs font-semibold text-[#566057] hover:bg-[#f4f6f1]"
+                                onClick={() => { setCursor(new Date()); setSelectedDate(iso(new Date())); }}
+                            >
+                                Hoy
+                            </button>
+
+
+                            {MOSTRAR_VISTA_SEMANAL && view === 'week' && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsConfigHorariosOpen(true)}
+                                    className="ml-2 rounded-lg border border-[#dfe3dc] bg-white px-3 py-1.5 text-xs font-semibold text-[#566057] hover:bg-[#f4f6f1] flex items-center gap-1.5"
+                                >
+                                    <Settings className="w-3.5 h-3.5 text-slate-500" />
+                                    Configurar horarios
+                                </button>
+                            )}
 
 
 
-                    </div>
-                    <aside className="flex items-center gap-4 text-xs text-[#697169]">
-                        <span className="flex items-center gap-2"><i className="w-2 h-2 rounded-full bg-[#689c63]"></i>Actividad</span>
-                        <span className="flex items-center gap-2"><i className="w-2.25 h-2.25 border-l-[3px] border-[#537bac] bg-[#e0e9f4]"></i>Clase</span>
-                    </aside>
-                </section>
-                
-                {(!MOSTRAR_VISTA_SEMANAL || view === 'month') ? (
-                    <section className="flex flex-col xl:flex-row gap-5 items-start">
-                        <div className="flex-1 w-full border border-[#e6e8e2] rounded-xl overflow-hidden bg-white">
-                            <div className="grid grid-cols-7 border-b border-[#e6e8e2] bg-[#fafbf8]">
-                                {dayNames.map(d => (
-                                    <div key={d} className="px-3 py-2.5 text-[#7a817b] text-[11px] font-bold uppercase tracking-wider">{d}</div>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-7" style={{ gridAutoRows: 'minmax(118px, 1fr)' }}>
-                                {renderMonthGrid()}
-                            </div>
                         </div>
-                        {selectedDate && (
-                            <CalendarSidePanel 
-                                date={selectedDate}
-                                actividades={actividades}
-                                fichasReales={fichasReales}
-                                cursos={cursos}
-                                minerdEvents={state.calendarioMinerd || []}
-                                onAddActividad={() => { setEntryDate(selectedDate); setIsModalOpen(true); }}
-                                onOpenAttendance={() => setIsAttendanceWizardOpen(true)}
-                                onOpenAttendanceReport={() => setIsAttendanceReportOpen(true)}
-                                onMoveItem={(item, d, min, targetId) => handleMoveItem(item, d, min, targetId)}
-                                setDraggedItem={setDraggedItem}
-                                draggedItem={draggedItem}
-                            />
-                        )}
+                        <aside className="flex items-center gap-4 text-xs text-[#697169]">
+                            <span className="flex items-center gap-2"><i className="w-2 h-2 rounded-full bg-[#689c63]"></i>Actividad</span>
+                            <span className="flex items-center gap-2"><i className="w-2.25 h-2.25 border-l-[3px] border-[#537bac] bg-[#e0e9f4]"></i>Clase</span>
+                        </aside>
                     </section>
-                ) : (
-                    <section>
-                        {renderWeekGrid()}
-                    </section>
-                )}
-            </main>
 
-            {/* Horario Modal */}
-            <ModalHorarioClase
-                show={isHorarioModalOpen}
-                onClose={() => setIsHorarioModalOpen(false)}
-                initialDate={entryDate}
-                initialTime={entryTime}
-                cursos={cursos}
-                onSave={async (cursoDocenteId, dia, inicio, fin) => {
-                    const cd = state.cursoDocentes?.find(c => c.id === cursoDocenteId);
-                    if (!cd) throw new Error("Curso docente no encontrado");
+                    {(!MOSTRAR_VISTA_SEMANAL || view === 'month') ? (
+                        <section className="flex flex-col xl:flex-row gap-5 items-start">
+                            <div className="flex-1 w-full border border-[#e6e8e2] rounded-xl overflow-hidden bg-white">
+                                <div className="grid grid-cols-7 border-b border-[#e6e8e2] bg-[#fafbf8]">
+                                    {dayNames.map(d => (
+                                        <div key={d} className="px-3 py-2.5 text-[#7a817b] text-[11px] font-bold uppercase tracking-wider">{d}</div>
+                                    ))}
+                                </div>
+                                <div className="grid grid-cols-7" style={{ gridAutoRows: 'minmax(118px, 1fr)' }}>
+                                    {renderMonthGrid()}
+                                </div>
+                            </div>
+                            {selectedDate && (
+                                <CalendarSidePanel
+                                    date={selectedDate}
+                                    actividades={actividades}
+                                    fichasReales={fichasReales}
+                                    cursos={cursos}
+                                    minerdEvents={state.calendarioMinerd || []}
+                                    onAddActividad={() => { setEntryDate(selectedDate); setIsModalOpen(true); }}
+                                    onOpenAttendance={() => setIsAttendanceWizardOpen(true)}
+                                    onOpenAttendanceReport={() => setIsAttendanceReportOpen(true)}
+                                    onMoveItem={(item, d, min, targetId) => handleMoveItem(item, d, min, targetId)}
+                                    setDraggedItem={setDraggedItem}
+                                    draggedItem={draggedItem}
+                                />
+                            )}
+                        </section>
+                    ) : (
+                        <section>
+                            {renderWeekGrid()}
+                        </section>
+                    )}
+                </main>
 
-                    // El modal sólo ofrece cursos que imparten ese día, pero se
-                    // revalida aquí: nunca se agrega un día a dias_semana.
-                    if (!cdImparteEnDia(cd, dia)) {
-                        throw new Error(`Este curso no se imparte los ${dia}s.`);
-                    }
-
-                    const horarios = Array.isArray(cd.horarios) ? [...cd.horarios] : [];
-
-                    if (inicio >= fin) throw new Error("La hora de inicio debe ser menor a la hora de fin.");
-
-                    // Si ya existe una clase de ese curso ese día a esa hora, se
-                    // actualiza en el lugar (no se duplica el bloque).
-                    const existente = horarios.findIndex(h =>
-                        normalizarDia(h?.dia) === dia && normalizarHora(h?.inicio) === inicio
-                    );
-
-                    if (existente >= 0) {
-                        const duplicate = horarios.some((h, i) =>
-                            i !== existente && normalizarHora(h?.fin) === fin
-                        );
-                        if (duplicate) throw new Error("Ya existe este horario para la asignatura.");
-                        horarios[existente] = { ...horarios[existente], dia, inicio, fin };
-                    } else {
-                        horarios.push({ dia, inicio, fin });
-                    }
-
-                    // Update globally
-                    const { error } = await supabase.from('curso_docentes').update({ horarios }).eq('id', cursoDocenteId);
-                    if (error) throw new Error("Error guardando en la base de datos.");
-
-                    // Update locally
-                    useAppStore.setState((s) => ({
-                        state: {
-                            ...s.state,
-                            cursoDocentes: (s.state.cursoDocentes || []).map(c => c.id === cd.id ? { ...c, horarios } : c)
-                        }
-                    }));
-                }}
-            />
-
-            {/* Creation Modal */}
-            {isModalOpen && onAddActividad && (
-                <NewActivityModal
-                    show={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    onAddActividad={onAddActividad}
-                    cursos={cursos}
-                    onSuccess={() => setIsModalOpen(false)}
+                {/* Horario Modal */}
+                <ModalHorarioClase
+                    show={isHorarioModalOpen}
+                    onClose={() => setIsHorarioModalOpen(false)}
                     initialDate={entryDate}
-                />
-            )}
-            
-            {selectedDate && (
-                <AttendanceWizardModal 
-                    date={selectedDate}
-                    isOpen={isAttendanceWizardOpen}
-                    onClose={() => setIsAttendanceWizardOpen(false)}
-                />
-            )}
-            
-            {selectedDate && (
-                <AttendanceReportModal 
-                    date={selectedDate}
-                    isOpen={isAttendanceReportOpen}
-                    onClose={() => setIsAttendanceReportOpen(false)}
-                />
-            )}
+                    initialTime={entryTime}
+                    cursos={cursos}
+                    onSave={async (cursoDocenteId, dia, inicio, fin) => {
+                        const cd = state.cursoDocentes?.find(c => c.id === cursoDocenteId);
+                        if (!cd) throw new Error("Curso docente no encontrado");
 
-            {/* Modal Configurar Horarios */}
-            <ModalConfigurarHorarios
-                show={isConfigHorariosOpen}
-                onClose={() => setIsConfigHorariosOpen(false)}
-                intervalosActuales={intervalosSemana}
-                onSave={handleSaveIntervalosSemana}
-            />
+                        // El modal sólo ofrece cursos que imparten ese día, pero se
+                        // revalida aquí: nunca se agrega un día a dias_semana.
+                        if (!cdImparteEnDia(cd, dia)) {
+                            throw new Error(`Este curso no se imparte los ${dia}s.`);
+                        }
 
-            {/* Modal Opcion Slot Vacio */}
-            {slotVacioInfo && (
-                <ModalOpcionSlotVacio
-                    show={isSlotVacioModalOpen}
-                    onClose={() => setIsSlotVacioModalOpen(false)}
-                    dateIso={slotVacioInfo.dateIso}
-                    timeStr={slotVacioInfo.timeStr}
-                    onSelectClase={() => {
-                        setEntryTime(slotVacioInfo.timeStr);
-                        setIsHorarioModalOpen(true);
-                    }}
-                    onSelectEtiqueta={() => {
-                        setEditingEtiqueta(null);
-                        setIsEtiquetaModalOpen(true);
-                    }}
-                />
-            )}
+                        const horarios = Array.isArray(cd.horarios) ? [...cd.horarios] : [];
 
-            {/* Modal Etiqueta Tiempo */}
-            <ModalEtiquetaTiempo
-                show={isEtiquetaModalOpen}
-                onClose={() => setIsEtiquetaModalOpen(false)}
-                initialDia={slotVacioInfo?.dia || 'Lunes'}
-                initialInicio={slotVacioInfo?.timeStr || '10:00'}
-                initialFin={slotVacioInfo?.timeEndStr || '10:45'}
-                existingEtiqueta={editingEtiqueta}
-                onSave={handleSaveEtiqueta}
-                onDelete={handleDeleteEtiqueta}
-            />
+                        if (inicio >= fin) throw new Error("La hora de inicio debe ser menor a la hora de fin.");
 
-            {/* Modal Accion Curso */}
-            {selectedCursoAccion && (
-                <ModalAccionCurso
-                    show={isAccionCursoModalOpen}
-                    onClose={() => setIsAccionCursoModalOpen(false)}
-                    cursoId={selectedCursoAccion.cursoId}
-                    cursoNombre={selectedCursoAccion.cursoNombre}
-                    asignatura={selectedCursoAccion.asignatura}
-                    inicio={selectedCursoAccion.inicio}
-                    fin={selectedCursoAccion.fin}
-                    onIrACurso={(id) => {
-                        useAppStore.getState().setSelectedCursoId(id);
-                        navigate('/curso-detalle');
+                        // Si ya existe una clase de ese curso ese día a esa hora, se
+                        // actualiza en el lugar (no se duplica el bloque).
+                        const existente = horarios.findIndex(h =>
+                            normalizarDia(h?.dia) === dia && normalizarHora(h?.inicio) === inicio
+                        );
+
+                        if (existente >= 0) {
+                            const duplicate = horarios.some((h, i) =>
+                                i !== existente && normalizarHora(h?.fin) === fin
+                            );
+                            if (duplicate) throw new Error("Ya existe este horario para la asignatura.");
+                            horarios[existente] = { ...horarios[existente], dia, inicio, fin };
+                        } else {
+                            horarios.push({ dia, inicio, fin });
+                        }
+
+                        // Update globally
+                        const { error } = await supabase.from('curso_docentes').update({ horarios }).eq('id', cursoDocenteId);
+                        if (error) throw new Error("Error guardando en la base de datos.");
+
+                        // Update locally
+                        useAppStore.setState((s) => ({
+                            state: {
+                                ...s.state,
+                                cursoDocentes: (s.state.cursoDocentes || []).map(c => c.id === cd.id ? { ...c, horarios } : c)
+                            }
+                        }));
                     }}
                 />
-            )}
+
+                {/* Creation Modal */}
+                {isModalOpen && onAddActividad && (
+                    <NewActivityModal
+                        show={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        onAddActividad={onAddActividad}
+                        cursos={cursos}
+                        onSuccess={() => setIsModalOpen(false)}
+                        initialDate={entryDate}
+                    />
+                )}
+
+                {selectedDate && (
+                    <AttendanceWizardModal
+                        date={selectedDate}
+                        isOpen={isAttendanceWizardOpen}
+                        onClose={() => setIsAttendanceWizardOpen(false)}
+                    />
+                )}
+
+                {selectedDate && (
+                    <AttendanceReportModal
+                        date={selectedDate}
+                        isOpen={isAttendanceReportOpen}
+                        onClose={() => setIsAttendanceReportOpen(false)}
+                    />
+                )}
+
+                {/* Modal Configurar Horarios */}
+                <ModalConfigurarHorarios
+                    show={isConfigHorariosOpen}
+                    onClose={() => setIsConfigHorariosOpen(false)}
+                    intervalosActuales={intervalosSemana}
+                    onSave={handleSaveIntervalosSemana}
+                />
+
+                {/* Modal Opcion Slot Vacio */}
+                {slotVacioInfo && (
+                    <ModalOpcionSlotVacio
+                        show={isSlotVacioModalOpen}
+                        onClose={() => setIsSlotVacioModalOpen(false)}
+                        dateIso={slotVacioInfo.dateIso}
+                        timeStr={slotVacioInfo.timeStr}
+                        onSelectClase={() => {
+                            setEntryTime(slotVacioInfo.timeStr);
+                            setIsHorarioModalOpen(true);
+                        }}
+                        onSelectEtiqueta={() => {
+                            setEditingEtiqueta(null);
+                            setIsEtiquetaModalOpen(true);
+                        }}
+                    />
+                )}
+
+                {/* Modal Etiqueta Tiempo */}
+                <ModalEtiquetaTiempo
+                    show={isEtiquetaModalOpen}
+                    onClose={() => setIsEtiquetaModalOpen(false)}
+                    initialDia={slotVacioInfo?.dia || 'Lunes'}
+                    initialInicio={slotVacioInfo?.timeStr || '10:00'}
+                    initialFin={slotVacioInfo?.timeEndStr || '10:45'}
+                    existingEtiqueta={editingEtiqueta}
+                    onSave={handleSaveEtiqueta}
+                    onDelete={handleDeleteEtiqueta}
+                />
+
+                {/* Modal Accion Curso */}
+                {selectedCursoAccion && (
+                    <ModalAccionCurso
+                        show={isAccionCursoModalOpen}
+                        onClose={() => setIsAccionCursoModalOpen(false)}
+                        cursoId={selectedCursoAccion.cursoId}
+                        cursoNombre={selectedCursoAccion.cursoNombre}
+                        asignatura={selectedCursoAccion.asignatura}
+                        inicio={selectedCursoAccion.inicio}
+                        fin={selectedCursoAccion.fin}
+                        onIrACurso={(id) => {
+                            useAppStore.getState().setSelectedCursoId(id);
+                            navigate('/curso-detalle');
+                        }}
+                    />
+                )}
 
 
             </div>
@@ -1388,40 +1389,40 @@ const CalendarSidePanel: React.FC<{
     // componentes, nunca con new Date(iso) (que parsea a UTC y adelanta/atrasa
     // el día según el huso del equipo).
     const selLocal = dateLocalDesdeIso(date);
-    
+
     const [isFichaSelectorOpen, setIsFichaSelectorOpen] = useState(false);
-    
+
     return (
         <aside className="w-full xl:w-80 bg-white border border-[#e6e8e2] rounded-xl p-4 flex flex-col gap-5 sticky top-5">
             <header className="flex justify-between items-center pb-3 border-b border-[#e6e8e2]">
                 <h3 className="font-bold text-lg text-[#263128]">{selLocal.getDate()} de {monthNames[selLocal.getMonth()]}</h3>
             </header>
-            
+
             <section>
                 <h4 className="text-xs font-bold text-[#7a817b] uppercase tracking-wider mb-3">Actividades</h4>
                 <div className="flex flex-col gap-2 min-h-7.5" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); onMoveItem(draggedItem, date); }}>
                     {dayActividades.map((act: any) => {
                         const c = getCourseColor(act.cursoId || act.curso_id, cursos);
                         return (
-                        <div 
-                            key={act.id}
-                            draggable
-                            onDragStart={(e) => { setDraggedItem({ id: act.id, type: 'actividad' }); setTimeout(() => (e.target as HTMLElement).style.opacity = '0.45', 0); }}
-                            onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; setDraggedItem(null); }}
-                            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); (e.currentTarget as HTMLElement).style.borderTop = `2px solid ${c.dot.replace('bg-[', '').replace(']', '')}`; }}
-                            onDragLeave={(e) => { (e.currentTarget as HTMLElement).style.borderTop = ''; }}
-                            onDrop={(e) => {
-                                e.preventDefault(); e.stopPropagation(); (e.currentTarget as HTMLElement).style.borderTop = '';
-                                onMoveItem(draggedItem, date, undefined, act.id);
-                            }}
-                            className={`p-2.5 rounded-lg border ${c.border} text-sm cursor-grab active:cursor-grabbing hover:border-black/20 transition-colors ${c.bg}`}
-                        >
-                            <div className={`font-bold ${c.text} leading-tight mb-1`}>{act.nombre}</div>
-                            <div className={`text-xs ${c.text} opacity-80 flex gap-2`}>
-                                {act.hora_inicio && <span>{act.hora_inicio}</span>}
-                                {act.asignatura && <span>· {act.asignatura}</span>}
+                            <div
+                                key={act.id}
+                                draggable
+                                onDragStart={(e) => { setDraggedItem({ id: act.id, type: 'actividad' }); setTimeout(() => (e.target as HTMLElement).style.opacity = '0.45', 0); }}
+                                onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; setDraggedItem(null); }}
+                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); (e.currentTarget as HTMLElement).style.borderTop = `2px solid ${c.dot.replace('bg-[', '').replace(']', '')}`; }}
+                                onDragLeave={(e) => { (e.currentTarget as HTMLElement).style.borderTop = ''; }}
+                                onDrop={(e) => {
+                                    e.preventDefault(); e.stopPropagation(); (e.currentTarget as HTMLElement).style.borderTop = '';
+                                    onMoveItem(draggedItem, date, undefined, act.id);
+                                }}
+                                className={`p-2.5 rounded-lg border ${c.border} text-sm cursor-grab active:cursor-grabbing hover:border-black/20 transition-colors ${c.bg}`}
+                            >
+                                <div className={`font-bold ${c.text} leading-tight mb-1`}>{act.nombre}</div>
+                                <div className={`text-xs ${c.text} opacity-80 flex gap-2`}>
+                                    {act.hora_inicio && <span>{act.hora_inicio}</span>}
+                                    {act.asignatura && <span>· {getAsignaturaNombre(act.asignatura)}</span>}
+                                </div>
                             </div>
-                        </div>
                         );
                     })}
                     <button onClick={onAddActividad} className="text-xs font-semibold text-[#689c63] hover:text-[#578952] flex items-center gap-1 mt-1 p-1">
@@ -1436,15 +1437,15 @@ const CalendarSidePanel: React.FC<{
                     {dayFichasScheduled.map((ficha: any) => {
                         const c = getCourseColor(ficha.cursoId || ficha.curso_id, cursos);
                         return (
-                        <div 
-                            key={`sched-ficha-${ficha.id}`}
-                            draggable
-                            onDragStart={(e) => { setDraggedItem({ id: ficha.id, type: 'actividad' }); setTimeout(() => (e.target as HTMLElement).style.opacity = '0.45', 0); }}
-                            onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; setDraggedItem(null); }}
-                            className={`p-2.5 rounded-lg border ${c.border} ${c.bg} text-sm cursor-grab active:cursor-grabbing hover:border-black/20 transition-colors`}
-                        >
-                            <div className={`font-bold ${c.text} leading-tight`}>📄 {ficha.nombre}</div>
-                        </div>
+                            <div
+                                key={`sched-ficha-${ficha.id}`}
+                                draggable
+                                onDragStart={(e) => { setDraggedItem({ id: ficha.id, type: 'actividad' }); setTimeout(() => (e.target as HTMLElement).style.opacity = '0.45', 0); }}
+                                onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; setDraggedItem(null); }}
+                                className={`p-2.5 rounded-lg border ${c.border} ${c.bg} text-sm cursor-grab active:cursor-grabbing hover:border-black/20 transition-colors`}
+                            >
+                                <div className={`font-bold ${c.text} leading-tight`}>📄 {ficha.nombre}</div>
+                            </div>
                         );
                     })}
                     <button onClick={() => setIsFichaSelectorOpen(true)} className="text-xs font-semibold text-[#537bac] hover:text-[#42648f] flex items-center gap-1 mt-1 p-1">
@@ -1462,10 +1463,10 @@ const CalendarSidePanel: React.FC<{
                                 <div className="flex justify-between items-start gap-2 mb-1">
                                     <div className="font-bold text-[#5c5017] leading-tight">{ev.titulo}</div>
                                     <div className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-[#e8e2c0] text-[#786b33] uppercase shrink-0">
-                                        {ev.tipo === 'institucional' ? 'Inst.' : 
-                                         ev.tipo === 'conmemoracion' ? 'Conm.' : 
-                                         ev.tipo === 'evaluacion' ? 'Eval.' :
-                                         ev.tipo === 'receso' ? 'Receso' : ev.tipo}
+                                        {ev.tipo === 'institucional' ? 'Inst.' :
+                                            ev.tipo === 'conmemoracion' ? 'Conm.' :
+                                                ev.tipo === 'evaluacion' ? 'Eval.' :
+                                                    ev.tipo === 'receso' ? 'Receso' : ev.tipo}
                                     </div>
                                 </div>
                                 {ev.descripcion && (
@@ -1489,13 +1490,13 @@ const CalendarSidePanel: React.FC<{
                                 {recursos.map((r: any, i) => {
                                     const c = getCourseColor(r.cursoId, cursos);
                                     return (
-                                    <div key={i} className={`p-2.5 rounded-lg border ${c.border} ${c.bg} text-sm flex gap-2 items-center`}>
-                                        <span className="text-lg">📎</span>
-                                        <div>
-                                            <div className={`font-bold ${c.text} leading-tight`}>{r.titulo}</div>
-                                            <div className={`text-xs ${c.text} opacity-80`}>{r.fichaTitulo}</div>
+                                        <div key={i} className={`p-2.5 rounded-lg border ${c.border} ${c.bg} text-sm flex gap-2 items-center`}>
+                                            <span className="text-lg">📎</span>
+                                            <div>
+                                                <div className={`font-bold ${c.text} leading-tight`}>{r.titulo}</div>
+                                                <div className={`text-xs ${c.text} opacity-80`}>{r.fichaTitulo}</div>
+                                            </div>
                                         </div>
-                                    </div>
                                     );
                                 })}
                             </div>
@@ -1515,13 +1516,13 @@ const CalendarSidePanel: React.FC<{
                                 {entregas.map((a: any) => {
                                     const c = getCourseColor(a.cursoId || a.curso_id, cursos);
                                     return (
-                                    <div key={a.id} className={`p-2.5 rounded-lg border ${c.border} ${c.bg} text-sm flex gap-2 items-center`}>
-                                        <span className={`text-lg ${c.text}`}>↑</span>
-                                        <div>
-                                            <div className={`font-bold leading-tight ${c.text}`}>Producto: {a.producto || 'Entregable'}</div>
-                                            <div className={`text-xs opacity-80 ${c.text}`}>{a.nombre}</div>
+                                        <div key={a.id} className={`p-2.5 rounded-lg border ${c.border} ${c.bg} text-sm flex gap-2 items-center`}>
+                                            <span className={`text-lg ${c.text}`}>↑</span>
+                                            <div>
+                                                <div className={`font-bold leading-tight ${c.text}`}>Producto: {a.producto || 'Entregable'}</div>
+                                                <div className={`text-xs opacity-80 ${c.text}`}>{a.nombre}</div>
+                                            </div>
                                         </div>
-                                    </div>
                                     );
                                 })}
                             </div>
@@ -1533,15 +1534,15 @@ const CalendarSidePanel: React.FC<{
 
             <section>
                 <h4 className="text-xs font-bold text-[#7a817b] uppercase tracking-wider mb-3">Asistencia</h4>
-                <button 
-                    onClick={onOpenAttendance} data-guide="btn-pase-de-lista" 
+                <button
+                    onClick={onOpenAttendance} data-guide="btn-pase-de-lista"
                     className="w-full text-left p-3 rounded-lg border border-black/5 bg-[#fcfcfa] text-sm flex gap-3 items-center hover:border-black/20 hover:bg-white transition-colors"
                 >
                     <div className="w-6 h-6 rounded-full bg-[#e0e9f4] text-[#537bac] flex items-center justify-center font-bold text-xs">✓</div>
                     <div className="font-bold text-[#263128]">Pase de lista</div>
                 </button>
-                <button 
-                    onClick={onOpenAttendanceReport} 
+                <button
+                    onClick={onOpenAttendanceReport}
                     className="w-full text-left p-3 mt-2 rounded-lg border border-transparent text-sm flex gap-3 items-center hover:bg-[#f3f7ef] transition-colors"
                 >
                     <div className="font-semibold text-[#58625a]">Informe de asistencia</div>
@@ -1560,8 +1561,8 @@ const CalendarSidePanel: React.FC<{
                                 <p className="text-sm text-[#8a918b]">No hay fichas en el espacio de trabajo.</p>
                             ) : (
                                 fichasReales.map((f: any) => (
-                                    <button 
-                                        key={f.id} 
+                                    <button
+                                        key={f.id}
                                         onClick={() => { onMoveItem({ id: f.id, type: 'ficha' }, date); setIsFichaSelectorOpen(false); }}
                                         className="text-left w-full p-3 rounded-lg border border-[#e6e8e2] hover:bg-[#f3f7ef] hover:border-[#689c63] transition-colors"
                                     >

@@ -12,7 +12,7 @@ import { estudiantesDelCurso } from '../utils/aislamiento';
 import { getPlanRecuperacionTemplate, PERIODOS_RECUPERACION, isPeriodoDisponible } from '../templates/plan-recuperacion';
 import type { EstudianteRecuperar, ActividadRecuperar } from '../templates/plan-recuperacion';
 import { mismaAsignatura } from '../lib/curriculo';
-import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
+import { ASIGNATURAS_CATALOGO, esAsignaturaOptativa, getAsignaturaNombre } from '../constants/asignaturas';
 import { obtenerDocenteResponsable, obtenerCentroDelCurso } from '../utils/aislamiento';
 import { CieloPill } from '../components/ui/CieloPill';
 import { CieloModal } from '../components/ui/CieloModal';
@@ -71,7 +71,9 @@ const BOOK_ICONS = [blueBookIcon, purpleBookIcon];
 
 function getCursoLabel(curso?: Curso) {
     if (!curso) return 'Curso sin asignar';
-    return `${curso.grado} ${curso.seccion} • ${curso.nombre}`;
+    const asig = curso.asignatura ? getAsignaturaNombre(curso.asignatura) : curso.nombre;
+    const suffix = esAsignaturaOptativa(curso.asignatura) ? ' (Optativa)' : '';
+    return `${curso.grado} ${curso.seccion} • ${asig}${suffix}`;
 }
 
 // function getDisplayStatus(estado: Secuencia['estado']) {
@@ -514,10 +516,10 @@ export default function Planificacion({
             'Docente'
         ).trim();
 
-        // 3. Asignatura oficial para display y clave de aislamiento
+        // 3. Asignatura oficial u optativa para display y clave de aislamiento
         const asignaturaTarget = curso.asignatura || '';
         const asigObj = ASIGNATURAS_CATALOGO.find(a => mismaAsignatura(a.id, asignaturaTarget) || mismaAsignatura(a.nombre, asignaturaTarget));
-        const asignaturaDisplay = asigObj?.nombre || curso.asignatura || 'General';
+        const asignaturaDisplay = asigObj?.nombre || getAsignaturaNombre(curso.asignatura) || 'General';
 
         const periodoInfo = PERIODOS_RECUPERACION[periodoRec] || PERIODOS_RECUPERACION.P1;
 
@@ -836,7 +838,7 @@ export default function Planificacion({
                                 onChange={(event) => setCursoSel(Number(event.target.value))}
                             >
                                 {state.cursos.map((curso) => (
-                                    <option key={curso.id} value={curso.id}>
+                                    <option key={`${curso.id}-${curso.asignatura}`} value={curso.id}>
                                         {getCursoLabel(curso)}
                                     </option>
                                 ))}
@@ -951,8 +953,13 @@ export default function Planificacion({
                                                 </span>
                                                 <span className="text-(--ink-soft)/30 font-bold">•</span>
                                                 <span className="text-xs font-bold uppercase tracking-wider text-(--ink-soft)">
-                                                    {grupo.asignatura}
+                                                    {getAsignaturaNombre(grupo.asignatura)}
                                                 </span>
+                                                {esAsignaturaOptativa(grupo.asignatura) && (
+                                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80">
+                                                        Optativa
+                                                    </span>
+                                                )}
                                             </div>
                                             <span className="text-[10px] font-bold uppercase tracking-widest text-(--ink-soft) bg-(--linen)/60 px-2.5 py-0.5 rounded-full">
                                                 {grupo.planes.filter(p => !esPlanRecuperacion(p)).length + 1} {grupo.planes.filter(p => !esPlanRecuperacion(p)).length === 0 ? 'documento' : 'documentos'}

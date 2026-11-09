@@ -1,6 +1,11 @@
 import { useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAppStore } from '../store/appStore';
+import {
+    syncCourseStudentsCacheFromStore,
+    fetchAndSyncCourseStudents,
+    resolveCentroIdForCurso,
+} from '../cache/estudianteCache';
 import type { Estudiante as EstudianteType } from '../types';
 
 const mapearEstudiante = (d: any): EstudianteType => ({
@@ -102,6 +107,7 @@ export function useStudentActions() {
                                 : [...s.estudiantes, mapped]
                         };
                     });
+                    syncCourseStudentsCacheFromStore(cId, { allowEmptyOverwrite: false });
                     return mapped;
                 }
                 return null;
@@ -158,6 +164,7 @@ export function useStudentActions() {
             const d = data[0];
             const mapped = mapearEstudiante(d);
             setState(s => ({ ...s, estudiantes: [...s.estudiantes, mapped] }));
+            syncCourseStudentsCacheFromStore(cId, { allowEmptyOverwrite: false });
             return mapped;
         }
         return null;
@@ -177,9 +184,17 @@ export function useStudentActions() {
         if (!(id > 0)) return;
 
         const existing = state.estudiantes.find(e => e.id === id);
+        const oldCursoId = existing?.cursoId ? Number(existing.cursoId) : undefined;
         const merged = { ...existing, ...updateData, id } as EstudianteType;
+        const newCursoId = merged.cursoId ? Number(merged.cursoId) : oldCursoId;
 
         setState(s => ({ ...s, estudiantes: s.estudiantes.map(est => est.id === merged.id ? merged : est) }));
+        if (newCursoId) {
+            syncCourseStudentsCacheFromStore(newCursoId, { allowEmptyOverwrite: true });
+        }
+        if (oldCursoId && newCursoId && oldCursoId !== newCursoId) {
+            syncCourseStudentsCacheFromStore(oldCursoId, { allowEmptyOverwrite: true });
+        }
 
         const { error } = await supabase.from('estudiantes').upsert({
             id: merged.id,
@@ -203,6 +218,12 @@ export function useStudentActions() {
         });
 
         if (error) {
+            // Revertir estado local y caché si falla la escritura en Supabase
+            if (existing) {
+                setState(s => ({ ...s, estudiantes: s.estudiantes.map(est => est.id === existing.id ? existing : est) }));
+                if (oldCursoId) syncCourseStudentsCacheFromStore(oldCursoId, { allowEmptyOverwrite: true });
+                if (newCursoId && newCursoId !== oldCursoId) syncCourseStudentsCacheFromStore(newCursoId, { allowEmptyOverwrite: true });
+            }
             setGenericToast({ message: 'Error al guardar cambios del estudiante', type: 'warning' });
             setTimeout(() => setGenericToast(null), 3000);
         }
@@ -222,6 +243,7 @@ export function useStudentActions() {
         });
         
         if (!error) {
+            const targetCursoId = Number(est.cursoId);
             setState(s => {
                 // Eliminamos el estudiante del array y renumeramos los que le seguían
                 const filtered = s.estudiantes.filter(e => e.id !== id);
@@ -233,6 +255,9 @@ export function useStudentActions() {
                 });
                 return { ...s, estudiantes: updated };
             });
+            if (targetCursoId > 0) {
+                syncCourseStudentsCacheFromStore(targetCursoId, { allowEmptyOverwrite: true });
+            }
         }
     }, [state.estudiantes, setState]);
 
@@ -282,13 +307,31 @@ export function useStudentActions() {
         // el UI trigeree la recarga o al menos confirme el éxito.
         if (data) {
             const mapped = mapearEstudiante(data);
-            setGenericToast({ message: 'Estudiante agregado correctamente. Refresca la página para visualizar la lista actualizada.', type: 'success' });
-            setTimeout(() => setGenericToast(null), 5000);
+            // Sincronizar inmediatamente en el estado local desplazando las posiciones >= posicion,
+            // y revalidar contra Supabase para reflejar exactamente el resultado transaccional del RPC.
+            setState(s => {
+                const shifted = s.estudiantes.map(e => {
+                    if (Number(e.cursoId) === cId && typeof e.numeroLista === 'number' && e.numeroLista >= posicion && e.id !== mapped.id) {
+                        return { ...e, numeroLista: e.numeroLista + 1 };
+                    }
+                    return e;
+                });
+                const exists = shifted.some(e => e.id === mapped.id);
+                const nextEstudiantes = exists
+                    ? shifted.map(e => e.id === mapped.id ? mapped : e)
+                    : [...shifted, mapped];
+                return { ...s, estudiantes: nextEstudiantes };
+            });
+            syncCourseStudentsCacheFromStore(cId, { allowEmptyOverwrite: false });
+            void fetchAndSyncCourseStudents(session.user.id, resolveCentroIdForCurso(cId), cId, { forceNetwork: true });
+
+            setGenericToast({ message: 'Estudiante agregado correctamente.', type: 'success' });
+            setTimeout(() => setGenericToast(null), 4000);
             return mapped;
         }
         
         return null;
-    }, [session, state.cursos, state.estudiantes, setGenericToast]);
+    }, [session, state.cursos, state.estudiantes, setState, setGenericToast]);
 
     const handleReordenarEstudiantePosicion = useCallback(async (estudianteId: number, posicionDestino: number) => {
         if (!(estudianteId > 0)) return false;
@@ -333,6 +376,9 @@ export function useStudentActions() {
             });
             return { ...s, estudiantes: updated };
         });
+        if (Number(est.cursoId) > 0) {
+            syncCourseStudentsCacheFromStore(Number(est.cursoId), { allowEmptyOverwrite: false });
+        }
 
         setGenericToast({ message: `Estudiante movido a la posición ${newPos} correctamente.`, type: 'success' });
         setTimeout(() => setGenericToast(null), 3000);

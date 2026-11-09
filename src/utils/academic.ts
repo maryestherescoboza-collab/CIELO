@@ -2,12 +2,17 @@ import type { BCKey, CalificacionActividad, RecuperacionBC, Actividad, Curso } f
 import { perteneceAlContextoDelCurso } from './aislamiento';
 
 export const normalizeArea = (a?: string | null) => 
-    (a || '').replace(/_/g, ' ')
+    (a || '')
+    .trim()
+    .replace(/^optativa:\s*/i, '')
+    .replace(/_/g, ' ')
     .toLowerCase()
     .replace('matemáticas', 'matematica')
     .replace('matemática', 'matematica')
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, ' ')
+    .trim();
 
 export const getGradeClass = (score: number | null) => {
     if (score === null) return 'bg-slate-50 text-slate-400';

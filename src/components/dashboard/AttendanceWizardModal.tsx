@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useAppStore } from '../../store/appStore';
 import { ChevronRight, ChevronLeft, Check, CalendarDays, X, Search } from 'lucide-react';
+import { getAsignaturaNombre } from '../../constants/asignaturas';
+import { esEstudianteDelCurso } from '../../utils/aislamiento';
 
 interface AttendanceWizardModalProps {
     date: string;
@@ -122,11 +124,7 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
         if (!course) return [];
 
         return (state.estudiantes || [])
-            .filter(e => {
-                const eShared = e.sharedCourseId || (state.cursos || []).find(cx => cx.id === e.cursoId)?.sharedCourseId;
-                const cShared = course.sharedCourseId;
-                return e.cursoId === course.id || (cShared && eShared === cShared);
-            })
+            .filter(e => esEstudianteDelCurso(state.cursos || [], course, e, course.centroId))
             .sort((a, b) => {
                 if (a.numeroLista != null && b.numeroLista != null) return a.numeroLista - b.numeroLista;
                 return (a.nombre || '').localeCompare(b.nombre || '');
@@ -279,7 +277,7 @@ export function AttendanceWizardModal({ date, isOpen, onClose }: AttendanceWizar
                                                         </div>
                                                     )}
                                                     <div className="font-bold text-slate-800 text-lg leading-none mb-1">{c.grado} {c.seccion}</div>
-                                                    <div className="text-sm font-bold text-slate-700 mb-1">{cd.asignatura || 'Sin asignatura'}</div>
+                                                    <div className="text-sm font-bold text-slate-700 mb-1">{getAsignaturaNombre(cd.asignatura) || 'Sin asignatura'}</div>
                                                     <div className="text-xs text-slate-500 font-medium">{c.nombre}</div>
                                                 </button>
                                             );

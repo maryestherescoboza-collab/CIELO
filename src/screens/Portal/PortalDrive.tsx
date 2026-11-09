@@ -358,7 +358,7 @@ const PortalDrive: React.FC = () => {
                                             </p>
                                         </div>
                                         {carpeta ? (
-                                            <span className="text-[10px] font-bold text-[#4E5566] flex-none">
+                                            <span className="px-2.5 py-0.5 rounded-full bg-[#689C63]/15 border border-[#689C63]/35 text-[10px] font-bold text-[#2E572A] flex-none">
                                                 Lista
                                             </span>
                                         ) : (
@@ -366,7 +366,7 @@ const PortalDrive: React.FC = () => {
                                                 onClick={() => configurar(a)}
                                                 disabled={!conectadoVivo || fase !== null}
                                                 aria-label={`Configurar ${a.nombre}`}
-                                                className="flex-none h-8 px-3 rounded-full border border-[#D8D7E0] flex items-center gap-1 text-[10px] font-bold text-[#4E5566] hover:bg-[#F1F1EC] disabled:opacity-40"
+                                                className="flex-none h-8 px-3 rounded-full border border-[#537BAC]/35 bg-[#537BAC]/12 flex items-center gap-1 text-[10px] font-bold text-[#2C4F7C] hover:bg-[#537BAC]/25 disabled:opacity-40 transition-colors"
                                             >
                                                 {fase === 'creando' ? (
                                                     <Loader2 size={11} className="animate-spin" />

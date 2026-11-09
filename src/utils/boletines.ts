@@ -1,7 +1,7 @@
 import type { AppState, BCKey, Estudiante, Curso } from '../types';
-import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
+import { ASIGNATURAS_CATALOGO, sonMismaAsignatura, getAsignaturaNombre } from '../constants/asignaturas';
 import { perteneceAlContextoDelCurso } from './aislamiento';
-import { computePeriodBCAvg } from './academic';
+import { computePeriodBCAvg, normalizeArea } from './academic';
 
 export interface StudentSubjectGrades {
     P1: Record<BCKey, number | null>;
@@ -48,7 +48,31 @@ export function computeStudentGrades(
             (r.cursoId === cursoId || (!!curso && perteneceAlContextoDelCurso(state.cursos, curso, r.cursoId, centroId)))
         );
 
-        ASIGNATURAS_CATALOGO.forEach(asig => {
+        // Incluir asignaturas oficiales del catálogo más cualquier asignatura optativa registrada en el curso
+        const asignaturasEvaluar: { id: string; nombre: string }[] = [...ASIGNATURAS_CATALOGO];
+        const extraAsignaturas = new Set<string>();
+        if (curso?.asignatura) extraAsignaturas.add(curso.asignatura);
+        state.cursos.forEach(c => {
+            if ((c.id === cursoId || (!!curso && perteneceAlContextoDelCurso(state.cursos, curso, c.id, centroId))) && c.asignatura) {
+                extraAsignaturas.add(c.asignatura);
+            }
+        });
+        state.cursoDocentes?.forEach(cd => {
+            if (cd.cursoId === cursoId && cd.asignatura) extraAsignaturas.add(cd.asignatura);
+        });
+        actividadesCurso.forEach(a => { if (a.asignatura) extraAsignaturas.add(a.asignatura); });
+        recuperacionesCurso.forEach(r => { if (r.asignatura) extraAsignaturas.add(r.asignatura); });
+
+        extraAsignaturas.forEach(asigId => {
+            const yaIncluida = asignaturasEvaluar.some(
+                a => sonMismaAsignatura(a.id, asigId) || normalizeArea(a.id) === normalizeArea(asigId)
+            );
+            if (!yaIncluida) {
+                asignaturasEvaluar.push({ id: asigId, nombre: getAsignaturaNombre(asigId) });
+            }
+        });
+
+        asignaturasEvaluar.forEach(asig => {
             const periods: ('P1' | 'P2' | 'P3' | 'P4')[] = ['P1', 'P2', 'P3', 'P4'];
             const bcs: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
 
@@ -63,8 +87,11 @@ export function computeStudentGrades(
                 BC1: null, BC2: null, BC3: null, BC4: null
             };
 
+            const matchesAsig = (val?: string | null) =>
+                Boolean(val) && (sonMismaAsignatura(val, asig.id) || normalizeArea(val) === normalizeArea(asig.id));
+
             // Actividades permitidas para esta asignatura dentro del contexto ya validado.
-            const activities = actividadesCurso.filter(a => a.asignatura === asig.id);
+            const activities = actividadesCurso.filter(a => matchesAsig(a.asignatura));
 
             // Índice de actividades permitidas (evita búsquedas O(n²) sobre el arreglo).
             const activityIds = new Set(activities.map(a => a.id));
@@ -73,13 +100,13 @@ export function computeStudentGrades(
             // permitida para este boletín, además del estudiante y la asignatura.
             const qualifications = state.calificaciones.filter(c =>
                 c.estudianteId === est.id &&
-                c.asignatura === asig.id &&
+                matchesAsig(c.asignatura) &&
                 activityIds.has(c.actividadId)
             );
 
             // Fase 8 — recuperaciones ya validadas institucionalmente, filtradas
             // por asignatura. Nunca por coincidencia parcial de ids.
-            const recoveries = recuperacionesCurso.filter(r => r.asignatura === asig.id);
+            const recoveries = recuperacionesCurso.filter(r => matchesAsig(r.asignatura));
 
             periods.forEach(p => {
                 bcs.forEach((bc, bcIdx) => {

@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePortal, rutaPortal } from './portalContext';
-import { sonMismaAsignatura } from '../../constants/asignaturas';
+import { sonMismaAsignatura, getAsignaturaNombre } from '../../constants/asignaturas';
 import { fetchPortalFichasCompartidasCached } from '../../cache/portalCache';
 
 interface FichaCompartida {
@@ -132,19 +132,19 @@ export default function PortalFichas() {
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-bold text-black tracking-tight">Fichas de Clase</h2>
             {selectedAsignatura && (
-              <span className="px-2.5 py-0.5 rounded-full border border-stone-200 bg-stone-50 text-[11px] font-bold text-stone-800">
-                {selectedAsignatura}
+              <span className="px-3 py-0.5 rounded-full border border-[#537BAC]/30 bg-[#537BAC]/12 text-[11px] font-bold text-[#1B1F2A]">
+                {getAsignaturaNombre(selectedAsignatura)}
               </span>
             )}
           </div>
-          <span className="text-[11px] font-bold border border-black px-2.5 py-0.5 rounded-full bg-[#DEAE4D]/15 text-[#1B1F2A]">
+          <span className="text-[11px] font-bold border border-[#DEAE4D]/50 px-2.5 py-0.5 rounded-full bg-[#DEAE4D]/20 text-[#7A5612]">
             {fichasFiltradas.length} Ficha{fichasFiltradas.length !== 1 && 's'}
           </span>
         </div>
         
         {!loading && !error && fichasFiltradas.length === 0 ? (
-          <div className="text-center py-6 bg-white border border-neutral-200 rounded-xl mb-6">
-             <p className="text-neutral-500 text-sm">No hay fichas compartidas {selectedAsignatura ? `para ${selectedAsignatura}` : ''}.</p>
+          <div className="text-center py-6 bg-[#FCFCFA] border border-[#BFC9A6]/60 rounded-xl mb-6">
+             <p className="text-[#5F665E] text-sm">No hay fichas compartidas {selectedAsignatura ? `para ${getAsignaturaNombre(selectedAsignatura)}` : ''}.</p>
           </div>
         ) : (
           <div className="space-y-4 mb-6">
@@ -152,18 +152,18 @@ export default function PortalFichas() {
               <div key={`ficha-${ficha.id}`} className="relative">
                 {/* Sombra rayada diagonal artesanal tipo grabado */}
                 <div aria-hidden="true" className="absolute top-1.5 left-1.5 -right-1.5 -bottom-1.5 rounded-xl pointer-events-none portal-hatched-shadow" />
-                <article className="relative z-10 w-full border-[2.5px] border-[#1E1E24] rounded-xl p-4 bg-white flex flex-col">
+                <article className="relative z-10 w-full border-[2.5px] border-[#1E1E24] rounded-xl p-4 bg-[#FCFCFA] flex flex-col">
                 <div className="mb-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="text-sm font-bold text-black">{ficha.titulo || 'Sin título'}</h3>
                       <div className="mt-1 flex items-center">
-                        <span className="text-[11px] font-bold text-neutral-500">Publicado el {new Date(ficha.fecha).toLocaleDateString()}</span>
+                        <span className="text-[11px] font-bold text-[#5F665E]">Publicado el {new Date(ficha.fecha).toLocaleDateString()}</span>
                       </div>
                     </div>
                     <button
                       onClick={() => navigate(rutaPortal(token, 'fichas', ficha.id))}
-                      className="text-[11px] font-bold text-[#8A6415] bg-[#DEAE4D]/20 px-3 py-1.5 rounded-lg hover:bg-[#DEAE4D]/35 transition-colors shrink-0"
+                      className="text-[11px] font-bold text-[#7A5612] bg-[#DEAE4D]/25 border border-[#DEAE4D]/50 px-3 py-1.5 rounded-lg hover:bg-[#DEAE4D]/40 transition-colors shrink-0"
                     >
                       Leer ›
                     </button>
@@ -171,14 +171,14 @@ export default function PortalFichas() {
                 </div>
 
                 <div>
-                  <h4 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2">Misiones</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center text-[13px] font-bold text-[#1B1F2A]">
+                  <h4 className="text-[10px] font-bold text-[#5F665E] uppercase tracking-wider mb-2">Misiones</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center text-[13px] font-bold text-[#1B1F2A] px-3 py-2 rounded-xl bg-[#BFC9A6]/20 border border-[#BFC9A6]/50">
                       <IconoMisionProducto />
                       Subir producto
                     </div>
 
-                    <div className="flex items-center text-[13px] font-bold text-[#1B1F2A]">
+                    <div className="flex items-center text-[13px] font-bold text-[#1B1F2A] px-3 py-2 rounded-xl bg-[#537BAC]/10 border border-[#537BAC]/25">
                       <IconoMisionRuta />
                       Completar ruta de aprendizaje
                     </div>

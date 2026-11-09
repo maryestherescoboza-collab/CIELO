@@ -16,6 +16,7 @@ import {
   SIETE_ASIGNATURAS_OFICIALES,
   ASIGNATURAS_CATALOGO,
   sonMismaAsignatura,
+  getAsignaturaNombre,
   getMensajeDocenteNoUsaCielo
 } from '../../constants/asignaturas';
 import {
@@ -190,7 +191,7 @@ export default function PortalLayout() {
         rawList.forEach((extra: any) => {
           if (!mergedList.some((m) => sonMismaAsignatura(m.asignatura, extra.asignatura))) {
             const catalogoItem = ASIGNATURAS_CATALOGO.find((c) => sonMismaAsignatura(c.id, extra.asignatura) || sonMismaAsignatura(c.nombre, extra.asignatura));
-            const nombreMostrar = catalogoItem ? catalogoItem.nombre : extra.asignatura;
+            const nombreMostrar = catalogoItem ? catalogoItem.nombre : getAsignaturaNombre(extra.asignatura);
             mergedList.push({
               asignatura: nombreMostrar,
               tiene_docente: true,
@@ -289,12 +290,6 @@ export default function PortalLayout() {
     navigate(`/portal/${token}/${tab}${query}`);
   };
 
-  // Metadatos de la asignatura activa
-  const activeOficial = useMemo(() => {
-    if (!selectedAsignatura) return null;
-    return SIETE_ASIGNATURAS_OFICIALES.find((a) => sonMismaAsignatura(a.nombre, selectedAsignatura)) || null;
-  }, [selectedAsignatura]);
-
   const activePub = useMemo(() => {
     if (!selectedAsignatura) return null;
     return asignaturas.find((a) => sonMismaAsignatura(a.asignatura, selectedAsignatura)) || null;
@@ -304,7 +299,7 @@ export default function PortalLayout() {
 
   if (loading && asignaturas.length === 0) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-[#FCFCFA] flex flex-col items-center justify-center p-6">
         <Loader2 className="animate-spin text-stone-900 mb-4" size={32} />
         <p className="text-stone-600 text-sm font-semibold">Cargando tu portal...</p>
       </div>
@@ -325,34 +320,32 @@ export default function PortalLayout() {
           <header className="sticky top-0 z-30 bg-[#FCFCFA]/95 backdrop-blur-md border-b border-[#E4E3EC] px-4 py-2.5 flex items-center justify-between">
             <button
               onClick={handleDeselectAsignatura}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#1B1F2A] bg-[#BFC9A6]/20 hover:bg-[#BFC9A6]/35 active:scale-95 rounded-full transition-all border border-[#BFC9A6]/40"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#1B1F2A] bg-[#BFC9A6]/25 hover:bg-[#BFC9A6]/40 active:scale-95 rounded-full transition-all border border-[#BFC9A6]/60"
               title="Volver a la selección de asignaturas"
             >
-              <ArrowLeft size={13} className="text-stone-600" />
+              <ArrowLeft size={13} className="text-[#1B1F2A]" />
               <span>Mis asignaturas</span>
             </button>
 
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-stone-50 border border-stone-200 rounded-full max-w-[55%]">
-              <span className="text-xs shrink-0">{activeOficial?.icono || '📖'}</span>
-              <span className="text-xs font-bold text-stone-900 truncate">
-                {selectedAsignatura}
+            <div className="flex items-center justify-center px-3.5 py-1 bg-[#537BAC]/12 border border-[#537BAC]/30 rounded-full max-w-[55%]">
+              <span className="text-xs font-bold text-[#1B1F2A] truncate">
+                {getAsignaturaNombre(selectedAsignatura)}
               </span>
             </div>
           </header>
         ) : (!selectedAsignatura && currentPath === 'incidencias') ? (
-          <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200 px-4 py-2.5 flex items-center justify-between">
+          <header className="sticky top-0 z-30 bg-[#FCFCFA]/95 backdrop-blur-md border-b border-[#E4E3EC] px-4 py-2.5 flex items-center justify-between">
             <button
               onClick={handleDeselectAsignatura}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 active:scale-95 rounded-full transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#1B1F2A] bg-[#BFC9A6]/25 hover:bg-[#BFC9A6]/40 active:scale-95 rounded-full transition-all border border-[#BFC9A6]/60"
               title="Volver a la selección de asignaturas"
             >
-              <ArrowLeft size={13} className="text-stone-600" />
+              <ArrowLeft size={13} className="text-[#1B1F2A]" />
               <span>Mis asignaturas</span>
             </button>
 
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-stone-50 border border-stone-200 rounded-full">
-              <span className="text-xs shrink-0">🚩</span>
-              <span className="text-xs font-bold text-stone-900">
+            <div className="flex items-center justify-center px-3.5 py-1 bg-[#DB5B48]/12 border border-[#DB5B48]/30 rounded-full">
+              <span className="text-xs font-bold text-[#1B1F2A]">
                 Incidencias
               </span>
             </div>
@@ -380,7 +373,7 @@ export default function PortalLayout() {
               <div>
                 <button
                   onClick={handleDeselectAsignatura}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 active:scale-95 rounded-full transition-all mb-6"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#1B1F2A] bg-[#BFC9A6]/25 hover:bg-[#BFC9A6]/40 border border-[#BFC9A6]/60 active:scale-95 rounded-full transition-all mb-6"
                 >
                   <ArrowLeft size={14} />
                   <span>Mis asignaturas</span>
@@ -398,8 +391,8 @@ export default function PortalLayout() {
                     </div>
 
                     <div className="space-y-2">
-                      <span className="inline-block text-[11px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full border border-stone-300 bg-stone-100 text-stone-700">
-                        {selectedAsignatura}
+                      <span className="inline-block text-[11px] font-black tracking-wider uppercase px-3 py-0.5 rounded-full border border-[#537BAC]/30 bg-[#537BAC]/12 text-[#1B1F2A]">
+                        {getAsignaturaNombre(selectedAsignatura)}
                       </span>
 
                       <h2 className="text-base sm:text-lg font-black text-stone-900 leading-snug px-2">
@@ -417,7 +410,7 @@ export default function PortalLayout() {
               <div className="pt-6 pb-2 max-w-sm mx-auto w-full">
                 <button
                   onClick={handleDeselectAsignatura}
-                  className="w-full py-3 px-4 rounded-2xl bg-[#1E1E24] hover:bg-black text-white font-black text-xs active:scale-98 transition flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full py-3 px-4 rounded-2xl bg-[#537BAC] hover:bg-[#43648C] text-white font-black text-xs active:scale-98 transition flex items-center justify-center gap-2"
                 >
                   <ArrowLeft size={14} />
                   <span>Volver a mis asignaturas</span>

@@ -334,6 +334,10 @@ export default function PortalAuth({ onLogin }: { onLogin: () => void }) {
             >
               {processing ? <Loader2 className="animate-spin" size={16} /> : 'Ingresar al Portal'}
             </button>
+
+            <p className="mt-5 text-center text-[11px] text-(--ink-soft) leading-relaxed">
+              ¿Olvidaste tu clave? Solicita a tu docente responsable un <strong className="text-(--ink)">código QR de recuperación</strong> para establecer una nueva clave.
+            </p>
           </div>
         )}
 

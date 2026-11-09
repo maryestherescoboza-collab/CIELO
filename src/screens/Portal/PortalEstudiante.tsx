@@ -7,6 +7,7 @@ import RetroMicIcon from '../../components/icons/RetroMicIcon';
 import IdeaLightbulbIcon from '../../components/icons/IdeaLightbulbIcon';
 import CursorClickIcon from '../../components/icons/CursorClickIcon';
 import HandshakeHeartIcon from '../../components/icons/HandshakeHeartIcon';
+import { sonMismaAsignatura, getAsignaturaNombre } from '../../constants/asignaturas';
 
 interface Evidencia {
   id: number;
@@ -24,16 +25,16 @@ interface Evidencia {
 }
 
 const getDescriptorText = (ev: Evidencia): string[] => {
-    if (ev.descriptores && ev.descriptores.length > 0) {
-        return ev.descriptores;
-    }
-    if (ev.puntaje !== null && (!ev.eval_detalle?.rubricaData && !ev.eval_detalle?.cotejoData)) {
-        if (ev.puntaje === 100) return ["Demuestra el indicador completo, correctamente y con autonomía."];
-        if (ev.puntaje === 85) return ["Demuestra el indicador completo, pero presenta alguna dificultad, imprecisión o necesidad de orientación."];
-        if (ev.puntaje === 70) return ["Demuestra una parte del indicador, pero aún no alcanza el desempeño completo."];
-        if (ev.puntaje === 55) return ["Muestra evidencia limitada del indicador y todavía necesita apoyo para alcanzarlo."];
-    }
-    return [];
+  if (ev.descriptores && ev.descriptores.length > 0) {
+    return ev.descriptores;
+  }
+  if (ev.puntaje !== null && (!ev.eval_detalle?.rubricaData && !ev.eval_detalle?.cotejoData)) {
+    if (ev.puntaje === 100) return ['Demuestra el indicador completo, correctamente y con autonomía.'];
+    if (ev.puntaje === 85) return ['Demuestra el indicador completo, pero presenta alguna dificultad, imprecisión o necesidad de orientación.'];
+    if (ev.puntaje === 70) return ['Demuestra una parte del indicador, pero aún no alcanza el desempeño completo.'];
+    if (ev.puntaje === 55) return ['Muestra evidencia limitada del indicador y todavía necesita apoyo para alcanzarlo.'];
+  }
+  return [];
 };
 
 interface Incidencia {
@@ -43,17 +44,62 @@ interface Incidencia {
   descripcion: string;
 }
 
-import { SIETE_ASIGNATURAS_OFICIALES, sonMismaAsignatura } from '../../constants/asignaturas';
+const BC_RING_THEMES: Record<string, { stroke: string; track: string; fill: string; badgeBg: string; badgeText: string; badgeBorder: string; tagBg: string; tagText: string; tagBorder: string }> = {
+  BC1: {
+    stroke: '#537BAC',
+    track: '#537BAC28',
+    fill: '#537BAC12',
+    badgeBg: 'bg-[#537BAC]/15',
+    badgeText: 'text-[#2C4F7C]',
+    badgeBorder: 'border-[#537BAC]/40',
+    tagBg: 'bg-[#537BAC]/12',
+    tagText: 'text-[#2C4F7C]',
+    tagBorder: 'border-[#537BAC]/35',
+  },
+  BC2: {
+    stroke: '#689C63',
+    track: '#689C6328',
+    fill: '#689C6312',
+    badgeBg: 'bg-[#689C63]/15',
+    badgeText: 'text-[#3B6237]',
+    badgeBorder: 'border-[#689C63]/40',
+    tagBg: 'bg-[#689C63]/14',
+    tagText: 'text-[#3B6237]',
+    tagBorder: 'border-[#689C63]/35',
+  },
+  BC3: {
+    stroke: '#EB8847',
+    track: '#EB884728',
+    fill: '#EB884712',
+    badgeBg: 'bg-[#EB8847]/15',
+    badgeText: 'text-[#9B4F1E]',
+    badgeBorder: 'border-[#EB8847]/40',
+    tagBg: 'bg-[#EB8847]/14',
+    tagText: 'text-[#9B4F1E]',
+    tagBorder: 'border-[#EB8847]/35',
+  },
+  BC4: {
+    stroke: '#DEAE4D',
+    track: '#DEAE4D30',
+    fill: '#DEAE4D14',
+    badgeBg: 'bg-[#DEAE4D]/22',
+    badgeText: 'text-[#7A5612]',
+    badgeBorder: 'border-[#DEAE4D]/45',
+    tagBg: 'bg-[#DEAE4D]/20',
+    tagText: 'text-[#7A5612]',
+    tagBorder: 'border-[#DEAE4D]/40',
+  },
+};
 
 export default function PortalEstudiante() {
-  const { 
-    sessionToken, 
-    asignaturas, 
-    selectedPeriodo, 
+  const {
+    sessionToken,
+    asignaturas,
+    selectedPeriodo,
     setSelectedPeriodo,
     selectedAsignatura,
     estudianteContext,
-    portalConfig
+    portalConfig,
   } = usePortal();
 
   // Si no viene seleccionada en el contexto, tomar la primera con docente o primera de la lista
@@ -75,7 +121,7 @@ export default function PortalEstudiante() {
     mostrar_recuperacion: true,
     published_until: null,
   };
-  const activeOficial = SIETE_ASIGNATURAS_OFICIALES.find(o => sonMismaAsignatura(o.nombre, activeMateria));
+
   const visiblePeriods = React.useMemo(() => {
     if (portalConfig?.periodos_visibles && Array.isArray(portalConfig.periodos_visibles) && portalConfig.periodos_visibles.length > 0) {
       return (['P1', 'P2', 'P3', 'P4'] as Periodo[]).filter(p => portalConfig.periodos_visibles.includes(p));
@@ -89,7 +135,6 @@ export default function PortalEstudiante() {
     }
   }, [visiblePeriods, selectedPeriodo, setSelectedPeriodo]);
 
-
   useEffect(() => {
     if (!sessionToken || !activeMateria) return;
     const controller = new AbortController();
@@ -102,21 +147,21 @@ export default function PortalEstudiante() {
           supabase.rpc('portal_get_evidencias', {
             p_session_token: sessionToken,
             p_periodo: selectedPeriodo,
-            p_asignatura: activeMateria
+            p_asignatura: activeMateria,
           }),
           supabase.rpc('portal_get_incidencias', {
             p_session_token: sessionToken,
             p_periodo: selectedPeriodo,
-            p_asignatura: activeMateria
-          })
+            p_asignatura: activeMateria,
+          }),
         ]);
-        
+
         if (evidenciasRes.error) throw evidenciasRes.error;
         if (evidenciasRes.data && evidenciasRes.data.error) throw new Error(evidenciasRes.data.error);
 
         if (incidenciasRes.error) throw incidenciasRes.error;
         if (incidenciasRes.data && incidenciasRes.data.error) throw new Error(incidenciasRes.data.error);
-        
+
         setEvidencias(evidenciasRes.data || []);
         setIncidencias(incidenciasRes.data || []);
       } catch (err: any) {
@@ -138,11 +183,11 @@ export default function PortalEstudiante() {
 
   const bcsData = React.useMemo(() => {
     const bcs = ['BC1', 'BC2', 'BC3', 'BC4'] as const;
-    const results: Record<string, { puntaje: number | null, evidencias: Evidencia[] }> = {
+    const results: Record<string, { puntaje: number | null; evidencias: Evidencia[] }> = {
       BC1: { puntaje: null, evidencias: [] },
       BC2: { puntaje: null, evidencias: [] },
       BC3: { puntaje: null, evidencias: [] },
-      BC4: { puntaje: null, evidencias: [] }
+      BC4: { puntaje: null, evidencias: [] },
     };
 
     const courseActs = evidencias.filter(e => e.puntaje !== null && e.puntaje !== undefined && !isNaN(Number(e.puntaje)));
@@ -157,26 +202,29 @@ export default function PortalEstudiante() {
     return results;
   }, [evidencias]);
 
-  const renderCompetencyRing = (title: string, icon: string | React.ReactNode, value: number | null) => {
+  const renderCompetencyRing = (bcKey: 'BC1' | 'BC2' | 'BC3' | 'BC4', title: string, icon: string | React.ReactNode, value: number | null) => {
     const radius = 24;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = value !== null ? circumference - (value / 100) * circumference : circumference;
 
     const displayValue = activeAsignaturaConfig?.mostrar_puntajes ? value : null;
+    const theme = BC_RING_THEMES[bcKey] || BC_RING_THEMES.BC1;
 
     return (
       <div className="flex flex-col items-center text-center">
         <div className="relative w-14 h-14 flex items-center justify-center">
           <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-            <circle cx="28" cy="28" r="24" stroke="#e4e2e1" strokeWidth="3" fill="transparent" />
-            <circle 
-              cx="28" cy="28" r="24" 
-              stroke="#18181b" 
-              strokeWidth="3" 
-              strokeLinecap="round" 
-              strokeDasharray={circumference} 
-              strokeDashoffset={displayValue !== null ? strokeDashoffset : circumference} 
-              fill="transparent" 
+            <circle cx="28" cy="28" r="24" stroke={theme.track} strokeWidth="3.5" fill={theme.fill} />
+            <circle
+              cx="28"
+              cy="28"
+              r="24"
+              stroke={theme.stroke}
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={displayValue !== null ? strokeDashoffset : circumference}
+              fill="transparent"
               className="transition-all duration-500"
             />
           </svg>
@@ -192,7 +240,7 @@ export default function PortalEstudiante() {
           </div>
         </div>
         <span className="text-[9px] font-bold tracking-tight mt-1 leading-tight line-clamp-1 text-black">{title}</span>
-        <span className="text-[9px] font-mono font-bold border border-black px-1.5 py-0.5 rounded-md mt-0.5 bg-stone-50 text-black">
+        <span className={`text-[9px] font-mono font-bold border px-1.5 py-0.5 rounded-md mt-0.5 ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
           {displayValue !== null ? `${displayValue}/100` : '--/--'}
         </span>
       </div>
@@ -206,8 +254,6 @@ export default function PortalEstudiante() {
   };
 
   if (!asignaturas.length) {
-    // Antes `return null`: sin Publishing configurado el Portal se quedaba en
-    // blanco sin decir nada. Ahora es un estado que el estudiante puede leer.
     return (
       <div className="px-5 pt-10 pb-28 text-center">
         <p className="text-base font-black text-black">Todavía no hay nada publicado</p>
@@ -220,9 +266,8 @@ export default function PortalEstudiante() {
 
   return (
     <div className="px-5 pt-4 pb-28 space-y-6">
-      
       <section className="space-y-3.5" data-purpose="student-id-card">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div className="space-y-0.5">
             <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider font-mono">
               {[estudianteContext?.grado, estudianteContext?.seccion ? `Sec. ${estudianteContext.seccion}` : null].filter(Boolean).join(' • ') || 'Estudiante'}
@@ -231,10 +276,9 @@ export default function PortalEstudiante() {
               {[estudianteContext?.nombre, estudianteContext?.apellido].filter(Boolean).join(' ') || 'Estudiante'}
             </h1>
           </div>
-          
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-stone-200 bg-stone-50 shadow-xs">
-            <span className="text-xs">{activeOficial?.icono || '📖'}</span>
-            <span className="text-xs font-bold text-stone-900">{activeMateria}</span>
+
+          <div className="flex items-center justify-center px-3.5 py-1.5 rounded-full border border-[#537BAC]/30 bg-[#537BAC]/12">
+            <span className="text-xs font-bold text-[#1B1F2A]">{getAsignaturaNombre(activeMateria)}</span>
           </div>
         </div>
       </section>
@@ -242,15 +286,15 @@ export default function PortalEstudiante() {
       <section className="space-y-3" data-purpose="academic-metrics">
         <div className="flex items-center justify-between pt-1">
           <h2 className="text-xs font-bold tracking-wider text-black uppercase">Período Académico</h2>
-          <div className="flex gap-1.5 p-1 rounded-full border border-stone-200 bg-stone-50">
+          <div className="flex gap-1.5 p-1 rounded-full border border-[#BFC9A6]/55 bg-[#FCFCFA]">
             {visiblePeriods.map(p => (
-              <button 
+              <button
                 key={p}
                 onClick={() => setSelectedPeriodo(p)}
-                className={`w-7 h-7 rounded-full text-xs flex items-center justify-center border-2 transition ${
-                  selectedPeriodo === p 
-                    ? 'bg-black text-white font-bold border-transparent' 
-                    : 'text-stone-600 font-medium hover:bg-stone-200 border-transparent'
+                className={`w-7 h-7 rounded-full text-xs flex items-center justify-center border transition ${
+                  selectedPeriodo === p
+                    ? 'bg-[#689C63] text-white font-bold border-transparent'
+                    : 'text-[#1B1F2A] font-medium hover:bg-[#BFC9A6]/30 border-transparent'
                 }`}
               >
                 {p}
@@ -267,15 +311,15 @@ export default function PortalEstudiante() {
       )}
 
       {error && !loading && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-center">
-          <p className="text-red-600 text-xs font-bold">{error}</p>
+        <div className="p-4 bg-[#DB5B48]/12 border border-[#DB5B48]/35 rounded-xl text-center">
+          <p className="text-[#9E3525] text-xs font-bold">{error}</p>
         </div>
       )}
 
       {!loading && !error && activeAsignaturaConfig && (
         <>
           <section className="space-y-2" data-purpose="rpg-competency-stats">
-            <div className="relative border border-black rounded-2xl p-3 bg-white">
+            <div className="relative border border-black rounded-2xl p-3.5 bg-[#FCFCFA]">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-2">
                   <h2 className="text-xs font-bold tracking-wider uppercase font-mono text-black">LOGRO POR COMPETENCIA</h2>
@@ -283,23 +327,27 @@ export default function PortalEstudiante() {
               </div>
               <div className="grid grid-cols-4 gap-2 pt-1 pb-1">
                 {renderCompetencyRing(
+                  'BC1',
                   'Comunicativa',
-                  <RetroMicIcon className="w-7 h-7 text-stone-700" />,
+                  <RetroMicIcon className="w-7 h-7 text-[#2C4F7C]" />,
                   bcsData.BC1.puntaje
                 )}
                 {renderCompetencyRing(
+                  'BC2',
                   'Pensamiento',
-                  <IdeaLightbulbIcon className="w-7 h-7 text-stone-700" />,
+                  <IdeaLightbulbIcon className="w-7 h-7 text-[#3B6237]" />,
                   bcsData.BC2.puntaje
                 )}
                 {renderCompetencyRing(
+                  'BC3',
                   'Científica',
-                  <CursorClickIcon className="w-7 h-7 text-stone-700" />,
+                  <CursorClickIcon className="w-7 h-7 text-[#9B4F1E]" />,
                   bcsData.BC3.puntaje
                 )}
                 {renderCompetencyRing(
+                  'BC4',
                   'Ética y Ciudadana',
-                  <HandshakeHeartIcon className="w-7 h-7 text-stone-700" />,
+                  <HandshakeHeartIcon className="w-7 h-7 text-[#7A5612]" />,
                   bcsData.BC4.puntaje
                 )}
               </div>
@@ -310,50 +358,65 @@ export default function PortalEstudiante() {
             <section className="space-y-3" data-purpose="learning-evidence-missions">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-bold tracking-wider uppercase text-black">Evidencias de Aprendizaje</h2>
-                <span className="text-xs font-bold border border-black px-2.5 py-0.5 rounded-full bg-[#BFC9A6]/25 text-[#1B1F2A]">
+                <span className="text-xs font-bold border border-[#689C63]/35 px-2.5 py-0.5 rounded-full bg-[#BFC9A6]/35 text-[#1B1F2A]">
                   {evidencias.length} Actividad{evidencias.length !== 1 && 'es'}
                 </span>
               </div>
-              
+
               {evidencias.map(ev => {
                 const isEvaluated = ev.puntaje !== null || (ev.descriptores && ev.descriptores.length > 0) || ev.eval_detalle;
                 const statusText = !isEvaluated ? 'Pendiente' : (activeAsignaturaConfig.mostrar_puntajes && ev.puntaje !== null) ? `${ev.puntaje} %` : 'Evaluada';
                 const finalDescriptores = getDescriptorText(ev);
-                
+
                 return (
-                <article key={ev.id} className="border border-black rounded-2xl overflow-hidden bg-white">
-                  <div className="p-3.5 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-stone-500">{ev.fecha}</span>
-                      <span className={`text-base font-black tracking-tight ${!isEvaluated ? 'text-stone-400' : 'text-[#689C63]'}`}>{statusText}</span>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black text-black">{ev.nombre}</h3>
-                    </div>
-                    {finalDescriptores.length > 0 || ev.indicador ? (
-                      <div className="rounded-xl p-2.5 text-xs border border-stone-200 space-y-1 bg-stone-50">
-                        {ev.indicador && <p className="text-[11px] font-bold text-stone-700">{ev.indicador}</p>}
-                        {finalDescriptores.map((desc, i) => (
-                          <p key={i} className="text-[11px] leading-relaxed text-stone-700 font-medium">"{mapDescriptores(desc)}"</p>
-                        ))}
+                  <article key={ev.id} className="border border-black rounded-2xl overflow-hidden bg-white">
+                    <div className="p-3.5 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-stone-500">{ev.fecha}</span>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-black tracking-tight border ${
+                            !isEvaluated
+                              ? 'bg-[#DEAE4D]/18 text-[#7A5612] border-[#DEAE4D]/40'
+                              : 'bg-[#689C63]/15 text-[#2E572A] border-[#689C63]/35'
+                          }`}
+                        >
+                          {statusText}
+                        </span>
                       </div>
-                    ) : (
+                      <div>
+                        <h3 className="text-sm font-black text-black">{ev.nombre}</h3>
+                      </div>
+                      {finalDescriptores.length > 0 || ev.indicador ? (
+                        <div className="rounded-xl p-2.5 text-xs border border-[#BFC9A6]/50 space-y-1 bg-[#FCFCFA]">
+                          {ev.indicador && <p className="text-[11px] font-bold text-stone-800">{ev.indicador}</p>}
+                          {finalDescriptores.map((desc, i) => (
+                            <p key={i} className="text-[11px] leading-relaxed text-stone-700 font-medium">"{mapDescriptores(desc)}"</p>
+                          ))}
+                        </div>
+                      ) : (
                         isEvaluated ? <p className="text-[11px] mt-0.5 italic text-stone-500">Evaluada sin descriptores detallados.</p> : null
-                    )}
-                  </div>
-                  {ev.bcAsignados && ev.bcAsignados.length > 0 && (
-                    <div className="border-t border-stone-200 p-3 flex flex-wrap items-center justify-between gap-2 bg-stone-50">
-                      <div className="flex flex-wrap gap-1.5">
-                        {ev.bcAsignados.map((bc: string) => (
-                          <span key={bc} className="px-2.5 py-0.5 rounded-full border border-stone-300 text-[10px] font-medium bg-white text-stone-700">
-                            #{bc === 'BC1' ? 'Comunicativa' : bc === 'BC2' ? 'PensamientoLógico' : bc === 'BC3' ? 'Científica' : 'ÉticaYCiudadana'}
-                          </span>
-                        ))}
-                      </div>
+                      )}
                     </div>
-                  )}
-                </article>
-              )})}
+                    {ev.bcAsignados && ev.bcAsignados.length > 0 && (
+                      <div className="border-t border-stone-200 p-3 flex flex-wrap items-center justify-between gap-2 bg-[#FCFCFA]">
+                        <div className="flex flex-wrap gap-1.5">
+                          {ev.bcAsignados.map((bc: string) => {
+                            const theme = BC_RING_THEMES[bc] || BC_RING_THEMES.BC1;
+                            return (
+                              <span
+                                key={bc}
+                                className={`px-2.5 py-0.5 rounded-full border text-[10px] font-bold ${theme.tagBg} ${theme.tagText} ${theme.tagBorder}`}
+                              >
+                                #{bc === 'BC1' ? 'Comunicativa' : bc === 'BC2' ? 'PensamientoLógico' : bc === 'BC3' ? 'Científica' : 'ÉticaYCiudadana'}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </section>
           )}
 
@@ -363,13 +426,13 @@ export default function PortalEstudiante() {
               <div className="space-y-2">
                 {incidencias.map(inc => (
                   <div key={inc.id} className="border border-black rounded-2xl p-3 flex gap-3 items-start bg-white">
-                    <div className="w-9 h-9 rounded-full border border-black flex items-center justify-center text-[#DB5B48] shrink-0 bg-[#DB5B48]/15">
+                    <div className="w-9 h-9 rounded-full border border-[#DB5B48]/40 flex items-center justify-center text-[#DB5B48] shrink-0 bg-[#DB5B48]/15">
                       <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>flag</span>
                     </div>
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold text-stone-500">{inc.fecha}</span>
-                        <span className="px-2 py-0.5 border border-black text-[9px] font-bold rounded-full bg-[#DEAE4D]/20 text-[#1B1F2A]">
+                        <span className="px-2.5 py-0.5 border border-[#DEAE4D]/45 text-[9px] font-bold rounded-full bg-[#DEAE4D]/22 text-[#1B1F2A]">
                           {inc.categoria.toUpperCase()}
                         </span>
                       </div>
@@ -380,8 +443,6 @@ export default function PortalEstudiante() {
               </div>
             </section>
           )}
-
-
         </>
       )}
 
