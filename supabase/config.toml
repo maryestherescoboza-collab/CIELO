@@ -14,3 +14,9 @@ entrypoint = "./functions/paypal-verify-subscription/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/paypal-webhook/index.ts"
+
+[functions.cielo-mcp]
+enabled = true
+verify_jwt = false
+import_map = "./functions/cielo-mcp/deno.json"
+entrypoint = "./functions/cielo-mcp/index.ts"

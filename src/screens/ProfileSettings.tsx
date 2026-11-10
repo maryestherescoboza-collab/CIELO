@@ -3,10 +3,11 @@ import {
   User, Briefcase, Shield, Palette, Sparkles, GraduationCap,
   X, Camera, Eye, EyeOff,
   CheckCircle, AlertCircle, Loader2, LogOut,
-  Building2, Search, PlusCircle, Check, CreditCard
+  Building2, Search, PlusCircle, Check, CreditCard, Bot
 } from 'lucide-react';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import PortalSettingsTab from '../components/settings/PortalSettingsTab';
+import { IntegracionesChatGPTTab } from '../components/settings/IntegracionesChatGPTTab';
 import { WhatsAppIcon } from '../components/icons/WhatsAppIcon';
 import { CieloModal } from '../components/ui/CieloModal';
 import { usePremiumAccess } from '../hooks/usePremiumAccess';
@@ -43,7 +44,7 @@ interface ProfileSettingsProps {
   centroNombre?: string;
 }
 
-type SectionId = 'perfil' | 'profesional' | 'seguridad' | 'portal' | 'ia' | 'apariencia' | 'plan';
+type SectionId = 'perfil' | 'profesional' | 'seguridad' | 'portal' | 'ia' | 'chatgpt' | 'apariencia' | 'plan';
 
 const AVATAR_COLORS = [
   '#2D3436', '#D03817', '#E6991F', '#0F753D', '#3b82f6', '#8b5cf6',
@@ -189,6 +190,10 @@ export default function ProfileSettings({
                    <IntegrarIATab session={session} />
                  )}
 
+                {activeSection === 'chatgpt' && (
+                   <IntegracionesChatGPTTab session={session} />
+                 )}
+
                 {activeSection === 'apariencia' && (
                    <AparienciaTab 
                      docenteNombre={docenteNombre}
@@ -272,6 +277,7 @@ const Sidebar = React.memo(function Sidebar({
         <NavItem id="seguridad" label="Seguridad" icon={<Shield size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
         <NavItem id="portal" label="Portal del estudiante" icon={<GraduationCap size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
         <NavItem id="ia" label="Integrar IA" icon={<Sparkles size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
+        <NavItem id="chatgpt" label="Integración ChatGPT" icon={<Bot size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
         <NavItem id="apariencia" label="Apariencia" icon={<Palette size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
         <NavItem id="plan" label="Plan y suscripción" icon={<CreditCard size={16} />} activeSection={activeSection} onSectionChange={onSectionChange} />
       </nav>
@@ -307,6 +313,7 @@ function Header({ activeSection, onClose }: { activeSection: SectionId; onClose:
     'seguridad': 'Seguridad y Acceso',
     'portal': 'Portal del Estudiante',
     'ia': 'Integración de IA',
+    'chatgpt': 'Integración con ChatGPT (MCP)',
     'apariencia': 'Personalización Visual',
     'plan': 'Plan y Suscripción'
   };
