@@ -44,10 +44,9 @@ export function LandingHero() {
           className="max-w-4xl mx-auto"
         >
           <motion.div variants={itemVariants} className="mb-6 flex justify-center">
-            <div className="inline-flex items-center gap-2 bg-[#EAE4DA]/50 px-5 py-2.5 rounded-full border border-black/5 shadow-sm backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-[#EB8847] animate-pulse" />
-              <span className="text-xs font-bold text-[#5F665E] uppercase tracking-widest">
-                Acceso prioritario para evaluar en fase beta
+            <div className="inline-flex items-center bg-[#EAE4DA]/50 px-5 py-2.5 rounded-full border border-black/5 shadow-sm backdrop-blur-md max-w-full">
+              <span className="text-[11px] sm:text-xs font-bold text-[#5F665E] uppercase tracking-wider sm:tracking-widest text-center">
+                ÚNICA PLATAFORMA EN RD QUE SE ENFOCA EN LA EVALUACIÓN POR COMPETENCIAS
               </span>
             </div>
           </motion.div>

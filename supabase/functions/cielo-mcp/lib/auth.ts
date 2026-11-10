@@ -58,23 +58,47 @@ export async function authenticateAndResolveContext(
     auth: { persistSession: false },
   });
 
-  // Validar el token contra Supabase Auth
-  const { data: userData, error: userError } = await adminClient.auth.getUser(token);
-  if (userError || !userData?.user) {
-    throw new MCPAuthorizationError(
-      `Token de CIELO inválido o expirado: ${userError?.message || 'Usuario no autenticado'}`,
-      'UNAUTHORIZED',
-      401
-    );
+  // 1. Primero intentar validar contra tokens persistentes OAuth en mcp_oauth_tokens
+  let resolvedUserId: string | null = null;
+  let resolvedEmail: string | undefined = undefined;
+
+  const { data: oauthRecord } = await adminClient
+    .from('mcp_oauth_tokens')
+    .select('user_id, revoked, token_expires_at')
+    .eq('access_token', token)
+    .single();
+
+  if (oauthRecord) {
+    if (oauthRecord.revoked) {
+      throw new MCPAuthorizationError('Token OAuth de CIELO revocado.', 'TOKEN_REVOKED', 401);
+    }
+    if (oauthRecord.token_expires_at && new Date(oauthRecord.token_expires_at).getTime() < Date.now()) {
+      throw new MCPAuthorizationError('Token OAuth de CIELO expirado. Requiere refresco.', 'TOKEN_EXPIRED', 401);
+    }
+    resolvedUserId = oauthRecord.user_id;
   }
 
-  const user = userData.user;
+  // 2. Si no es un token OAuth dedicado, validar como Supabase Auth JWT estándar
+  if (!resolvedUserId) {
+    const { data: userData, error: userError } = await adminClient.auth.getUser(token);
+    if (userError || !userData?.user) {
+      throw new MCPAuthorizationError(
+        `Token de CIELO inválido o expirado: ${userError?.message || 'Usuario no autenticado'}`,
+        'UNAUTHORIZED',
+        401
+      );
+    }
+    resolvedUserId = userData.user.id;
+    resolvedEmail = userData.user.email;
+  }
+
+  const userId = resolvedUserId;
 
   // Consultar perfil del docente
   const { data: perfil, error: perfilError } = await adminClient
     .from('perfiles')
     .select('user_id, nombre, nombre_docente, centro_id, rol')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single();
 
   if (perfilError || !perfil) {
@@ -94,7 +118,7 @@ export async function authenticateAndResolveContext(
     const { data: cRol } = await adminClient
       .from('centro_roles')
       .select('rol')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('centro_id', centroId)
       .single();
 
@@ -104,9 +128,9 @@ export async function authenticateAndResolveContext(
   }
 
   const authContext: AuthenticatedContext = {
-    userId: user.id,
-    email: user.email,
-    nombreDocente: perfil.nombre_docente || perfil.nombre || user.email || 'Docente CIELO',
+    userId,
+    email: resolvedEmail,
+    nombreDocente: perfil.nombre_docente || perfil.nombre || resolvedEmail || 'Docente CIELO',
     centroId,
     rolGlobal,
     isCentroAdmin,

@@ -82,3 +82,22 @@ export interface AuditLogEntry {
   details?: string;
 }
 
+export interface McpOAuthTokenRecord {
+  id: string;
+  user_id: string;
+  centro_id: string | null;
+  client_id: string;
+  code_hash?: string | null;
+  code_challenge?: string | null;
+  code_challenge_method?: string | null;
+  code_expires_at?: string | null;
+  code_used?: boolean;
+  access_token?: string | null;
+  refresh_token?: string | null;
+  scope?: string | null;
+  token_expires_at?: string | null;
+  revoked?: boolean;
+  revoked_at?: string | null;
+}
+
+

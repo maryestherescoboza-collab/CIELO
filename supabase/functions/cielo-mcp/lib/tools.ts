@@ -13,6 +13,9 @@ export const CIELO_TOOLS_DEFINITIONS = [
     name: 'cielo_perfil',
     description:
       'Consulta la identidad, centro educativo y rol del docente autenticado en CIELO.',
+    readOnlyHint: true,
+    destructiveHint: false,
+    openWorldHint: false,
     inputSchema: {
       type: 'object',
       properties: {},
@@ -23,6 +26,9 @@ export const CIELO_TOOLS_DEFINITIONS = [
     name: 'cielo_listar_cursos',
     description:
       'Lista los cursos, grados, secciones y asignaturas autorizados para el docente autenticado.',
+    readOnlyHint: true,
+    destructiveHint: false,
+    openWorldHint: false,
     inputSchema: {
       type: 'object',
       properties: {},
@@ -33,6 +39,9 @@ export const CIELO_TOOLS_DEFINITIONS = [
     name: 'cielo_listar_estudiantes',
     description:
       'Consulta el listado de estudiantes de un curso asignado al docente. Soporta paginación y filtro de búsqueda por nombre o número.',
+    readOnlyHint: true,
+    destructiveHint: false,
+    openWorldHint: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -48,6 +57,9 @@ export const CIELO_TOOLS_DEFINITIONS = [
     name: 'cielo_consultar_estudiante',
     description:
       'Consulta el expediente académico de un estudiante autorizado en un curso del docente.',
+    readOnlyHint: true,
+    destructiveHint: false,
+    openWorldHint: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -61,6 +73,9 @@ export const CIELO_TOOLS_DEFINITIONS = [
     name: 'cielo_consultar_actividades',
     description:
       'Consulta las actividades evaluativas registradas en un curso, con filtro opcional por período o asignatura.',
+    readOnlyHint: true,
+    destructiveHint: false,
+    openWorldHint: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -75,6 +90,9 @@ export const CIELO_TOOLS_DEFINITIONS = [
     name: 'cielo_consultar_calificaciones',
     description:
       'Consulta las calificaciones registradas de una actividad o de un estudiante en un curso.',
+    readOnlyHint: true,
+    destructiveHint: false,
+    openWorldHint: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -90,6 +108,9 @@ export const CIELO_TOOLS_DEFINITIONS = [
     name: 'cielo_crear_actividad',
     description:
       'Crea una nueva actividad pedagógica en CIELO asociada a competencias y producto/evidencia. REQUIERE CONFIRMACIÓN EXPLÍCITA (confirmado: true). Si confirmado no es true, devuelve la vista previa para que el usuario la autorice.',
+    readOnlyHint: false,
+    destructiveHint: false,
+    openWorldHint: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -119,6 +140,9 @@ export const CIELO_TOOLS_DEFINITIONS = [
     name: 'cielo_registrar_calificacion',
     description:
       'Registra o actualiza la calificación de un estudiante en una actividad. REQUIERE CONFIRMACIÓN EXPLÍCITA (confirmado: true).',
+    readOnlyHint: false,
+    destructiveHint: false,
+    openWorldHint: false,
     inputSchema: {
       type: 'object',
       properties: {
@@ -144,6 +168,9 @@ export const CIELO_TOOLS_DEFINITIONS = [
     name: 'cielo_generar_reporte',
     description:
       'Genera el resumen de rendimiento académico oficial por curso, asignatura y competencias (BC1-BC4) según las fórmulas oficiales de CIELO.',
+    readOnlyHint: true,
+    destructiveHint: false,
+    openWorldHint: false,
     inputSchema: {
       type: 'object',
       properties: {
