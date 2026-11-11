@@ -5,7 +5,6 @@ import { InteractiveDemo } from './components/InteractiveDemo';
 import { LandingFeatures } from './components/LandingFeatures';
 import { LandingPricing } from './components/LandingPricing';
 import { LandingCTA } from './components/LandingCTA';
-import { LandingVideo } from './components/LandingVideo';
 import { EnvioCoordinacionSection } from './components/EnvioCoordinacionSection';
 import { useEffect } from 'react';
 import { ReactLenis } from 'lenis/react';
@@ -23,7 +22,6 @@ export default function Landing() {
         
         <main className="flex-1">
           <LandingHero />
-          <LandingVideo />
           <InteractiveDemo />
           <EnvioCoordinacionSection />
           <LandingFeatures />
