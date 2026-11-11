@@ -384,10 +384,8 @@ export function validarPregunta(
     if (pasos.length > 0) {
         const totalEspacios = pasos.reduce((n, p) => n + p.espacios.length, 0);
 
-        // Un procedimiento sin NINGUN hueco no se puede responder: el motor
-        // nunca lo daria por correcto y el estudiante se quedaria pulsando
-        // "Comprobar" sin feedback posible. Es el error de authoring mas
-        // silencioso que hay, asi que se corta aqui y no en el Portal.
+        // Un procedimiento sin ningún hueco no se puede responder:
+        // Se valida solo si hay pasos definidos.
         if (totalEspacios === 0) {
             avisos.push({
                 nivel: 'error',
@@ -406,8 +404,6 @@ export function validarPregunta(
             });
         }
 
-        // El texto del paso y sus espacios se cuentan por posicion: si no
-        // coinciden, el estudiante ve huecos que no puede responder.
         pasos.forEach((paso, i) => {
             const marcados = contarHuecos(paso.texto);
             if (marcados !== paso.espacios.length) {
@@ -420,12 +416,12 @@ export function validarPregunta(
         return avisos;
     }
 
-    // ── La clave son las opciones marcadas: no se exige respuestaEsperada ──
+    // ── La clave son las opciones marcadas ──
     if (RESPUESTA_EN_OPCIONES.includes(tipoActividad)) {
         if (totalOpciones === 0) {
             avisos.push({ nivel: 'error', mensaje: 'Agrega al menos una opción.' });
         } else if (opcionesMarcadas === 0) {
-            avisos.push({ nivel: 'error', mensaje: 'Marca al menos una opción correcta.' });
+            avisos.push({ nivel: 'error', mensaje: 'Marca la opción correcta.' });
         }
         return avisos;
     }

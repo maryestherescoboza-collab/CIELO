@@ -66,7 +66,6 @@ export const TIPOS_ACTIVIDAD_V1: TipoActividad[] = [
     'verdadero_falso',
     'completar',
     'respuesta_numerica',
-    'respuesta_escrita',
     'procedimiento_matematico',
 ];
 
@@ -328,15 +327,18 @@ export function normalizarOpcionesVerdaderoFalso(
             .toLowerCase();
 
     const idxVerdadero = lista.findIndex((o) => normalizado(o.texto) === 'verdadero');
+    const idxFalso = lista.findIndex((o) => normalizado(o.texto) === 'falso');
 
-    // Si ninguna opción se llama "Verdadero" no se promueve la primera: eso
-    // dejaría como correcta una opción arbitraria, justo lo que la regla
-    // prohíbe. Se devuelve el par canónico, que además es lo que el trigger
-    // `trg_ruta_opcion_verdadero_falso` acaba garantizando en la base, para que
-    // lo que ve el docente y lo que guarda no se contradigan.
-    if (idxVerdadero < 0) return opcionesVerdaderoFalso();
+    if (idxVerdadero < 0 || idxFalso < 0) return opcionesVerdaderoFalso();
 
-    return lista.map((o, i) => ({ ...o, es_correcta: i === idxVerdadero }));
+    // Si ya tiene una marcada como correcta (sea Verdadero o Falso), la respetamos
+    const tieneMarcada = lista.some((o) => o.es_correcta);
+    if (!tieneMarcada) {
+        // Por defecto, marcamos Verdadero si ninguna estaba seleccionada
+        return lista.map((o, i) => ({ ...o, es_correcta: i === idxVerdadero }));
+    }
+
+    return lista;
 }
 
 export interface PreguntaDocente {

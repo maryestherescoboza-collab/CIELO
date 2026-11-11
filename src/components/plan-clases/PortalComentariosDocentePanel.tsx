@@ -75,30 +75,54 @@ export function PortalComentariosDocentePanel({ abierto, onCerrar, notaId }: Por
     if (!nuevoTexto.trim() || !selectedCursoId) return;
 
     setEnviando(true);
-    const { error } = await supabase
-      .from('ficha_comentarios')
-      .insert({
-        nota_id: notaId,
-        curso_id: selectedCursoId,
-        user_id: session?.user?.id,
-        texto: nuevoTexto.trim()
-      });
+    const textoAEnviar = nuevoTexto.trim();
+    const tempId = crypto.randomUUID();
+    const optimisticComment = {
+      id: tempId,
+      texto: textoAEnviar,
+      created_at: new Date().toISOString(),
+      user_id: session?.user?.id,
+      estudiante_id: null,
+      estudiantes: null
+    };
 
-    if (!error) {
-      setNuevoTexto('');
-      // Reload comments
-      const { data } = await supabase
+    // Actualización inmediata en UI
+    setComentarios(prev => [...prev, optimisticComment]);
+    setNuevoTexto('');
+
+    try {
+      const { error } = await supabase
         .from('ficha_comentarios')
-        .select(`
-          id, texto, created_at, user_id, estudiante_id,
-          estudiantes(nombres, apellidos)
-        `)
-        .eq('nota_id', notaId)
-        .eq('curso_id', selectedCursoId)
-        .order('created_at', { ascending: true });
-      if (data) setComentarios(data);
+        .insert({
+          nota_id: notaId,
+          curso_id: selectedCursoId,
+          user_id: session?.user?.id,
+          texto: textoAEnviar
+        });
+
+      if (error) {
+        // Revertir optimismo si falla
+        setComentarios(prev => prev.filter(c => c.id !== tempId));
+        console.error('Error al insertar comentario docente:', error);
+      } else {
+        // Refrescar con datos confirmados del servidor
+        const { data } = await supabase
+          .from('ficha_comentarios')
+          .select(`
+            id, texto, created_at, user_id, estudiante_id,
+            estudiantes(nombres, apellidos)
+          `)
+          .eq('nota_id', notaId)
+          .eq('curso_id', selectedCursoId)
+          .order('created_at', { ascending: true });
+        if (data) setComentarios(data);
+      }
+    } catch (err) {
+      setComentarios(prev => prev.filter(c => c.id !== tempId));
+      console.error(err);
+    } finally {
+      setEnviando(false);
     }
-    setEnviando(false);
   };
 
   return (

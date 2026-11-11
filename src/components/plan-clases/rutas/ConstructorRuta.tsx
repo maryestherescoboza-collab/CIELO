@@ -43,7 +43,6 @@ import {
     esTipoActividadV1,
     opcionesVerdaderoFalso,
     normalizarOpcionesVerdaderoFalso,
-    TEXTO_VERDADERO_FALSO,
 } from '../../../types/rutas';
 import { rutaApiDocente } from '../../../lib/rutaApi';
 import { validarPregunta, validarRuta } from '../../../lib/rutaValidacion';
@@ -745,17 +744,6 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                         className="w-full text-[19px] font-bold tracking-tight text-[#2E3330] bg-transparent outline-none placeholder:text-[#2E3330]/25 mb-4"
                     />
 
-                    <label className="block text-[11px] font-bold uppercase tracking-wide text-[#2E3330]/55 mb-1.5">
-                        Descripción
-                    </label>
-                    <textarea
-                        value={descripcion}
-                        onChange={(e) => setDescripcion(e.target.value)}
-                        rows={2}
-                        placeholder="Qué logrará el estudiante al recorrer esta ruta."
-                        className="w-full text-[14px] text-[#2E3330]/75 bg-transparent outline-none placeholder:text-[#2E3330]/25 resize-y leading-relaxed"
-                    />
-
                     <div className="mt-4 pt-3 border-t border-[#2E3330]/8 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-[#2E3330]/55">
                         <span>
                             {etapas.length} etapa{etapas.length === 1 ? '' : 's'}
@@ -792,17 +780,29 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
 
                 {/* ── Etapas ── */}
                 <div className="space-y-3">
-                    {etapas.map((etapa, indiceEtapa) => (
+                    {etapas.map((etapa, indiceEtapa) => {
+                        const estaAbierta = etapaAbierta === etapa.id;
+                        return (
                         <section
                             key={etapa.id}
-                            className="bg-white rounded-2xl border border-[#2E3330]/10 overflow-hidden"
+                            className={`bg-white rounded-2xl border transition-all overflow-hidden ${
+                                estaAbierta
+                                    ? 'border-[#2E3330] shadow-sm'
+                                    : 'border-[#2E3330]/10 hover:border-[#2E3330]/25'
+                            }`}
                         >
-                            <div className="flex items-center gap-2 px-4 py-3">
-                                <span className="w-6 h-6 rounded-lg bg-[#2E3330] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                            <div 
+                                className="flex items-center gap-2 px-4 py-3 cursor-pointer select-none"
+                                onClick={() => setEtapaAbierta(estaAbierta ? null : etapa.id!)}
+                            >
+                                <span className={`w-6 h-6 rounded-lg text-[11px] font-bold flex items-center justify-center shrink-0 transition-colors ${
+                                    estaAbierta ? 'bg-[#2E3330] text-white' : 'bg-[#2E3330]/10 text-[#2E3330]'
+                                }`}>
                                     {indiceEtapa + 1}
                                 </span>
                                 <input
                                     value={etapa.titulo}
+                                    onClick={(e) => e.stopPropagation()}
                                     onChange={(e) => actualizarEtapaLocal(etapa.id!, { titulo: e.target.value })}
                                     onBlur={async () => {
                                         try {
@@ -814,14 +814,27 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                                     placeholder="Nombre de la etapa"
                                     className="flex-1 text-[15px] font-bold text-[#2E3330] bg-transparent outline-none placeholder:text-[#2E3330]/25 min-w-0"
                                 />
-                                <CampoPeso
-                                    valor={etapa.peso}
-                                    etiqueta={`Peso de la etapa ${indiceEtapa + 1} en la ruta, en porcentaje`}
-                                    onCommit={(peso) =>
-                                        peso !== null && actualizarEtapaLocal(etapa.id!, { peso })
-                                    }
-                                />
-                                <div className="flex items-center gap-0.5 shrink-0">
+                                <div onClick={(e) => e.stopPropagation()}>
+                                    <CampoPeso
+                                        valor={etapa.peso}
+                                        etiqueta={`Peso de la etapa ${indiceEtapa + 1} en la ruta, en porcentaje`}
+                                        onCommit={(peso) =>
+                                            peso !== null && actualizarEtapaLocal(etapa.id!, { peso })
+                                        }
+                                    />
+                                </div>
+                                <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                    <button
+                                        onClick={() => setEtapaAbierta(estaAbierta ? null : etapa.id!)}
+                                        className={`px-2.5 py-1 rounded-lg text-[12px] font-semibold transition-colors ${
+                                            estaAbierta
+                                                ? 'bg-[#2E3330] text-white'
+                                                : 'text-[#2E3330]/60 hover:text-[#2E3330] hover:bg-[#2E3330]/5'
+                                        }`}
+                                        aria-label={estaAbierta ? 'Cerrar etapa' : 'Abrir etapa'}
+                                    >
+                                        {estaAbierta ? 'Cerrar' : 'Editar'}
+                                    </button>
                                     <button
                                         onClick={() => moverEtapa(indiceEtapa, -1)}
                                         disabled={indiceEtapa === 0}
@@ -974,7 +987,8 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                                 </div>
                             )}
                         </section>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <button
@@ -1174,75 +1188,6 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
 
     return (
         <div className="border-t border-[#2E3330]/8 p-3.5 space-y-4">
-            {/*
-              No hay campo de Instrucciones. El enunciado de cada pregunta ya
-              dice que hacer y el titulo del item dice de que trata: un campo mas
-              era texto que el docente tenia que repetir en todos los items.
-
-              `instrucciones` NO se borra del objeto ni de la base: los items
-              antiguos que ya la tienen la conservan y siguen guardandola al
-              editar, asi que quitar el campo no destructura nada.
-            */}
-
-            <div className="rounded-xl border border-[#2E3330]/10 bg-white p-3 space-y-3">
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                    <input
-                        type="checkbox"
-                        checked={actividad.config.solicita_producto ?? false}
-                        onChange={(e) =>
-                            onChange({
-                                config: { ...actividad.config, solicita_producto: e.target.checked },
-                            })
-                        }
-                        className="mt-0.5"
-                    />
-                    <div>
-                        <span className="block text-[12px] font-bold text-[#2E3330]">
-                            Solicitar subir producto (Evidencia)
-                        </span>
-                        <span className="block text-[11px] text-[#2E3330]/50 mt-0.5 leading-relaxed">
-                            El estudiante tendrá un espacio para subir un archivo o enlazar su Google Drive en este ítem.
-                        </span>
-                    </div>
-                </label>
-
-                {(actividad.config.solicita_producto ?? false) && (
-                    <div className="pl-6 space-y-3 pt-2 border-t border-[#2E3330]/5">
-                        <label className="block">
-                            <span className="block text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-1">
-                                Nombre del producto
-                            </span>
-                            <input
-                                type="text"
-                                value={actividad.config.nombre_producto ?? ''}
-                                onChange={(e) =>
-                                    onChange({
-                                        config: { ...actividad.config, nombre_producto: e.target.value },
-                                    })
-                                }
-                                placeholder="Ej: Ensayo final, Presentación en PDF..."
-                                className="w-full px-3 py-2 text-[12px] font-semibold rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
-                            />
-                        </label>
-                        <label className="block">
-                            <span className="block text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-1">
-                                Instrucciones específicas (opcional)
-                            </span>
-                            <textarea
-                                value={actividad.config.instruccion_producto ?? ''}
-                                onChange={(e) =>
-                                    onChange({
-                                        config: { ...actividad.config, instruccion_producto: e.target.value },
-                                    })
-                                }
-                                placeholder="Describe qué esperas que entregue el estudiante..."
-                                rows={2}
-                                className="w-full px-3 py-2 text-[12px] font-semibold rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63] resize-y"
-                            />
-                        </label>
-                    </div>
-                )}
-            </div>
 
             {actividad.preguntas.map((pregunta, indice) => {
                 const pasos = pregunta.config.pasos ?? [];
@@ -1425,25 +1370,40 @@ function EditorOpciones({
     onChange: (opciones: PreguntaDocente['opciones']) => void;
     fija: boolean;
 }) {
-    // En Verdadero/Falso no hay nada que decidir: la correcta es SIEMPRE
-    // "Verdadero" y las dos opciones las ve el estudiante al responder. Se
-    // muestran como informacion, sin radio ni campos, para que no exista por
-    // donde marcar "Falso". El texto se imprime desde la constante para que no
-    // pueda desincronizarse de lo que el servidor da por correcto.
+    // En Verdadero/Falso se presentan las opciones fijas (Verdadero y Falso) y el docente
+    // puede elegir libremente cuál es la correcta.
     if (fija) {
         return (
             <div className="rounded-lg border border-[#2E3330]/10 bg-[#FAF9F7] px-3 py-2.5">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-1.5">
-                    Respuesta correcta
+                <p className="text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-2">
+                    Selecciona la respuesta correcta
                 </p>
-                <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#689C63]/15 px-2.5 py-1 text-[13px] font-bold text-[#4a7a46]">
-                        <Check size={13} /> {TEXTO_VERDADERO_FALSO.verdadero}
-                    </span>
-                    <span className="text-[11px] text-[#2E3330]/45">
-                        El estudiante ve las dos opciones; solo {TEXTO_VERDADERO_FALSO.verdadero.toLowerCase()} suma.
-                    </span>
+                <div className="flex flex-wrap items-center gap-3">
+                    {opciones.map((opcion, i) => (
+                        <label
+                            key={i}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${
+                                opcion.es_correcta
+                                    ? 'border-[#689C63] bg-[#689C63]/12 text-[#4a7a46] font-bold'
+                                    : 'border-[#2E3330]/10 bg-white text-[#2E3330]/70 hover:border-[#2E3330]/25'
+                            }`}
+                        >
+                            <input
+                                type="radio"
+                                name="vf_correcta"
+                                checked={opcion.es_correcta}
+                                onChange={() =>
+                                    onChange(opciones.map((o, j) => ({ ...o, es_correcta: j === i })))
+                                }
+                                className="accent-[#689C63]"
+                            />
+                            <span className="text-[13px]">{opcion.texto}</span>
+                        </label>
+                    ))}
                 </div>
+                <p className="text-[11px] text-[#2E3330]/45 mt-2">
+                    El estudiante verá ambas opciones en el portal; sumará puntaje al marcar la opción que definas como correcta.
+                </p>
             </div>
         );
     }

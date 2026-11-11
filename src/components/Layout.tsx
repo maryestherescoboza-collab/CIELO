@@ -80,7 +80,7 @@ export default function Layout({
     const onNavigate = useCallback((s: Screen) => {
         const { isLocked, reason } = usePersistenceStore.getState();
         if (isLocked) {
-            alert(reason || 'Hay calificaciones que todavía se están guardando y verificando en Supabase. Espera a que termine la sincronización para navegar.');
+            alert(reason || 'Hay calificaciones que todavía se están guardando en el servidor. Espera un momento para navegar.');
             return;
         }
         navigate(`/${s}`);

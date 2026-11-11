@@ -20,9 +20,18 @@ export function CompartirCursosModal({ abierto, notaId, onCerrar }: CompartirCur
   const misCursos = cursosAuth.map((c: any) => ({
     id: c.id,
     grado: c.grado,
-    seccion: c.seccion
+    seccion: c.seccion,
+    asignatura: c.asignatura || c.nombre || ''
   }));
-  const cursosDisponibles = misCursos.filter((v: any, i: any, a: any) => a.findIndex((t: any) => (t.id === v.id)) === i);
+  const cursosDisponibles = misCursos
+    .filter((v: any, i: any, a: any) => a.findIndex((t: any) => (t.id === v.id)) === i)
+    .sort((a: any, b: any) => {
+      const gComp = (a.grado || '').localeCompare(b.grado || '');
+      if (gComp !== 0) return gComp;
+      const sComp = (a.seccion || '').localeCompare(b.seccion || '');
+      if (sComp !== 0) return sComp;
+      return (a.asignatura || '').localeCompare(b.asignatura || '');
+    });
 
   useEffect(() => {
     if (!abierto || !notaId) return;
@@ -106,9 +115,16 @@ export function CompartirCursosModal({ abierto, notaId, onCerrar }: CompartirCur
                     checked={seleccionados.includes(c.id)}
                     onChange={() => toggleCurso(c.id)}
                   />
-                  <span className="text-sm font-semibold text-neutral-900">
-                    {c.grado} {c.seccion}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-semibold text-neutral-900 block truncate">
+                      {c.grado} {c.seccion}
+                    </span>
+                    {c.asignatura && (
+                      <span className="text-xs text-neutral-500 block truncate">
+                        {c.asignatura}
+                      </span>
+                    )}
+                  </div>
                 </label>
               ))}
             </div>

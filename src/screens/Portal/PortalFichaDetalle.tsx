@@ -90,18 +90,33 @@ export default function PortalFichaDetalle() {
   const handleEnviarComentario = async () => {
     if (!nuevoComentario.trim() || !id || !sessionToken) return;
     
+    const textoAEnviar = nuevoComentario.trim();
+    const tempId = crypto.randomUUID();
+    const optimisticComment: Comentario = {
+      id: tempId,
+      texto: textoAEnviar,
+      created_at: new Date().toISOString(),
+      autor_nombre: 'Tú',
+      es_docente: false,
+      es_propio: true
+    };
+
+    // Actualización inmediata en UI sin esperar recarga
+    setComentarios(prev => [...prev, optimisticComment]);
+    setNuevoComentario('');
     setEnviando(true);
+
     try {
       const { data, error } = await supabase.rpc('portal_crear_comentario_ficha', {
         p_session_token: sessionToken,
         p_nota_id: id,
-        p_texto: nuevoComentario.trim()
+        p_texto: textoAEnviar
       });
 
       if (error) throw error;
       if (data && data.error) throw new Error(data.error);
 
-      // Reload comments
+      // Sincronizar con datos confirmados del servidor
       const { data: comData, error: comError } = await supabase.rpc('portal_get_comentarios_ficha', {
         p_session_token: sessionToken,
         p_nota_id: id
@@ -110,9 +125,9 @@ export default function PortalFichaDetalle() {
       if (comData && !comData.error) {
         setComentarios(comData);
       }
-      
-      setNuevoComentario('');
     } catch (err: any) {
+      // Revertir en caso de error
+      setComentarios(prev => prev.filter(c => c.id !== tempId));
       alert(err.message || 'Error al enviar comentario');
     } finally {
       setEnviando(false);

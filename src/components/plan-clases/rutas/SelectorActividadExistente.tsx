@@ -36,7 +36,7 @@ export function SelectorActividadExistente({
     const [actividades, setActividades] = useState<ActividadExistente[]>([]);
     const [busqueda, setBusqueda] = useState('');
     const [elegida, setElegida] = useState<number | null>(null);
-    const [tipo, setTipo] = useState<TipoActividad>('respuesta_escrita');
+    const [tipo, setTipo] = useState<TipoActividad>('completar');
 
     const [cargando, setCargando] = useState(true);
     const [vinculando, setVinculando] = useState(false);
@@ -61,18 +61,38 @@ export function SelectorActividadExistente({
         };
     }, [rutaId]);
 
-    // Filtro en el cliente, no en la RPC: la lista sale una vez y filtrar 200
-    // filas es instantáneo, mientras que una consulta por pulsación de tecla
-    // solo agrega latencia y riesgo de perder la escribania.
+    // Orden estricto pedagógico de períodos: P4 -> P3 -> P2 -> P1 -> otros
+    const pesoPeriodo = (p?: string | null): number => {
+        if (!p) return 0;
+        const norm = p.trim().toUpperCase();
+        if (norm === 'P4') return 4;
+        if (norm === 'P3') return 3;
+        if (norm === 'P2') return 2;
+        if (norm === 'P1') return 1;
+        return 0;
+    };
+
+    const ordenadasPorPeriodo = useMemo(() => {
+        return [...actividades].sort((a, b) => {
+            const pesoA = pesoPeriodo(a.periodo);
+            const pesoB = pesoPeriodo(b.periodo);
+            if (pesoA !== pesoB) return pesoB - pesoA; // P4 primero, luego P3, P2, P1
+            const fechaA = a.fecha || '';
+            const fechaB = b.fecha || '';
+            return fechaB.localeCompare(fechaA);
+        });
+    }, [actividades]);
+
+    // Filtro en el cliente manteniendo el orden estricto de períodos
     const visibles = useMemo(() => {
         const q = busqueda.trim().toLowerCase();
-        if (!q) return actividades;
-        return actividades.filter((a) =>
+        if (!q) return ordenadasPorPeriodo;
+        return ordenadasPorPeriodo.filter((a) =>
             [a.nombre, a.asignatura, a.periodo, a.indicador, a.descripcion]
                 .filter(Boolean)
                 .some((campo) => String(campo).toLowerCase().includes(q)),
         );
-    }, [actividades, busqueda]);
+    }, [ordenadasPorPeriodo, busqueda]);
 
     const actividadElegida = actividades.find((a) => a.id === elegida) ?? null;
 

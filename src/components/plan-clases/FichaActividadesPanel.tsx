@@ -55,6 +55,27 @@ export function FichaActividadesPanel({ notaId }: FichaActividadesPanelProps) {
   const [seleccion, setSeleccion] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  const pesoPeriodo = (p?: string | null): number => {
+    if (!p) return 0;
+    const norm = p.trim().toUpperCase();
+    if (norm === 'P4') return 4;
+    if (norm === 'P3') return 3;
+    if (norm === 'P2') return 2;
+    if (norm === 'P1') return 1;
+    return 0;
+  };
+
+  const ordenarActividades = (lista: ActividadVinculada[]) => {
+    return [...lista].sort((a, b) => {
+      const pesoA = pesoPeriodo(a.periodo);
+      const pesoB = pesoPeriodo(b.periodo);
+      if (pesoA !== pesoB) return pesoB - pesoA; // P4 -> P3 -> P2 -> P1
+      const fechaA = a.fecha || '';
+      const fechaB = b.fecha || '';
+      return fechaB.localeCompare(fechaA);
+    });
+  };
+
   const cargar = useCallback(async () => {
     if (!notaId) return;
     setCargando(true);
@@ -66,7 +87,7 @@ export function FichaActividadesPanel({ notaId }: FichaActividadesPanelProps) {
         .eq('plan_ficha_id', notaId)
         .order('fecha', { ascending: false, nullsFirst: false });
       if (err) throw err;
-      setVinculadas((data as ActividadVinculada[]) ?? []);
+      setVinculadas(ordenarActividades((data as ActividadVinculada[]) ?? []));
     } catch (e: any) {
       setError(e?.message || 'No se pudieron cargar las actividades de la ficha.');
     } finally {
@@ -83,9 +104,8 @@ export function FichaActividadesPanel({ notaId }: FichaActividadesPanelProps) {
       .is('plan_ficha_id', null)
       .order('fecha', { ascending: false, nullsFirst: false })
       .limit(60);
-    setDisponibles(
-      ((data as ActividadVinculada[]) ?? []).filter((a) => !vinculadas.some((v) => v.id === a.id)),
-    );
+    const noVinculadas = ((data as ActividadVinculada[]) ?? []).filter((a) => !vinculadas.some((v) => v.id === a.id));
+    setDisponibles(ordenarActividades(noVinculadas));
   }, [sessionUserId, vinculadas]);
 
   useEffect(() => {

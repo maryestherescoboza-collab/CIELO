@@ -188,9 +188,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             ) : (
                                 <Check size={16} className="text-emerald-600 font-bold" />
                             )}
-                            {saveStatus === 'verifying'
-                                ? 'VERIFICANDO EN SUPABASE...'
-                                : isSaving || saveStatus === 'saving'
+                            {isSaving || saveStatus === 'saving' || saveStatus === 'verifying'
                                 ? 'GUARDANDO...'
                                 : saveStatus === 'error'
                                 ? 'ERROR AL GUARDAR (REINTENTAR)'

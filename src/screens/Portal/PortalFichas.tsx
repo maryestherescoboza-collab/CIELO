@@ -10,6 +10,8 @@ interface FichaCompartida {
   fecha: string;
   curso_id: number;
   asignatura?: string;
+  tiene_producto?: boolean;
+  tiene_ruta?: boolean;
 }
 
 export default function PortalFichas() {
@@ -170,20 +172,26 @@ export default function PortalFichas() {
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="text-[10px] font-bold text-[#5F665E] uppercase tracking-wider mb-2">Misiones</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center text-[13px] font-bold text-[#1B1F2A] px-3 py-2 rounded-xl bg-[#BFC9A6]/20 border border-[#BFC9A6]/50">
-                      <IconoMisionProducto />
-                      Subir producto
-                    </div>
+                {(ficha.tiene_producto || ficha.tiene_ruta) && (
+                  <div>
+                    <h4 className="text-[10px] font-bold text-[#5F665E] uppercase tracking-wider mb-2">Misiones</h4>
+                    <div className="space-y-2">
+                      {ficha.tiene_producto && (
+                        <div className="flex items-center text-[13px] font-bold text-[#1B1F2A] px-3 py-2 rounded-xl bg-[#BFC9A6]/20 border border-[#BFC9A6]/50">
+                          <IconoMisionProducto />
+                          Subir producto
+                        </div>
+                      )}
 
-                    <div className="flex items-center text-[13px] font-bold text-[#1B1F2A] px-3 py-2 rounded-xl bg-[#537BAC]/10 border border-[#537BAC]/25">
-                      <IconoMisionRuta />
-                      Completar ruta de aprendizaje
+                      {ficha.tiene_ruta && (
+                        <div className="flex items-center text-[13px] font-bold text-[#1B1F2A] px-3 py-2 rounded-xl bg-[#537BAC]/10 border border-[#537BAC]/25">
+                          <IconoMisionRuta />
+                          Completar ruta de aprendizaje
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
+                )}
               </article>
               </div>
             ))}

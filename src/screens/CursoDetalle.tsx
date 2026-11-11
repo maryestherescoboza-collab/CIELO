@@ -194,7 +194,7 @@ export default function CursoDetalle(props: Props) {
         if (isDirty || saveStatus === 'saving' || saveStatus === 'verifying') {
             const saved = await flushSave();
             if (!saved) {
-                alert('CIELO no ha podido confirmar el guardado de todas las calificaciones en Supabase. Por favor espera o verifica tu conexión antes de salir.');
+                alert('CIELO no ha podido confirmar el guardado de todas las calificaciones en el servidor. Por favor espera o verifica tu conexión antes de salir.');
                 return;
             }
         }
