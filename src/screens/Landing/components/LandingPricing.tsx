@@ -20,14 +20,14 @@ export function LandingPricing() {
   const TASA_CAMBIO_RD = 58.8;
 
   const featuresComunes = [
-    'Evaluación por competencias.',
-    'Rúbricas y listas de cotejo.',
-    'Registro anecdótico.',
-    'Planificación con IA.',
-    'Seguimiento del progreso.',
-    'Cursos ilimitados.',
-    'Portafolio docente.',
-    'Soporte y Comunidad CIELO.'
+    'Evaluación por competencias y saberes.',
+    'Rúbricas socioformativas y listas de cotejo.',
+    'Registro académico y actas de recuperación.',
+    'Boletines oficiales para impresión.',
+    'Planificación y fichas de clase.',
+    'Cursos y grupos de estudiantes ilimitados.',
+    'Portal estudiantil para entrega de evidencias.',
+    'Soporte docente continuo.'
   ];
 
   const planMensual = {

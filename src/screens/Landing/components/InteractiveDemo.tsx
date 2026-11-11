@@ -10,14 +10,17 @@ export function InteractiveDemo() {
   
 
   return (
-    <section id="descubrir" className="py-24 md:py-32 relative overflow-hidden bg-[#F8F3ED]">
+    <section id="descubrir" className="py-20 md:py-28 relative overflow-hidden bg-[#F8F3ED] border-t border-[rgba(46,51,48,0.08)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-        <div className="text-center mb-10 md:mb-16">
-          <h2 className="text-3xl md:text-5xl font-black text-[#2E3330] tracking-tighter mb-4">
+        <div className="text-center mb-8 md:mb-12">
+          <span className="text-xs font-bold uppercase tracking-widest text-[#5F665E] block mb-2">
+            Demostración interactiva
+          </span>
+          <h2 className="text-3xl md:text-5xl font-extrabold text-[#2E3330] tracking-tight mb-3">
             Vive la experiencia CIELO
           </h2>
-          <p className="text-slate-500 font-medium text-base md:text-lg max-w-2xl mx-auto px-2">
-            Interactúa con nuestro módulo de calificación simulado. Modifica notas, explora rúbricas y observa cómo todo reacciona al instante.
+          <p className="text-[#5F665E] font-medium text-sm md:text-base max-w-2xl mx-auto px-2">
+            Prueba directamente el registro académico real: asigna puntajes, cambia de modo de evaluación y observa el cálculo ponderado en vivo.
           </p>
         </div>
 
