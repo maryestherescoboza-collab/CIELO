@@ -20,6 +20,7 @@ import {
 import { WhatsAppIcon } from '../icons/WhatsAppIcon';
 import type { Screen } from '../../types';
 import { useAppStore } from '../../store/appStore';
+import { usePersistenceStore } from '../../store/persistenceStore';
 import { generarDescargaQREstudiantesPdf } from '../../utils/qrEstudiantesPdf';
 import { DescargarQrModal } from './DescargarQrModal';
 
@@ -99,13 +100,23 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
     };
 
     const handleGoEstudiantes = () => {
+        const { isLocked, reason } = usePersistenceStore.getState();
+        if (isLocked) {
+            alert(reason || 'Hay calificaciones que todavía se están guardando en el servidor. Espera un momento para navegar.');
+            return;
+        }
         setShowEstudiantesMenu(false);
         setShowMore(false);
         setShowMobileEstudiantesSubmenu(false);
-        navigate('/estudiante');
+        onNavigate('estudiante');
     };
 
     const handleGoEvidencias = () => {
+        const { isLocked, reason } = usePersistenceStore.getState();
+        if (isLocked) {
+            alert(reason || 'Hay calificaciones que todavía se están guardando en el servidor. Espera un momento para navegar.');
+            return;
+        }
         setShowEstudiantesMenu(false);
         setShowMore(false);
         setShowMobileEstudiantesSubmenu(false);

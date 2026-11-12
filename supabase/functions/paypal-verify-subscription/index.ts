@@ -77,23 +77,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Comprobar que la suscripción exista en nuestra DB y corresponda al usuario
+    // Buscar la suscripción local por el mismo identificador con el que se guardó.
     const { data: localSub, error: localSubError } = await supabaseAdmin
       .from('suscripciones')
-      .select('*')
+      .select('id, user_id, estado, paypal_subscription_id')
       .eq('paypal_subscription_id', subscriptionId)
-      .eq('user_id', user.id)
       .maybeSingle();
 
-    if (localSubError || !localSub) {
+    if (localSubError) {
+      console.error("Error consultando suscripción local:", localSubError);
+      return new Response(JSON.stringify({ error: 'Error interno al consultar la suscripción' }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Si existe pero pertenece a otro usuario, denegar.
+    if (localSub && localSub.user_id !== user.id) {
+      console.error(`Security Alert: suscripción ${subscriptionId} pertenece a otro usuario.`);
       return new Response(JSON.stringify({ error: 'Suscripción no encontrada para este usuario' }), {
-        status: 404,
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
     // Si ya está activa, devolvemos éxito inmediato
-    if (localSub.estado === 'activa') {
+    if (localSub?.estado === 'activa') {
       return new Response(JSON.stringify({ estado: 'activa', active: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -138,11 +147,104 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Si la fila local no existe (webhook retrasado o registro local perdido),
+    // conciliar de forma segura usando la identidad ya autenticada y el
+    // custom_id verificado de PayPal. Nunca se activa en este paso.
+    if (!localSub) {
+      const { data: activeSubs, error: conflictError } = await supabaseAdmin
+        .from('suscripciones')
+        .select('id, paypal_subscription_id')
+        .eq('user_id', user.id)
+        .eq('estado', 'activa')
+        .limit(5);
+
+      if (conflictError) {
+        console.error("Error comprobando suscripciones activas:", conflictError);
+        return new Response(JSON.stringify({ error: 'Error interno al verificar la suscripción' }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const conflict = (activeSubs ?? []).find(
+        (sub) => sub.paypal_subscription_id !== subscriptionId
+      );
+      if (conflict) {
+        return new Response(JSON.stringify({ error: 'Ya existe una suscripción activa diferente para este usuario' }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const { error: insertError } = await supabaseAdmin
+        .from('suscripciones')
+        .upsert({
+          paypal_subscription_id: subscriptionId,
+          user_id: user.id,
+          estado: 'pendiente',
+          tipo: 'individual',
+          provider: 'paypal',
+          plan_id: paypalSub.plan_id,
+          fecha_inicio: paypalSub.start_time || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'paypal_subscription_id', ignoreDuplicates: true });
+
+      if (insertError) {
+        console.error("Error conciliando suscripción local:", insertError);
+        return new Response(JSON.stringify({ error: 'Error interno al registrar la suscripción' }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const { data: reconciled, error: reconciledError } = await supabaseAdmin
+        .from('suscripciones')
+        .select('id, user_id, estado, paypal_subscription_id')
+        .eq('paypal_subscription_id', subscriptionId)
+        .maybeSingle();
+
+      if (reconciledError || !reconciled || reconciled.user_id !== user.id) {
+        console.error("Error verificando la suscripción conciliada:", reconciledError);
+        return new Response(JSON.stringify({ error: 'Error interno al verificar la suscripción' }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      console.log(`[paypal-verify-subscription] Conciliación segura aplicada para ${subscriptionId} y usuario ${user.id}`);
+    }
+
     const status = paypalSub.status; // 'ACTIVE', 'APPROVED', 'SUSPENDED', 'CANCELLED', etc.
 
     // GESTIÓN ESTRICTA: Solo 'ACTIVE' otorga acceso Premium.
     // 'APPROVED' significa que el usuario aceptó en PayPal pero el primer cobro/ciclo aún no se activa.
     if (status === 'ACTIVE') {
+      // Nunca activar una segunda suscripción si el usuario ya tiene otra activa.
+      const { data: otherActive, error: otherActiveError } = await supabaseAdmin
+        .from('suscripciones')
+        .select('id, paypal_subscription_id')
+        .eq('user_id', user.id)
+        .eq('estado', 'activa')
+        .limit(5);
+
+      if (otherActiveError) {
+        console.error("Error comprobando suscripciones activas:", otherActiveError);
+        return new Response(JSON.stringify({ error: 'Error interno al verificar la suscripción' }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const duplicateActive = (otherActive ?? []).find(
+        (sub) => sub.paypal_subscription_id !== subscriptionId
+      );
+      if (duplicateActive) {
+        return new Response(JSON.stringify({ error: 'Ya existe una suscripción activa diferente para este usuario' }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
       const nextBillingTime = paypalSub.billing_info?.next_billing_time || null;
       
       const { error: updateError } = await supabaseAdmin
@@ -152,7 +254,8 @@ Deno.serve(async (req) => {
           fecha_fin: nextBillingTime,
           updated_at: new Date().toISOString()
         })
-        .eq('paypal_subscription_id', subscriptionId);
+        .eq('paypal_subscription_id', subscriptionId)
+        .eq('user_id', user.id);
 
       if (updateError) {
         console.error("Error actualizando suscripción a activa:", updateError);
@@ -183,9 +286,10 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     console.error("Error en paypal-verify-subscription:", err);
-    return new Response(JSON.stringify({ error: err.message || 'Error interno del servidor' }), {
+    return new Response(JSON.stringify({ error: message || 'Error interno del servidor' }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

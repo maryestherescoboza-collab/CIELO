@@ -30,7 +30,7 @@ export function LandingCTA() {
         {/* Órbitas elípticas concéntricas */}
         <svg 
           viewBox="0 0 1000 600" 
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[160%] sm:w-[120%] md:w-[100%] h-full"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[160%] sm:w-[120%] md:w-full h-full"
           fill="none" 
           stroke="rgba(255, 255, 255, 0.28)" 
           strokeWidth="1.5"

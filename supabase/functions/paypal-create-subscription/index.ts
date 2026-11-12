@@ -34,7 +34,7 @@ async function getPayPalAccessToken(): Promise<string> {
     let errObj;
     try {
       errObj = await response.json();
-    } catch(e) {
+    } catch {
       errObj = { error_description: await response.text() };
     }
     const safeError = {
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
       if (body.planType === 'anual') {
         planType = 'anual';
       }
-    } catch (e) {
+    } catch {
       // Body vacío o inválido, usamos 'mensual' por defecto
     }
 
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
         ) {
           baseUrl = parsedUrl.origin;
         }
-      } catch (_) {
+      } catch {
         // Fallback seguro a baseUrl por defecto
       }
     }
@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
       let errObj;
       try {
         errObj = await createSubRes.json();
-      } catch(e) {
+      } catch {
         errObj = { message: await createSubRes.text() };
       }
       
@@ -189,49 +189,71 @@ Deno.serve(async (req) => {
     const subscriptionId = subData.id;
     
     // Obtener la URL de aprobación
-    const approveLink = subData.links?.find((link: any) => link.rel === "approve");
+    const approveLink = subData.links?.find((link: { rel?: string; href?: string }) => link.rel === "approve");
     if (!approveLink) {
       throw new Error("PayPal no devolvió una URL de aprobación válida.");
     }
 
-    // Limpiar suscripciones pendientes antiguas del usuario para no acumular basura
+    // Registrar localmente la suscripción ANTES de devolver al usuario.
+    // Usamos upsert ignorando duplicados para que, si el webhook llegó primero
+    // y concilió la fila, no fallemos ni degrademos su estado.
+    const { error: insertError } = await supabaseAdmin
+      .from('suscripciones')
+      .upsert({
+        paypal_subscription_id: subscriptionId,
+        user_id: user.id,
+        estado: 'pendiente',
+        tipo: 'individual',
+        provider: 'paypal',
+        plan_id: PLAN_ID,
+        fecha_inicio: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'paypal_subscription_id', ignoreDuplicates: true });
+
+    if (insertError) {
+      console.error("Error registrando suscripción local:", insertError);
+      throw new Error("Error interno al preparar la suscripción");
+    }
+
+    // Verificar que el vínculo quedó persistido con el mismo identificador.
+    const { data: persistedSub, error: persistedError } = await supabaseAdmin
+      .from('suscripciones')
+      .select('id, user_id, paypal_subscription_id')
+      .eq('paypal_subscription_id', subscriptionId)
+      .maybeSingle();
+
+    if (persistedError || !persistedSub || persistedSub.user_id !== user.id) {
+      console.error("Error verificando suscripción local:", persistedError);
+      throw new Error("Error interno al verificar la suscripción");
+    }
+
+    // Limpiar solo pendientes antiguos para no borrar suscripciones en vuelo.
+    // Nunca tocamos la suscripción recién creada ni filas activas.
+    const staleThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     await supabaseAdmin
       .from('suscripciones')
       .delete()
       .eq('user_id', user.id)
-      .eq('estado', 'pendiente');
-
-    // Insertar en la base de datos ANTES de devolver al usuario
-    const { error: insertError } = await supabaseAdmin
-      .from('suscripciones')
-      .insert({
-        paypal_subscription_id: subscriptionId,
-        user_id: user.id,
-        estado: 'pendiente',
-        tipo: 'individual'
-      });
-
-    if (insertError) {
-      // Si la fila ya existe (raro), o falla, fallamos duro para que no avance
-      console.error("Error insertando suscripción local:", insertError);
-      throw new Error("Error interno al preparar la suscripción");
-    }
+      .eq('estado', 'pendiente')
+      .neq('paypal_subscription_id', subscriptionId)
+      .lt('created_at', staleThreshold);
 
     return new Response(JSON.stringify({ approval_url: approveLink.href, subscriptionId }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
     
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error("Function error:", error);
-    if (error.message && error.message.startsWith('OAUTH_ERROR:')) {
-      const jsonStr = error.message.replace('OAUTH_ERROR:', '');
+    if (message.startsWith('OAUTH_ERROR:')) {
+      const jsonStr = message.replace('OAUTH_ERROR:', '');
       return new Response(jsonStr, {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

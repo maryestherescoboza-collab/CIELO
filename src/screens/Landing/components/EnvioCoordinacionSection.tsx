@@ -280,7 +280,7 @@ export function EnvioCoordinacionSection() {
                   className="relative mt-auto w-full h-56 sm:h-64 rounded-2xl rounded-tl-none border-3 border-[#2E3330] bg-[#DEAE4D] shadow-[6px_6px_0px_#2E3330] p-5 sm:p-6 flex flex-col justify-between overflow-hidden"
                 >
                   {/* Pestaña superior de la carpeta */}
-                  <div className="absolute -top-[2px] -left-[3px] -translate-y-full w-28 sm:w-36 h-7 sm:h-8 rounded-t-xl border-t-3 border-x-3 border-[#2E3330] bg-[#DEAE4D] flex items-center px-3">
+                  <div className="absolute -top-0.5 -left-0.75 -translate-y-full w-28 sm:w-36 h-7 sm:h-8 rounded-t-xl border-t-3 border-x-3 border-[#2E3330] bg-[#DEAE4D] flex items-center px-3">
                     <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-[#2E3330]">
                       MINERD · P1–P4
                     </span>

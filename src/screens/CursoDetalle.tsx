@@ -48,12 +48,6 @@ export default function CursoDetalle(props: Props) {
     const state = store.state;
     const { loadCursoData } = useSupabaseData(true);
 
-    useEffect(() => {
-        if (cursoId) {
-            loadCursoData(cursoId);
-        }
-    }, [cursoId, loadCursoData]);
-
     const currentUserId = props.currentUserId || store.session?.user?.id || '';
 
     // Leer el parámetro asignatura de la URL para identificar el contexto correcto
@@ -115,6 +109,12 @@ export default function CursoDetalle(props: Props) {
         myAsignatura,
         sharedCourseId
     } = useCursoDetalleData({ state, cursoId, currentUserId, currentCourseRole, onSaveCalificaciones: props.onSaveCalificaciones, onSaveRecuperacionCotejo: props.onSaveRecuperacionCotejo });
+
+    useEffect(() => {
+        if (cursoId) {
+            loadCursoData(cursoId, selectedPeriodo || 'P2');
+        }
+    }, [cursoId, selectedPeriodo, loadCursoData]);
 
     const [showVincular, setShowVincular] = useState(false);
     const [showAgregarActividad, setShowAgregarActividad] = useState(false);
