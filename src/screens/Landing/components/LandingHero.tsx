@@ -1,97 +1,78 @@
-import { motion } from 'framer-motion';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HeroFloats } from './HeroFloats';
+import { ArrowRight } from 'lucide-react';
+import { HeroCompetenciesArcade } from './HeroCompetenciesArcade';
 
-export function LandingHero() {
+interface LandingHeroProps {
+  onExploreFunctions?: () => void;
+}
+
+export function LandingHero({ onExploreFunctions }: LandingHeroProps) {
   const navigate = useNavigate();
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
+  // El mensaje principal permanece oculto hasta que concluya la animación original
+  const [animationCompleted, setAnimationCompleted] = useState(false);
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: 'spring' as const, stiffness: 100, damping: 20 },
-    },
-  };
+  const handleArcadeComplete = useCallback(() => {
+    // Sincronización natural inmediata al término del recorrido de la animación
+    setAnimationCompleted(true);
+  }, []);
 
   return (
-    <section className="relative pt-32 pb-20 md:pt-44 md:pb-28 overflow-hidden flex flex-col items-center justify-center min-h-[85vh] bg-[#F8F3ED]">
-      {/* Background ambient glow / Orbs */}
-      <div className="absolute w-150 h-150 bg-[#EAE4DA] -top-20 -right-12 rounded-full blur-[120px] opacity-70 pointer-events-none -z-10" />
-      <div className="absolute w-125 h-125 bg-[#BFC9A6] bottom-8 left-[25%] rounded-full blur-[140px] opacity-20 pointer-events-none -z-10" />
-
-      {/* Hero Grid Canvas style */}
-      <div className="absolute inset-0 opacity-30 pointer-events-none -z-20 mask-[linear-gradient(to_bottom,black,transparent_90%)]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(46,51,48,0.3) 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-
-      {/* Floating UI Cards */}
-      <HeroFloats />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center z-10 w-full relative">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="max-w-5xl mx-auto flex flex-col items-center"
+    <section className="relative flex min-h-[calc(100svh-3.25rem)] sm:min-h-[calc(100svh-5rem)] w-full flex-col items-center justify-center overflow-hidden px-3.5 pb-4 pt-1 text-center sm:px-8 sm:pb-6 sm:pt-2">
+      <div className="mx-auto flex w-full max-w-4xl flex-col items-center justify-center">
+        {/* 1. Animación que inicia completamente centrada y se desplaza hacia arriba */}
+        <div
+          className={`w-full flex items-center justify-center transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            animationCompleted ? 'translate-y-0 scale-100' : 'translate-y-0 scale-105'
+          }`}
         >
-          {/* Nombre / Marca superior sutil y elegante */}
-          <motion.span
-            variants={itemVariants}
-            className="text-xs sm:text-sm font-bold uppercase tracking-widest text-[#5F665E] mb-3 block"
-          >
-            Cielo
-          </motion.span>
+          <HeroCompetenciesArcade compact onComplete={handleArcadeComplete} />
+        </div>
 
-          <motion.h1
-            variants={itemVariants}
-            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-[#2E3330] tracking-tight leading-snug mb-8 w-full"
-          >
-            <span className="block md:whitespace-nowrap">
-              La única plataforma de{' '}
-              <span className="inline-block whitespace-nowrap font-extrabold">
-                <span className="text-[#355B85]">R</span>
-                <span className="text-[#C54134]">D</span>
-              </span>
+        {/* 2. Mensaje principal: aparece tras completarse la animación con transición fluida */}
+        <div
+          className={`w-full transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            animationCompleted
+              ? 'opacity-100 translate-y-0 max-h-125 mt-3 sm:mt-6 pointer-events-auto'
+              : 'opacity-0 translate-y-8 max-h-0 overflow-hidden mt-0 pointer-events-none'
+          }`}
+        >
+          <h1 className="font-cagliostro mx-auto mt-2 sm:mt-6 max-w-4xl text-2xl font-normal leading-[1.18] text-[#2E3330] sm:text-4xl md:text-5xl lg:text-[3.75rem] tracking-normal">
+            Dedica tu tiempo a tus estudiantes.{' '}
+            <span className="text-[#689C63]">
+              CIELO se ocupa del proceso.
             </span>
-            <span className="block md:whitespace-nowrap mt-1 sm:mt-1.5">
-              especializada en evaluación por competencias.
-            </span>
-          </motion.h1>
+          </h1>
 
-          <motion.div variants={itemVariants} className="flex flex-col items-center justify-center w-full sm:w-auto">
-            {/* Único botón principal dorado */}
+          {/* 3. Acciones directas y sugerencia de navegación */}
+          <div className="mt-4 sm:mt-8 flex flex-col items-stretch justify-center gap-2 sm:flex-row sm:items-center sm:gap-3">
             <button
+              type="button"
               onClick={() => navigate('/auth?plan=individual')}
-              className="px-8 py-3.5 rounded-full bg-[#DEAE4D] text-[#2E3330] text-sm sm:text-base font-bold hover:bg-[#C99C44] hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_6px_18px_rgba(222,174,77,0.35)] w-full sm:w-auto cursor-pointer"
+              className="inline-flex items-center justify-center rounded-full bg-[#DEAE4D] px-5 py-2.5 text-xs font-bold text-[#2E3330] shadow-[0_4px_0_rgba(46,51,48,0.12)] sm:shadow-[0_6px_0_rgba(46,51,48,0.12)] transition-transform duration-200 hover:-translate-y-0.5 hover:bg-[#D4A33F] active:translate-y-0 cursor-pointer sm:px-8 sm:py-3 sm:text-base"
             >
               Comenzar prueba gratis
             </button>
-
-            {/* Microlínea reductora de fricción */}
-            <p className="text-xs sm:text-sm text-[#5F665E] font-medium mt-3 tracking-normal">
-              Sin tarjeta de crédito · Cancela cuando quieras
-            </p>
-
-            {/* Iniciar sesión como enlace sutil */}
             <button
+              type="button"
               onClick={() => navigate('/login')}
-              className="mt-4 text-xs sm:text-sm font-semibold text-[#2E3330]/75 hover:text-[#2E3330] transition-colors inline-flex items-center gap-1.5 cursor-pointer hover:underline"
+              className="inline-flex items-center justify-center rounded-full border border-[#2E3330]/25 bg-white px-5 py-2.5 text-xs font-bold text-[#2E3330] transition-colors duration-200 hover:border-[#2E3330] hover:bg-[#E9E9DB] cursor-pointer sm:px-7 sm:py-3 sm:text-base"
             >
-              ¿Ya tienes una cuenta? Iniciar sesión
+              Iniciar sesión
             </button>
-          </motion.div>
-        </motion.div>
+            {onExploreFunctions && (
+              <button
+                type="button"
+                onClick={onExploreFunctions}
+                className="inline-flex items-center justify-center gap-1 rounded-full border border-transparent px-3 py-2 text-xs font-bold text-[#537BAC] hover:bg-[#537BAC]/10 transition-colors cursor-pointer sm:gap-1.5 sm:px-5 sm:py-3 sm:text-sm"
+              >
+                <span>Explorar funciones</span>
+                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-
     </section>
   );
 }

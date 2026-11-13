@@ -3,42 +3,55 @@ import logo from '../../../assets/logo.png';
 
 export function LandingNavbar() {
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-[#FDFBF7]/90 backdrop-blur-md border-b border-[rgba(46,51,48,0.08)]">
-      <div className="max-w-7xl mx-auto px-6 h-22 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <img src={logo} alt="CIELO Logo" className="w-22 h-22 object-contain transition-transform group-hover:scale-105" />
-          <span className="text-[11px] font-bold text-[#4B5563] bg-[#EAE5DC] border border-[#2E3330]/10 px-2.5 py-0.5 rounded-full select-none tracking-normal">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-[#2E3330]/10 transition-colors">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-13 sm:h-20 flex items-center justify-between">
+        {/* Logo con insignia Beta */}
+        <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 group">
+          <img
+            src={logo}
+            alt="CIELO Logo"
+            className="w-10 h-10 sm:w-18 sm:h-18 object-contain transition-transform duration-300 group-hover:scale-105"
+          />
+          <span className="text-[9px] sm:text-[11px] font-bold text-[#4B5563] bg-[#EAE5DC] border border-[#2E3330]/10 px-2 py-0.5 rounded-full select-none tracking-normal">
             Beta
           </span>
         </Link>
         
-        <div className="flex items-center gap-4 sm:gap-6">
-          <button 
-            onClick={() => {
-              document.getElementById('planes')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="hidden md:block text-sm font-semibold text-[#3B423E] hover:text-[#2E3330] transition-colors"
-          >
-            Planes
-          </button>
-          <div className="flex items-center gap-2.5">
+        {/* Navegación y accesos equilibrados */}
+        <div className="flex items-center gap-2 sm:gap-8">
+          <div className="hidden md:flex items-center gap-6">
+            <a
+              href="#evaluacion"
+              className="text-xs font-bold text-[#5F665E] hover:text-[#2E3330] transition-colors tracking-wide py-1"
+            >
+              Evaluación
+            </a>
+            <a
+              href="#planificacion"
+              className="text-xs font-bold text-[#5F665E] hover:text-[#2E3330] transition-colors tracking-wide py-1"
+            >
+              Planificación
+            </a>
+            <a
+              href="#gestion-curso"
+              className="text-xs font-bold text-[#5F665E] hover:text-[#2E3330] transition-colors tracking-wide py-1"
+            >
+              Bitácora
+            </a>
+          </div>
+
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <Link 
               to="/portal"
-              className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full border border-[rgba(46,51,48,0.18)] bg-white/80 text-[#2E3330] text-xs sm:text-sm font-medium hover:bg-black/5 hover:-translate-y-0.5 transition-all inline-flex items-center"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[#2E3330]/15 bg-white text-[#2E3330] text-[11px] sm:text-xs font-medium hover:bg-[#E9E9DB] hover:border-[#2E3330]/30 transition-all inline-flex items-center"
             >
-              Portal Estudiantes
+              Portal
             </Link>
             <Link 
               to="/login"
-              className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-transparent text-[#2E3330] text-xs sm:text-sm font-medium hover:bg-black/5 hover:-translate-y-0.5 transition-all"
+              className="px-3 sm:px-5 py-1.5 sm:py-2 rounded-full bg-[#2E3330] text-[#FCFCFA] text-[11px] sm:text-sm font-semibold hover:bg-[#1E2220] transition-all shadow-xs"
             >
               Iniciar sesión
-            </Link>
-            <Link 
-              to="/auth?plan=individual"
-              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#DEAE4D] text-[#2E3330] text-xs sm:text-sm font-bold hover:bg-[#C99C44] hover:-translate-y-0.5 transition-all shadow-sm"
-            >
-              Comenzar prueba gratis
             </Link>
           </div>
         </div>

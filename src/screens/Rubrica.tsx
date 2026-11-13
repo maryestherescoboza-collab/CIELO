@@ -149,7 +149,7 @@ export default function Rubrica({
         setSelectedActId(null);
         setSelectedEstId(null);
     }, [selectedPeriodo, setSelectedActId, setSelectedEstId]);
-    
+
     // Store-bound states
     const selection = useAppStore(s => s.activeRubricSelection as Selection);
     const setSelection = (updater: Selection | ((prev: Selection) => Selection)) => useAppStore.setState(s => ({
@@ -191,26 +191,26 @@ export default function Rubrica({
     const { startCapture, captureOverlay, isCapturing } = useTemplateCapture();
     const [captureFileId, setCaptureFileId] = useState<string | undefined>(undefined);
 
-    const { 
+    const {
         selectedCurso,
         estudiantes,
         sortedEsts,
         actividades,
         rubricaPlantillas
     } = useMemo(() => {
-        const curso = cursosStore.find(c => c.id === selectedCursoId && sonMismaAsignatura(c.asignatura, selectedAsignatura)) || 
-                      cursosStore.find(c => c.id === selectedCursoId);
-        
+        const curso = cursosStore.find(c => c.id === selectedCursoId && sonMismaAsignatura(c.asignatura, selectedAsignatura)) ||
+            cursosStore.find(c => c.id === selectedCursoId);
+
         const ests = curso
             ? estudiantesStore.filter((estudiante) => esEstudianteDelCurso(cursosStore, curso, estudiante, curso.centroId))
             : [];
-        
+
         const targetAsig = selectedAsignatura || currentCourseRole?.asignatura || curso?.asignatura;
-        const acts = actividadesStore.filter((actividad) => 
-            (actividad.cursoId === selectedCursoId || 
-             (curso?.sharedCourseId && actividad.sharedCourseId === curso.sharedCourseId)) &&
+        const acts = actividadesStore.filter((actividad) =>
+            (actividad.cursoId === selectedCursoId ||
+                (curso?.sharedCourseId && actividad.sharedCourseId === curso.sharedCourseId)) &&
             (actividad.userId === session?.user?.id || !actividad.userId) &&
-            Boolean(actividad.asignatura) && 
+            Boolean(actividad.asignatura) &&
             (!targetAsig || normalizeArea(actividad.asignatura) === normalizeArea(targetAsig)) &&
             actividad.periodo === selectedPeriodo
         );
@@ -329,7 +329,7 @@ export default function Rubrica({
             const targetAsig = selectedAsignatura || currentCourseRole?.asignatura || selectedCurso?.asignatura;
             const actividadesPeriodo = actividadesStore.filter((actividad) =>
                 (actividad.cursoId === selectedCursoId ||
-                 (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
+                    (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
                 (actividad.userId === session?.user?.id || !actividad.userId) &&
                 Boolean(actividad.asignatura) &&
                 (!targetAsig || normalizeArea(actividad.asignatura) === normalizeArea(targetAsig)) &&
@@ -458,7 +458,7 @@ export default function Rubrica({
         try {
             const text = await navigator.clipboard.readText();
             const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-            
+
             const rows = lines.map(line => {
                 if (line.includes('|')) {
                     const cells = line.split('|').map(c => c.trim());
@@ -621,7 +621,7 @@ export default function Rubrica({
             aiSkipNormalizeRef.current = false;
             return;
         }
-        
+
         let sourceDescriptors = descriptoresRubricaStore;
         if (selectedPlantillaId !== null) {
             const template = plantillasStore.find(p => p.id === selectedPlantillaId);
@@ -629,7 +629,7 @@ export default function Rubrica({
                 sourceDescriptors = template.datos.descriptores as DescriptorRubrica[];
             }
         }
-        
+
         const initialDesc = normalizeDescriptors(sourceDescriptors, selectedPlantillaId);
         setLocalDescriptors((prev) => {
             if (JSON.stringify(prev) === JSON.stringify(initialDesc)) {
@@ -1009,11 +1009,10 @@ export default function Rubrica({
                                                     aria-checked={selectedPeriodo === p}
                                                     data-guide={`btn-periodo-${p}`}
                                                     onClick={() => { setSelectedPeriodo(p); setSelectedActId(null); setSelectedEstId(null); }}
-                                                    className={`flex-1 py-1 text-xs font-bold rounded-md transition-all outline-none cursor-pointer ${
-                                                        selectedPeriodo === p
-                                                            ? 'bg-white text-(--ink) shadow-2xs font-black'
-                                                            : 'text-(--ink-soft) hover:text-(--ink) hover:bg-white/40'
-                                                    }`}
+                                                    className={`flex-1 py-1 text-xs font-bold rounded-md transition-all outline-none cursor-pointer ${selectedPeriodo === p
+                                                        ? 'bg-white text-(--ink) shadow-2xs font-black'
+                                                        : 'text-(--ink-soft) hover:text-(--ink) hover:bg-white/40'
+                                                        }`}
                                                 >
                                                     {p}
                                                 </button>
@@ -1220,8 +1219,8 @@ export default function Rubrica({
                                 </CieloPill>
                             </div>
                         )}
-                        </div>
-                    
+                    </div>
+
 
                     {!readOnly && (
                         <div className="sticky top-0 z-30 bg-(--background)/95 backdrop-blur-md pb-1.5 pt-1 space-y-2">
@@ -1293,8 +1292,8 @@ export default function Rubrica({
                             <FileDown size={15} className="text-[#537BAC]" />
                             <span>Exportar Word / Drive</span>
                         </button>
-                        <TemplateCaptureButton 
-                            isCapturing={isCapturing} 
+                        <TemplateCaptureButton
+                            isCapturing={isCapturing}
                             onClick={handleCapture}
                             title="Guardar captura de la rúbrica en Google Drive"
                         />

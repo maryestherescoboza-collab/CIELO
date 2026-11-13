@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../../store/appStore';
 
@@ -7,6 +6,7 @@ export function LandingPricing() {
   const navigate = useNavigate();
   const { session } = useAppStore();
   const [docentes, setDocentes] = useState<number>(25);
+  const [mobilePlan, setMobilePlan] = useState<'mensual' | 'anual' | 'institucional'>('anual');
 
   const handlePlanSelection = (plan: 'individual' | 'institucional') => {
     if (session) {
@@ -16,7 +16,6 @@ export function LandingPricing() {
     }
   };
 
-  // Tasa de cambio aproximada
   const TASA_CAMBIO_RD = 58.8;
 
   const featuresComunes = [
@@ -27,14 +26,14 @@ export function LandingPricing() {
     'Planificación y fichas de clase.',
     'Cursos y grupos de estudiantes ilimitados.',
     'Portal estudiantil para entrega de evidencias.',
-    'Soporte docente continuo.'
+    'Soporte docente continuo.',
   ];
 
   const planMensual = {
     name: 'Docente Mensual',
     price: 5,
     subtitle: 'El plan ideal para iniciar tu evaluación por competencias, sin compromisos a largo plazo.',
-    features: featuresComunes
+    features: featuresComunes,
   };
 
   const planAnual = {
@@ -42,7 +41,7 @@ export function LandingPricing() {
     price: 4,
     badge: 'Ahorra 20%',
     subtitle: 'Compromiso anual de 12 meses al precio más bajo para docentes independientes.',
-    features: featuresComunes
+    features: featuresComunes,
   };
 
   const planInst = {
@@ -54,204 +53,232 @@ export function LandingPricing() {
       'Acceso para todo el personal.',
       'Gestión centralizada de usuarios.',
       'Acompañamiento en la implementación.',
-      '+7 días extra de prueba para centros.'
-    ]
+      '+7 días extra de prueba para centros.',
+    ],
   };
 
   const instMensualUSD = docentes > 0 ? docentes * 5 : 0;
 
   return (
-    <section id="planes" className="py-24 md:py-32 bg-[#F8F3ED] relative">
-      <div className="w-[90%] max-w-6xl mx-auto relative z-10">
-
-        {/* Header Section */}
-        <div className="text-center mb-10 max-w-2xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-light text-zinc-900 tracking-tight mb-3">
-            Planes diseñados para tu realidad.
-          </h2>
-          <p className="text-zinc-500 text-sm">
-            Disfruta de 15 días de prueba gratis. Elige el plan que mejor se adapte a ti o a tu centro.
+    <section
+      id="planes"
+      className="scroll-mt-24 border-t border-[#2E3330]/10 bg-[#FCFCFA] py-16 sm:py-24 md:py-32"
+    >
+      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+        <header className="max-w-3xl">
+          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#5F665E]">
+            Planes
           </p>
+          <h2 className="mt-4 text-3xl font-extrabold leading-[1.05] tracking-[-0.035em] text-[#2E3330] sm:text-4xl md:text-5xl">
+            Planes claros para tu realidad.
+          </h2>
+          <p className="mt-5 max-w-2xl text-base leading-relaxed text-[#5F665E] sm:text-lg">
+            Disfruta de 15 días de prueba gratis. Elige el plan que mejor se adapte a ti o a tu
+            centro.
+          </p>
+        </header>
+
+        <div
+          className="mt-8 flex rounded-full border border-[#2E3330]/15 bg-[#FCFCFA] p-1 md:hidden"
+          role="group"
+          aria-label="Seleccionar plan"
+        >
+          {[
+            { id: 'mensual' as const, label: 'Mensual' },
+            { id: 'anual' as const, label: 'Anual' },
+            { id: 'institucional' as const, label: 'Institución' },
+          ].map((plan) => (
+            <button
+              key={plan.id}
+              type="button"
+              onClick={() => setMobilePlan(plan.id)}
+              aria-pressed={mobilePlan === plan.id}
+              className={`flex-1 rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
+                mobilePlan === plan.id
+                  ? 'bg-[#2E3330] text-[#FCFCFA]'
+                  : 'text-[#5F665E] hover:bg-[#E9E9DB]'
+              }`}
+            >
+              {plan.label}
+            </button>
+          ))}
         </div>
 
-        {/* Blueprint Grid Container */}
-        <div className="border border-dashed border-[rgba(120,135,110,0.3)] bg-white rounded-lg overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-dashed divide-[rgba(120,135,110,0.25)]">
-
-            {/* Column 1: Plan Mensual */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ type: 'spring', stiffness: 100 }}
-              className="flex flex-col justify-between h-full bg-white"
+        <div className="mt-6 border border-[#2E3330]/15 md:mt-16">
+          <div className="grid grid-cols-1 divide-y divide-[#2E3330]/10 max-md:divide-y-0 md:grid-cols-3 md:divide-x md:divide-y-0">
+            <div
+              className={`flex flex-col justify-between bg-[#FCFCFA] ${
+                mobilePlan !== 'mensual' ? 'max-md:hidden' : ''
+              }`}
             >
-              {/* Top part: Header & Price */}
-              <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2E3330] mb-2">
+              <div className="border-b border-[#2E3330]/10 p-6 sm:p-8">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330]">
                   {planMensual.name}
                 </h3>
-                <p className="text-xs text-zinc-500 mb-5 leading-relaxed min-h-10">
+                <p className="mt-3 min-h-10 text-xs leading-relaxed text-[#5F665E]">
                   {planMensual.subtitle}
                 </p>
-                <div className="flex flex-col">
-                  <div className="text-5xl font-light text-zinc-900 tracking-tight">
-                    {planMensual.price} <span className="text-lg font-normal text-zinc-400">USD</span>
-                  </div>
-                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-1 mb-1">
-                    por mes
-                  </div>
-                  <div className="text-[11px] font-semibold text-[#689C63] uppercase tracking-wider">
-                    ≈ RD${Math.round(planMensual.price * TASA_CAMBIO_RD)} / mes
-                  </div>
+                <div className="mt-6 flex items-baseline gap-1.5">
+                  <span className="text-5xl font-extrabold tracking-[-0.04em] text-[#2E3330]">
+                    {planMensual.price}
+                  </span>
+                  <span className="text-sm font-semibold text-[#5F665E]">USD</span>
                 </div>
+                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5F665E]">
+                  por mes
+                </p>
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#689C63]">
+                  ≈ RD${Math.round(planMensual.price * TASA_CAMBIO_RD)} / mes
+                </p>
               </div>
 
-              {/* Middle part: Features */}
-              <div className="p-6 md:p-8 flex-1 space-y-3 bg-[#FAFBF9]/40 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                {planMensual.features.map(feat => (
-                  <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-4 h-4 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-[10px] font-extrabold mt-0.5">
+              <div className="flex-1 space-y-3 border-b border-[#2E3330]/10 p-6 sm:p-8">
+                {planMensual.features.map((feature) => (
+                  <div key={feature} className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center border border-[#689C63]/40 text-[10px] font-extrabold text-[#689C63]">
                       ✓
                     </span>
-                    <span className="text-xs text-zinc-600 leading-snug">
-                      {feat}
-                    </span>
+                    <span className="text-xs leading-snug text-[#5F665E]">{feature}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Bottom part: CTA */}
-              <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-                <button onClick={() => handlePlanSelection('individual')} className="w-full py-3 px-4 bg-white border border-[#DEAE4D] text-[#2E3330] text-[11px] font-bold tracking-widest uppercase rounded-full hover:bg-[#FFFDF7] transition-all duration-300">
+              <div className="p-6 sm:p-8">
+                <button
+                  type="button"
+                  onClick={() => handlePlanSelection('individual')}
+                  className="w-full rounded-full border border-[#DEAE4D] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330] transition-colors hover:bg-[#E9E9DB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2E3330]"
+                >
                   Comenzar gratis
                 </button>
               </div>
-            </motion.div>
+            </div>
 
-            {/* Column 2: Plan Anual */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 100 }}
-              className="flex flex-col justify-between h-full bg-[#FCF9F2]"
+            <div
+              className={`flex flex-col justify-between bg-[#F3EFE4] ${
+                mobilePlan !== 'anual' ? 'max-md:hidden' : ''
+              }`}
             >
-              <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)] relative">
-                {/* Yellow accent bar at top */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-[#DEAE4D]" />
-                
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2E3330]">
+              <div className="border-b border-[#2E3330]/10 p-6 sm:p-8">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330]">
                     {planAnual.name}
                   </h3>
-                  <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-[#1d4431] bg-[#BFC9A6]/40 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex bg-[#DEAE4D] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-[#2E3330]">
                     {planAnual.badge}
                   </span>
                 </div>
-                <p className="text-xs text-zinc-500 mb-5 leading-relaxed min-h-10">
+                <p className="mt-3 min-h-10 text-xs leading-relaxed text-[#5F665E]">
                   {planAnual.subtitle}
                 </p>
-                <div className="flex flex-col">
-                  <div className="text-5xl font-light text-zinc-900 tracking-tight">
-                    {planAnual.price} <span className="text-lg font-normal text-zinc-400">USD</span>
-                  </div>
-                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-1 mb-1">
-                    por mes (12 cuotas)
-                  </div>
-                  <div className="text-[11px] font-semibold text-[#689C63] uppercase tracking-wider">
-                    ≈ RD${Math.round(planAnual.price * TASA_CAMBIO_RD)} / mes
-                  </div>
+                <div className="mt-6 flex items-baseline gap-1.5">
+                  <span className="text-5xl font-extrabold tracking-[-0.04em] text-[#2E3330]">
+                    {planAnual.price}
+                  </span>
+                  <span className="text-sm font-semibold text-[#5F665E]">USD</span>
                 </div>
+                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5F665E]">
+                  por mes (12 cuotas)
+                </p>
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#689C63]">
+                  ≈ RD${Math.round(planAnual.price * TASA_CAMBIO_RD)} / mes
+                </p>
               </div>
 
-              <div className="p-6 md:p-8 flex-1 space-y-3 bg-white border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                {planAnual.features.map(feat => (
-                  <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-4 h-4 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-[10px] font-extrabold mt-0.5">
+              <div className="flex-1 space-y-3 border-b border-[#2E3330]/10 p-6 sm:p-8">
+                {planAnual.features.map((feature) => (
+                  <div key={feature} className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center border border-[#689C63]/40 text-[10px] font-extrabold text-[#689C63]">
                       ✓
                     </span>
-                    <span className="text-xs text-zinc-600 leading-snug">
-                      {feat}
-                    </span>
+                    <span className="text-xs leading-snug text-[#5F665E]">{feature}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-                <button onClick={() => handlePlanSelection('individual')} className="w-full py-3 px-4 bg-[#DEAE4D] text-[#2E3330] text-[11px] font-bold tracking-widest uppercase rounded-full hover:bg-[#C99C44] transition-all duration-300 shadow-[0_4px_12px_rgba(222,174,77,0.2)]">
+              <div className="p-6 sm:p-8">
+                <button
+                  type="button"
+                  onClick={() => handlePlanSelection('individual')}
+                  className="w-full rounded-full bg-[#DEAE4D] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330] transition-colors hover:bg-[#D4A33F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2E3330]"
+                >
                   Comenzar prueba gratis
                 </button>
               </div>
-            </motion.div>
+            </div>
 
-            {/* Column 3: Institucional */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
-              className="flex flex-col justify-between h-full bg-white"
+            <div
+              className={`flex flex-col justify-between bg-[#FCFCFA] ${
+                mobilePlan !== 'institucional' ? 'max-md:hidden' : ''
+              }`}
             >
-              <div className="p-6 md:p-8 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#2E3330] mb-2">
+              <div className="border-b border-[#2E3330]/10 p-6 sm:p-8">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330]">
                   {planInst.name}
                 </h3>
-                <p className="text-xs text-zinc-500 mb-5 leading-relaxed min-h-10">
+                <p className="mt-3 min-h-10 text-xs leading-relaxed text-[#5F665E]">
                   {planInst.subtitle}
                 </p>
-                <div className="flex flex-col">
-                  <div className="text-5xl font-light text-zinc-900 tracking-tight">
-                    {planInst.price} <span className="text-lg font-normal text-zinc-400">USD</span>
-                  </div>
-                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-1 mb-1">
-                    por docente al mes
-                  </div>
-                  <div className="text-[11px] font-semibold text-[#689C63] uppercase tracking-wider">
-                    ≈ RD${Math.round(planInst.price * TASA_CAMBIO_RD)} / docente
-                  </div>
+                <div className="mt-6 flex items-baseline gap-1.5">
+                  <span className="text-5xl font-extrabold tracking-[-0.04em] text-[#2E3330]">
+                    {planInst.price}
+                  </span>
+                  <span className="text-sm font-semibold text-[#5F665E]">USD</span>
                 </div>
+                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5F665E]">
+                  por docente al mes
+                </p>
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#689C63]">
+                  ≈ RD${Math.round(planInst.price * TASA_CAMBIO_RD)} / docente
+                </p>
               </div>
 
-              <div className="p-6 md:p-8 flex-1 space-y-3 bg-[#FAFBF9]/40 border-b border-dashed border-[rgba(120,135,110,0.25)]">
-                {planInst.features.map(feat => (
-                  <div key={feat} className="flex items-start gap-2.5">
-                    <span className="w-4 h-4 rounded-full bg-[#EBF1E9] border border-[#D5E1D2] text-[#5C7257] flex items-center justify-center shrink-0 text-[10px] font-extrabold mt-0.5">
+              <div className="flex-1 space-y-3 border-b border-[#2E3330]/10 p-6 sm:p-8">
+                {planInst.features.map((feature) => (
+                  <div key={feature} className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center border border-[#689C63]/40 text-[10px] font-extrabold text-[#689C63]">
                       ✓
                     </span>
-                    <span className="text-xs text-zinc-600 leading-snug">
-                      {feat}
-                    </span>
+                    <span className="text-xs leading-snug text-[#5F665E]">{feature}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="p-6 md:p-8 flex flex-col justify-end bg-white">
-                <div className="border border-dashed border-[rgba(120,135,110,0.3)] bg-[#FAFBF9] rounded p-4 mb-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[11px] font-medium text-zinc-600">Total docentes</span>
+              <div className="p-6 sm:p-8">
+                <div className="mb-5 border-t border-[#2E3330]/15 pt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[11px] font-semibold text-[#5F665E]">Total docentes</span>
                     <input
                       type="number"
                       min="1"
+                      aria-label="Cantidad de docentes"
                       value={docentes || ''}
-                      onChange={(e) => setDocentes(parseInt(e.target.value) || 0)}
-                      className="w-16 px-2 py-1 bg-white border border-dashed border-[rgba(120,135,110,0.4)] rounded text-right text-xs font-bold text-zinc-800 focus:outline-none focus:border-[#DEAE4D]"
+                      onChange={(event) => setDocentes(parseInt(event.target.value) || 0)}
+                      className="w-16 border border-[#2E3330]/20 bg-white px-2 py-1 text-right text-xs font-bold text-[#2E3330] focus:border-[#DEAE4D] focus:outline-none"
                     />
                   </div>
-                  <div className="flex justify-between pt-3 border-t border-dashed border-[rgba(120,135,110,0.2)]">
-                    <div>
-                      <span className="text-[10px] text-zinc-400 uppercase tracking-wider block mb-0.5">Total Mensual</span>
-                      <span className="text-xs font-bold text-zinc-800">${instMensualUSD} USD</span>
-                      <span className="text-[9px] font-semibold text-[#689C63] block mt-0.5">≈ RD${Math.round(instMensualUSD * TASA_CAMBIO_RD).toLocaleString()}</span>
-                    </div>
+                  <div className="mt-3 flex items-baseline justify-between border-t border-[#2E3330]/10 pt-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5F665E]">
+                      Total mensual
+                    </span>
+                    <span className="text-xs font-bold text-[#2E3330]">
+                      ${instMensualUSD} USD
+                    </span>
                   </div>
+                  <p className="mt-1 text-right text-[10px] font-semibold text-[#689C63]">
+                    ≈ RD${Math.round(instMensualUSD * TASA_CAMBIO_RD).toLocaleString()}
+                  </p>
                 </div>
-                <a href="https://wa.link/vshsac" target="_blank" rel="noopener noreferrer" className="block text-center w-full py-3 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.5)] text-zinc-700 text-[11px] font-bold tracking-widest uppercase rounded-full hover:bg-[#FAFBF9] hover:border-[rgba(120,135,110,0.8)] transition-all duration-300">
+                <a
+                  href="https://wa.link/vshsac"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full rounded-full border border-[#2E3330]/25 px-4 py-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330] transition-colors hover:border-[#2E3330] hover:bg-[#E9E9DB]"
+                >
                   Cotizar centro
                 </a>
               </div>
-            </motion.div>
-
+            </div>
           </div>
         </div>
       </div>

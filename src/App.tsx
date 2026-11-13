@@ -279,7 +279,7 @@ export default function App() {
     return <ConfirmarCorreo />;
   }
 
-  if (pathname === '/') {
+  if (pathname === '/' || pathname === '/funciones') {
     return <Landing />;
   }
 

@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Cagliostro&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap');
+
+/* ── Landing CIELO · sistema visual editorial ───────────────── */
+
+.font-cagliostro {
+  font-family: 'Cagliostro', sans-serif;
+}
+
+.font-tangerine {
+  font-family: 'Tangerine', cursive, sans-serif;
+}
+
+@keyframes landingFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landingFadeScale {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.landing-fade-up {
+  animation: landingFadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-fade-scale {
+  animation: landingFadeScale 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-scroll-x {
+  scrollbar-width: none;
+}
+
+.landing-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-fade-up,
+  .landing-fade-scale {
+    animation: none !important;
+    transition: none !important;
+  }
+}
