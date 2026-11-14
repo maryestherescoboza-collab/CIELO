@@ -112,9 +112,9 @@ export default function CursoDetalle(props: Props) {
 
     useEffect(() => {
         if (cursoId) {
-            loadCursoData(cursoId, selectedPeriodo || 'P2');
+            loadCursoData(cursoId, selectedPeriodo || 'P2', false, targetAsignatura || undefined);
         }
-    }, [cursoId, selectedPeriodo, loadCursoData]);
+    }, [cursoId, selectedPeriodo, targetAsignatura, loadCursoData]);
 
     const [showVincular, setShowVincular] = useState(false);
     const [showAgregarActividad, setShowAgregarActividad] = useState(false);
@@ -181,7 +181,7 @@ export default function CursoDetalle(props: Props) {
         setPeriodLoading(true);
         setPeriodError(null);
         try {
-            await loadCursoData(cursoId, p);
+            await loadCursoData(cursoId, p, false, targetAsignatura || undefined);
         } catch (err: any) {
             console.error(`Error al cargar datos del período ${p}:`, err);
             setPeriodError(`No se pudieron sincronizar los datos de ${p}. Conservando datos existentes.`);

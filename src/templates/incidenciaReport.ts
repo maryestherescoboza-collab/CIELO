@@ -51,7 +51,7 @@ export function buildIncidenciaReport(data: IncidenciaReportData): string {
 <title>Informe de Incidencia — ${esc(nombreEstudiante)}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', Arial, sans-serif; background: #FDFBF7; color: #2E3330; padding: 32px; }
+  body { font-family: 'Inter', 'IBM Plex Sans', Arial, sans-serif; background: #FDFBF7; color: #2E3330; padding: 32px; }
   .page { max-width: 720px; margin: 0 auto; background: #FFFFFF; border: 1px solid rgba(46,51,48,0.08); border-radius: 16px; padding: 36px; box-shadow: 0 8px 24px rgba(0,0,0,0.04); }
   .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--primary); padding-bottom: 16px; margin-bottom: 24px; }
   .brand { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); }

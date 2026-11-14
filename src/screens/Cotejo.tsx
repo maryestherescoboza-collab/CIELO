@@ -194,7 +194,7 @@ export default function Cotejo({
         try {
             const actividadesPeriodo = (state?.actividades || []).filter((actividad) =>
                 (actividad.cursoId === selectedCursoId ||
-                 (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
+                    (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
                 (actividad.userId === session?.user?.id || !actividad.userId) &&
                 (!selectedAsignatura || normalizeArea(actividad.asignatura) === normalizeArea(selectedAsignatura)) &&
                 actividad.periodo === selectedPeriodo
@@ -384,9 +384,9 @@ export default function Cotejo({
 
     const selectedCurso = state?.cursos.find(c => c.id === selectedCursoId && sonMismaAsignatura(c.asignatura, selectedAsignatura)) || state?.cursos.find(c => c.id === selectedCursoId);
     const targetAsig = selectedAsignatura || currentCourseRole?.asignatura || selectedCurso?.asignatura;
-    const actividades = state?.actividades.filter(a => 
-        (a.cursoId === selectedCursoId || 
-         (selectedCurso?.sharedCourseId && a.sharedCourseId === selectedCurso.sharedCourseId)) &&
+    const actividades = state?.actividades.filter(a =>
+        (a.cursoId === selectedCursoId ||
+            (selectedCurso?.sharedCourseId && a.sharedCourseId === selectedCurso.sharedCourseId)) &&
         (a.userId === session?.user?.id || !a.userId) &&
         Boolean(a.asignatura) &&
         (!targetAsig || normalizeArea(a.asignatura) === normalizeArea(targetAsig)) &&
@@ -598,7 +598,8 @@ export default function Cotejo({
                     newIndicators.push(textContent);
                 }
             }
-            if (newIndicators.length > 0) {                setLocalCriterios(prev => {
+            if (newIndicators.length > 0) {
+                setLocalCriterios(prev => {
                     let nextId = Math.min(0, ...prev.map(c => c.id)) - 1;
                     const added = newIndicators.map(text => {
                         const id = nextId--;
@@ -611,7 +612,7 @@ export default function Cotejo({
         window.addEventListener('paste', handleGlobalPaste);
         return () => window.removeEventListener('paste', handleGlobalPaste);
     }, [readOnly]);
- 
+
     function handleInsertRowAfter(critId: number) {
         setLocalCriterios(prev => {
             const index = prev.findIndex(c => c.id === critId);
@@ -712,12 +713,12 @@ export default function Cotejo({
                                             data-guide="selector-curso"
                                             className="w-full bg-white border border-(--border-soft) rounded-lg px-2.5 py-1.5 text-xs font-semibold text-(--ink) outline-none transition-all cursor-pointer hover:border-(--ink-soft)/40 focus:border-(--french-blue) focus:ring-1 focus:ring-(--french-blue) shadow-2xs appearance-none truncate"
                                             value={`${selectedCursoId}|${selectedAsignatura}`}
-                                            onChange={e => { 
+                                            onChange={e => {
                                                 const [idStr, asig] = e.target.value.split('|');
-                                                setSelectedCursoId(Number(idStr)); 
+                                                setSelectedCursoId(Number(idStr));
                                                 setSelectedAsignatura(asig || '');
-                                                setSelectedActId(null); 
-                                                setSelectedEstId(null); 
+                                                setSelectedActId(null);
+                                                setSelectedEstId(null);
                                             }}
                                         >
                                             {state?.cursos.map(c => <option key={`${c.id}|${c.asignatura}`} value={`${c.id}|${c.asignatura}`}>{c.grado} {c.seccion} - {getAsignaturaNombre(c.asignatura)}</option>)}
@@ -750,11 +751,10 @@ export default function Cotejo({
                                                     aria-checked={selectedPeriodo === p}
                                                     data-guide={`btn-periodo-${p}`}
                                                     onClick={() => { setSelectedPeriodo(p); setSelectedActId(null); setSelectedEstId(null); }}
-                                                    className={`flex-1 py-1 text-xs font-bold rounded-md transition-all outline-none cursor-pointer ${
-                                                        selectedPeriodo === p
-                                                            ? 'bg-white text-(--ink) shadow-2xs font-black'
-                                                            : 'text-(--ink-soft) hover:text-(--ink) hover:bg-white/40'
-                                                    }`}
+                                                    className={`flex-1 py-1 text-xs font-bold rounded-md transition-all outline-none cursor-pointer ${selectedPeriodo === p
+                                                        ? 'bg-white text-(--ink) shadow-2xs font-black'
+                                                        : 'text-(--ink-soft) hover:text-(--ink) hover:bg-white/40'
+                                                        }`}
                                                 >
                                                     {p}
                                                 </button>
@@ -940,18 +940,11 @@ export default function Cotejo({
 
             <main className="flex-1 overflow-y-auto px-3 py-3 md:px-5 scroll-smooth scrollbar-hide">
                 <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both space-y-1.5">
-                    <div className="flex flex-wrap items-center justify-between gap-6 pb-3">
+                    <div className="flex flex-wrap items-center justify-between gap-4 pb-2">
                         <div>
-                            <h1 className="text-3xl font-black text-[#1E293B] tracking-tight mb-2 font-notion-title">
+                            <h1 className="text-2xl font-black text-[#1E293B] tracking-tight font-notion-title">
                                 {readOnly ? 'Vista Previa de Lista de Cotejo' : 'Lista de Cotejo'}
                             </h1>
-                            <div className="flex items-center gap-4">
-                                <CieloPill variant="neutral" uppercase className="px-4 text-black" style={{ backgroundColor: '#DDD5C8', borderColor: '#DDD5C8', color: '#000000' }}>
-                                    Registro de Logros
-                                </CieloPill>
-                                <div className="h-1.5 w-1.5 rounded-full bg-slate-400"></div>
-                                <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Verificación de Competencias</span>
-                            </div>
                         </div>
 
                         {!readOnly && (
@@ -1091,14 +1084,14 @@ export default function Cotejo({
                             <FileDown size={15} className="text-[#537BAC]" />
                             <span>Exportar Word / Drive</span>
                         </button>
-                        <TemplateCaptureButton 
-                            isCapturing={isCapturing} 
+                        <TemplateCaptureButton
+                            isCapturing={isCapturing}
                             onClick={handleCapture}
                             title="Guardar captura del cotejo en Google Drive"
                         />
                     </div>
 
-                    <div 
+                    <div
                         ref={tableContainerRef}
                         className="w-full rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-sm overflow-hidden"
                     >

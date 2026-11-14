@@ -54,10 +54,10 @@ const normalizarPasoGuardado = (paso: number): number => {
 };
 
 const estiloBotonPrimario =
-  'px-5 h-10 rounded-full bg-[#689C63] text-white font-bold text-[13px] hover:bg-[#5a8a55] transition-all shadow-sm flex items-center gap-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none';
+  'px-4 h-9 rounded-md bg-[#689C63] text-white font-bold text-[13px] hover:bg-[#5a8a55] transition-colors border border-[#689C63] flex items-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none';
 
 const estiloBotonSecundario =
-  'px-4 h-10 rounded-full border border-[#2E3330]/15 text-[#2E3330] font-bold text-[13px] hover:bg-[#2E3330]/5 transition-all flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none';
+  'px-3.5 h-9 rounded-md border border-[#2E3330]/15 text-[#2E3330] font-bold text-[13px] hover:bg-[#2E3330]/5 transition-colors flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none';
 
 export default function EspecificacionesCurriculares() {
   const session = useAppStore((s) => s.session);
@@ -879,92 +879,152 @@ export default function EspecificacionesCurriculares() {
     (c) => !configuracionCompleta(getEspecificacion(c)?.competencias)
   ).length;
 
+  const combinacionesPorCurso = useMemo(() => {
+    const mapa = new Map<string, { cursoNombre: string; grado: string; seccion: string; items: CombinacionCurricular[] }>();
+    for (const c of combinaciones) {
+      const key = `${c.cursoId || c.cursoNombre}`;
+      if (!mapa.has(key)) {
+        mapa.set(key, {
+          cursoNombre: c.cursoNombre,
+          grado: c.grado,
+          seccion: c.seccion,
+          items: []
+        });
+      }
+      mapa.get(key)!.items.push(c);
+    }
+    return Array.from(mapa.values());
+  }, [combinaciones]);
+
   /* ================================ LISTA ================================ */
   if (pantalla === 'lista') {
     return (
-      <div className="min-h-screen bg-white" style={{ fontFamily: 'Manrope, Inter, system-ui' }}>
-        <main className="px-4 sm:px-8 py-7 max-w-4xl w-full mx-auto flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
+      <div className="min-h-screen bg-[#FCFCFA] text-[#2E3330]" style={{ fontFamily: '"Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+        <main className="px-4 sm:px-8 py-6 max-w-4xl w-full mx-auto flex flex-col gap-5 text-left items-start">
+          {/* Encabezado minimalista */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#2E3330]/10 w-full">
             <div className="flex items-center gap-2.5">
-              <span className="w-9 h-9 rounded-full bg-[#689C63]/10 flex items-center justify-center">
-                <ClipboardList size={18} className="text-[#689C63]" />
+              <span className="w-8 h-8 rounded bg-[#689C63]/10 text-[#689C63] flex items-center justify-center shrink-0">
+                <ClipboardList size={16} />
               </span>
-              <h1 className="font-bold text-[26px] md:text-[30px] text-[#2E3330] tracking-tight">
-                Especificaciones curriculares
-              </h1>
-            </div>
-            <p className="text-[#2E3330]/70 text-[15px] leading-relaxed max-w-2xl">
-              Hola, vamos a organizar tus especificaciones curriculares de tus cursos, para ayudarte
-              con tus planes de clase y las especificaciones en los registros.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <h2 className="text-[15px] font-bold text-[#2E3330]">¿Por cuál quieres comenzar?</h2>
-
-            {combinaciones.length === 0 ? (
-              <div className="rounded-3xl border border-[#2E3330]/10 border-dashed p-8 text-center">
-                <p className="font-bold text-[#2E3330]">No tienes cursos con asignaturas asignadas</p>
-                <p className="text-[14px] text-[#2E3330]/60 mt-1">
-                  Vincula tus asignaturas desde Cursos para organizar tus especificaciones.
+              <div className="text-left">
+                <h1 className="font-extrabold text-lg sm:text-xl text-[#2E3330] tracking-tight">
+                  Especificaciones curriculares
+                </h1>
+                <p className="text-xs text-[#5F665E]">
+                  Organiza competencias, contenidos e indicadores por curso y período.
                 </p>
               </div>
-            ) : (
-              <ul className="flex flex-col gap-2.5">
-                {combinaciones.map((c) => {
-                  const guardada = getEspecificacion(c);
-                  const completa = configuracionCompleta(guardada?.competencias);
-                  return (
-                    <li key={c.key}>
-                      <div className="flex items-stretch gap-2 rounded-2xl border border-[#2E3330]/10 bg-white p-2 pl-4 transition-all duration-200 hover:border-[#689C63]/40 hover:shadow-sm active:scale-[0.99]">
-                        <button
-                          onClick={() => abrirCombo(c)}
-                          className="flex-1 min-w-0 flex items-center gap-3 text-left py-2"
-                        >
-                          <span className="w-10 h-10 shrink-0 rounded-full bg-[#689C63]/10 border border-[#689C63]/20 flex items-center justify-center">
-                            <ClipboardList size={17} className="text-[#689C63]" />
-                          </span>
-                          <span className="flex-1 min-w-0">
-                            <span className="block font-extrabold text-[15px] text-[#2E3330] truncate">
-                              {c.cursoNombre} — {c.asignaturaNombre}
-                            </span>
-                            <span className="block text-[12px] font-semibold text-[#2E3330]/50 mt-0.5">
-                              {c.grado} · {c.seccion}
-                            </span>
-                          </span>
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shrink-0 ${
-                              completa
-                                ? 'bg-[#689C63]/10 text-[#689C63]'
-                                : 'bg-[#2E3330]/5 text-[#2E3330]/55'
-                            }`}
-                          >
-                            {completa ? 'Configurada' : 'Pendiente'}
-                          </span>
-                          <ChevronRight size={18} className="text-[#2E3330]/30 shrink-0" />
-                        </button>
-                        <button
-                          onClick={() => verResumen(c)}
-                          title="Ver la especificación curricular aplicada por período (solo lectura)"
-                          className="shrink-0 self-center flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/70 transition-colors hover:border-[#689C63] hover:text-[#689C63] hover:bg-[#689C63]/5"
-                        >
-                          <BookOpen size={15} />
-                          Ver
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+            </div>
+
+            {combinaciones.length > 0 && (
+              <span className="text-[11px] font-semibold text-[#5F665E] bg-[#2E3330]/5 px-2.5 py-1 rounded border border-[#2E3330]/10 self-start sm:self-auto">
+                {combinaciones.length - pendientes} de {combinaciones.length} configuradas
+              </span>
             )}
           </div>
 
-          {combinaciones.length > 0 && (
-            <p className="text-[13px] font-semibold text-[#2E3330]/50">
-              {combinaciones.length - pendientes} de {combinaciones.length} configurada
-              {combinaciones.length - pendientes !== 1 ? 's' : ''} · {pendientes} pendiente
-              {pendientes !== 1 ? 's' : ''}
-            </p>
+          {/* Lista agrupada por curso */}
+          {combinaciones.length === 0 ? (
+            <div className="rounded-md border border-dashed border-[#2E3330]/15 bg-white p-6 text-left w-full">
+              <p className="text-xs font-bold text-[#2E3330] uppercase tracking-wider">No hay asignaturas vinculadas</p>
+              <p className="text-xs text-[#5F665E] mt-1 max-w-sm">
+                Vincula tus asignaturas desde la sección de Cursos para organizar tus especificaciones curriculares.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 w-full">
+              {combinacionesPorCurso.map((grupo) => (
+                <div key={`${grupo.cursoNombre}-${grupo.seccion}`} className="rounded-md border border-[#2E3330]/15 bg-white overflow-hidden">
+                  {/* Encabezado del grupo por curso */}
+                  <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-[#FAF9F5] border-b border-[#2E3330]/10 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-extrabold uppercase tracking-wider text-[#2E3330]">
+                        {grupo.cursoNombre}
+                      </span>
+                      <span className="text-[#2E3330]/20 font-bold">•</span>
+                      <span className="text-xs text-[#5F665E]">
+                        {grupo.grado} · Sección {grupo.seccion}
+                      </span>
+                    </div>
+
+                    <span className="text-[11px] font-medium text-[#5F665E]">
+                      {grupo.items.length} {grupo.items.length === 1 ? 'asignatura' : 'asignaturas'}
+                    </span>
+                  </div>
+
+                  {/* Lista documental compacta */}
+                  <div className="divide-y divide-[#2E3330]/5">
+                    {grupo.items.map((c) => {
+                      const guardada = getEspecificacion(c);
+                      const completa = configuracionCompleta(guardada?.competencias);
+
+                      return (
+                        <div
+                          key={c.key}
+                          className="group flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:bg-[#FAF9F5]/70 text-left"
+                        >
+                          {/* Columna Izquierda: Icono + Nombre Asignatura + Badge Estado */}
+                          <div
+                            className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                            onClick={() => abrirCombo(c)}
+                          >
+                            <div className="w-7 h-7 rounded bg-[#689C63]/10 text-[#689C63] flex items-center justify-center shrink-0">
+                              <ClipboardList size={15} />
+                            </div>
+
+                            <div className="min-w-0 flex-1 flex flex-wrap items-center gap-2">
+                              <span className="text-[13px] font-bold text-[#2E3330] group-hover:text-[#689C63] transition-colors truncate">
+                                {c.asignaturaNombre}
+                              </span>
+
+                              {esAsignaturaOptativa(c.asignatura) && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80">
+                                  Optativa
+                                </span>
+                              )}
+
+                              <span
+                                className={`px-2 py-0.5 rounded text-[9.5px] font-bold uppercase tracking-wider ${
+                                  completa
+                                    ? 'bg-[#689C63]/10 text-[#689C63] border border-[#689C63]/25'
+                                    : 'bg-[#2E3330]/5 text-[#5F665E]'
+                                }`}
+                              >
+                                {completa ? 'Configurada' : 'Pendiente'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Columna Derecha: Acciones compactas */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => verResumen(c)}
+                              title="Ver resumen curricular"
+                              className="p-1.5 text-[#5F665E] hover:text-[#2E3330] hover:bg-[#2E3330]/5 rounded transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                            >
+                              <BookOpen size={14} />
+                              <span className="hidden sm:inline">Ver</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => abrirCombo(c)}
+                              title="Configurar especificación"
+                              className="p-1.5 text-[#5F665E] hover:text-[#689C63] hover:bg-[#689C63]/10 rounded transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+                            >
+                              <span className="hidden sm:inline">Configurar</span>
+                              <ChevronRight size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </main>
       </div>
@@ -978,9 +1038,9 @@ export default function EspecificacionesCurriculares() {
     const soloLectura = origenResumen === 'lista';
     const cargandoResumenVisible = !resumenListo || cargandoResumen;
     return (
-      <div className="min-h-screen bg-white" style={{ fontFamily: 'Manrope, Inter, system-ui' }}>
-        <main className="px-4 sm:px-8 py-7 max-w-4xl w-full mx-auto flex flex-col gap-5">
-          <div className="flex items-center gap-3">
+      <div className="min-h-screen bg-[#FCFCFA] text-[#2E3330]" style={{ fontFamily: '"Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+        <main className="px-4 sm:px-8 py-7 max-w-4xl w-full mx-auto flex flex-col gap-5 text-left items-start">
+          <div className="flex items-center gap-3 w-full">
             <button
               onClick={volverDelResumen}
               disabled={guardando || cargandoResumenVisible}
@@ -989,8 +1049,8 @@ export default function EspecificacionesCurriculares() {
             >
               <ArrowLeft size={15} /> Atrás
             </button>
-            <div className="flex flex-col">
-              <h1 className="font-bold text-[20px] text-[#2E3330] tracking-tight leading-tight">
+            <div className="flex flex-col text-left">
+              <h1 className="font-extrabold text-[20px] text-[#2E3330] tracking-tight leading-tight">
                 {combo?.cursoNombre} — {combo?.asignaturaNombre}
               </h1>
               <p className="text-[12px] font-semibold text-[#2E3330]/50">
@@ -1000,11 +1060,11 @@ export default function EspecificacionesCurriculares() {
           </div>
 
           {!soloLectura && (
-            <div className="flex flex-col gap-1.5">
-              <h2 className="font-bold text-[22px] text-[#2E3330] tracking-tight">
+            <div className="flex flex-col gap-1.5 text-left">
+              <h2 className="font-extrabold text-[20px] text-[#2E3330] tracking-tight">
                 Resumen de la configuración
               </h2>
-              <p className="text-[14px] text-[#2E3330]/70 leading-relaxed max-w-2xl">
+              <p className="text-[13px] text-[#2E3330]/70 leading-relaxed max-w-2xl">
                 Revisa las selecciones guardadas por período. Puedes volver atrás para modificarlas
                 y el resumen se actualizará con tus cambios.
               </p>
@@ -1012,20 +1072,22 @@ export default function EspecificacionesCurriculares() {
           )}
 
           {cargandoResumenVisible ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-14 rounded-3xl border border-[#2E3330]/10 border-dashed">
-              <Loader2 size={22} className="animate-spin text-[#689C63]" />
+            <div className="w-full flex items-center justify-start gap-3 py-6 px-5 rounded-md border border-[#2E3330]/15 border-dashed bg-white">
+              <Loader2 size={20} className="animate-spin text-[#689C63]" />
               <p className="text-[13px] font-semibold text-[#2E3330]/60">Cargando el resumen…</p>
             </div>
           ) : (
-            <ResumenEspecificaciones
-              periodos={periodosEspec}
-              catalogoCE={competenciasCatalogo}
-              catalogoIndicadores={indicadores}
-              puente={puenteCeInd}
-            />
+            <div className="w-full">
+              <ResumenEspecificaciones
+                periodos={periodosEspec}
+                catalogoCE={competenciasCatalogo}
+                catalogoIndicadores={indicadores}
+                puente={puenteCeInd}
+              />
+            </div>
           )}
 
-          <div className="flex items-center justify-between gap-3 pt-4 border-t border-[#2E3330]/10">
+          <div className="flex items-center justify-between gap-3 pt-4 border-t border-[#2E3330]/10 w-full">
             <button
               onClick={volverDelResumen}
               disabled={guardando || cargandoResumenVisible}
@@ -1056,10 +1118,10 @@ export default function EspecificacionesCurriculares() {
 
   /* ================================ RECORRIDO ================================ */
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: 'Manrope, Inter, system-ui' }}>
-      <main className="px-4 sm:px-8 py-7 max-w-4xl w-full mx-auto flex flex-col gap-5">
+    <div className="min-h-screen bg-[#FCFCFA] text-[#2E3330]" style={{ fontFamily: '"Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <main className="px-4 sm:px-8 py-7 max-w-4xl w-full mx-auto flex flex-col gap-5 text-left items-start">
         {/* Cabecera */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 w-full">
           <div className="flex items-center gap-3">
             <button
               onClick={salir}
@@ -1069,8 +1131,8 @@ export default function EspecificacionesCurriculares() {
             >
               <ArrowLeft size={15} /> Atrás
             </button>
-            <div className="flex flex-col">
-              <h1 className="font-bold text-[20px] text-[#2E3330] tracking-tight leading-tight">
+            <div className="flex flex-col text-left">
+              <h1 className="font-extrabold text-[20px] text-[#2E3330] tracking-tight leading-tight">
                 {combo?.cursoNombre} — {combo?.asignaturaNombre}
               </h1>
               <p className="text-[12px] font-semibold text-[#2E3330]/50">
@@ -1089,7 +1151,7 @@ export default function EspecificacionesCurriculares() {
                   <button
                     onClick={() => alcanzable && irAPaso(p.numero)}
                     disabled={!alcanzable || guardando}
-                    className={`px-3 h-7 rounded-full text-[12px] font-bold transition-colors ${
+                    className={`px-2.5 h-7 rounded text-[12px] font-bold transition-colors ${
                       activo
                         ? 'bg-[#689C63] text-white'
                         : alcanzable
@@ -1109,7 +1171,7 @@ export default function EspecificacionesCurriculares() {
         </div>
 
         {aviso && (
-          <div className="bg-[#F5BC5D]/15 border border-[#F5BC5D]/40 text-[#8A6412] text-[13px] font-bold px-4 py-2.5 rounded-xl">
+          <div className="w-full bg-[#F5BC5D]/15 border border-[#F5BC5D]/40 text-[#8A6412] text-[13px] font-bold px-4 py-2.5 rounded-md text-left">
             {aviso}
           </div>
         )}
@@ -1125,7 +1187,7 @@ export default function EspecificacionesCurriculares() {
                 key={p}
                 onClick={() => cambiarPeriodo(p)}
                 disabled={guardando}
-                className={`px-3.5 h-8 rounded-full text-[13px] font-black transition-colors ${
+                className={`px-3 h-7 rounded text-[12px] font-extrabold transition-colors ${
                   periodo === p
                     ? 'bg-[#2E3330] text-white'
                     : 'bg-[#2E3330]/5 text-[#2E3330]/60 hover:bg-[#2E3330]/10'
@@ -1139,62 +1201,62 @@ export default function EspecificacionesCurriculares() {
 
         {/* ---------------- PASO 1: Competencias específicas del grado y la asignatura ---------------- */}
         {paso === 1 && (
-          <div className="flex flex-col gap-4">
-            <p className="text-[14px] text-[#2E3330]/70 leading-relaxed">
+          <div className="flex flex-col gap-4 text-left w-full">
+            <p className="text-[13px] text-[#2E3330]/70 leading-relaxed text-left">
               Selecciona las competencias específicas del currículo dominicano que trabajarás en el
               período <strong className="text-[#2E3330]">{periodo}</strong> para este grado y asignatura.
             </p>
 
             {cargandoCatalogo || cargandoPeriodo ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <Loader2 size={30} className="animate-spin text-[#689C63]" />
+              <div className="flex flex-col items-start justify-center py-12 gap-3 text-left">
+                <Loader2 size={24} className="animate-spin text-[#689C63]" />
                 <p className="text-[13px] font-semibold text-[#2E3330]/60">
                   Cargando las competencias específicas del grado…
                 </p>
               </div>
             ) : errorCatalogo ? (
-              <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center flex flex-col items-center gap-2.5">
-                <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-1">
-                  <AlertCircle size={24} />
+              <div className="rounded-md border border-red-200 bg-red-50 p-6 text-left flex flex-col items-start gap-2.5 w-full">
+                <div className="w-9 h-9 rounded bg-red-100 text-red-600 flex items-center justify-center mb-1">
+                  <AlertCircle size={20} />
                 </div>
-                <p className="font-extrabold text-[16px] text-[#2E3330]">
+                <p className="font-extrabold text-[15px] text-[#2E3330]">
                   No se pudieron cargar las competencias específicas
                 </p>
-                <p className="text-[13px] text-[#2E3330]/65 max-w-md leading-relaxed">
+                <p className="text-[13px] text-[#2E3330]/65 max-w-md leading-relaxed text-left">
                   Ocurrió un problema al recuperar las competencias del currículo. El módulo sigue
                   operativo; vuelve a intentarlo.
                 </p>
                 <button
                   type="button"
                   onClick={() => setIntentoCatalogo((i) => i + 1)}
-                  className="px-5 h-9 rounded-full bg-[#2E3330] text-white text-[13px] font-bold hover:bg-black transition-colors mt-2"
+                  className="px-4 h-8 rounded-md bg-[#2E3330] text-white text-[12px] font-bold hover:bg-black transition-colors mt-2"
                 >
                   Reintentar
                 </button>
               </div>
             ) : competenciasCatalogo.length === 0 ? (
-              <div className="rounded-3xl border border-[#2E3330]/10 border-dashed p-8 text-center flex flex-col items-center gap-2 bg-[#FAF8F5]">
-                <div className="w-12 h-12 rounded-full bg-[#F5BC5D]/20 text-[#8A6412] flex items-center justify-center mb-1">
-                  <AlertCircle size={24} />
+              <div className="rounded-md border border-[#2E3330]/15 border-dashed p-6 text-left flex flex-col items-start gap-2 bg-[#FAF8F5] w-full">
+                <div className="w-9 h-9 rounded bg-[#F5BC5D]/20 text-[#8A6412] flex items-center justify-center mb-1">
+                  <AlertCircle size={20} />
                 </div>
-                <p className="font-extrabold text-[16px] text-[#2E3330]">
+                <p className="font-extrabold text-[15px] text-[#2E3330]">
                   Sin competencias específicas registradas
                 </p>
-                <p className="text-[13px] text-[#2E3330]/65 max-w-md leading-relaxed">
+                <p className="text-[13px] text-[#2E3330]/65 max-w-md leading-relaxed text-left">
                   No hay competencias específicas del currículo disponibles para{' '}
                   <strong className="text-[#2E3330]">{combo?.grado}</strong> —{' '}
                   <strong className="text-[#2E3330]">{combo?.asignaturaNombre}</strong>.
                 </p>
-                <span className="text-[11px] font-bold text-[#8A6412] bg-[#F5BC5D]/15 px-3 py-1.5 rounded-full mt-2">
+                <span className="text-[11px] font-bold text-[#8A6412] bg-[#F5BC5D]/15 px-2.5 py-1 rounded mt-2">
                   Selecciona al menos una competencia para poder continuar.
                 </span>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 w-full">
                 {/* Barra de control y revisión de selección */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-[#2E3330]/3 border border-[#2E3330]/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-md bg-[#2E3330]/3 border border-[#2E3330]/15">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-full bg-[#689C63]/15 text-[#689C63] text-[12px] font-extrabold">
+                    <span className="px-2 py-0.5 rounded bg-[#689C63]/15 text-[#689C63] text-[12px] font-extrabold">
                       {ceSeleccionadas.size} de {competenciasCatalogo.length}
                     </span>
                     <span className="text-[13px] font-bold text-[#2E3330]/70">
@@ -1206,14 +1268,14 @@ export default function EspecificacionesCurriculares() {
                     <button
                       type="button"
                       onClick={seleccionarTodasCE}
-                      className="px-3 h-7 rounded-full bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330] hover:bg-[#689C63]/10 hover:border-[#689C63] hover:text-[#689C63] transition-colors"
+                      className="px-3 h-7 rounded bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330] hover:bg-[#689C63]/10 hover:border-[#689C63] hover:text-[#689C63] transition-colors"
                     >
                       Seleccionar todas
                     </button>
                     <button
                       type="button"
                       onClick={deseleccionarTodasCE}
-                      className="px-3 h-7 rounded-full bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/60 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors"
+                      className="px-3 h-7 rounded bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/60 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors"
                     >
                       Deseleccionar todas
                     </button>
@@ -1222,9 +1284,9 @@ export default function EspecificacionesCurriculares() {
 
                 {/* Lista de competencias agrupadas por bloque curricular (sin etiquetas BC#) */}
                 {bloquesCatalogo.map((b) => (
-                  <section key={b.bloque} className="flex flex-col gap-2.5">
+                  <section key={b.bloque} className="flex flex-col gap-2.5 text-left">
                     <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-bold text-[#2E3330]/50 uppercase tracking-wider">
+                      <span className="text-[12px] font-extrabold text-[#2E3330]/60 uppercase tracking-wider">
                         {b.bloque === 'BC1'
                           ? 'Comunicación'
                           : b.bloque === 'BC2'
@@ -1243,14 +1305,14 @@ export default function EspecificacionesCurriculares() {
                             key={f.codigo}
                             type="button"
                             onClick={() => alternarCE(f.codigo)}
-                            className={`w-full flex items-start gap-3.5 text-left rounded-2xl border p-4 transition-all duration-150 ${
+                            className={`w-full flex items-start gap-3.5 text-left rounded-md border p-3.5 transition-all duration-150 ${
                               seleccionada
-                                ? 'border-[#689C63]/60 bg-[#689C63]/5 shadow-xs'
-                                : 'border-[#2E3330]/10 bg-white hover:border-[#2E3330]/25'
+                                ? 'border-[#689C63]/60 bg-[#689C63]/5'
+                                : 'border-[#2E3330]/15 bg-white hover:border-[#2E3330]/30'
                             }`}
                           >
                             <span
-                              className={`w-5 h-5 mt-0.5 shrink-0 rounded-md border flex items-center justify-center transition-colors ${
+                              className={`w-5 h-5 mt-0.5 shrink-0 rounded border flex items-center justify-center transition-colors ${
                                 seleccionada
                                   ? 'bg-[#689C63] border-[#689C63]'
                                   : 'border-[#2E3330]/25 bg-white'
@@ -1260,7 +1322,7 @@ export default function EspecificacionesCurriculares() {
                             </span>
                             <span className="flex-1 min-w-0">
                               <span className="flex flex-wrap items-center gap-2">
-                                <span className="px-2 py-0.5 rounded-full bg-[#2E3330]/5 text-[#2E3330] text-[11px] font-black tracking-wide">
+                                <span className="px-2 py-0.5 rounded bg-[#2E3330]/5 text-[#2E3330] text-[11px] font-black tracking-wide">
                                   {f.codigo}
                                 </span>
                                 <span className="text-[13px] font-extrabold text-[#2E3330]">
@@ -1278,7 +1340,7 @@ export default function EspecificacionesCurriculares() {
                   </section>
                 ))}
 
-                <p className="text-[12px] font-semibold text-[#2E3330]/50">
+                <p className="text-[12px] font-semibold text-[#2E3330]/50 text-left">
                   {ceSeleccionadas.size} de {competenciasCatalogo.length} seleccionadas para {periodo}
                 </p>
               </div>
@@ -1288,36 +1350,36 @@ export default function EspecificacionesCurriculares() {
 
         {/* ---------------- PASO 2: Contenidos ---------------- */}
         {paso === 2 && (
-          <div className="flex flex-col gap-4">
-            <p className="text-[14px] text-[#2E3330]/70 leading-relaxed">
+          <div className="flex flex-col gap-4 text-left w-full">
+            <p className="text-[13px] text-[#2E3330]/70 leading-relaxed text-left">
               Selecciona los contenidos y su desglose (conceptos, procedimientos, actitudes y valores)
               que trabajarás en el período <strong className="text-[#2E3330]">{periodo}</strong>.
               Puedes marcar contenidos completos o desplegarlos para seleccionar elementos específicos del JSON.
             </p>
 
             {cargandoCatalogo ? (
-              <div className="flex items-center justify-center py-14">
-                <Loader2 size={28} className="animate-spin text-[#689C63]" />
+              <div className="flex items-center justify-start py-12 text-left">
+                <Loader2 size={24} className="animate-spin text-[#689C63]" />
               </div>
             ) : contenidos.length === 0 ? (
-              <div className="rounded-3xl border border-[#2E3330]/10 border-dashed p-7 text-center">
+              <div className="rounded-md border border-[#2E3330]/15 border-dashed p-6 text-left w-full">
                 <p className="font-bold text-[#2E3330]">
                   {esAsignaturaOptativa(combo?.asignatura)
                     ? 'Asignatura optativa personalizada'
                     : 'Sin contenidos curriculares disponibles'}
                 </p>
-                <p className="text-[14px] text-[#2E3330]/60 mt-1">
+                <p className="text-[13px] text-[#2E3330]/60 mt-1">
                   {esAsignaturaOptativa(combo?.asignatura)
                     ? `${combo?.asignaturaNombre} es una asignatura optativa. Puedes continuar al siguiente paso y definir los contenidos e indicadores directamente en tus secuencias y actividades.`
                     : `No hay contenidos registrados para ${combo?.grado} — ${combo?.asignaturaNombre}.`}
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 w-full">
                 {/* Barra de control y revisión de selección */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-[#2E3330]/3 border border-[#2E3330]/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-md bg-[#2E3330]/3 border border-[#2E3330]/15">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-full bg-[#689C63]/15 text-[#689C63] text-[12px] font-extrabold">
+                    <span className="px-2 py-0.5 rounded bg-[#689C63]/15 text-[#689C63] text-[12px] font-extrabold">
                       {contenidosSel.size} de {contenidos.length}
                     </span>
                     <span className="text-[13px] font-bold text-[#2E3330]/70">
@@ -1329,28 +1391,28 @@ export default function EspecificacionesCurriculares() {
                     <button
                       type="button"
                       onClick={seleccionarTodosContenidos}
-                      className="px-3 h-7 rounded-full bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330] hover:bg-[#689C63]/10 hover:border-[#689C63] hover:text-[#689C63] transition-colors"
+                      className="px-3 h-7 rounded bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330] hover:bg-[#689C63]/10 hover:border-[#689C63] hover:text-[#689C63] transition-colors"
                     >
                       Seleccionar todos
                     </button>
                     <button
                       type="button"
                       onClick={deseleccionarTodosContenidos}
-                      className="px-3 h-7 rounded-full bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/60 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors"
+                      className="px-3 h-7 rounded bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/60 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors"
                     >
                       Deseleccionar todos
                     </button>
                     <button
                       type="button"
                       onClick={expandirTodosContenidos}
-                      className="px-3 h-7 rounded-full bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/70 hover:bg-[#2E3330]/5 transition-colors"
+                      className="px-3 h-7 rounded bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/70 hover:bg-[#2E3330]/5 transition-colors"
                     >
                       Expandir todos
                     </button>
                     <button
                       type="button"
                       onClick={contraerTodosContenidos}
-                      className="px-3 h-7 rounded-full bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/70 hover:bg-[#2E3330]/5 transition-colors"
+                      className="px-3 h-7 rounded bg-white border border-[#2E3330]/15 text-[12px] font-bold text-[#2E3330]/70 hover:bg-[#2E3330]/5 transition-colors"
                     >
                       Contraer todos
                     </button>
@@ -1358,7 +1420,7 @@ export default function EspecificacionesCurriculares() {
                 </div>
 
                 {/* Lista de contenidos con desglose JSON expandible */}
-                <ul className="flex flex-col gap-3">
+                <ul className="flex flex-col gap-3 w-full">
                   {contenidos.map((c) => {
                     const seleccionado = contenidosSel.has(c.id);
                     const expandido = contenidosExpandidos.has(c.id);
@@ -1382,14 +1444,14 @@ export default function EspecificacionesCurriculares() {
                     return (
                       <li key={c.id}>
                         <div
-                          className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                          className={`rounded-md border transition-all duration-150 overflow-hidden ${
                             seleccionado
-                              ? 'border-[#689C63]/50 bg-white shadow-xs'
-                              : 'border-[#2E3330]/10 bg-white hover:border-[#2E3330]/25'
+                              ? 'border-[#689C63]/60 bg-white'
+                              : 'border-[#2E3330]/15 bg-white hover:border-[#2E3330]/30'
                           }`}
                         >
                           {/* Cabecera del contenido */}
-                          <div className="p-3.5 flex items-start gap-3">
+                          <div className="p-3.5 flex items-start gap-3 text-left">
                             <button
                               type="button"
                               onClick={() => alternarContenido(c.id)}
@@ -1397,7 +1459,7 @@ export default function EspecificacionesCurriculares() {
                               title={seleccionado ? 'Deseleccionar contenido' : 'Seleccionar contenido'}
                             >
                               <span
-                                className={`w-5 h-5 shrink-0 rounded-md border flex items-center justify-center transition-colors ${
+                                className={`w-5 h-5 shrink-0 rounded border flex items-center justify-center transition-colors ${
                                   seleccionado
                                     ? 'bg-[#689C63] border-[#689C63]'
                                     : 'border-[#2E3330]/25 bg-white hover:border-[#689C63]'
@@ -1408,7 +1470,7 @@ export default function EspecificacionesCurriculares() {
                             </button>
 
                             <div
-                              className="flex-1 min-w-0 cursor-pointer"
+                              className="flex-1 min-w-0 cursor-pointer text-left"
                               onClick={() =>
                                 totalElementos > 0
                                   ? alternarExpansionContenido(c.id)
@@ -1417,11 +1479,11 @@ export default function EspecificacionesCurriculares() {
                             >
                               <div className="flex flex-wrap items-center gap-2">
                                 {c.contenido_json?.disciplina && (
-                                  <span className="px-2 py-0.5 rounded-full bg-[#2E3330]/5 text-[#2E3330] text-[10px] font-black uppercase tracking-wider">
+                                  <span className="px-2 py-0.5 rounded bg-[#2E3330]/5 text-[#2E3330] text-[10px] font-black uppercase tracking-wider">
                                     {c.contenido_json.disciplina}
                                   </span>
                                 )}
-                                <span className="font-extrabold text-[14px] text-[#2E3330] leading-snug">
+                                <span className="font-extrabold text-[13px] text-[#2E3330] leading-snug">
                                   {c.contenido}
                                 </span>
                               </div>
@@ -1429,7 +1491,7 @@ export default function EspecificacionesCurriculares() {
                               {totalElementos > 0 && (
                                 <div className="flex flex-wrap items-center gap-2 mt-1.5">
                                   <span
-                                    className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                    className={`px-2 py-0.5 rounded text-[11px] font-bold ${
                                       totalSeleccionados === totalElementos && totalElementos > 0
                                         ? 'bg-[#689C63]/15 text-[#689C63]'
                                         : totalSeleccionados > 0
@@ -1452,7 +1514,7 @@ export default function EspecificacionesCurriculares() {
                               <button
                                 type="button"
                                 onClick={() => alternarExpansionContenido(c.id)}
-                                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-xl text-[12px] font-bold text-[#2E3330]/65 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors"
+                                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded text-[12px] font-bold text-[#2E3330]/65 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors"
                                 title={expandido ? 'Ocultar desglose JSON' : 'Ver desglose JSON'}
                               >
                                 <span>{expandido ? 'Ocultar' : 'Desglose'}</span>
@@ -1463,7 +1525,7 @@ export default function EspecificacionesCurriculares() {
 
                           {/* Desglose JSON expandible */}
                           {expandido && totalElementos > 0 && (
-                            <div className="border-t border-[#2E3330]/10 bg-[#FAF8F5]/60 p-3.5 flex flex-col gap-4">
+                            <div className="border-t border-[#2E3330]/10 bg-[#FAF8F5]/60 p-3.5 flex flex-col gap-4 text-left">
                               {/* Barra de acciones del desglose */}
                               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#2E3330]/10 pb-2.5">
                                 <span className="text-[12px] font-extrabold text-[#2E3330]/80">
@@ -1473,14 +1535,14 @@ export default function EspecificacionesCurriculares() {
                                   <button
                                     type="button"
                                     onClick={() => seleccionarTodoDesglose(c.id)}
-                                    className="px-2.5 py-1 rounded-lg bg-white border border-[#2E3330]/15 text-[11px] font-bold text-[#689C63] hover:bg-[#689C63]/10 hover:border-[#689C63] transition-colors"
+                                    className="px-2.5 py-1 rounded bg-white border border-[#2E3330]/15 text-[11px] font-bold text-[#689C63] hover:bg-[#689C63]/10 hover:border-[#689C63] transition-colors"
                                   >
                                     Seleccionar todo el desglose
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => deseleccionarTodoDesglose(c.id)}
-                                    className="px-2.5 py-1 rounded-lg bg-white border border-[#2E3330]/15 text-[11px] font-bold text-[#2E3330]/60 hover:bg-[#2E3330]/5 transition-colors"
+                                    className="px-2.5 py-1 rounded bg-white border border-[#2E3330]/15 text-[11px] font-bold text-[#2E3330]/60 hover:bg-[#2E3330]/5 transition-colors"
                                   >
                                     Deseleccionar desglose
                                   </button>
@@ -1491,7 +1553,7 @@ export default function EspecificacionesCurriculares() {
                               {todosConceptos.length > 0 && (
                                 <div className="flex flex-col gap-2">
                                   <div className="flex items-center gap-2">
-                                    <span className="px-2 py-0.5 rounded-full bg-[#2563EB]/10 text-[#2563EB] text-[11px] font-black uppercase tracking-wider">
+                                    <span className="px-2 py-0.5 rounded bg-[#2563EB]/10 text-[#2563EB] text-[11px] font-black uppercase tracking-wider">
                                       Conceptos ({selConceptos.size} de {todosConceptos.length})
                                     </span>
                                   </div>
@@ -1503,9 +1565,9 @@ export default function EspecificacionesCurriculares() {
                                           key={`${idx}-${cTexto}`}
                                           type="button"
                                           onClick={() => alternarSubItem(c.id, 'conceptos', cTexto)}
-                                          className={`w-full flex items-start gap-2.5 text-left rounded-xl p-2.5 text-[13px] transition-all ${
+                                          className={`w-full flex items-start gap-2.5 text-left rounded p-2.5 text-[13px] transition-all ${
                                             activo
-                                              ? 'bg-white border border-[#2563EB]/40 shadow-2xs font-medium text-[#1E3A8A]'
+                                              ? 'bg-white border border-[#2563EB]/40 font-medium text-[#1E3A8A]'
                                               : 'bg-white/80 border border-[#2E3330]/10 text-[#2E3330]/75 hover:border-[#2E3330]/25'
                                           }`}
                                         >
@@ -1532,7 +1594,7 @@ export default function EspecificacionesCurriculares() {
                               {todosProcedimientos.length > 0 && (
                                 <div className="flex flex-col gap-2">
                                   <div className="flex items-center gap-2">
-                                    <span className="px-2 py-0.5 rounded-full bg-[#0D9488]/10 text-[#0D9488] text-[11px] font-black uppercase tracking-wider">
+                                    <span className="px-2 py-0.5 rounded bg-[#0D9488]/10 text-[#0D9488] text-[11px] font-black uppercase tracking-wider">
                                       Procedimientos ({selProcedimientos.size} de {todosProcedimientos.length})
                                     </span>
                                   </div>
@@ -1544,9 +1606,9 @@ export default function EspecificacionesCurriculares() {
                                           key={`${idx}-${pTexto}`}
                                           type="button"
                                           onClick={() => alternarSubItem(c.id, 'procedimientos', pTexto)}
-                                          className={`w-full flex items-start gap-2.5 text-left rounded-xl p-2.5 text-[13px] transition-all ${
+                                          className={`w-full flex items-start gap-2.5 text-left rounded p-2.5 text-[13px] transition-all ${
                                             activo
-                                              ? 'bg-white border border-[#0D9488]/40 shadow-2xs font-medium text-[#134E4A]'
+                                              ? 'bg-white border border-[#0D9488]/40 font-medium text-[#134E4A]'
                                               : 'bg-white/80 border border-[#2E3330]/10 text-[#2E3330]/75 hover:border-[#2E3330]/25'
                                           }`}
                                         >
@@ -1573,7 +1635,7 @@ export default function EspecificacionesCurriculares() {
                               {todasActitudes.length > 0 && (
                                 <div className="flex flex-col gap-2">
                                   <div className="flex items-center gap-2">
-                                    <span className="px-2 py-0.5 rounded-full bg-[#D97706]/10 text-[#D97706] text-[11px] font-black uppercase tracking-wider">
+                                    <span className="px-2 py-0.5 rounded bg-[#D97706]/10 text-[#D97706] text-[11px] font-black uppercase tracking-wider">
                                       Actitudes y Valores ({selActitudes.size} de {todasActitudes.length})
                                     </span>
                                   </div>
@@ -1585,9 +1647,9 @@ export default function EspecificacionesCurriculares() {
                                           key={`${idx}-${aTexto}`}
                                           type="button"
                                           onClick={() => alternarSubItem(c.id, 'actitudes_valores', aTexto)}
-                                          className={`w-full flex items-start gap-2.5 text-left rounded-xl p-2.5 text-[13px] transition-all ${
+                                          className={`w-full flex items-start gap-2.5 text-left rounded p-2.5 text-[13px] transition-all ${
                                             activo
-                                              ? 'bg-white border border-[#D97706]/40 shadow-2xs font-medium text-[#78350F]'
+                                              ? 'bg-white border border-[#D97706]/40 font-medium text-[#78350F]'
                                               : 'bg-white/80 border border-[#2E3330]/10 text-[#2E3330]/75 hover:border-[#2E3330]/25'
                                           }`}
                                         >
@@ -1618,7 +1680,7 @@ export default function EspecificacionesCurriculares() {
                 </ul>
               </div>
             )}
-            <p className="text-[12px] font-semibold text-[#2E3330]/50">
+            <p className="text-[12px] font-semibold text-[#2E3330]/50 text-left">
               {contenidosSel.size} contenido{contenidosSel.size !== 1 ? 's' : ''} seleccionado{contenidosSel.size !== 1 ? 's' : ''} para {periodo}
             </p>
           </div>
@@ -1626,31 +1688,31 @@ export default function EspecificacionesCurriculares() {
 
         {/* ---------------- PASO 3: Indicadores ---------------- */}
         {paso === 3 && (
-          <div className="flex flex-col gap-3">
-            <p className="text-[14px] text-[#2E3330]/70">
+          <div className="flex flex-col gap-3 text-left w-full">
+            <p className="text-[13px] text-[#2E3330]/70 text-left">
               Selecciona los indicadores que trabajarás en el período{' '}
               <strong className="text-[#2E3330]">{periodo}</strong>.
             </p>
             <LeyendaCompetenciasCF />
             {cargandoCatalogo ? (
-              <div className="flex items-center justify-center py-14">
-                <Loader2 size={28} className="animate-spin text-[#689C63]" />
+              <div className="flex items-center justify-start py-12 text-left">
+                <Loader2 size={24} className="animate-spin text-[#689C63]" />
               </div>
             ) : indicadores.length === 0 ? (
-              <div className="rounded-3xl border border-[#2E3330]/10 border-dashed p-7 text-center">
+              <div className="rounded-md border border-[#2E3330]/15 border-dashed p-6 text-left w-full">
                 <p className="font-bold text-[#2E3330]">
                   {esAsignaturaOptativa(combo?.asignatura)
                     ? 'Indicadores personalizados por actividad'
                     : 'Sin indicadores disponibles'}
                 </p>
-                <p className="text-[14px] text-[#2E3330]/60 mt-1">
+                <p className="text-[13px] text-[#2E3330]/60 mt-1">
                   {esAsignaturaOptativa(combo?.asignatura)
                     ? `En ${combo?.asignaturaNombre} (optativa) podrás redactar los indicadores de logro de forma personalizada al crear cada actividad o secuencia.`
                     : `No hay indicadores registrados para ${combo?.grado} — ${combo?.asignaturaNombre}.`}
                 </p>
               </div>
             ) : (
-              <ul className="flex flex-col gap-2">
+              <ul className="flex flex-col gap-2 w-full">
                 {indicadores.map((i) => {
                   const seleccionado = indicadoresSel.has(i.id);
                   // Acento por Competencia Fundamental: color CIELO en la etiqueta del código.
@@ -1660,14 +1722,14 @@ export default function EspecificacionesCurriculares() {
                     <li key={i.id}>
                       <button
                         onClick={() => alternar(setIndicadoresSel, i.id)}
-                        className={`w-full flex items-start gap-3 text-left rounded-2xl border p-3.5 transition-all ${
+                        className={`w-full flex items-start gap-3 text-left rounded-md border p-3.5 transition-all ${
                           seleccionado
-                            ? 'border-[#689C63]/50 bg-[#689C63]/5'
-                            : 'border-[#2E3330]/10 bg-white hover:border-[#2E3330]/20'
+                            ? 'border-[#689C63]/60 bg-[#689C63]/5'
+                            : 'border-[#2E3330]/15 bg-white hover:border-[#2E3330]/30'
                         }`}
                       >
                         <span
-                          className={`w-5 h-5 mt-0.5 shrink-0 rounded-md border flex items-center justify-center ${
+                          className={`w-5 h-5 mt-0.5 shrink-0 rounded border flex items-center justify-center ${
                             seleccionado
                               ? 'bg-[#689C63] border-[#689C63]'
                               : 'border-[#2E3330]/25 bg-white'
@@ -1677,7 +1739,7 @@ export default function EspecificacionesCurriculares() {
                         </span>
                         <span className="flex-1 min-w-0">
                           <span
-                            className="px-2 py-0.5 rounded-full text-[11px] font-black text-[#2E3330]"
+                            className="px-2 py-0.5 rounded text-[11px] font-black text-[#2E3330]"
                             style={{ backgroundColor: colorIL ? `${colorIL}1F` : 'rgba(46, 51, 48, 0.05)' }}
                           >
                             {i.codigo || '—'}
@@ -1692,14 +1754,14 @@ export default function EspecificacionesCurriculares() {
                 })}
               </ul>
             )}
-            <p className="text-[12px] font-semibold text-[#2E3330]/50">
+            <p className="text-[12px] font-semibold text-[#2E3330]/50 text-left">
               {indicadoresSel.size} seleccionado{indicadoresSel.size !== 1 ? 's' : ''} para {periodo}
             </p>
           </div>
         )}
 
         {/* ---------------- Acciones ---------------- */}
-        <div className="flex items-center justify-between gap-3 pt-4 border-t border-[#2E3330]/10">
+        <div className="flex items-center justify-between gap-3 pt-4 border-t border-[#2E3330]/10 w-full">
           <button
             onClick={() => (paso === 1 ? salir() : irAPaso(paso - 1))}
             disabled={guardando}

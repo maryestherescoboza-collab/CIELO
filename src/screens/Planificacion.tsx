@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark, Link as LinkIcon, Edit2, MessageSquare, Info, Zap, Gamepad2, Presentation, PenTool } from 'lucide-react';
-import blueBookIcon from '../assets/book-blue.png';
-import purpleBookIcon from '../assets/book-purple.png';
+import { BookOpen, Calendar, ChevronDown, Plus, Trash2, X, Bookmark, Link as LinkIcon, Edit2, MessageSquare, Info, Zap, Gamepad2, Presentation, PenTool, FileText, FileSpreadsheet, Download, ExternalLink, MoreVertical, Eye } from 'lucide-react';
 import type { AppState, Curso, Secuencia, TipoRecurso } from '../types';
 
 import { getPlanificacionDiariaTemplate, determinarCiclo } from '../templates/planificacion-diaria';
@@ -66,8 +64,6 @@ interface Props {
     currentUserProfile?: any;
     session?: any;
 }
-
-const BOOK_ICONS = [blueBookIcon, purpleBookIcon];
 
 function getCursoLabel(curso?: Curso) {
     if (!curso) return 'Curso sin asignar';
@@ -196,7 +192,7 @@ function extraerIndicadoresActividad(act: any): string {
         if (Array.isArray(act.indicadores_json)) {
             jsonItems = act.indicadores_json;
         } else if (typeof act.indicadores_json === 'string') {
-            try { jsonItems = JSON.parse(act.indicadores_json); } catch {}
+            try { jsonItems = JSON.parse(act.indicadores_json); } catch { }
         }
         if (Array.isArray(jsonItems) && jsonItems.length > 0) {
             jsonItems.forEach(item => {
@@ -220,7 +216,7 @@ function extraerIndicadoresActividad(act: any): string {
 import { useSupabaseData } from '../hooks/useSupabaseData';
 
 export default function Planificacion({
-    onAddSecuencia = () => {},
+    onAddSecuencia = () => { },
     onUpdateSecuencia,
     onDeleteSecuencia,
     readOnly,
@@ -330,7 +326,7 @@ export default function Planificacion({
     const cursoIdParam = searchParams.get('cursoId');
     const esModoRecuperacion = seccionParam === 'recuperacion' || (periodoParam === 'P1' && searchParams.has('seccion'));
     const seccionRecuperacionRef = useRef<HTMLDivElement>(null);
-    
+
     useEffect(() => {
         if (cursoIdParam) {
             const cId = Number(cursoIdParam);
@@ -432,29 +428,65 @@ export default function Planificacion({
                             await onUpdateSecuencia(updatedSecuencia);
                         }
                     }
-                } else {
-                    let updatedRecursos = form.recursos || [];
-                    if (editingRecursoId) {
-                        updatedRecursos = updatedRecursos.map((r: any) =>
+                } else if (newRecursoTargetSeq === 'new' && !editingRecursoId && secuenciasCurso.length === 0 && cursoSel) {
+                    const cursoObj = state.cursos.find(c => c.id === cursoSel);
+                    const newRecurso = {
+                        id: Date.now().toString(),
+                        titulo: newRecursoCategoria,
+                        categoria: newRecursoCategoria,
+                        url: newRecursoUrl.trim(),
+                        tipo: parsedTipo,
+                        orden: 1
+                    };
+                    const newSecuencia: Omit<Secuencia, 'id'> = {
+                        cursoId: cursoSel,
+                        titulo: `Recursos - ${cursoObj?.nombre || 'General'}`,
+                        fechaInicio: new Date().toISOString().split('T')[0],
+                        contenidoHtml: '',
+                        estado: 'Pendiente',
+                        recursos: [newRecurso],
+                        userId: session?.user?.id
+                    };
+                    if (onAddSecuencia) {
+                        await onAddSecuencia(newSecuencia);
+                    }
+                } else if (editingRecursoId) {
+                    const targetSeq = state.secuencias.find(s => (s.recursos || []).some((r: any) => r.id === editingRecursoId));
+                    if (targetSeq) {
+                        const updatedSecuencia = {
+                            ...targetSeq,
+                            recursos: (targetSeq.recursos || []).map((r: any) =>
+                                r.id === editingRecursoId
+                                    ? { ...r, titulo: newRecursoCategoria, categoria: newRecursoCategoria, url: newRecursoUrl.trim(), tipo: parsedTipo }
+                                    : r
+                            )
+                        };
+                        if (onUpdateSecuencia) {
+                            await onUpdateSecuencia(updatedSecuencia);
+                        }
+                    } else {
+                        let updatedRecursos = (form.recursos || []).map((r: any) =>
                             r.id === editingRecursoId
                                 ? { ...r, titulo: newRecursoCategoria, categoria: newRecursoCategoria, url: newRecursoUrl.trim(), tipo: parsedTipo }
                                 : r
                         );
-                    } else {
-                        const newRecurso = {
-                            id: Date.now().toString(),
-                            titulo: newRecursoCategoria,
-                            categoria: newRecursoCategoria,
-                            url: newRecursoUrl.trim(),
-                            tipo: parsedTipo,
-                            orden: updatedRecursos.length + 1
-                        };
-                        updatedRecursos = [...updatedRecursos, newRecurso];
+                        setForm(prev => ({ ...prev, recursos: updatedRecursos }));
                     }
+                } else {
+                    let updatedRecursos = form.recursos || [];
+                    const newRecurso = {
+                        id: Date.now().toString(),
+                        titulo: newRecursoCategoria,
+                        categoria: newRecursoCategoria,
+                        url: newRecursoUrl.trim(),
+                        tipo: parsedTipo,
+                        orden: updatedRecursos.length + 1
+                    };
+                    updatedRecursos = [...updatedRecursos, newRecurso];
                     setForm(prev => ({ ...prev, recursos: updatedRecursos }));
                 }
             }
-            
+
             setIsAddingRecurso(false);
             setEditingRecursoId(null);
             setNewRecursoUrl('');
@@ -660,7 +692,7 @@ export default function Planificacion({
                             min-height: 100vh;
                             background: #FCFCFA;
                             color: #2E3330;
-                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                            font-family: "Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                         }
                         .loader-box {
                             display: flex;
@@ -717,15 +749,104 @@ export default function Planificacion({
         }
     }
 
-        const secuenciasCurso = (state.secuencias || []).filter((secuencia: Secuencia) => 
-        (!cursoSel || cursoSel === 0 || secuencia.cursoId === cursoSel) && 
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const handleGlobalClick = () => setOpenMenuId(null);
+        window.addEventListener('click', handleGlobalClick);
+        return () => window.removeEventListener('click', handleGlobalClick);
+    }, []);
+
+    const handleAbrirSecuencia = async (seq: Secuencia) => {
+        if (seq.contenidoHtml) {
+            setViewerSeq(seq);
+        } else {
+            const cached = getValidSecuencia(session?.user?.id, seq.cursoId, seq.id);
+            if (cached?.contenidoHtml) {
+                setViewerSeq(cached);
+                return;
+            }
+            setViewerSeq(seq);
+            const { data } = await supabase
+                .from('secuencias')
+                .select('id, contenido_html, recursos')
+                .eq('id', seq.id)
+                .single();
+            if (data) {
+                const fullSeq: Secuencia = {
+                    ...seq,
+                    contenidoHtml: data.contenido_html || '',
+                    recursos: data.recursos ? (Array.isArray(data.recursos) ? data.recursos : (() => { try { return JSON.parse(data.recursos); } catch { return []; } })()) : seq.recursos
+                };
+                setViewerSeq(fullSeq);
+                if (session?.user?.id) {
+                    saveSecuencia(session.user.id, fullSeq);
+                }
+                useAppStore.getState().setAppState(s => ({
+                    ...s,
+                    secuencias: s.secuencias.map(item => item.id === seq.id ? fullSeq : item)
+                }));
+            }
+        }
+    };
+
+    const handleDescargarSecuenciaHtml = async (seq: Secuencia) => {
+        let html = seq.contenidoHtml;
+        if (!html) {
+            const cached = getValidSecuencia(session?.user?.id, seq.cursoId, seq.id);
+            if (cached?.contenidoHtml) {
+                html = cached.contenidoHtml;
+            } else {
+                const { data } = await supabase
+                    .from('secuencias')
+                    .select('contenido_html')
+                    .eq('id', seq.id)
+                    .single();
+                html = data?.contenido_html || '';
+            }
+        }
+        if (!html) {
+            alert('Este documento no tiene contenido para descargar.');
+            return;
+        }
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${(seq.titulo || 'planificacion').replace(/[^a-zA-Z0-9_\-]/g, '_')}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleDescargarPlanRecuperacion = async (curso: Curso, periodoRec: 'P1' | 'P2' | 'P3') => {
+        try {
+            const htmlContent = await generarContenidoPlanRecuperacion(curso, periodoRec);
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Plan_Recuperacion_${periodoRec}_${(curso.nombre || 'curso').replace(/[^a-zA-Z0-9_\-]/g, '_')}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Error al descargar plan de recuperación:', err);
+            alert('No se pudo descargar el plan de recuperación pedagógica.');
+        }
+    };
+
+    const secuenciasCurso = (state.secuencias || []).filter((secuencia: Secuencia) =>
+        (!cursoSel || cursoSel === 0 || secuencia.cursoId === cursoSel) &&
         (secuencia.userId === session?.user?.id || !secuencia.userId)
     );
 
 
     const secuenciasFiltradas = useMemo(() => {
         const secList = state?.secuencias || [];
-        return secList.filter((secuencia: Secuencia) => 
+        return secList.filter((secuencia: Secuencia) =>
             (!cursoSel || cursoSel === 0 || secuencia.cursoId === cursoSel) &&
             (secuencia.userId === session?.user?.id || !secuencia.userId) &&
             !(secuencia.titulo && secuencia.titulo.startsWith('Especificaciones Curriculares'))
@@ -737,8 +858,8 @@ export default function Planificacion({
         const cursosList = state?.cursos || [];
 
         // 1. Inicializar con todos los cursos activos del contexto (según cursoSel)
-        const cursosBase = (!cursoSel || cursoSel === 0) 
-            ? cursosList 
+        const cursosBase = (!cursoSel || cursoSel === 0)
+            ? cursosList
             : cursosList.filter(c => c && c.id === cursoSel);
 
         for (const curso of cursosBase) {
@@ -746,8 +867,8 @@ export default function Planificacion({
             const { grado, seccion, label } = detectarGradoSeccion(curso);
             const cd = state?.cursoDocentes?.find((d: any) => (d.curso_id === curso.id || d.cursoId === curso.id) && d.asignatura);
             const asignatura = (curso.asignatura?.trim() || cd?.asignatura?.trim() || curso.nombre || 'General').trim();
-            const periodo = (curso.periodo && /^P[1-4]$/i.test(curso.periodo.trim())) 
-                ? curso.periodo.trim().toUpperCase() 
+            const periodo = (curso.periodo && /^P[1-4]$/i.test(curso.periodo.trim()))
+                ? curso.periodo.trim().toUpperCase()
                 : 'P2';
             const key = `${curso.id}|${(asignatura || 'general').toLowerCase()}|${periodo.toLowerCase()}`;
 
@@ -801,15 +922,15 @@ export default function Planificacion({
     const allRecursos = secuenciasCurso.flatMap(seq => {
         let rec = seq.recursos;
         if (typeof rec === 'string') {
-            try { rec = JSON.parse(rec); } catch(e) { rec = []; }
+            try { rec = JSON.parse(rec); } catch (e) { rec = []; }
         }
         return (rec || []).map((r: any) => ({ ...r, parentSeqId: seq.id }));
     });
     console.log('[DEBUG_RECURSOS] secuenciasCurso:', secuenciasCurso.map(s => ({ id: s.id, recursos: s.recursos })));
     console.log('[DEBUG_RECURSOS] allRecursos:', allRecursos);
 
-    const viewerRecursos = viewerSeq 
-        ? (viewerSeq.recursos || []).sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0)) 
+    const viewerRecursos = viewerSeq
+        ? (viewerSeq.recursos || []).sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0))
         : (form.recursos || []).sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0));
 
     console.log('[PLANIFICACION] cursoSel:', cursoSel, 'loading:', loading, 'cursos.length:', state.cursos.length);
@@ -856,40 +977,99 @@ export default function Planificacion({
                             className="px-6 gap-2.5 shrink-0 h-9"
                         >
                             <Plus size={16} strokeWidth={3} className="transition-transform duration-700 hover:rotate-180" />
-                            <span>Nueva plantilla</span>
+                            <span>Crear planificación</span>
                         </CieloPill>
                     </div>
                 </div>
 
-                <div className="max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
-                    {/* SECCIÓN RECURSOS */}
-                    <div className="mb-6">
-                        <h2 className="text-sm font-black text-(--ink) uppercase tracking-widest mb-3 border-b border-(--border-soft) pb-2 flex justify-between items-end">
-                            <span>Recursos del Curso</span>
-                        </h2>
-                        
+                <div className="max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both space-y-6">
+                    {/* ========================================================= */}
+                    {/* 1. SECCIÓN RECURSOS DEL CURSO (HORIZONTAL Y COMPACTO)     */}
+                    {/* ========================================================= */}
+                    <div className="rounded-xl border border-[#2E3330]/10 bg-white p-4 shadow-2xs">
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#2E3330]/10">
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-xs font-bold uppercase tracking-wider text-[#2E3330]">
+                                    Recursos del Curso
+                                </h2>
+                                {allRecursos.length > 0 && (
+                                    <span className="text-[10px] font-semibold text-[#5F665E] bg-[#2E3330]/5 px-2 py-0.5 rounded-full">
+                                        {allRecursos.length}
+                                    </span>
+                                )}
+                            </div>
+
+                            {(!isAddingRecurso && !editingRecursoId) && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsAddingRecurso(true);
+                                        setEditingRecursoId(null);
+                                        setNewRecursoCategoria(CATEGORIAS_RECURSOS[0]);
+                                        setNewRecursoUrl('');
+                                        setRecursoError('');
+                                        if (secuenciasCurso.length > 0) {
+                                            setNewRecursoTargetSeq(secuenciasCurso[0].id);
+                                        } else {
+                                            setNewRecursoTargetSeq('new');
+                                        }
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-[#2E3330] bg-[#2E3330]/5 hover:bg-[#2E3330]/10 rounded transition-colors cursor-pointer"
+                                    title="Agregar nuevo recurso al curso"
+                                >
+                                    <Plus size={13} strokeWidth={2.5} />
+                                    <span>Agregar recurso</span>
+                                </button>
+                            )}
+                        </div>
+
                         {allRecursos.length > 0 ? (
-                            <div className="flex overflow-x-auto pb-4 gap-3 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                            <div className="flex flex-wrap gap-2 items-center">
                                 {allRecursos.map((recurso: any, index: number) => {
                                     const cat = recurso.categoria || recurso.titulo || 'Otro';
-                                    const { icon: Icon, bg, text, border } = getCategoriaConfig(cat);
+                                    const { icon: Icon, bg, text } = getCategoriaConfig(cat);
                                     return (
-                                        <div key={`${recurso.id}-${index}`} className="relative group flex flex-col items-start gap-1.5 w-14 shrink-0">
+                                        <div
+                                            key={`${recurso.id}-${index}`}
+                                            className="group relative inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[#2E3330]/10 bg-[#FCFCFA] hover:bg-[#F6F5F0] transition-colors shadow-2xs"
+                                        >
                                             <button
+                                                type="button"
                                                 onClick={() => window.open(recurso.url, "_blank", "noopener,noreferrer")}
-                                                title="Abrir recurso"
-                                                className={`relative w-14 h-18 rounded-r-md rounded-l-sm border ${bg} ${border} shadow-sm transition-all duration-300 ease-out flex flex-col items-center justify-center cursor-pointer outline-none group-hover:-translate-y-1 group-hover:shadow-md`}
+                                                title={recurso.url || cat}
+                                                className="inline-flex items-center gap-2 text-left cursor-pointer outline-none"
                                             >
-                                                <div className="absolute left-0 top-0 bottom-0 w-1 opacity-15 mix-blend-multiply bg-black rounded-l-sm"></div>
-                                                <Icon size={18} className={`${text} opacity-80`} />
-                                                <div className="absolute bottom-1.5 left-1.5 right-1.5 h-0.5 bg-black/5 rounded-full"></div>
+                                                <span className={`w-5 h-5 rounded flex items-center justify-center ${bg} ${text} shrink-0`}>
+                                                    <Icon size={12} />
+                                                </span>
+                                                <span className="text-xs font-semibold text-[#2E3330] max-w-52 truncate">
+                                                    {cat}
+                                                </span>
+                                                <ExternalLink size={11} className="text-[#5F665E]/50 group-hover:text-[#2E3330] transition-colors shrink-0" />
                                             </button>
-                                            <span className="text-[9px] font-bold text-(--ink-soft) text-left leading-tight w-full line-clamp-2 px-0.5" title={cat}>
-                                                {cat}
-                                            </span>
-                                            
-                                            <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1 z-10">
+
+                                            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity ml-0.5">
                                                 <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setEditingRecursoId(recurso.id);
+                                                        setNewRecursoCategoria(recurso.categoria || recurso.titulo || CATEGORIAS_RECURSOS[0]);
+                                                        setNewRecursoUrl(recurso.url);
+                                                        setRecursoError('');
+                                                        setIsAddingRecurso(false);
+                                                        if (recurso.parentSeqId) {
+                                                            setNewRecursoTargetSeq(recurso.parentSeqId);
+                                                        }
+                                                    }}
+                                                    className="p-0.5 text-[#5F665E] hover:text-[#2E3330] rounded cursor-pointer"
+                                                    title="Editar recurso"
+                                                >
+                                                    <Edit2 size={11} />
+                                                </button>
+                                                <button
+                                                    type="button"
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
@@ -904,201 +1084,425 @@ export default function Planificacion({
                                                             }
                                                         }
                                                     }}
-                                                    className="w-6 h-6 rounded-full bg-white border border-(--border-soft) flex items-center justify-center text-(--ink-soft) hover:text-(--danger) hover:border-(--danger)/30 shadow-md transition-colors outline-none"
-                                                    title="Eliminar"
+                                                    className="p-0.5 text-[#5F665E] hover:text-red-600 rounded cursor-pointer"
+                                                    title="Eliminar recurso"
                                                 >
-                                                    <Trash2 size={10} />
+                                                    <Trash2 size={11} />
                                                 </button>
                                             </div>
                                         </div>
-                                    )
+                                    );
                                 })}
                             </div>
                         ) : (
-                            <div className="py-5 px-5 bg-(--linen)/30 border border-dashed border-(--border-soft) rounded-xl flex flex-col items-start text-left">
-                                <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-1">No hay recursos</p>
-                                <p className="text-xs text-(--ink-soft)/70 max-w-sm">Los enlaces y recursos que agregues a las secuencias de este curso aparecerán aquí como acceso rápido.</p>
+                            <div className="py-2.5 px-3 bg-[#FCFCFA] border border-dashed border-[#2E3330]/15 rounded-lg text-left">
+                                <p className="text-xs text-[#5F665E]">
+                                    No hay recursos registrados. Los enlaces y materiales agregados a las secuencias aparecerán aquí como accesos rápidos.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Formulario de Agregar / Editar Recurso */}
+                        {(isAddingRecurso || editingRecursoId) && !viewerSeq && (
+                            <div className="mt-4 p-4 rounded-lg bg-[#FCFCFA] border border-[#2E3330]/15 shadow-2xs animate-in fade-in slide-in-from-top-2">
+                                <div className="grid gap-3 sm:grid-cols-12 mb-3">
+                                    <div className={secuenciasCurso.length > 0 ? "sm:col-span-4" : "sm:col-span-6"}>
+                                        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#5F665E] mb-1">Categoría</label>
+                                        <div className="relative">
+                                            <select
+                                                value={newRecursoCategoria}
+                                                onChange={(e) => { setNewRecursoCategoria(e.target.value); setRecursoError(''); }}
+                                                className="w-full px-3 py-1.5 rounded border border-[#2E3330]/15 bg-white text-xs font-bold text-[#2E3330] focus:border-[#689C63] outline-none transition-all appearance-none"
+                                                disabled={recursosLoading}
+                                            >
+                                                {CATEGORIAS_RECURSOS.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                            </select>
+                                            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#5F665E] pointer-events-none" />
+                                        </div>
+                                    </div>
+                                    <div className={secuenciasCurso.length > 0 ? "sm:col-span-4" : "sm:col-span-6"}>
+                                        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#5F665E] mb-1">URL (Enlace)</label>
+                                        <input
+                                            type="url"
+                                            value={newRecursoUrl}
+                                            onChange={(e) => { setNewRecursoUrl(e.target.value); setRecursoError(''); }}
+                                            placeholder="https://"
+                                            className="w-full px-3 py-1.5 rounded border border-[#2E3330]/15 bg-white text-xs font-bold text-[#2E3330] focus:border-[#689C63] outline-none transition-all"
+                                            disabled={recursosLoading}
+                                        />
+                                    </div>
+                                    {secuenciasCurso.length > 0 && (
+                                        <div className="sm:col-span-4">
+                                            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#5F665E] mb-1">Vincular a</label>
+                                            <div className="relative">
+                                                <select
+                                                    value={newRecursoTargetSeq}
+                                                    onChange={(e) => { setNewRecursoTargetSeq(e.target.value === 'new' ? 'new' : Number(e.target.value)); setRecursoError(''); }}
+                                                    className="w-full px-3 py-1.5 rounded border border-[#2E3330]/15 bg-white text-xs font-bold text-[#2E3330] focus:border-[#689C63] outline-none transition-all appearance-none truncate"
+                                                    disabled={recursosLoading}
+                                                >
+                                                    {secuenciasCurso.map((seq: Secuencia) => (
+                                                        <option key={seq.id} value={seq.id}>{seq.titulo}</option>
+                                                    ))}
+                                                    <option value="new">Nueva plantilla</option>
+                                                </select>
+                                                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#5F665E] pointer-events-none" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                {recursoError && <p className="text-xs font-bold text-red-600 mb-2">{recursoError}</p>}
+                                <div className="flex gap-2 justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setIsAddingRecurso(false); setEditingRecursoId(null); setNewRecursoCategoria(CATEGORIAS_RECURSOS[0]); setNewRecursoUrl(''); setRecursoError(''); }}
+                                        className="px-3 py-1.5 rounded text-xs font-semibold text-[#5F665E] hover:bg-[#2E3330]/5 transition-colors cursor-pointer"
+                                        disabled={recursosLoading}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleAddRecurso}
+                                        className="px-3.5 py-1.5 rounded bg-[#689C63] text-white text-xs font-bold hover:bg-[#5a8a55] transition-colors disabled:opacity-50 shadow-2xs cursor-pointer"
+                                        disabled={recursosLoading || !newRecursoUrl.trim()}
+                                    >
+                                        {recursosLoading ? 'Guardando...' : (editingRecursoId ? 'Actualizar' : 'Guardar')}
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
 
-                    {/* SECCIÓN: Planificación diaria y planificación individualizada de recuperación */}
+                    {/* ========================================================= */}
+                    {/* 2. PLANIFICACIÓN DIARIA Y RECUPERACIÓN (LISTA DOCUMENTAL) */}
+                    {/* ========================================================= */}
                     <div>
-                        <h2 id="seccion-recuperacion" ref={seccionRecuperacionRef} className="text-sm font-black text-(--ink) uppercase tracking-widest mb-3 border-b border-(--border-soft) pb-2 flex justify-between items-end">
-                            <span>Planificación diaria y planificación individualizada de recuperación</span>
-                        </h2>
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#2E3330]/10">
+                            <h2 id="seccion-recuperacion" ref={seccionRecuperacionRef} className="text-xs font-bold uppercase tracking-wider text-[#2E3330]">
+                                Planificación diaria y recuperación académica
+                            </h2>
+                        </div>
 
                         {gruposPlanificacion.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-(--border-soft) bg-white/50">
-                                <div className="w-12 h-12 rounded-full bg-(--linen) flex items-center justify-center text-(--ink-soft) mb-3">
-                                    <BookOpen size={22} />
+                            <div className="flex flex-col items-center justify-center p-10 text-center rounded-xl border border-dashed border-[#2E3330]/15 bg-white">
+                                <div className="w-10 h-10 rounded-full bg-[#2E3330]/5 flex items-center justify-center text-[#5F665E] mb-2.5">
+                                    <BookOpen size={18} />
                                 </div>
-                                <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-1">No hay planificaciones</p>
-                                <p className="text-xs text-(--ink-soft)/70 max-w-sm">
+                                <p className="text-xs font-bold uppercase tracking-wider text-[#2E3330] mb-0.5">Sin planificaciones</p>
+                                <p className="text-xs text-[#5F665E] max-w-sm">
                                     No se encontraron planes de clase para el contexto académico seleccionado.
                                 </p>
                             </div>
                         ) : (
-                            <div className="flex flex-col gap-6">
-                                {gruposPlanificacion.map((grupo) => (
-                                    <div key={grupo.key} className="bg-white border border-(--border-soft) rounded-2xl p-4 sm:p-5 shadow-xs">
-                                        {/* Encabezado del contexto académico: Período, Curso (grado), Sección, Asignatura */}
-                                        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 pb-2.5 border-b border-(--border-soft)">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-(--primary)/10 text-(--primary) border border-(--primary)/20">
-                                                    {grupo.periodo}
-                                                </span>
-                                                <span className="text-xs font-black uppercase tracking-wider text-(--ink)">
-                                                    {grupo.cursoLabel}
-                                                </span>
-                                                <span className="text-(--ink-soft)/30 font-bold">•</span>
-                                                <span className="text-xs font-bold uppercase tracking-wider text-(--ink-soft)">
-                                                    {getAsignaturaNombre(grupo.asignatura)}
-                                                </span>
-                                                {esAsignaturaOptativa(grupo.asignatura) && (
-                                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80">
-                                                        Optativa
+                            <div className="space-y-4">
+                                {gruposPlanificacion.map((grupo) => {
+                                    const curso = state?.cursos?.find(c => c && c.id === grupo.cursoId) || state?.cursos?.[0];
+                                    const planesNormales = grupo.planes.filter(p => !esPlanRecuperacion(p));
+                                    const totalDocs = planesNormales.length + 1; // +1 por el Plan de Recuperación Pedagógica Oficial
+
+                                    return (
+                                        <div key={grupo.key} className="rounded-xl border border-[#2E3330]/10 bg-white overflow-hidden shadow-2xs">
+                                            {/* Encabezado del grupo: Contexto académico claro y sin redundancias */}
+                                            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-[#FAF9F5] border-b border-[#2E3330]/10">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-[#537BAC]/10 text-[#537BAC] border border-[#537BAC]/20">
+                                                        {grupo.periodo}
                                                     </span>
-                                                )}
+                                                    <span className="text-xs font-bold uppercase tracking-wider text-[#2E3330]">
+                                                        {grupo.cursoLabel}
+                                                    </span>
+                                                    <span className="text-[#2E3330]/20 font-bold">•</span>
+                                                    <span className="text-xs font-semibold text-[#5F665E]">
+                                                        {getAsignaturaNombre(grupo.asignatura)}
+                                                    </span>
+                                                    {esAsignaturaOptativa(grupo.asignatura) && (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80">
+                                                            Optativa
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Contador de documentos con menor protagonismo */}
+                                                <span className="text-[11px] font-medium text-[#5F665E]">
+                                                    {totalDocs} {totalDocs === 1 ? 'documento' : 'documentos'}
+                                                </span>
                                             </div>
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-(--ink-soft) bg-(--linen)/60 px-2.5 py-0.5 rounded-full">
-                                                {grupo.planes.filter(p => !esPlanRecuperacion(p)).length + 1} {grupo.planes.filter(p => !esPlanRecuperacion(p)).length === 0 ? 'documento' : 'documentos'}
-                                            </span>
-                                        </div>
 
-                                        {/* Carrusel horizontal de documentos */}
-                                        <div className="flex overflow-x-auto pb-2 gap-5 items-start [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pt-1">
-                                            {/* Acceso individual a Plan de recuperación pedagógica P1 */}
-                                            {(() => {
-                                                const curso = state?.cursos?.find(c => c && c.id === grupo.cursoId) || state?.cursos?.[0];
-                                                const tituloRec = 'Plan de recuperación pedagógica P1';
+                                            {/* Lista documental compacta tipo tabla editorial */}
+                                            <div className="divide-y divide-[#2E3330]/5">
+                                                {/* DOCUMENTO 1: Plan de recuperación pedagógica P1 (Oficial) */}
+                                                {(() => {
+                                                    const menuKey = `rec-p1-${grupo.key}`;
+                                                    const isMenuOpen = openMenuId === menuKey;
 
-                                                return (
-                                                    <button
-                                                        key={`rec-p1-${grupo.key}`}
-                                                        data-guide="tarjeta-plan-recuperacion-p1"
-                                                        type="button"
-                                                        onClick={async (e) => {
-                                                            e.preventDefault();
-                                                            if (curso) await handleAbrirPlanRecuperacion(curso, 'P1');
-                                                        }}
-                                                        className={`relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1 ${esModoRecuperacion ? "ring-2 ring-(--primary) ring-offset-2 rounded-xl p-1 bg-(--primary)/10 shadow-sm" : ""}`}
-                                                        title={tituloRec}
-                                                    >
-                                                        <div className="w-full h-32 flex flex-col items-center justify-center mb-2">
-                                                            <DocumentRecuperacionIcon className="w-20 h-20 text-(--ink-soft)/60 transition-all duration-300 group-hover:scale-105 group-hover:text-(--ink)" />
-                                                        </div>
+                                                    return (
+                                                        <div
+                                                            key={menuKey}
+                                                            className={`group flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:bg-[#FAF9F5]/70 ${esModoRecuperacion ? 'bg-[#537BAC]/5' : ''
+                                                                }`}
+                                                        >
+                                                            {/* Columna Izquierda: Icono + Nombre + Etiqueta Oficial */}
+                                                            <div
+                                                                className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                                                                onClick={async () => {
+                                                                    if (curso) await handleAbrirPlanRecuperacion(curso, 'P1');
+                                                                }}
+                                                            >
+                                                                <div className="w-7 h-7 rounded bg-[#EB8847]/10 text-[#EB8847] flex items-center justify-center shrink-0">
+                                                                    <FileSpreadsheet size={15} />
+                                                                </div>
 
-                                                        <h3 className="text-[10px] font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-left w-full px-0.5 line-clamp-2 leading-snug">
-                                                            {tituloRec}
-                                                        </h3>
+                                                                <div className="min-w-0 flex-1 flex flex-wrap items-center gap-2">
+                                                                    <span className="text-xs font-bold text-[#2E3330] group-hover:text-[#537BAC] transition-colors truncate">
+                                                                        Plan de recuperación pedagógica P1
+                                                                    </span>
+                                                                    <span className="text-[9px] font-bold text-[#689C63] bg-[#689C63]/10 border border-[#689C63]/25 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                                                        OFICIAL
+                                                                    </span>
+                                                                </div>
+                                                            </div>
 
-                                                        <div className="mt-1 flex flex-col items-start gap-1 w-full">
-                                                            <p className="text-[9px] font-bold text-(--ink-soft) uppercase tracking-widest text-left truncate w-full px-0.5">
-                                                                {grupo.cursoLabel}
-                                                            </p>
-                                                            <div className="flex items-center justify-between w-full px-0.5">
-                                                                <span className="text-[8px] font-black uppercase tracking-wider text-(--primary)">
+                                                            {/* Columna Central: Período */}
+                                                            <div className="hidden sm:flex items-center shrink-0">
+                                                                <span className="text-[10px] font-bold text-[#5F665E] bg-[#2E3330]/5 px-2 py-0.5 rounded">
                                                                     P1
                                                                 </span>
-                                                                <span className="text-[7.5px] font-bold uppercase tracking-wider text-(--ink-soft) bg-(--linen)/70 px-1.5 py-0.2 rounded border border-(--border-soft)">
-                                                                    OFICIAL
-                                                                </span>
                                                             </div>
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })()}
 
-                                            {/* Tarjetas de las demás planificaciones del curso (diarias, etc.) */}
-                                            {grupo.planes.filter(p => !esPlanRecuperacion(p)).map((seq, index) => {
-                                                const bookIcon = BOOK_ICONS[index % BOOK_ICONS.length];
-                                                const filledDots = getDotCount(seq.estado);
-                                                const isRecuperacion = esPlanRecuperacion(seq);
+                                                            {/* Columna Derecha: Acciones compactas */}
+                                                            <div className="flex items-center gap-1 shrink-0 relative">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={async (e) => {
+                                                                        e.stopPropagation();
+                                                                        if (curso) await handleAbrirPlanRecuperacion(curso, 'P1');
+                                                                    }}
+                                                                    className="p-1.5 text-[#5F665E] hover:text-[#2E3330] hover:bg-[#2E3330]/5 rounded transition-colors cursor-pointer"
+                                                                    title="Ver documento en nueva pestaña"
+                                                                >
+                                                                    <Eye size={14} />
+                                                                </button>
 
-                                                return (
-                                                    <button
-                                                        key={seq.id}
-                                                        type="button"
-                                                        onClick={async (e) => {
-                                                            e.preventDefault();
-                                                            if (seq.contenidoHtml) {
-                                                                setViewerSeq(seq);
-                                                            } else {
-                                                                const cached = getValidSecuencia(session?.user?.id, seq.cursoId, seq.id);
-                                                                if (cached?.contenidoHtml) {
-                                                                    setViewerSeq(cached);
-                                                                    return;
-                                                                }
-                                                                setViewerSeq(seq);
-                                                                const { data } = await supabase
-                                                                    .from('secuencias')
-                                                                    .select('id, contenido_html, recursos')
-                                                                    .eq('id', seq.id)
-                                                                    .single();
-                                                                if (data) {
-                                                                    const fullSeq: Secuencia = {
-                                                                        ...seq,
-                                                                        contenidoHtml: data.contenido_html || '',
-                                                                        recursos: data.recursos ? (Array.isArray(data.recursos) ? data.recursos : (() => { try { return JSON.parse(data.recursos); } catch { return []; } })()) : seq.recursos
-                                                                    };
-                                                                    setViewerSeq(fullSeq);
-                                                                    if (session?.user?.id) {
-                                                                        saveSecuencia(session.user.id, fullSeq);
-                                                                    }
-                                                                    useAppStore.getState().setAppState(s => ({
-                                                                        ...s,
-                                                                        secuencias: s.secuencias.map(item => item.id === seq.id ? fullSeq : item)
-                                                                    }));
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="relative w-28 shrink-0 group flex flex-col items-start text-left cursor-pointer outline-none transition-all duration-300 hover:-translate-y-1"
-                                                    >
-                                                        <div className="w-full h-32 flex flex-col items-center justify-center mb-2">
-                                                            {isRecuperacion ? (
-                                                                <DocumentRecuperacionIcon className="w-20 h-20 text-(--ink-soft)/60 transition-all duration-300 group-hover:scale-105 group-hover:text-(--ink)" />
-                                                            ) : (
-                                                                <img
-                                                                    src={bookIcon}
-                                                                    alt=""
-                                                                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-sm"
-                                                                />
-                                                            )}
-                                                        </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={async (e) => {
+                                                                        e.stopPropagation();
+                                                                        if (curso) await handleDescargarPlanRecuperacion(curso, 'P1');
+                                                                    }}
+                                                                    className="p-1.5 text-[#5F665E] hover:text-[#2E3330] hover:bg-[#2E3330]/5 rounded transition-colors cursor-pointer"
+                                                                    title="Descargar documento HTML"
+                                                                >
+                                                                    <Download size={14} />
+                                                                </button>
 
-                                                        <h3 className="text-[10px] font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors text-left w-full px-0.5 line-clamp-2 leading-snug" title={seq.titulo}>
-                                                            {seq.titulo}
-                                                        </h3>
+                                                                {/* Menú contextual */}
+                                                                <div className="relative">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setOpenMenuId(isMenuOpen ? null : menuKey);
+                                                                        }}
+                                                                        className="p-1.5 text-[#5F665E] hover:text-[#2E3330] hover:bg-[#2E3330]/5 rounded transition-colors cursor-pointer"
+                                                                        title="Más opciones"
+                                                                    >
+                                                                        <MoreVertical size={14} />
+                                                                    </button>
 
-                                                        <div className="mt-1 flex flex-col items-start gap-1 w-full">
-                                                            <p className="text-[9px] font-bold text-(--ink-soft) uppercase tracking-widest text-left truncate w-full px-0.5">
-                                                                {grupo.cursoLabel}
-                                                            </p>
-                                                            <div className="flex items-center justify-between w-full px-0.5">
-                                                                <span className="text-[8px] font-black uppercase tracking-wider text-(--primary)">
-                                                                    {grupo.periodo}
-                                                                </span>
-                                                                <div className="flex items-center gap-1">
-                                                                    {[0, 1, 2].map((dot) => (
-                                                                        <span
-                                                                            key={dot}
-                                                                            className={`h-1.5 w-1.5 rounded-full ${dot < filledDots ? 'bg-(--primary)' : 'bg-slate-200'}`}
-                                                                        />
-                                                                    ))}
+                                                                    {isMenuOpen && (
+                                                                        <div
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            className="absolute right-0 top-full mt-1 z-30 min-w-44 bg-white border border-[#2E3330]/15 rounded-lg shadow-lg py-1 text-left animate-in fade-in zoom-in-95 duration-150"
+                                                                        >
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={async () => {
+                                                                                    setOpenMenuId(null);
+                                                                                    if (curso) await handleAbrirPlanRecuperacion(curso, 'P1');
+                                                                                }}
+                                                                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#2E3330] hover:bg-[#FAF9F5] transition-colors cursor-pointer"
+                                                                            >
+                                                                                <Eye size={13} className="text-[#5F665E]" />
+                                                                                <span>Abrir en nueva pestaña</span>
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={async () => {
+                                                                                    setOpenMenuId(null);
+                                                                                    if (curso) await handleDescargarPlanRecuperacion(curso, 'P1');
+                                                                                }}
+                                                                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#2E3330] hover:bg-[#FAF9F5] transition-colors cursor-pointer"
+                                                                            >
+                                                                                <Download size={13} className="text-[#5F665E]" />
+                                                                                <span>Descargar HTML</span>
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </button>
-                                                );
-                                            })}
+                                                    );
+                                                })()}
+
+                                                {/* DOCUMENTOS SIGUIENTES: Planificaciones diarias del curso */}
+                                                {planesNormales.map((seq) => {
+                                                    const menuKey = `seq-${seq.id}`;
+                                                    const isMenuOpen = openMenuId === menuKey;
+                                                    const filledDots = getDotCount(seq.estado);
+
+                                                    return (
+                                                        <div
+                                                            key={seq.id}
+                                                            className="group flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:bg-[#FAF9F5]/70"
+                                                        >
+                                                            {/* Columna Izquierda: Icono + Nombre + Estado */}
+                                                            <div
+                                                                className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                                                                onClick={() => handleAbrirSecuencia(seq)}
+                                                            >
+                                                                <div className="w-7 h-7 rounded bg-[#537BAC]/10 text-[#537BAC] flex items-center justify-center shrink-0">
+                                                                    <FileText size={15} />
+                                                                </div>
+
+                                                                <div className="min-w-0 flex-1 flex flex-wrap items-center gap-2">
+                                                                    <span className="text-xs font-bold text-[#2E3330] group-hover:text-[#537BAC] transition-colors truncate">
+                                                                        {seq.titulo}
+                                                                    </span>
+
+                                                                    {/* Puntos de estado sutiles */}
+                                                                    <div className="flex items-center gap-1" title={`Estado: ${seq.estado || 'Pendiente'}`}>
+                                                                        {[0, 1, 2].map((dot) => (
+                                                                            <span
+                                                                                key={dot}
+                                                                                className={`h-1.5 w-1.5 rounded-full ${dot < filledDots ? 'bg-[#689C63]' : 'bg-[#2E3330]/15'
+                                                                                    }`}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Columna Central: Período */}
+                                                            <div className="hidden sm:flex items-center shrink-0">
+                                                                <span className="text-[10px] font-bold text-[#5F665E] bg-[#2E3330]/5 px-2 py-0.5 rounded">
+                                                                    {grupo.periodo}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Columna Derecha: Acciones compactas */}
+                                                            <div className="flex items-center gap-1 shrink-0 relative">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleAbrirSecuencia(seq);
+                                                                    }}
+                                                                    className="p-1.5 text-[#5F665E] hover:text-[#2E3330] hover:bg-[#2E3330]/5 rounded transition-colors cursor-pointer"
+                                                                    title="Ver documento en visor"
+                                                                >
+                                                                    <Eye size={14} />
+                                                                </button>
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDescargarSecuenciaHtml(seq);
+                                                                    }}
+                                                                    className="p-1.5 text-[#5F665E] hover:text-[#2E3330] hover:bg-[#2E3330]/5 rounded transition-colors cursor-pointer"
+                                                                    title="Descargar documento HTML"
+                                                                >
+                                                                    <Download size={14} />
+                                                                </button>
+
+                                                                {/* Menú contextual */}
+                                                                <div className="relative">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setOpenMenuId(isMenuOpen ? null : menuKey);
+                                                                        }}
+                                                                        className="p-1.5 text-[#5F665E] hover:text-[#2E3330] hover:bg-[#2E3330]/5 rounded transition-colors cursor-pointer"
+                                                                        title="Más opciones"
+                                                                    >
+                                                                        <MoreVertical size={14} />
+                                                                    </button>
+
+                                                                    {isMenuOpen && (
+                                                                        <div
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            className="absolute right-0 top-full mt-1 z-30 min-w-44 bg-white border border-[#2E3330]/15 rounded-lg shadow-lg py-1 text-left animate-in fade-in zoom-in-95 duration-150"
+                                                                        >
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setOpenMenuId(null);
+                                                                                    handleAbrirSecuencia(seq);
+                                                                                }}
+                                                                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#2E3330] hover:bg-[#FAF9F5] transition-colors cursor-pointer"
+                                                                            >
+                                                                                <Eye size={13} className="text-[#5F665E]" />
+                                                                                <span>Abrir visor</span>
+                                                                            </button>
+
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setOpenMenuId(null);
+                                                                                    window.open(`/planificacion-diaria/${seq.id}`, '_blank');
+                                                                                }}
+                                                                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#2E3330] hover:bg-[#FAF9F5] transition-colors cursor-pointer"
+                                                                            >
+                                                                                <ExternalLink size={13} className="text-[#5F665E]" />
+                                                                                <span>Editar en pestaña</span>
+                                                                            </button>
+
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setOpenMenuId(null);
+                                                                                    handleDescargarSecuenciaHtml(seq);
+                                                                                }}
+                                                                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#2E3330] hover:bg-[#FAF9F5] transition-colors cursor-pointer"
+                                                                            >
+                                                                                <Download size={13} className="text-[#5F665E]" />
+                                                                                <span>Descargar HTML</span>
+                                                                            </button>
+
+                                                                            {onDeleteSecuencia && (
+                                                                                <>
+                                                                                    <div className="my-1 border-t border-[#2E3330]/10" />
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => {
+                                                                                            setOpenMenuId(null);
+                                                                                            if (window.confirm('¿Eliminar esta planificación?')) {
+                                                                                                onDeleteSecuencia(seq.id);
+                                                                                            }
+                                                                                        }}
+                                                                                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                                                                    >
+                                                                                        <Trash2 size={13} />
+                                                                                        <span>Eliminar</span>
+                                                                                    </button>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
-
                 </div>
             </div>
 
@@ -1107,7 +1511,7 @@ export default function Planificacion({
                 <RegistroAnecdotico cursoId={cursoSel} />
             </div>
 
-                      {viewerSeq && (
+            {viewerSeq && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-(--ink)/40 p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-200">
                     <div
                         className="flex h-[min(92vh,58rem)] w-full max-w-6xl flex-col overflow-hidden rounded-(--radius-lg) border border-(--border-soft) bg-white shadow-md animate-in zoom-in-95 duration-300"
@@ -1212,7 +1616,7 @@ export default function Planificacion({
                             </div>
                         </div>
 
-                            <div className="flex-1 overflow-auto bg-(--linen)/20 p-4 sm:p-6">
+                        <div className="flex-1 overflow-auto bg-(--linen)/20 p-4 sm:p-6">
                             <div className="w-full max-w-4xl mb-4">
                                 <div className="flex flex-wrap items-center gap-2">
                                     {viewerRecursos.map((recurso: any) => {
@@ -1268,7 +1672,7 @@ export default function Planificacion({
                                             </div>
                                         )
                                     })}
-                                    
+
                                     {(!isAddingRecurso && !editingRecursoId) && (
                                         <button
                                             onClick={() => { setIsAddingRecurso(true); setEditingRecursoId(null); setNewRecursoCategoria(CATEGORIAS_RECURSOS[0]); setNewRecursoUrl(''); setRecursoError(''); }}
@@ -1350,7 +1754,7 @@ export default function Planificacion({
                                             </p>
                                         </div>
                                     )}
-                                         </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1369,356 +1773,220 @@ export default function Planificacion({
                 maxWidth="3xl"
             >
                 <div className="space-y-4">
-                         {errorMsg && (
-                             <div className="mb-6 p-4 rounded-xl bg-(--tag-rose-bg) border border-(--border-soft) text-(--tag-rose-text) text-xs font-bold uppercase tracking-wider">
-                                 {errorMsg}
-                             </div>
-                         )}
+                    {errorMsg && (
+                        <div className="mb-6 p-4 rounded-xl bg-(--tag-rose-bg) border border-(--border-soft) text-(--tag-rose-text) text-xs font-bold uppercase tracking-wider">
+                            {errorMsg}
+                        </div>
+                    )}
 
-                         {importStep === 'select-template' && (
-                              <div className="p-5 space-y-3">
-                                         {/* SECCIÓN RECURSOS */}
-                                  <div className="mb-5">
-                                      <div className="flex items-center justify-between mb-3">
-                                        <h3 className="text-xs font-bold text-(--ink) uppercase tracking-widest flex items-center gap-1.5">
-                                            <Bookmark size={14} className="text-(--primary)" /> Recursos Rápidos
-                                        </h3>
-                                      </div>
+                    {importStep === 'select-template' && (
+                        <div className="p-5 space-y-3">
+                            <div>
+                                <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-4">
+                                    Plantillas Disponibles
+                                </p>
+                                <div className="grid gap-3">
+                                    <button
+                                        onClick={() => {
+                                            const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                            const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
+                                            const perfilCache = getValidPerfil(session?.user?.id);
+                                            const userCentroId = miPerfil?.centro_id || perfilCache?.centro_id || state.centroRolActual?.centro_id || curso?.centroId;
+                                            const centro = miPerfil?.centro || (userCentroId ? getValidCentro(userCentroId) : null) || state.centros?.find(c => c.id === userCentroId);
+                                            const centroNombre = (currentUserProfileProp?.centro?.nombre || currentUserProfileProp?.institucion || currentUserProfileProp?.instituto || centro?.nombre || (state.instituto && state.instituto !== 'Instituto Central' ? state.instituto : '') || miPerfil?.instituto || miPerfil?.institucion || session?.user?.user_metadata?.centro_nombre || state.instituto || '').trim();
+                                            const codigoCentro = (currentUserProfileProp?.centro?.codigoCentro || currentUserProfileProp?.centro?.codigo_centro || centro?.codigoCentro || (centro as any)?.codigo_centro || session?.user?.user_metadata?.codigo_centro || '').trim();
+                                            const telefono = (currentUserProfileProp?.centro?.telefono || currentUserProfileProp?.telefono || centro?.telefono || miPerfil?.telefono || '').trim();
+                                            const docenteNombre = ((docenteNombreProp && docenteNombreProp !== 'Docente' ? docenteNombreProp : '') || currentUserProfileProp?.nombreDocente || currentUserProfileProp?.nombre || miPerfil?.nombreDocente || perfilCache?.nombre_docente || perfilCache?.nombre || state.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente').trim();
+                                            const cantEstudiantes = curso ? estudiantesDelCurso(state.cursos, state.estudiantes, curso, userCentroId).length : '';
+                                            const htmlContent = getPlanificacionDiariaTemplate({
+                                                centro: centroNombre,
+                                                codigoCentro,
+                                                docente: docenteNombre,
+                                                asignatura: curso?.asignatura || '',
+                                                grado: curso?.grado || '',
+                                                seccion: curso?.seccion || '',
+                                                fecha: form.fechaInicio,
+                                                cantidadEstudiantes: cantEstudiantes !== '' ? cantEstudiantes : undefined,
+                                                telefono,
+                                                ciclo: determinarCiclo(curso?.grado || '')
+                                            });
+                                            setForm(prev => ({
+                                                ...prev,
+                                                titulo: 'Planificación - ' + (curso?.asignatura || 'Clase'),
+                                                contenidoHtml: htmlContent
+                                            }));
+                                            setImportStep('template-editor');
+                                        }}
+                                        className="w-full text-left p-4 rounded-xl border border-(--border-soft) bg-white hover:border-(--primary) hover:bg-(--linen)/20 transition-all cursor-pointer group flex items-start gap-3"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-(--tag-indigo-bg) flex items-center justify-center shrink-0 border border-(--border-soft)">
+                                            <BookOpen size={20} className="text-(--primary)" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors">
+                                                Planificación de Clase Diaria
+                                            </h3>
+                                            <p className="mt-1 text-xs font-medium text-(--ink-soft) leading-relaxed">
+                                                Formato estándar MINERD para planificar el día a día, con secciones de inicio, desarrollo, cierre e indicadores de logro.
+                                            </p>
+                                        </div>
+                                    </button>
 
-                                      <div className="flex flex-wrap items-center gap-2 mb-4">
-                                          {viewerRecursos.map((recurso: any) => {
-                                              const cat = recurso.categoria || recurso.titulo || 'Otro';
-                                              const { icon: Icon, bg, text, border } = getCategoriaConfig(cat);
-                                              return (
-                                                  <div key={recurso.id} className="relative group flex items-center">
-                                                      <button
-                                                          onClick={() => window.open(recurso.url, "_blank", "noopener,noreferrer")}
-                                                          title="Abrir recurso"
-                                                          className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${bg} ${border} ${text} text-xs font-bold uppercase tracking-wider hover:brightness-95 transition-all shadow-sm artisan-pill cursor-pointer outline-none`}
-                                                      >
-                                                          <Icon size={14} />
-                                                          {cat}
-                                                      </button>
-                                                      <div className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 z-10">
-                                                          <button
-                                                              onClick={(e) => {
-                                                                  e.preventDefault();
-                                                                  e.stopPropagation();
-                                                                  setEditingRecursoId(recurso.id);
-                                                                  setNewRecursoCategoria(recurso.categoria || recurso.titulo || CATEGORIAS_RECURSOS[0]);
-                                                                  setNewRecursoUrl(recurso.url);
-                                                                  setRecursoError('');
-                                                                  setIsAddingRecurso(false);
-                                                              }}
-                                                              className="w-7 h-7 rounded-full bg-white border border-(--border-soft) flex items-center justify-center text-(--ink-soft) hover:text-(--primary) hover:border-(--primary)/30 shadow-sm transition-colors outline-none"
-                                                              title="Editar recurso"
-                                                          >
-                                                              <Edit2 size={12} />
-                                                          </button>
-                                                          <button
-                                                              onClick={(e) => {
-                                                                  e.preventDefault();
-                                                                  e.stopPropagation();
-                                                                  if (window.confirm('¿Eliminar recurso?')) {
-                                                                      const updatedRecursos = (form.recursos || []).filter((r: any) => r.id !== recurso.id);
-                                                                      setForm(prev => ({ ...prev, recursos: updatedRecursos }));
-                                                                  }
-                                                              }}
-                                                              className="w-7 h-7 rounded-full bg-white border border-(--border-soft) flex items-center justify-center text-(--ink-soft) hover:text-(--danger) hover:border-(--danger)/30 shadow-sm transition-colors outline-none"
-                                                              title="Eliminar recurso"
-                                                          >
-                                                              <Trash2 size={12} />
-                                                          </button>
-                                                      </div>
-                                                  </div>
-                                              )
-                                          })}
-                                          
-                                          {(!isAddingRecurso && !editingRecursoId) && (
-                                              <button
-                                                  onClick={() => { setIsAddingRecurso(true); setEditingRecursoId(null); setNewRecursoCategoria(CATEGORIAS_RECURSOS[0]); setNewRecursoUrl(''); setRecursoError(''); }}
-                                                  className="px-3 py-1.5 rounded-full bg-(--linen)/30 border border-(--border-soft) text-(--ink-soft) text-xs font-bold uppercase tracking-wider hover:bg-(--linen) hover:text-(--ink) transition-all flex items-center gap-1.5 shadow-sm border-dashed artisan-pill outline-none"
-                                              >
-                                                  <Plus size={14} strokeWidth={3} /> Agregar recurso
-                                              </button>
-                                          )}
-                                      </div>
+                                    {/* Selector de período de recuperación */}
+                                    <div className="flex items-center gap-3 px-1">
+                                        <label className="text-xs font-bold text-(--ink-soft) uppercase tracking-wider whitespace-nowrap">Período:</label>
+                                        <div className="flex gap-1.5">
+                                            {(['P1', 'P2', 'P3'] as const).map(p => (
+                                                <button
+                                                    key={p}
+                                                    onClick={() => setPeriodoRecuperacion(p)}
+                                                    disabled={!isPeriodoDisponible(PERIODOS_RECUPERACION[p].fechaInicio)}
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer outline-none ${periodoRecuperacion === p
+                                                        ? 'bg-(--primary) text-white shadow-sm'
+                                                        : isPeriodoDisponible(PERIODOS_RECUPERACION[p].fechaInicio)
+                                                            ? 'bg-white border border-(--border-soft) text-(--ink) hover:bg-(--linen)/40'
+                                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                        }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <span className="text-[10px] font-medium text-(--ink-soft) italic">
+                                            {PERIODOS_RECUPERACION[periodoRecuperacion].nombre}
+                                        </span>
+                                    </div>
 
-                                      {(isAddingRecurso || editingRecursoId) && (
-                                          <div className="mt-4 p-5 rounded-2xl bg-white border border-(--border-soft) shadow-sm animate-in fade-in slide-in-from-top-2 max-w-2xl">
-                                              <div className="grid gap-4 sm:grid-cols-12 mb-4">
-                                                  <div className={(!viewerSeq && !editingRecursoId) ? "sm:col-span-4" : "sm:col-span-6"}>
-                                                      <label className="block text-xs font-black uppercase tracking-widest text-(--ink-soft) mb-1.5 ml-1">Categoría</label>
-                                                      <div className="relative">
-                                                          <select
-                                                              value={newRecursoCategoria}
-                                                              onChange={(e) => { setNewRecursoCategoria(e.target.value); setRecursoError(''); }}
-                                                              className="w-full px-4 py-2.5 rounded-xl border border-(--border-soft) bg-white text-sm font-bold text-(--ink) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all appearance-none artisan-pill"
-                                                              disabled={recursosLoading}
-                                                          >
-                                                              {CATEGORIAS_RECURSOS.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                                          </select>
-                                                          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-(--ink-soft) pointer-events-none" />
-                                                      </div>
-                                                  </div>
-                                                  <div className={(!viewerSeq && !editingRecursoId) ? "sm:col-span-4" : "sm:col-span-6"}>
-                                                      <label className="block text-xs font-black uppercase tracking-widest text-(--ink-soft) mb-1.5 ml-1">URL (Enlace)</label>
-                                                      <input
-                                                          type="url"
-                                                          value={newRecursoUrl}
-                                                          onChange={(e) => { setNewRecursoUrl(e.target.value); setRecursoError(''); }}
-                                                          placeholder="https://"
-                                                          className="w-full px-4 py-2.5 rounded-xl border border-(--border-soft) bg-white text-sm font-bold text-(--ink) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all artisan-pill"
-                                                          disabled={recursosLoading}
-                                                      />
-                                                  </div>
-                                                  {(!viewerSeq && !editingRecursoId) && (
-                                                      <div className="sm:col-span-4">
-                                                          <label className="block text-xs font-black uppercase tracking-widest text-(--ink-soft) mb-1.5 ml-1">Vincular a</label>
-                                                          <div className="relative">
-                                                              <select
-                                                                  value={newRecursoTargetSeq}
-                                                                  onChange={(e) => { setNewRecursoTargetSeq(e.target.value === 'new' ? 'new' : Number(e.target.value)); setRecursoError(''); }}
-                                                                  className="w-full px-4 py-2.5 rounded-xl border border-(--border-soft) bg-white text-sm font-bold text-(--ink) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all appearance-none artisan-pill truncate"
-                                                                  disabled={recursosLoading}
-                                                              >
-                                                                  <option value="new">Nueva plantilla</option>
-                                                                  {secuenciasCurso.map((seq: Secuencia) => (
-                                                                      <option key={seq.id} value={seq.id}>{seq.titulo}</option>
-                                                                  ))}
-                                                              </select>
-                                                              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-(--ink-soft) pointer-events-none" />
-                                                          </div>
-                                                      </div>
-                                                  )}
-                                              </div>
-                                              {recursoError && <p className="text-xs font-bold text-(--danger) mb-3 ml-1">{recursoError}</p>}
-                                              <div className="flex gap-3 justify-end">
-                                                  <button
-                                                      onClick={() => { setIsAddingRecurso(false); setEditingRecursoId(null); setNewRecursoCategoria(CATEGORIAS_RECURSOS[0]); setNewRecursoUrl(''); setRecursoError(''); }}
-                                                      className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-(--ink-soft) hover:bg-(--border-soft)/50 transition-colors artisan-pill"
-                                                      disabled={recursosLoading}
-                                                  >
-                                                      Cancelar
-                                                  </button>
-                                                  <button
-                                                      onClick={handleAddRecurso}
-                                                      className="px-5 py-2 rounded-xl bg-(--primary) text-white text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50 artisan-pill shadow-sm"
-                                                      disabled={recursosLoading || !newRecursoUrl.trim()}
-                                                  >
-                                                      {recursosLoading ? 'Guardando...' : (editingRecursoId ? 'Actualizar' : 'Guardar')}
-                                                  </button>
-                                              </div>
-                                          </div>
-                                      )}
-                                  </div>
-                                  <div className="border-t border-(--border-soft) pt-5">
-                                      <p className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest mb-4">
-                                          Plantillas Disponibles
-                                      </p>
-                                      <div className="grid gap-3">
-                                      <button
-                                          onClick={() => {
-                                                 const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
-                                                 const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
-                                                 const perfilCache = getValidPerfil(session?.user?.id);
-                                                 const userCentroId = miPerfil?.centro_id || perfilCache?.centro_id || state.centroRolActual?.centro_id || curso?.centroId;
-                                                 const centro = miPerfil?.centro || (userCentroId ? getValidCentro(userCentroId) : null) || state.centros?.find(c => c.id === userCentroId);
-                                                 const centroNombre = (currentUserProfileProp?.centro?.nombre || currentUserProfileProp?.institucion || currentUserProfileProp?.instituto || centro?.nombre || (state.instituto && state.instituto !== 'Instituto Central' ? state.instituto : '') || miPerfil?.instituto || miPerfil?.institucion || session?.user?.user_metadata?.centro_nombre || state.instituto || '').trim();
-                                                 const codigoCentro = (currentUserProfileProp?.centro?.codigoCentro || currentUserProfileProp?.centro?.codigo_centro || centro?.codigoCentro || (centro as any)?.codigo_centro || session?.user?.user_metadata?.codigo_centro || '').trim();
-                                                 const telefono = (currentUserProfileProp?.centro?.telefono || currentUserProfileProp?.telefono || centro?.telefono || miPerfil?.telefono || '').trim();
-                                                 const docenteNombre = ((docenteNombreProp && docenteNombreProp !== 'Docente' ? docenteNombreProp : '') || currentUserProfileProp?.nombreDocente || currentUserProfileProp?.nombre || miPerfil?.nombreDocente || perfilCache?.nombre_docente || perfilCache?.nombre || state.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente').trim();
-                                                 const cantEstudiantes = curso ? estudiantesDelCurso(state.cursos, state.estudiantes, curso, userCentroId).length : '';
-                                                 const htmlContent = getPlanificacionDiariaTemplate({
-                                                     centro: centroNombre,
-                                                     codigoCentro,
-                                                     docente: docenteNombre,
-                                                     asignatura: curso?.asignatura || '',
-                                                     grado: curso?.grado || '',
-                                                     seccion: curso?.seccion || '',
-                                                     fecha: form.fechaInicio,
-                                                     cantidadEstudiantes: cantEstudiantes !== '' ? cantEstudiantes : undefined,
-                                                     telefono,
-                                                     ciclo: determinarCiclo(curso?.grado || '')
-                                                 });
-                                                setForm(prev => ({
-                                                    ...prev,
-                                                    titulo: 'Planificación - ' + (curso?.asignatura || 'Clase'),
-                                                    contenidoHtml: htmlContent
-                                                }));
-                                                setImportStep('template-editor');
-                                          }}
-                                          className="w-full text-left p-4 rounded-xl border border-(--border-soft) bg-white hover:border-(--primary) hover:bg-(--linen)/20 transition-all cursor-pointer group flex items-start gap-3"
-                                      >
-                                          <div className="w-10 h-10 rounded-lg bg-(--tag-indigo-bg) flex items-center justify-center shrink-0 border border-(--border-soft)">
-                                             <BookOpen size={20} className="text-(--primary)" />
-                                          </div>
-                                          <div>
-                                             <h3 className="text-sm font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors">
-                                                 Planificación de Clase Diaria
-                                             </h3>
-                                             <p className="mt-1 text-xs font-medium text-(--ink-soft) leading-relaxed">
-                                                 Formato estándar MINERD para planificar el día a día, con secciones de inicio, desarrollo, cierre e indicadores de logro.
-                                             </p>
-                                          </div>
-                                      </button>
+                                    {/* Botón Plan de Recuperación Pedagógica */}
+                                    <button
+                                        onClick={async () => {
+                                            const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                            if (!curso) return;
 
-                                      {/* Selector de período de recuperación */}
-                                      <div className="flex items-center gap-3 px-1">
-                                          <label className="text-xs font-bold text-(--ink-soft) uppercase tracking-wider whitespace-nowrap">Período:</label>
-                                          <div className="flex gap-1.5">
-                                              {(['P1', 'P2', 'P3'] as const).map(p => (
-                                                  <button
-                                                      key={p}
-                                                      onClick={() => setPeriodoRecuperacion(p)}
-                                                      disabled={!isPeriodoDisponible(PERIODOS_RECUPERACION[p].fechaInicio)}
-                                                      className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer outline-none ${
-                                                          periodoRecuperacion === p
-                                                              ? 'bg-(--primary) text-white shadow-sm'
-                                                              : isPeriodoDisponible(PERIODOS_RECUPERACION[p].fechaInicio)
-                                                                  ? 'bg-white border border-(--border-soft) text-(--ink) hover:bg-(--linen)/40'
-                                                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                      }`}
-                                                  >
-                                                      {p}
-                                                  </button>
-                                              ))}
-                                          </div>
-                                          <span className="text-[10px] font-medium text-(--ink-soft) italic">
-                                              {PERIODOS_RECUPERACION[periodoRecuperacion].nombre}
-                                          </span>
-                                      </div>
+                                            const htmlContent = await generarContenidoPlanRecuperacion(curso, periodoRecuperacion);
+                                            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                                            const url = URL.createObjectURL(blob);
+                                            window.open(url, '_blank');
+                                            setShowModal(false);
+                                        }}
+                                        className="w-full text-left p-4 rounded-xl border border-(--border-soft) bg-white hover:border-(--primary) hover:bg-(--linen)/30 transition-all cursor-pointer group flex items-start gap-3"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-(--linen) flex items-center justify-center shrink-0 border border-(--border-soft)">
+                                            <DocumentRecuperacionIcon className="size-5 text-(--ink-soft) group-hover:text-(--ink) transition-colors" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors">
+                                                Plan de Recuperación Pedagógica
+                                            </h3>
+                                            <p className="mt-1 text-xs font-medium text-(--ink-soft) leading-relaxed">
+                                                Documento individualizado para la recuperación académica de estudiantes con puntajes menores a 70. Periodo: {PERIODOS_RECUPERACION[periodoRecuperacion].nombre}.
+                                            </p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </CieloModal>
 
-                                      {/* Botón Plan de Recuperación Pedagógica */}
-                                       <button
-                                           onClick={async () => {
-                                                const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
-                                                if (!curso) return;
-
-                                                const htmlContent = await generarContenidoPlanRecuperacion(curso, periodoRecuperacion);
-                                                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-                                                const url = URL.createObjectURL(blob);
-                                                window.open(url, '_blank');
-                                                setShowModal(false);
-                                            }}
-                                           className="w-full text-left p-4 rounded-xl border border-(--border-soft) bg-white hover:border-(--primary) hover:bg-(--linen)/30 transition-all cursor-pointer group flex items-start gap-3"
-                                       >
-                                           <div className="w-10 h-10 rounded-lg bg-(--linen) flex items-center justify-center shrink-0 border border-(--border-soft)">
-                                              <DocumentRecuperacionIcon className="size-5 text-(--ink-soft) group-hover:text-(--ink) transition-colors" />
-                                           </div>
-                                           <div>
-                                              <h3 className="text-sm font-black uppercase tracking-wider text-(--ink) group-hover:text-(--primary) transition-colors">
-                                                  Plan de Recuperación Pedagógica
-                                              </h3>
-                                              <p className="mt-1 text-xs font-medium text-(--ink-soft) leading-relaxed">
-                                                  Documento individualizado para la recuperación académica de estudiantes con puntajes menores a 70. Periodo: {PERIODOS_RECUPERACION[periodoRecuperacion].nombre}.
-                                              </p>
-                                           </div>
-                                       </button>
-                                  </div>
-                              </div>
-                              </div>
-                          )}
-                 </div>
-             </CieloModal>
-
-             {showModal && importStep === 'template-editor' && (
-                 <div className="fixed inset-0 z-100 bg-(--background) flex flex-col w-full h-full">
-                     <div className="bg-white border-b border-(--border-soft) px-4 py-3 flex items-center justify-between shrink-0 shadow-sm">
-                         <div className="flex flex-col gap-1">
-                             <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Título de la Planificación</label>
-                             <input 
-                                 className="px-3 py-2 text-sm font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-72 transition-colors"
-                                 value={form.titulo}
-                                 onChange={e => setForm(prev => ({...prev, titulo: e.target.value}))}
-                                 placeholder="Ej. Unidad 1 - Comprensión lectora"
-                             />
-                         </div>
-                         <div className="flex flex-col gap-1">
-                             <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Curso Vinculado</label>
-                             <select 
-                                 className="px-3 py-2 text-sm font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-64 transition-colors"
-                                 value={form.cursoId}
-                                 onChange={e => setForm(prev => ({...prev, cursoId: Number(e.target.value)}))}
-                             >
-                                 <option value={0}>Selecciona un curso</option>
-                                 {state.cursos.map(c => <option key={c.id} value={c.id}>{getCursoLabel(c)}</option>)}
-                             </select>
-                         </div>
-                         <div className="flex items-center gap-3">
-                              <button
-                                  type="button"
-                                  onClick={() => setImportStep('select-template')}
-                                  className="px-6 py-2.5 rounded-xl bg-white border border-(--border-soft) text-(--ink-soft) text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-(--linen)/30 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-                              >
-                                  Volver
-                              </button>
-                              <button
-                                  type="button"
-onClick={() => {
-                                        const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
-                                        const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
-                                        const perfilCache = getValidPerfil(session?.user?.id);
-                                        const userCentroId = miPerfil?.centro_id || perfilCache?.centro_id || state.centroRolActual?.centro_id || curso?.centroId;
-                                        const centro = miPerfil?.centro || (userCentroId ? getValidCentro(userCentroId) : null) || state.centros?.find(c => c.id === userCentroId);
-                                        const centroNombre = (currentUserProfileProp?.centro?.nombre || currentUserProfileProp?.institucion || currentUserProfileProp?.instituto || centro?.nombre || (state.instituto && state.instituto !== 'Instituto Central' ? state.instituto : '') || miPerfil?.instituto || miPerfil?.institucion || session?.user?.user_metadata?.centro_nombre || state.instituto || '').trim();
-                                        const codigoCentro = (currentUserProfileProp?.centro?.codigoCentro || currentUserProfileProp?.centro?.codigo_centro || centro?.codigoCentro || (centro as any)?.codigo_centro || session?.user?.user_metadata?.codigo_centro || '').trim();
-                                        const telefono = (currentUserProfileProp?.centro?.telefono || currentUserProfileProp?.telefono || centro?.telefono || miPerfil?.telefono || '').trim();
-                                        const docenteNombre = ((docenteNombreProp && docenteNombreProp !== 'Docente' ? docenteNombreProp : '') || currentUserProfileProp?.nombreDocente || currentUserProfileProp?.nombre || miPerfil?.nombreDocente || perfilCache?.nombre_docente || perfilCache?.nombre || state.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente').trim();
-                                        const cantEstudiantes = curso ? estudiantesDelCurso(state.cursos, state.estudiantes, curso, userCentroId).length : '';
-                                        const params = new URLSearchParams();
-                                        if (form.cursoId || curso?.id) params.set('cursoId', String(form.cursoId || curso?.id));
-                                        if (form.fechaInicio) params.set('fecha', form.fechaInicio);
-                                        if (curso?.asignatura) params.set('asignatura', curso.asignatura);
-                                        if (curso?.grado) params.set('grado', curso.grado);
-                                        if (curso?.seccion) params.set('seccion', curso.seccion);
-                                        if (centroNombre) params.set('centro', centroNombre);
-                                        if (codigoCentro) params.set('codigo', codigoCentro);
-                                        if (docenteNombre) params.set('docente', docenteNombre);
-                                        if (telefono) params.set('telefono', telefono);
-                                        if (cantEstudiantes !== '') params.set('estudiantes', String(cantEstudiantes));
-                                        const qs = params.toString();
-                                        window.open(`/planificacion-diaria/plantilla${qs ? `?${qs}` : ''}`, '_blank');
+            {showModal && importStep === 'template-editor' && (
+                <div className="fixed inset-0 z-100 bg-(--background) flex flex-col w-full h-full">
+                    <div className="bg-white border-b border-(--border-soft) px-4 py-3 flex items-center justify-between shrink-0 shadow-sm">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Título de la Planificación</label>
+                            <input
+                                className="px-3 py-2 text-sm font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-72 transition-colors"
+                                value={form.titulo}
+                                onChange={e => setForm(prev => ({ ...prev, titulo: e.target.value }))}
+                                placeholder="Ej. Unidad 1 - Comprensión lectora"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs font-black uppercase tracking-widest text-(--ink-soft)">Curso Vinculado</label>
+                            <select
+                                className="px-3 py-2 text-sm font-bold border border-(--border-soft) bg-(--linen)/15 text-(--ink) rounded-lg outline-none focus:border-(--primary) w-64 transition-colors"
+                                value={form.cursoId}
+                                onChange={e => setForm(prev => ({ ...prev, cursoId: Number(e.target.value) }))}
+                            >
+                                <option value={0}>Selecciona un curso</option>
+                                {state.cursos.map(c => <option key={c.id} value={c.id}>{getCursoLabel(c)}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setImportStep('select-template')}
+                                className="px-6 py-2.5 rounded-xl bg-white border border-(--border-soft) text-(--ink-soft) text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-(--linen)/30 transition-all outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                            >
+                                Volver
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const curso = state.cursos.find(c => c.id === form.cursoId) || state.cursos[0];
+                                    const miPerfil = state.perfiles.find(p => p.userId === session?.user?.id);
+                                    const perfilCache = getValidPerfil(session?.user?.id);
+                                    const userCentroId = miPerfil?.centro_id || perfilCache?.centro_id || state.centroRolActual?.centro_id || curso?.centroId;
+                                    const centro = miPerfil?.centro || (userCentroId ? getValidCentro(userCentroId) : null) || state.centros?.find(c => c.id === userCentroId);
+                                    const centroNombre = (currentUserProfileProp?.centro?.nombre || currentUserProfileProp?.institucion || currentUserProfileProp?.instituto || centro?.nombre || (state.instituto && state.instituto !== 'Instituto Central' ? state.instituto : '') || miPerfil?.instituto || miPerfil?.institucion || session?.user?.user_metadata?.centro_nombre || state.instituto || '').trim();
+                                    const codigoCentro = (currentUserProfileProp?.centro?.codigoCentro || currentUserProfileProp?.centro?.codigo_centro || centro?.codigoCentro || (centro as any)?.codigo_centro || session?.user?.user_metadata?.codigo_centro || '').trim();
+                                    const telefono = (currentUserProfileProp?.centro?.telefono || currentUserProfileProp?.telefono || centro?.telefono || miPerfil?.telefono || '').trim();
+                                    const docenteNombre = ((docenteNombreProp && docenteNombreProp !== 'Docente' ? docenteNombreProp : '') || currentUserProfileProp?.nombreDocente || currentUserProfileProp?.nombre || miPerfil?.nombreDocente || perfilCache?.nombre_docente || perfilCache?.nombre || state.nombreDocente || session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.nombre_docente || 'Docente').trim();
+                                    const cantEstudiantes = curso ? estudiantesDelCurso(state.cursos, state.estudiantes, curso, userCentroId).length : '';
+                                    const params = new URLSearchParams();
+                                    if (form.cursoId || curso?.id) params.set('cursoId', String(form.cursoId || curso?.id));
+                                    if (form.fechaInicio) params.set('fecha', form.fechaInicio);
+                                    if (curso?.asignatura) params.set('asignatura', curso.asignatura);
+                                    if (curso?.grado) params.set('grado', curso.grado);
+                                    if (curso?.seccion) params.set('seccion', curso.seccion);
+                                    if (centroNombre) params.set('centro', centroNombre);
+                                    if (codigoCentro) params.set('codigo', codigoCentro);
+                                    if (docenteNombre) params.set('docente', docenteNombre);
+                                    if (telefono) params.set('telefono', telefono);
+                                    if (cantEstudiantes !== '') params.set('estudiantes', String(cantEstudiantes));
+                                    const qs = params.toString();
+                                    window.open(`/planificacion-diaria/plantilla${qs ? `?${qs}` : ''}`, '_blank');
+                                    setShowModal(false);
+                                }}
+                                className="px-6 py-2.5 rounded-xl bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-(--linen)/30 transition-all outline-none"
+                            >
+                                Abrir en otra pestaña
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const container = document.getElementById('template-editor-container');
+                                    if (container) {
+                                        const creada = await onAddSecuencia({ ...form, contenidoHtml: container.innerHTML, estado: 'Pendiente', cursoId: form.cursoId });
+                                        if (!creada) return;
                                         setShowModal(false);
-                                   }}
-                                  className="px-6 py-2.5 rounded-xl bg-white border border-(--border-soft) text-(--ink) text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-(--linen)/30 transition-all outline-none"
-                              >
-                                  Abrir en otra pestaña
-                              </button>
-                              <button
-                                  type="button"
-onClick={async () => {
-                                       const container = document.getElementById('template-editor-container');
-                                       if (container) {
-                                           const creada = await onAddSecuencia({ ...form, contenidoHtml: container.innerHTML, estado: 'Pendiente', cursoId: form.cursoId });
-                                           if (!creada) return;
-                                           setShowModal(false);
-                                           setForm({
-                                              titulo: '',
-                                              cursoId: 0,
-                                              fechaInicio: new Date().toISOString().split('T')[0],
-                                              contenidoHtml: '',
-                                           });
-                                       }
-                                   }}
-                                  className="px-6 py-2.5 rounded-xl bg-(--primary) text-white text-xs font-black uppercase tracking-widest shadow-sm hover:opacity-90 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50"
-                              >
-                                  Guardar
-                              </button>
-                          </div>
-                     </div>
-                     
-                     <div className="flex-1 overflow-y-auto p-3 md:p-6 bg-(--linen)/20 flex justify-center">
-                         <div className="w-full max-w-6xl bg-white shadow-sm border border-(--border-soft) p-8 rounded-(--radius-md) shrink-0">
-                             <div 
-                                 id="template-editor-container"
-                                 className="prose prose-slate max-w-none prose-sm w-full"
-                                 dangerouslySetInnerHTML={{ __html: form.contenidoHtml }}
-                             />
-                         </div>
-                     </div>
-                 </div>
-             )}
+                                        setForm({
+                                            titulo: '',
+                                            cursoId: 0,
+                                            fechaInicio: new Date().toISOString().split('T')[0],
+                                            contenidoHtml: '',
+                                        });
+                                    }
+                                }}
+                                className="px-6 py-2.5 rounded-xl bg-(--primary) text-white text-xs font-black uppercase tracking-widest shadow-sm hover:opacity-90 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50"
+                            >
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-3 md:p-6 bg-(--linen)/20 flex justify-center">
+                        <div className="w-full max-w-6xl bg-white shadow-sm border border-(--border-soft) p-8 rounded-(--radius-md) shrink-0">
+                            <div
+                                id="template-editor-container"
+                                className="prose prose-slate max-w-none prose-sm w-full"
+                                dangerouslySetInnerHTML={{ __html: form.contenidoHtml }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

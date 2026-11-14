@@ -1,41 +1,63 @@
-import React from 'react';
-import { FileText, Image as ImageIcon, Video, FileAudio, File, FileType2 } from 'lucide-react';
-import { descriptorEvidencia } from '../../lib/evidenciasApi';
-
-/**
- * Miniatura de una evidencia.
- *
- * La miniatura es la protagonista del grid, asi que el marco tiene altura fija y
- * `object-cover`: las entregas de un grupo tienen proporciones muy distintas y
- * una rejilla que baila al cargar es justo lo que hace lento el repaso.
- *
- * Solo se pinta la imagen real cuando hay URL firmada Y el tipo es imagen o
- * video. Para PDF, documento y audio se muestra el icono con la extension, sin
- * inventar un render: la app no trae visor de PDF y meter pdf.js por esto seria
- * una dependencia de peso para un caso que el docente resuelve con "Abrir
- * archivo".
- */
-
-const ICONOS = {
-    imagen: ImageIcon,
-    video: Video,
-    pdf: FileType2,
-    documento: FileText,
-    audio: FileAudio,
-    otro: File,
-} as const;
+import React, { useEffect, useState } from 'react';
+import { 
+    FileText, 
+    Image as ImageIcon, 
+    Video, 
+    FileAudio, 
+    File, 
+    FileType2,
+    FileSpreadsheet,
+    Presentation,
+} from 'lucide-react';
+import { renderizarMiniaturaPdf } from '../../utils/pdfThumbnail';
 
 interface EvidenciaThumbnailProps {
     /** URL firmada del archivo original en Supabase (si aplica) */
     url: string | null;
-    /** URL de la miniatura directa (por ejemplo, desde Google Drive) */
+    /** URL de la miniatura directa (por ejemplo, desde Google Drive o pregenerada) */
     thumbnailUrl?: string | null;
     mimeType: string | null;
     nombre: string | null;
-    /** Texto pequeno arriba a la izquierda, p. ej. el periodo. */
-    etiqueta?: string | null;
+    /** Color de fondo opcional según el nivel de logro */
+    tintBg?: string | null;
+    /** Color de icono temático opcional */
+    tintIconColor?: string | null;
     className?: string;
     rounded?: string;
+}
+
+function obtenerFormatoOfimatica(nombre: string | null, mime: string | null): {
+    tipo: 'word' | 'excel' | 'powerpoint' | 'pdf' | 'video' | 'audio' | 'imagen' | 'otro';
+    colorBg: string;
+    colorIcono: string;
+    extension: string;
+} {
+    const ext = (nombre || '').split('.').pop()?.toLowerCase() || '';
+    const m = (mime || '').toLowerCase();
+
+    if (m.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp'].includes(ext)) {
+        return { tipo: 'imagen', colorBg: '#F1F5F9', colorIcono: '#166534', extension: ext.toUpperCase() || 'IMG' };
+    }
+    if (m === 'application/pdf' || ext === 'pdf') {
+        return { tipo: 'pdf', colorBg: '#FEF2F2', colorIcono: '#DC2626', extension: 'PDF' };
+    }
+    if (m.includes('spreadsheet') || m.includes('excel') || ['xls', 'xlsx', 'csv'].includes(ext)) {
+        return { tipo: 'excel', colorBg: '#F0FDF4', colorIcono: '#16A34A', extension: ext.toUpperCase() || 'XLS' };
+    }
+    if (m.includes('presentation') || m.includes('powerpoint') || ['ppt', 'pptx'].includes(ext)) {
+        return { tipo: 'powerpoint', colorBg: '#FFF7ED', colorIcono: '#EA580C', extension: ext.toUpperCase() || 'PPT' };
+    }
+    if (m.includes('word') || m.includes('document') || ['doc', 'docx', 'odt', 'rtf'].includes(ext)) {
+        return { tipo: 'word', colorBg: '#EFF6FF', colorIcono: '#2563EB', extension: ext.toUpperCase() || 'DOC' };
+    }
+    if (m.startsWith('video/') || ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) {
+        return { tipo: 'video', colorBg: '#FAF5FF', colorIcono: '#9333EA', extension: ext.toUpperCase() || 'VID' };
+    }
+    if (m.startsWith('audio/') || ['mp3', 'wav', 'm4a', 'aac', 'ogg'].includes(ext)) {
+        return { tipo: 'audio', colorBg: '#FDF2F8', colorIcono: '#DB2777', extension: ext.toUpperCase() || 'AUD' };
+    }
+
+    return { tipo: 'otro', colorBg: '#F8FAFC', colorIcono: '#64748B', extension: ext.toUpperCase() || 'FILE' };
 }
 
 const EvidenciaThumbnail: React.FC<EvidenciaThumbnailProps> = ({
@@ -43,53 +65,104 @@ const EvidenciaThumbnail: React.FC<EvidenciaThumbnailProps> = ({
     thumbnailUrl,
     mimeType,
     nombre,
-    etiqueta,
+    tintBg,
+    tintIconColor,
     className = '',
-    rounded = 'rounded-xl',
+    rounded = 'rounded-[8px]',
 }) => {
-    const [fallo, setFallo] = React.useState(false);
-    const desc = descriptorEvidencia(mimeType, nombre);
-    const Icono = ICONOS[desc.icono];
-    const extension = (nombre || '').split('.').pop()?.slice(0, 4).toUpperCase();
+    const [fallo, setFallo] = useState(false);
+    const [pdfThumbnail, setPdfThumbnail] = useState<string | null>(null);
+    const [generandoPdf, setGenerandoPdf] = useState(false);
 
-    const mostrarReal = !fallo && ((thumbnailUrl) || (url && (desc.clase === 'imagen' || desc.clase === 'video')));
-    const urlImagen = thumbnailUrl || url;
+    const formato = obtenerFormatoOfimatica(nombre, mimeType);
+
+    // Cargar dinámicamente miniatura de la primera página de PDF si no hay thumbnail previo
+    useEffect(() => {
+        let montado = true;
+        if (formato.tipo === 'pdf' && !thumbnailUrl && url && !fallo && !pdfThumbnail && !generandoPdf) {
+            setGenerandoPdf(true);
+            renderizarMiniaturaPdf(url)
+                .then((thumb) => {
+                    if (montado && thumb) {
+                        setPdfThumbnail(thumb);
+                    }
+                })
+                .catch(() => {
+                    // Silenciosamente usar icono de respaldo
+                })
+                .finally(() => {
+                    if (montado) setGenerandoPdf(false);
+                });
+        }
+        return () => {
+            montado = false;
+        };
+    }, [formato.tipo, thumbnailUrl, url, fallo, pdfThumbnail, generandoPdf]);
+
+    const urlVisual = thumbnailUrl || pdfThumbnail || (formato.tipo === 'imagen' ? url : null);
+    const mostrarImagen = !fallo && Boolean(urlVisual);
+
+    const Icono = (() => {
+        switch (formato.tipo) {
+            case 'excel':
+                return FileSpreadsheet;
+            case 'powerpoint':
+                return Presentation;
+            case 'word':
+                return FileText;
+            case 'pdf':
+                return FileType2;
+            case 'video':
+                return Video;
+            case 'audio':
+                return FileAudio;
+            case 'imagen':
+                return ImageIcon;
+            default:
+                return File;
+        }
+    })();
+
+    const finalBg = tintBg || formato.colorBg;
+    const finalIconColor = tintIconColor || formato.colorIcono;
 
     return (
-        <div className={`relative overflow-hidden bg-[#F1F1EC] border border-[#E4E3EC] ${rounded} ${className}`}>
-            {mostrarReal ? (
-                desc.clase === 'imagen' ? (
-                    <img
-                        src={urlImagen as string}
-                        alt={nombre || 'Evidencia'}
-                        loading="lazy"
-                        onError={() => setFallo(true)}
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <video
-                        src={urlImagen as string}
-                        muted
-                        playsInline
-                        preload="metadata"
-                        onError={() => setFallo(true)}
-                        className="w-full h-full object-cover bg-black"
-                    />
-                )
+        <div 
+            className={`relative overflow-hidden flex items-center justify-center ${rounded} ${className}`} 
+            style={{ backgroundColor: finalBg }}
+        >
+            {mostrarImagen ? (
+                <img
+                    src={urlVisual!}
+                    alt={nombre || 'Evidencia'}
+                    loading="lazy"
+                    onError={() => setFallo(true)}
+                    className="w-full h-full object-cover transition-transform duration-200 hover:scale-105"
+                />
+            ) : formato.tipo === 'video' && url && !fallo ? (
+                <video
+                    src={url}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    onError={() => setFallo(true)}
+                    className="w-full h-full object-cover bg-black"
+                />
             ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-[#4E5566]">
-                    <Icono size={26} strokeWidth={1.5} />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#767a76]">
-                        {extension || desc.etiqueta}
-                    </span>
+                <div 
+                    className="w-full h-full flex flex-col items-center justify-center gap-1.5 p-2 select-none"
+                    style={{ color: finalIconColor }}
+                >
+                    <Icono size={28} strokeWidth={1.5} />
+                    {formato.tipo !== 'imagen' && (
+                        <span 
+                            className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-current/20 bg-white/70"
+                        >
+                            {formato.extension}
+                        </span>
+                    )}
                 </div>
             )}
-
-            {etiqueta ? (
-                <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full bg-white/90 border border-[#E4E3EC] text-[9px] font-bold uppercase tracking-widest text-[#4E5566]">
-                    {etiqueta}
-                </span>
-            ) : null}
         </div>
     );
 };

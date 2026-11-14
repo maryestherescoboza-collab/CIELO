@@ -18,10 +18,17 @@
 /* Columnas: estructura editorial del texto */
 .cielo-editorjs .codex-editor {
   color: var(--ce-ink);
+  width: 100%;
+}
+
+.cielo-editorjs .ce-block__content,
+.cielo-editorjs .ce-toolbar__content {
+  max-width: min(100%, clamp(42rem, 90%, 68rem));
+  margin: 0 auto;
 }
 
 .cielo-editorjs .codex-editor__redactor {
-  padding-bottom: 20vh;
+  padding-bottom: clamp(2.5rem, 6vh, 5rem);
 }
 
 /* Toolbox: botón "+" */
@@ -162,7 +169,7 @@
 .cielo-editorjs h4.ce-header,
 .cielo-editorjs h5.ce-header,
 .cielo-editorjs h6.ce-header {
-  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--ce-ink);
   letter-spacing: -0.02em;
   margin: 0.4em 0 0.2em;

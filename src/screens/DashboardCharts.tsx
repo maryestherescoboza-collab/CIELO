@@ -308,7 +308,7 @@ export function CircularProgress({ value, size = 64, color = 'var(--primary)', l
           strokeLinecap="round"
           style={{ transition: 'stroke-dasharray 1s ease' }}
         />
-        <text x={size / 2} y={size / 2 + 1} textAnchor="middle" dominantBaseline="middle" fill="#0f172a" fontSize="14" fontWeight="800" fontFamily="Manrope">{pct}%</text>
+        <text x={size / 2} y={size / 2 + 1} textAnchor="middle" dominantBaseline="middle" fill="#0f172a" fontSize="14" fontWeight="800" fontFamily="'Inter', 'IBM Plex Sans', sans-serif">{pct}%</text>
       </svg>
       {label && <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textAlign: 'center' }}>{label}</span>}
     </div>

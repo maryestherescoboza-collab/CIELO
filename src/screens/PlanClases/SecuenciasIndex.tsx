@@ -226,15 +226,15 @@ export default function SecuenciasIndex() {
   };
 
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: 'Manrope, Inter, system-ui' }}>
-      <main className="flex-1 px-4 sm:px-8 py-7 max-w-7xl w-full mx-auto flex flex-col gap-6">
+    <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <main className="flex-1 px-[clamp(1rem,3vw,3rem)] py-[clamp(1.25rem,2.5vw,2.5rem)] max-w-[clamp(64rem,92vw,110rem)] w-full mx-auto flex flex-col gap-6">
         {/* ================= CABECERA ================= */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
           <div className="flex flex-col gap-1.5">
             <h1 className="font-bold text-[28px] md:text-[32px] text-[#2E3330] tracking-tight">
               Secuencias
             </h1>
-            <p className="text-[#2E3330]/70 text-[15px] max-w-2xl font-['Inter']">
+            <p className="text-[#2E3330]/70 text-[15px] max-w-2xl">
               Estructuras pedagógicas y planes de unidad articulados por competencias.
             </p>
           </div>
@@ -327,7 +327,7 @@ export default function SecuenciasIndex() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-[clamp(0.75rem,1.5vw,1.25rem)]">
             {secuencias.map((secuencia) => (
               <SecuenciaCard 
                 key={secuencia.id} 

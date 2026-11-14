@@ -8,7 +8,17 @@ import { getValidCentro, saveCentroCache } from '../cache/centroCache';
 import { getValidPerfil, savePerfilCacheFromRow, markPerfilRecoveredFromCache, isPerfilRecoveredFromCache, isTemporaryPerfilConnectionError, buildUserProfileFromCache } from '../cache/perfilCache';
 import { getValidCursoCache, saveCursoCache } from '../cache/cursoCache';
 import { getValidPlantillaCache, savePlantillaCache } from '../cache/plantillaCache';
-import { PERIODOS_ACADEMICOS, NULL_PERIODO_TOKEN, hasValidAcademicSlice, getValidAcademicSlice, saveAcademicSlice, upsertAcademicRow } from '../cache/academicCache';
+import {
+    PERIODOS_ACADEMICOS,
+    NULL_PERIODO_TOKEN,
+    hasValidAcademicSlice,
+    getValidAcademicSlice,
+    saveAcademicSlice,
+    upsertAcademicRow,
+    isAcademicSliceFreshInSession,
+    markAcademicSliceVerifiedInSession
+} from '../cache/academicCache';
+import { getAllIdbAcademicSlicesForCourse } from '../cache/academicIdb';
 import { saveSecuencias } from '../cache/secuenciaCache';
 import {
     hydrateStudentsFromCacheForCourses,
@@ -1005,7 +1015,7 @@ export function useSupabaseData(skipInit = false) {
 
     // 4. Setup course-specific Realtime subscription (only active if selectedCursoId is set)
     useEffect(() => {
-        if (skipInit || !selectedCursoId || !REALTIME_UNPUBLISHED_ENABLED) return;
+        if (skipInit || !selectedCursoId) return;
 
         const courseChannelName = `curso-context-${selectedCursoId}`;
         console.log(`[REALTIME] CREATE canal=${courseChannelName} curso=${selectedCursoId}`);
@@ -1023,6 +1033,18 @@ export function useSupabaseData(skipInit = false) {
             supabase.removeChannel(courseChannel);
         };
     }, [skipInit, selectedCursoId, handleCalificacionRealtime, handleCursoDetalleRealtime, handleActividadesRealtime, handleEstudiantesRealtime, handleRecuperacionRealtime, handleRecuperacionCotejoRealtime]);
+
+    // Reconciliación automática y silenciosa al recuperar la conexión a internet
+    useEffect(() => {
+        const handleOnline = () => {
+            console.log('[RED] Conexión recuperada: sincronizando datos académicos en segundo plano');
+            if (selectedCursoId) {
+                void loadCursoData(selectedCursoId, undefined, true);
+            }
+        };
+        window.addEventListener('online', handleOnline);
+        return () => window.removeEventListener('online', handleOnline);
+    }, [selectedCursoId]);
 
     const loadDashboardData = useCallback(async () => {
         if (!session?.user?.id) { diagLog(`[DIAG][DASH] guard sin-sesion ts=${new Date().toISOString()}`); return; }
@@ -1301,7 +1323,7 @@ export function useSupabaseData(skipInit = false) {
         }
     }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
 
-    const loadCursoData = useCallback(async (cursoId: number, periodo?: string) => {
+    const loadCursoData = useCallback(async (cursoId: number, periodo?: string, skipInit = false, asignatura?: string) => {
         if (!session?.user?.id || !cursoId) {
             diagLog(`[DIAG][CURSO] guard sin-sesion-o-curso cursoId=${cursoId ?? 'sin-curso'} ts=${new Date().toISOString()}`);
             return;
@@ -1310,16 +1332,93 @@ export function useSupabaseData(skipInit = false) {
         const curso = stateCursos.find(c => c.id === cursoId);
         const centroId = curso?.centroId ?? null;
         const userId = session.user.id;
+        const targetPeriodo = periodo || 'P2';
+        const targetAsig = asignatura || curso?.asignatura || '';
+
+        // PASO 0 — CACHE-FIRST DESDE INDEXEDDB (L2) DE 90 DÍAS:
+        // Rehidratar inmediatamente los datos académicos disponibles en IndexedDB para que la interfaz
+        // no espere ni muestre pantallas vacías mientras se consulta a Supabase.
+        let idbSlicesCount = 0;
+        try {
+            const idbSlices = await getAllIdbAcademicSlicesForCourse(userId, centroId, cursoId);
+            idbSlicesCount = idbSlices.length;
+            if (idbSlices.length > 0) {
+                setState(prev => {
+                    const nextAct = [...prev.actividades];
+                    const nextCal = [...prev.calificaciones];
+                    const nextRec = [...prev.recuperaciones];
+                    const nextDet = [...prev.cursoDetalle];
+                    const nextRecCotejo = [...prev.recuperacionesCotejo];
+
+                    for (const slice of idbSlices) {
+                        saveAcademicSlice(userId, centroId, cursoId, slice.asignatura, slice.periodo, slice.data);
+
+                        for (const a of slice.data.actividades) {
+                            const idx = nextAct.findIndex(ea => ea.id === a.id);
+                            if (idx !== -1) nextAct[idx] = a;
+                            else nextAct.push(a);
+                        }
+                        for (const c of slice.data.calificaciones) {
+                            const idx = nextCal.findIndex(ec => ec.estudianteId === c.estudianteId && ec.actividadId === c.actividadId);
+                            if (idx !== -1) nextCal[idx] = c;
+                            else nextCal.push(c);
+                        }
+                        if (slice.data.recuperaciones) {
+                            for (const r of slice.data.recuperaciones) {
+                                const idx = nextRec.findIndex(er => er.estudianteId === r.estudianteId && er.bc === r.bc && er.periodo === r.periodo && er.asignatura === r.asignatura);
+                                if (idx !== -1) nextRec[idx] = r;
+                                else nextRec.push(r);
+                            }
+                        }
+                        if (slice.data.cursoDetalle) {
+                            for (const cd of slice.data.cursoDetalle) {
+                                const idx = nextDet.findIndex(ed => ed.estudianteId === cd.estudianteId && ed.actividadId === cd.actividadId);
+                                if (idx !== -1) nextDet[idx] = cd;
+                                else nextDet.push(cd);
+                            }
+                        }
+                        if (slice.data.recuperacionesCotejo) {
+                            for (const rc of slice.data.recuperacionesCotejo) {
+                                const idx = nextRecCotejo.findIndex(ed => ed.estudianteId === rc.estudianteId && ed.actividadId === rc.actividadId && ed.indicador === rc.indicador);
+                                if (idx !== -1) nextRecCotejo[idx] = rc;
+                                else nextRecCotejo.push(rc);
+                            }
+                        }
+                    }
+
+                    return {
+                        ...prev,
+                        actividades: nextAct,
+                        calificaciones: nextCal,
+                        recuperaciones: nextRec,
+                        cursoDetalle: nextDet,
+                        recuperacionesCotejo: nextRecCotejo,
+                    };
+                });
+                addLoadedCurso(cursoId);
+
+                // Si ya fue verificado recientemente en esta sesión, omitir consulta de red
+                if (isAcademicSliceFreshInSession(userId, cursoId, targetPeriodo, targetAsig)) {
+                    console.log(`[PLANIFICACION] Curso ${cursoId} [${targetAsig}] período ${targetPeriodo} fresco en sesión (SWR skip)`);
+                    return;
+                }
+
+                // Si no hay conexión a internet, retornar inmediatamente con el caché
+                if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                    console.log(`[PLANIFICACION] Sin conexión: usando datos de IndexedDB para el curso ${cursoId}`);
+                    return;
+                }
+            }
+        } catch (idbErr) {
+            console.warn('[PLANIFICACION] Error leyendo caché de IndexedDB:', idbErr);
+        }
 
         // Evitar duplicaciones: si ya hay una carga en progreso para este curso, esperamos a que termine.
         if (cursoPromises[cursoId] !== undefined) {
             console.log(`[PLANIFICACION] Reutilizando promesa en vuelo para Curso ${cursoId}`);
             await cursoPromises[cursoId];
-            // Si la carga en vuelo ya dejó completo lo solicitado, no hay nada pendiente.
-            // Con período explícito solo se retorna si la slice de ESE período quedó
-            // completa; sin período, si el curso quedó cargado completo.
             if (periodo) {
-                if (hasValidAcademicSlice(userId, centroId, cursoId, periodo)) return;
+                if (hasValidAcademicSlice(userId, centroId, cursoId, targetAsig, periodo)) return;
             } else if (loadedCursos.includes(cursoId)) {
                 return;
             }
@@ -1331,12 +1430,6 @@ export function useSupabaseData(skipInit = false) {
 
             // PASO 1 (PRIORITARIO): Garantizar la disponibilidad inmediata de los estudiantes del curso
             // desde la caché persistente de 1 año (Stale-While-Revalidate).
-            // Si el curso ya está en caché persistente, `ensureCourseStudentsSWR` hidrata `state.estudiantes`
-            // de inmediato (0ms) y dispara una verificación silenciosa en segundo plano si corresponde,
-            // sin volver a consultar estudiantes al cambiar de período o de asignatura.
-            // Nota: Para cursos que comparten sección/estudiantes (p. ej. asignaturas optativas),
-            // también aseguramos la hidratación de los cursos hermanos para garantizar que los estudiantes
-            // estén inmediatamente en memoria sin importar cuál ID de curso registre los alumnos.
             const cursoActual = stateCursos.find(c => c.id === cursoId);
             const siblingCursos = cursoActual ? stateCursos.filter(c =>
                 c.id !== cursoId &&
@@ -1356,171 +1449,180 @@ export function useSupabaseData(skipInit = false) {
                 await estudiantesSWRPromise;
             }
 
-        // Paso 7 — caché académico en memoria (actividades + calificaciones) por
-        // curso + período. Los períodos son conjuntos independientes para efectos de
-        // carga: estar P1 en caché NUNCA implica P2/P3/P4.
-        // Solo se omite una consulta cuando se puede demostrar que los datos exactos
-        // de ese curso y período ya están completos y pertenecen al contexto actual
-        // (usuario + centro + curso + período). Ante cualquier duda → MISS → consulta.
-        // Cuando se indica un período concreto (p. ej. Rúbrica/Cotejo con filtro
-        // P1..P4) la carga se acota a ESE período: se consulta a Supabase únicamente
-        // lo que falta de ese período, nunca los cuatro a la vez. La slice del período
-        // ya cargada (y en caché) se usa tal cual y no se vuelve a consultar.
-        const faltantesCal: string[] = periodo
-            ? (hasValidAcademicSlice(userId, centroId, cursoId, periodo) ? [] : [periodo])
-            : PERIODOS_ACADEMICOS.filter(p => !hasValidAcademicSlice(userId, centroId, cursoId, p));
-        const faltaNullActividades = !hasValidAcademicSlice(userId, centroId, cursoId, NULL_PERIODO_TOKEN);
-        const faltantesAct: string[] = periodo
-            ? faltantesCal
-            : (faltaNullActividades ? [...faltantesCal, NULL_PERIODO_TOKEN] : faltantesCal);
+            // Caché académico en memoria L1 y en IndexedDB L2 (actividades + calificaciones) por curso + período
+            const faltantesCal: string[] = periodo
+                ? (hasValidAcademicSlice(userId, centroId, cursoId, targetAsig, periodo) ? [] : [periodo])
+                : PERIODOS_ACADEMICOS.filter(p => !hasValidAcademicSlice(userId, centroId, cursoId, targetAsig, p));
+            const faltaNullActividades = !hasValidAcademicSlice(userId, centroId, cursoId, targetAsig, NULL_PERIODO_TOKEN);
+            const faltantesAct: string[] = periodo
+                ? faltantesCal
+                : (faltaNullActividades ? [...faltantesCal, NULL_PERIODO_TOKEN] : faltantesCal);
 
-        if (loadedCursos.includes(cursoId)) {
-            if (faltantesAct.length === 0 && faltantesCal.length === 0) {
-                if (!tieneCacheEstudiantes) {
-                    await estudiantesSWRPromise;
+            if (loadedCursos.includes(cursoId)) {
+                if (faltantesAct.length === 0 && faltantesCal.length === 0) {
+                    if (!tieneCacheEstudiantes) {
+                        await estudiantesSWRPromise;
+                    }
+                    console.log(`[PLANIFICACION] Curso ${cursoId} completo en caché académico por período (sin consultas de actividades/calificaciones)`);
+                    diagLog(`[DIAG][CURSO] skip-cache-completo cursoId=${cursoId} sin-consultas ts=${new Date().toISOString()}`);
+                    markAcademicSliceVerifiedInSession(userId, cursoId, targetPeriodo, targetAsig);
+                    return;
                 }
-                console.log(`[PLANIFICACION] Curso ${cursoId} completo en caché académico por período (sin consultas de actividades/calificaciones)`);
-                diagLog(`[DIAG][CURSO] skip-cache-completo cursoId=${cursoId} sin-consultas ts=${new Date().toISOString()}`);
-                return;
+                console.log(`[PLANIFICACION] Reconciliación académica del curso ${cursoId} (períodos faltantes: ${faltantesCal.join(',')}${faltaNullActividades ? ' + sin-período' : ''})`);
+                diagLog(`[DIAG][CURSO] reconciliacion cursoId=${cursoId} faltantesCal=[${faltantesCal.join(',')}] faltaNullActividades=${faltaNullActividades} ts=${new Date().toISOString()}`);
+            } else {
+                console.log(`[PLANIFICACION] lazy loading Curso data for course ${cursoId}`);
             }
-            console.log(`[PLANIFICACION] Reconciliación académica del curso ${cursoId} (períodos faltantes: ${faltantesCal.join(',')}${faltaNullActividades ? ' + sin-período' : ''})`);
-            diagLog(`[DIAG][CURSO] reconciliacion cursoId=${cursoId} faltantesCal=[${faltantesCal.join(',')}] faltaNullActividades=${faltaNullActividades} ts=${new Date().toISOString()}`);
-        } else {
-            console.log(`[PLANIFICACION] lazy loading Curso data for course ${cursoId}`);
-        }
-        if (!skipInit) setLoading(true);
-        try {
-            const currentCursosLoaded = useAppStore.getState().loadedCursos;
-            const cursoYaCargado = currentCursosLoaded.includes(cursoId);
 
-            const baseQueries: any[] = [
-                estudiantesSWRPromise,
-            ];
+            // Si ya teníamos datos de IndexedDB, evitamos bloquear la pantalla con spinner
+            if (!skipInit && idbSlicesCount === 0) setLoading(true);
+            try {
+                const currentCursosLoaded = useAppStore.getState().loadedCursos;
+                const cursoYaCargado = currentCursosLoaded.includes(cursoId);
 
-            if (faltantesAct.length > 0) {
-                const pNoNull = faltantesAct.filter(p => p !== NULL_PERIODO_TOKEN);
-                let qAct = supabase.from('actividades').select('*').eq('activo', true).eq('curso_id', cursoId);
-                if (faltantesAct.includes(NULL_PERIODO_TOKEN) && pNoNull.length > 0) {
-                    qAct = qAct.or(`periodo.in.(${pNoNull.join(',')}),periodo.is.null`);
-                } else if (faltantesAct.includes(NULL_PERIODO_TOKEN)) {
-                    qAct = qAct.is('periodo', null);
+                const baseQueries: any[] = [
+                    estudiantesSWRPromise,
+                ];
+
+                if (faltantesAct.length > 0) {
+                    const pNoNull = faltantesAct.filter(p => p !== NULL_PERIODO_TOKEN);
+                    let qAct = supabase.from('actividades').select('*').eq('activo', true).eq('curso_id', cursoId);
+                    if (faltantesAct.includes(NULL_PERIODO_TOKEN) && pNoNull.length > 0) {
+                        qAct = qAct.or(`periodo.in.(${pNoNull.join(',')}),periodo.is.null`);
+                    } else if (faltantesAct.includes(NULL_PERIODO_TOKEN)) {
+                        qAct = qAct.is('periodo', null);
+                    } else {
+                        qAct = qAct.in('periodo', pNoNull);
+                    }
+                    baseQueries.push(qAct);
                 } else {
-                    qAct = qAct.in('periodo', pNoNull);
+                    baseQueries.push(Promise.resolve({ data: null, error: null }));
                 }
-                baseQueries.push(qAct);
-            } else {
-                baseQueries.push(Promise.resolve({ data: null, error: null }));
-            }
 
-            if (faltantesCal.length > 0) {
-                baseQueries.push(supabase.from('calificaciones').select('*').eq('curso_id', cursoId).in('periodo', faltantesCal));
-            } else {
-                baseQueries.push(Promise.resolve({ data: null, error: null }));
-            }
+                if (faltantesCal.length > 0) {
+                    baseQueries.push(supabase.from('calificaciones').select('*').eq('curso_id', cursoId).in('periodo', faltantesCal));
+                } else {
+                    baseQueries.push(Promise.resolve({ data: null, error: null }));
+                }
 
-            baseQueries.push(
-                cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('recuperaciones').select('*').eq('curso_id', cursoId),
-                cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('curso_detalle').select('*').eq('curso_id', cursoId),
-                cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('recuperaciones_cotejo').select('*').eq('curso_id', cursoId)
-            );
+                baseQueries.push(
+                    cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('recuperaciones').select('*').eq('curso_id', cursoId),
+                    cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('curso_detalle').select('*').eq('curso_id', cursoId),
+                    cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('recuperaciones_cotejo').select('*').eq('curso_id', cursoId)
+                );
 
-            const results = await Promise.all(baseQueries);
+                const results = await Promise.all(baseQueries);
 
-            const actQueryFailed = !!results[1]?.error;
-            const calQueryFailed = !!results[2]?.error;
+                const actQueryFailed = !!results[1]?.error;
+                const calQueryFailed = !!results[2]?.error;
 
-            if (actQueryFailed) {
-                console.error(`[DIAG][CURSO] ERROR Supabase al consultar actividades curso=${cursoId}:`, results[1].error);
-            }
-            if (calQueryFailed) {
-                console.error(`[DIAG][CURSO] ERROR Supabase al consultar calificaciones curso=${cursoId}:`, results[2].error);
-            }
+                if (actQueryFailed) {
+                    console.error(`[DIAG][CURSO] ERROR Supabase al consultar actividades curso=${cursoId}:`, results[1].error);
+                }
+                if (calQueryFailed) {
+                    console.error(`[DIAG][CURSO] ERROR Supabase al consultar calificaciones curso=${cursoId}:`, results[2].error);
+                }
 
-            const actividades: any[] = (!actQueryFailed && results[1]?.data) ? results[1].data : [];
-            const calificaciones: any[] = (!calQueryFailed && results[2]?.data) ? results[2].data : [];
+                const actividades: any[] = (!actQueryFailed && results[1]?.data) ? results[1].data : [];
+                const calificaciones: any[] = (!calQueryFailed && results[2]?.data) ? results[2].data : [];
 
-            const mappedAct = actividades.map((a: Record<string, unknown>) => mapActividad(a, stateCursos));
-            const mappedCal = calificaciones.map((c: Record<string, unknown>) => mapCalificacion(c, stateCursos));
+                const mappedAct = actividades.map((a: Record<string, unknown>) => mapActividad(a, stateCursos));
+                const mappedCal = calificaciones.map((c: Record<string, unknown>) => mapCalificacion(c, stateCursos));
 
-            diagLog(`[DIAG][CURSO] SUPABASE_FETCH cursoId=${cursoId} userId=${userId} centroId=${centroId ?? 'sin-centro'} periodosActConsultados=[${faltantesAct.join(',')}] periodosCalConsultados=[${faltantesCal.join(',')}] actividadesRecibidas=${actividades.length} calificacionesRecibidas=${calificaciones.length} ts=${new Date().toISOString()}`);
-            const antesMerge = useAppStore.getState().state;
-            diagLog(`[DIAG][CURSO] STATE_BEFORE_MERGE cursoId=${cursoId} actividadesCurso=${antesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
+                diagLog(`[DIAG][CURSO] SUPABASE_FETCH cursoId=${cursoId} userId=${userId} centroId=${centroId ?? 'sin-centro'} periodosActConsultados=[${faltantesAct.join(',')}] periodosCalConsultados=[${faltantesCal.join(',')}] actividadesRecibidas=${actividades.length} calificacionesRecibidas=${calificaciones.length} ts=${new Date().toISOString()}`);
+                const antesMerge = useAppStore.getState().state;
+                diagLog(`[DIAG][CURSO] STATE_BEFORE_MERGE cursoId=${cursoId} actividadesCurso=${antesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${antesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${antesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
 
-            setState(prev => {
                 const mappedRec = (!results[3]?.error && results[3]?.data) ? results[3].data.map((r: any) => mapRecuperacion(r, stateCursos)) : null;
                 const mappedDet = (!results[4]?.error && results[4]?.data) ? results[4].data.map((cd: any) => mapCursoDetalle(cd)) : null;
                 const mappedRecCotejo = (!results[5]?.error && results[5]?.data) ? results[5].data.map((r: Record<string, unknown>) => mapRecuperacionCotejo(r)) : null;
 
-                const mergedRec = mappedRec !== null
-                    ? [...prev.recuperaciones.filter(r => r.cursoId !== cursoId), ...mappedRec]
-                    : prev.recuperaciones;
-                const mergedDet = mappedDet !== null
-                    ? [...prev.cursoDetalle.filter(cd => cd.cursoId !== cursoId), ...mappedDet]
-                    : prev.cursoDetalle;
-                const mergedRecCotejo = mappedRecCotejo !== null
-                    ? [...prev.recuperacionesCotejo.filter(r => r.cursoId !== cursoId), ...mappedRecCotejo]
-                    : prev.recuperacionesCotejo;
+                setState(prev => {
+                    const mergedRec = mappedRec !== null
+                        ? [...prev.recuperaciones.filter(r => r.cursoId !== cursoId), ...mappedRec]
+                        : prev.recuperaciones;
+                    const mergedDet = mappedDet !== null
+                        ? [...prev.cursoDetalle.filter(cd => cd.cursoId !== cursoId), ...mappedDet]
+                        : prev.cursoDetalle;
+                    const mergedRecCotejo = mappedRecCotejo !== null
+                        ? [...prev.recuperacionesCotejo.filter(r => r.cursoId !== cursoId), ...mappedRecCotejo]
+                        : prev.recuperacionesCotejo;
 
-                const next: AppState = {
-                    ...prev,
-                    recuperaciones: mergedRec,
-                    cursoDetalle: mergedDet,
-                    recuperacionesCotejo: mergedRecCotejo
-                };
+                    const next: AppState = {
+                        ...prev,
+                        recuperaciones: mergedRec,
+                        cursoDetalle: mergedDet,
+                        recuperacionesCotejo: mergedRecCotejo
+                    };
 
-                // Merge por ID dentro de los períodos descargados: NUNCA se reemplaza
-                // el estado completo del curso con una respuesta parcial o fallida.
-                if (faltantesAct.length > 0 && !actQueryFailed) {
-                    const actSet = new Set(faltantesAct);
-                    next.actividades = [
-                        ...prev.actividades.filter(a => !(a.cursoId === cursoId && (
-                            (a.periodo && actSet.has(a.periodo)) || (!a.periodo && actSet.has(NULL_PERIODO_TOKEN))
-                        ))),
-                        ...mappedAct
-                    ];
-                }
-                if (faltantesCal.length > 0 && !calQueryFailed) {
-                    const calSet = new Set(faltantesCal);
-                    next.calificaciones = [
-                        ...prev.calificaciones.filter(c => !(c.cursoId === cursoId && c.periodo && calSet.has(c.periodo))),
-                        ...mappedCal
-                    ];
-                }
-
-                return next;
-            });
-            addLoadedCurso(cursoId);
-            const despuesMerge = useAppStore.getState().state;
-            diagLog(`[DIAG][CURSO] STATE_AFTER_MERGE cursoId=${cursoId} actividadesCurso=${despuesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${despuesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${despuesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
-
-            // Guardar slices por PERÍODO consultado (SOLO si no hubo fallo de consulta).
-            if (!actQueryFailed && !calQueryFailed) {
-                for (const p of faltantesAct) {
-                    if (p === NULL_PERIODO_TOKEN) {
-                        saveAcademicSlice(userId, centroId, cursoId, NULL_PERIODO_TOKEN, {
-                            actividades: mappedAct.filter(a => !a.periodo),
-                            calificaciones: [],
-                        });
-                        continue;
+                    if (faltantesAct.length > 0 && !actQueryFailed) {
+                        const actSet = new Set(faltantesAct);
+                        next.actividades = [
+                            ...prev.actividades.filter(a => !(a.cursoId === cursoId && (
+                                (a.periodo && actSet.has(a.periodo)) || (!a.periodo && actSet.has(NULL_PERIODO_TOKEN))
+                            ))),
+                            ...mappedAct
+                        ];
                     }
-                    const actividadesSlice = mappedAct.filter(a => a.periodo === p);
-                    const calificacionesSlice = faltantesCal.includes(p)
-                        ? mappedCal.filter(c => c.periodo === p)
-                        : (getValidAcademicSlice(userId, centroId, cursoId, p)?.calificaciones ?? []);
-                    saveAcademicSlice(userId, centroId, cursoId, p, {
-                        actividades: actividadesSlice,
-                        calificaciones: calificacionesSlice,
-                    });
-                }
-            }
+                    if (faltantesCal.length > 0 && !calQueryFailed) {
+                        const calSet = new Set(faltantesCal);
+                        next.calificaciones = [
+                            ...prev.calificaciones.filter(c => !(c.cursoId === cursoId && c.periodo && calSet.has(c.periodo))),
+                            ...mappedCal
+                        ];
+                    }
 
-            if (actQueryFailed || calQueryFailed) {
-                throw new Error(`Error de red al consultar ${[actQueryFailed ? 'actividades' : '', calQueryFailed ? 'calificaciones' : ''].filter(Boolean).join(' y ')} del curso`);
+                    return next;
+                });
+                addLoadedCurso(cursoId);
+                const despuesMerge = useAppStore.getState().state;
+                diagLog(`[DIAG][CURSO] STATE_AFTER_MERGE cursoId=${cursoId} actividadesCurso=${despuesMerge.actividades.filter(a => a.cursoId === cursoId).length} calificacionesCurso=${despuesMerge.calificaciones.filter(c => c.cursoId === cursoId).length} estudiantesCurso=${despuesMerge.estudiantes.filter(e => e.cursoId === cursoId).length} ts=${new Date().toISOString()}`);
+
+                // Guardar slices en memoria L1 y en IndexedDB L2 (90 días) por PERÍODO y ASIGNATURA consultados.
+                if (!actQueryFailed && !calQueryFailed) {
+                    for (const p of faltantesAct) {
+                        if (p === NULL_PERIODO_TOKEN) {
+                            saveAcademicSlice(userId, centroId, cursoId, targetAsig, NULL_PERIODO_TOKEN, {
+                                actividades: mappedAct.filter(a => !a.periodo),
+                                calificaciones: [],
+                                recuperaciones: [],
+                                cursoDetalle: [],
+                                recuperacionesCotejo: [],
+                            });
+                            continue;
+                        }
+                        const actividadesSlice = mappedAct.filter(a => a.periodo === p);
+                        const calificacionesSlice = faltantesCal.includes(p)
+                            ? mappedCal.filter(c => c.periodo === p)
+                            : (getValidAcademicSlice(userId, centroId, cursoId, targetAsig, p)?.calificaciones ?? []);
+                        const recuperacionesSlice = mappedRec !== null
+                            ? (mappedRec.filter((r: RecuperacionBC) => r.periodo === p))
+                            : (getValidAcademicSlice(userId, centroId, cursoId, targetAsig, p)?.recuperaciones ?? []);
+                        const cursoDetalleSlice = mappedDet !== null
+                            ? (mappedDet)
+                            : (getValidAcademicSlice(userId, centroId, cursoId, targetAsig, p)?.cursoDetalle ?? []);
+                        const recuperacionesCotejoSlice = mappedRecCotejo !== null
+                            ? (mappedRecCotejo.filter((r: RecuperacionCotejo) => r.periodo === p))
+                            : (getValidAcademicSlice(userId, centroId, cursoId, targetAsig, p)?.recuperacionesCotejo ?? []);
+
+                        saveAcademicSlice(userId, centroId, cursoId, targetAsig, p, {
+                            actividades: actividadesSlice,
+                            calificaciones: calificacionesSlice,
+                            recuperaciones: recuperacionesSlice,
+                            cursoDetalle: cursoDetalleSlice,
+                            recuperacionesCotejo: recuperacionesCotejoSlice,
+                        });
+                        markAcademicSliceVerifiedInSession(userId, cursoId, p, targetAsig);
+                    }
+                }
+
+                if (actQueryFailed || calQueryFailed) {
+                    throw new Error(`Error de red al consultar ${[actQueryFailed ? 'actividades' : '', calQueryFailed ? 'calificaciones' : ''].filter(Boolean).join(' y ')} del curso`);
+                }
+            } catch (error) {
+                console.error(`Error loading Curso data for ${cursoId}:`, error);
+                throw error;
             }
-        } catch (error) {
-            console.error(`Error loading Curso data for ${cursoId}:`, error);
-            throw error;
-        }
         })();
 
         cursoPromises[cursoId] = fetchPromise;

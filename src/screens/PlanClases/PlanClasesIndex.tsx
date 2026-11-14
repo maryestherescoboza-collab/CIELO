@@ -133,15 +133,28 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
   );
 
   return (
-    <div className={`flex w-full bg-white ${notaSeleccionadaId ? 'h-[calc(100vh-2px)] overflow-hidden' : 'min-h-screen'}`} style={{ fontFamily: 'Manrope, Inter, system-ui' }}>
+    <div
+      className={`w-full bg-white ${
+        notaSeleccionadaId
+          ? 'h-full overflow-hidden grid grid-cols-[minmax(clamp(15rem,21vw,20.5rem),clamp(17.5rem,25vw,23.5rem))_minmax(0,1fr)]'
+          : 'flex min-h-full'
+      }`}
+      style={{ fontFamily: '"Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
+    >
       <style>{`@keyframes fadeInPanel { from { opacity: 0; } to { opacity: 1; } }`}</style>
       
       {/* ── PANEL IZQUIERDO: LISTA DE NOTAS ── */}
-      <aside className={`flex flex-col transition-all duration-200 ease-out ${notaSeleccionadaId ? 'w-90 lg:w-100 shrink-0 border-r border-[#2E3330]/10 bg-white/40 h-full overflow-y-auto px-4 py-5' : 'flex-1 px-4 sm:px-8 py-7 max-w-7xl w-full mx-auto'}`}>
+      <aside
+        className={`flex flex-col transition-all duration-200 ease-out ${
+          notaSeleccionadaId
+            ? 'w-full min-w-0 border-r border-[#2E3330]/10 bg-white/40 h-full overflow-y-auto px-[clamp(0.75rem,1.5vw,1.25rem)] py-[clamp(0.85rem,1.5vw,1.25rem)]'
+            : 'flex-1 px-[clamp(1rem,3vw,3rem)] py-[clamp(1.25rem,2.5vw,2.5rem)] max-w-[clamp(64rem,92vw,110rem)] w-full mx-auto'
+        }`}
+      >
         
         {/* CABECERA & SUMMARY PANEL */}
-        <div className={`flex ${notaSeleccionadaId ? 'flex-col gap-4' : 'flex-col md:flex-row md:items-end justify-between gap-4'} pb-2`}>
-          <div className="flex flex-col gap-1.5">
+        <div className={`flex ${notaSeleccionadaId ? 'flex-col gap-3' : 'flex-col md:flex-row md:items-end justify-between gap-4'} pb-2`}>
+          <div className="flex flex-col gap-1.5 min-w-0">
             {secuenciaId && (
               <button 
                 onClick={() => navigate('/plan-de-clases/secuencias')}
@@ -160,26 +173,26 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
                 <span className="text-[12px] text-[#2E3330]/70 font-bold">Actualizado hace unos instantes</span>
               </div>
             )}
-            <h1 className={`font-bold text-[#2E3330] tracking-tight ${notaSeleccionadaId ? 'text-[24px]' : 'text-[28px] md:text-[32px]'}`}>
+            <h1 className={`font-bold text-[#2E3330] tracking-tight truncate ${notaSeleccionadaId ? 'text-[clamp(1.125rem,1.5vw,1.35rem)]' : 'text-[clamp(1.5rem,2.2vw,2rem)]'}`}>
               {secuenciaId ? 'Fichas de la secuencia para estudiantes' : 'Mis fichas'}
             </h1>
           </div>
           
           {/* Primary CTA Button & Search */}
-          <div className={`flex items-center gap-3 shrink-0 ${notaSeleccionadaId ? 'w-full' : ''}`}>
-            <div className={`flex items-center gap-2 px-3 py-2 bg-white border border-[#2E3330]/10 rounded-xl text-[#2E3330]/70 text-[13px] shadow-sm font-['Inter'] ${notaSeleccionadaId ? 'flex-1' : 'hidden lg:flex rounded-full'}`}>
+          <div className={`flex items-center gap-2 shrink-0 ${notaSeleccionadaId ? 'w-full' : ''}`}>
+            <div className={`flex items-center gap-2 px-3 py-2 bg-white border border-[#2E3330]/10 rounded-xl text-[#2E3330]/70 text-[13px] shadow-sm font-['Inter'] ${notaSeleccionadaId ? 'flex-1 min-w-0' : 'hidden lg:flex rounded-full'}`}>
               <Search size={15} className="text-[#2E3330]/40 shrink-0" />
               <input 
                 type="text"
                 placeholder="Buscar ficha..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="bg-transparent outline-none w-full placeholder:text-[#2E3330]/40"
+                className="bg-transparent outline-none w-full placeholder:text-[#2E3330]/40 min-w-0"
               />
               {!notaSeleccionadaId && <span className="px-1.5 py-0.5 bg-[#2E3330]/5 rounded text-xs text-[#2E3330]/60 font-bold border border-[#2E3330]/10">⌘K</span>}
             </div>
             {secuenciaId && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 shrink-0">
                 {!notaSeleccionadaId && (
                   <button
                     onClick={() => setModalSugerirOpen(true)}
@@ -187,13 +200,13 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
                     title="Sugerir ficha con IA"
                   >
                     <Sparkles size={16} />
-                    <span>Sugerir ficha con IA</span>
+                    <span className="hidden xl:inline">Sugerir ficha con IA</span>
                   </button>
                 )}
                 <button 
                   onClick={handleCreateNota}
                   disabled={isCreating}
-                  className={`inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-[#689C63] text-white font-bold text-[13px] hover:bg-[#5a8a55] transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${notaSeleccionadaId ? 'rounded-xl' : 'rounded-full px-5 text-[14px]'}`}
+                  className={`inline-flex justify-center items-center gap-2 px-3.5 sm:px-4 py-2.5 bg-[#689C63] text-white font-bold text-[13px] hover:bg-[#5a8a55] transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed shrink-0 ${notaSeleccionadaId ? 'rounded-xl' : 'rounded-full px-5 text-[14px]'}`}
                   title="Nueva ficha"
                 >
                   {isCreating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
@@ -252,7 +265,7 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
               </button>
             </div>
           ) : (
-            <div className={`gap-4 ${notaSeleccionadaId ? 'flex flex-col' : 'columns-1 sm:columns-2 md:columns-3 lg:columns-4'}`} style={{ columnFill: 'balance' }}>
+            <div className={`gap-[clamp(0.75rem,1.2vw,1rem)] ${notaSeleccionadaId ? 'flex flex-col' : 'columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 2xl:columns-6'}`} style={{ columnFill: 'balance' }}>
               {notasFiltradas.map((nota) => {
                 const isActive = nota.id === notaSeleccionadaId;
                 const color = colorParaNota(nota.id);
@@ -261,7 +274,7 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
                     key={nota.id}
                     onClick={() => handleOpenNote(nota.id)}
                     style={{ background: color }}
-                    className={`cursor-pointer break-inside-avoid mb-4 p-5 rounded-3xl transition-all duration-200 flex flex-col group relative ${
+                    className={`cursor-pointer break-inside-avoid mb-3 p-[clamp(0.75rem,1.2vw,1.25rem)] rounded-2xl sm:rounded-3xl transition-all duration-200 flex flex-col group relative ${
                       isActive 
                         ? 'shadow-sm z-10' 
                         : 'shadow-[0_1px_3px_rgba(46,51,48,0.06)] hover:shadow-[0_4px_16px_rgba(46,51,48,0.08)]'
@@ -306,7 +319,7 @@ export default function PlanClasesIndex({ userName, userAvatarColor, currentUser
 
       {/* ── PANEL DERECHO: EDITOR DE NOTA ── */}
       {notaSeleccionadaId && (
-        <section className="flex-1 h-full flex flex-col overflow-y-auto bg-white relative animate-[fadeInPanel_0.2s_ease-out]">
+        <section className="min-w-0 w-full h-full flex flex-col overflow-y-auto bg-white relative animate-[fadeInPanel_0.2s_ease-out]">
           <NuevaNotaClase
             notaId={notaSeleccionadaId}
             userName={userName || ''} 

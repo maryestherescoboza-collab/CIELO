@@ -167,72 +167,79 @@ export default function NuevaNotaClase({
   }
 
   return (
-    <div className={`flex flex-col ${isEmbedded ? 'h-full' : 'min-h-screen'} bg-white`}>
+    <div className={`flex flex-col ${isEmbedded ? 'h-full' : 'min-h-screen'} bg-white w-full min-w-0`}>
       <header className="sticky top-0 z-40 border-b border-[#2E3330]/10" style={{ background: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(8px)' }}>
-        <div className="mx-auto flex items-center gap-3 px-4 sm:px-6" style={{ maxWidth: 1160, minHeight: 52 }}>
-          <button
-            onClick={onClose}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-semibold text-[#2E3330]/60 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors"
-          >
-            <ArrowLeft size={16} />
-            <span className="hidden sm:inline">Volver a fichas</span>
-          </button>
-          <span className="hidden md:inline text-[13px] font-bold text-[#2E3330] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#689C63]/20">
-            Plan de clases
-          </span>
+        <div className="w-full flex items-center justify-between gap-[clamp(0.4rem,0.8vw,0.875rem)] px-[clamp(0.75rem,1.5vw,1.5rem)] py-2 min-h-12 max-w-[clamp(52rem,94vw,80rem)] mx-auto">
+          <div className="flex items-center gap-2 min-w-0 shrink">
+            <button
+              onClick={onClose}
+              title="Volver a fichas"
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-semibold text-[#2E3330]/60 hover:bg-[#2E3330]/5 hover:text-[#2E3330] transition-colors shrink-0"
+            >
+              <ArrowLeft size={16} />
+              <span className="hidden xl:inline">Volver a fichas</span>
+            </button>
+            <span className="hidden 2xl:inline text-[13px] font-bold text-[#2E3330] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#689C63]/20 shrink-0">
+              Plan de clases
+            </span>
+          </div>
 
-          <div className="flex-1" />
+          <div className="flex-1 min-w-2" />
 
           {/* Estado de guardado */}
           <div
-            className={`inline-flex items-center gap-1.5 text-[12px] font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1.5 text-[12px] font-semibold transition-colors shrink-0 ${
               estadoGuardado === 'guardando' ? 'text-[#e5a022]' : 'text-[#2E3330]/60'
             }`}
           >
             {estadoGuardado === 'guardando' ? (
               <>
-                <Loader2 size={14} className="animate-spin" /> Guardando…
+                <Loader2 size={14} className="animate-spin" /> <span className="hidden sm:inline">Guardando…</span>
               </>
             ) : estadoGuardado === 'guardado' ? (
               <>
-                <Check size={14} className="text-[#689C63]" /> Guardado
+                <Check size={14} className="text-[#689C63]" /> <span className="hidden sm:inline">Guardado</span>
               </>
             ) : (
               <>
-                <Cloud size={14} /> Sin cambios
+                <Cloud size={14} /> <span className="hidden sm:inline">Sin cambios</span>
               </>
             )}
           </div>
 
           {/* Acciones */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             <button
               onClick={() => setRutaAbierta(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-3.5 sm:px-4 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#689C63] hover:text-[#4a7a46] active:scale-95"
+              title="Ruta de aprendizaje"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-2.5 sm:px-3.5 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#689C63] hover:text-[#4a7a46] active:scale-95 shrink-0"
             >
               <RouteIcon size={15} />
-              <span className="hidden sm:inline">Ruta de aprendizaje</span>
+              <span className="hidden 2xl:inline">Ruta de aprendizaje</span>
             </button>
             <button
               onClick={() => setCompartirAbierto(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#689C63] px-3.5 sm:px-4 text-white text-[13px] font-bold h-9 transition-all hover:bg-[#5a8a55] active:scale-95"
+              title="Compartir"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#689C63] px-2.5 sm:px-3.5 text-white text-[13px] font-bold h-9 transition-all hover:bg-[#5a8a55] active:scale-95 shrink-0"
             >
               <Share2 size={15} />
-              <span className="hidden sm:inline">Compartir</span>
+              <span className="hidden lg:inline">Compartir</span>
             </button>
             <button
               onClick={() => setCompartirCursosAbierto(true)}
-              className="relative inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-3.5 sm:px-4 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#3e6088] hover:text-[#3e6088] active:scale-95"
+              title="Publicar en Portal"
+              className="relative inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-2.5 sm:px-3.5 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#3e6088] hover:text-[#3e6088] active:scale-95 shrink-0"
             >
               <Globe size={15} />
-              <span className="hidden sm:inline">Publicar en Portal</span>
+              <span className="hidden 2xl:inline">Publicar en Portal</span>
             </button>
             <button
               onClick={() => setComentariosAbierto(true)}
-              className="relative inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-3.5 sm:px-4 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#3e6088] hover:text-[#3e6088] active:scale-95"
+              title="Comentarios"
+              className="relative inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-2.5 sm:px-3.5 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#3e6088] hover:text-[#3e6088] active:scale-95 shrink-0"
             >
               <MessageSquareText size={15} />
-              <span className="hidden sm:inline">Comentarios</span>
+              <span className="hidden xl:inline">Comentarios</span>
               {totalComentariosAbiertos > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-[#3e6088] text-white text-[10px] font-bold flex items-center justify-center">
                   {totalComentariosAbiertos}
@@ -242,14 +249,16 @@ export default function NuevaNotaClase({
 
             <button
               onClick={() => setComentariosPortalAbierto(true)}
-              className="relative inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-3.5 sm:px-4 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#3e6088] hover:text-[#3e6088] active:scale-95"
+              title="Dudas Estudiantes"
+              className="relative inline-flex items-center gap-1.5 rounded-xl border border-[#2E3330]/10 bg-white px-2.5 sm:px-3.5 text-[#2E3330] text-[13px] font-semibold h-9 transition-all hover:border-[#3e6088] hover:text-[#3e6088] active:scale-95 shrink-0"
             >
               <Users size={15} />
-              <span className="hidden sm:inline">Dudas Estudiantes</span>
+              <span className="hidden 2xl:inline">Dudas Estudiantes</span>
             </button>
             <button
               onClick={() => setMenuAbierto(v => !v)}
-              className="p-2 rounded-xl border border-[#2E3330]/10 bg-white text-[#2E3330]/60 hover:text-[#2E3330] transition-colors"
+              title="Más opciones"
+              className="p-2 rounded-xl border border-[#2E3330]/10 bg-white text-[#2E3330]/60 hover:text-[#2E3330] transition-colors shrink-0"
             >
               <MoreHorizontal size={15} />
             </button>
@@ -258,25 +267,22 @@ export default function NuevaNotaClase({
       </header>
 
       {/* ── Cuerpo: columna de contenido editorial ── */}
-      <main className={`mx-auto px-4 sm:px-8 pb-16 ${isEmbedded ? 'h-full overflow-y-auto' : ''}`} style={{ maxWidth: 1160 }}>
-        <div className="mx-auto" style={{ maxWidth: 760 }}>
+      <main className={`w-full mx-auto px-[clamp(1rem,2.5vw,2.5rem)] pb-[clamp(2.5rem,6vh,5rem)] ${isEmbedded ? 'h-full overflow-y-auto' : ''}`} style={{ maxWidth: 'clamp(52rem, 92vw, 76rem)' }}>
+        <div className="w-full mx-auto" style={{ maxWidth: 'clamp(44rem, 88%, 68rem)' }}>
           {/* Título editable */}
           <input
             value={titulo}
             onChange={handleTituloChange}
             placeholder="Título de la ficha"
             autoFocus
-            className="w-full mt-8 bg-transparent outline-none font-bold tracking-tight"
+            className="w-full mt-[clamp(1.25rem,2.5vw,2.25rem)] bg-transparent outline-none font-bold tracking-tight text-[#2E3330] leading-tight text-[clamp(1.5rem,2.2vw,2.125rem)]"
             style={{
-              fontFamily: 'Manrope, Inter, system-ui, sans-serif',
-              fontSize: 34,
-              lineHeight: 1.15,
-              color: '#2E3330',
+              fontFamily: '"Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             }}
           />
 
           {/* Información contextual de la clase */}
-          <div className="mt-4">
+          <div className="mt-[clamp(0.75rem,1.2vw,1.25rem)]">
             <InfoClase datos={infoClase} onChange={handleInfoClaseChange} />
           </div>
 
@@ -284,7 +290,7 @@ export default function NuevaNotaClase({
           <FichaActividadesPanel notaId={notaId} />
 
           {/* Regla sutil */}
-          <div className="my-6 h-px w-full opacity-40" style={{ background: 'rgba(46,51,48,0.12)' }} />
+          <div className="my-[clamp(1rem,1.5vw,1.5rem)] h-px w-full opacity-40" style={{ background: 'rgba(46,51,48,0.12)' }} />
 
           {/* Editor de bloques integrado sobre el fondo blanco */}
           <NotaEditor
@@ -293,8 +299,8 @@ export default function NuevaNotaClase({
           />
 
           {/* Pie del editor */}
-          <div className="mt-8 flex items-center gap-2 text-[12px] text-[#2E3330]/60">
-            <FileText size={13} className="text-[#689C63]" />
+          <div className="mt-[clamp(1.25rem,2vw,2rem)] flex items-center gap-2 text-[12px] text-[#2E3330]/60">
+            <FileText size={13} className="text-[#689C63] shrink-0" />
             <span>Escribe “/” para insertar un bloque · Selecciona un bloque para reordenarlo o eliminarlo</span>
           </div>
         </div>
@@ -333,7 +339,7 @@ export default function NuevaNotaClase({
       
       {/* ── Constructor de rutas: pantalla completa sobre la ficha ── */}
       {rutaAbierta && (
-        <div className="fixed inset-0 z-[60] overflow-y-auto" style={{ background: '#FAF9F7' }}>
+        <div className="fixed inset-0 z-60 overflow-y-auto" style={{ background: '#FAF9F7' }}>
           <ConstructorRuta notaId={notaId} onCerrar={() => setRutaAbierta(false)} />
         </div>
       )}

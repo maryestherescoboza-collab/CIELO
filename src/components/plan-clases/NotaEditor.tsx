@@ -146,13 +146,13 @@ export function NotaEditor({
   }, [notaId, readOnly, getNota, disableAutoSave]);
 
   return (
-    <div className="relative min-h-75">
+    <div className="relative min-h-[clamp(8rem,15vh,14rem)] w-full">
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
           <Loader2 className="animate-spin text-[#689C63]" size={32} />
         </div>
       )}
-      <div ref={containerRef} className="cielo-editorjs bg-white p-4 rounded-xl shadow-sm border border-[#2E3330]/10" />
+      <div ref={containerRef} className="cielo-editorjs bg-white p-[clamp(0.75rem,1.5vw,1.25rem)] rounded-xl shadow-sm border border-[#2E3330]/10 w-full min-w-0" />
     </div>
   );
 }

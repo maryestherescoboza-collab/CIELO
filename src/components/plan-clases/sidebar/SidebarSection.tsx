@@ -8,6 +8,7 @@ interface SidebarSectionProps {
   count: number;
   color: 'orange' | 'yellow' | 'green';
   defaultOpen?: boolean;
+  onHeaderClick?: () => void;
   children: React.ReactNode;
 }
 
@@ -47,6 +48,7 @@ export default function SidebarSection({
   count,
   color,
   defaultOpen = false,
+  onHeaderClick,
   children,
 }: SidebarSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -58,12 +60,15 @@ export default function SidebarSection({
     if (isOpen && contentRef.current) {
       setContentHeight(contentRef.current.scrollHeight);
     }
-  }, [isOpen]);
+  }, [isOpen, children]);
 
   return (
     <div className={`rounded-2xl border ${c.border} overflow-hidden transition-colors duration-200`}>
       <button
-        onClick={() => setIsOpen((v) => !v)}
+        onClick={() => {
+          onHeaderClick?.();
+          setIsOpen((v) => !v);
+        }}
         className={`w-full flex items-center gap-2.5 px-3 py-2.5 ${c.bg} transition-colors duration-150 hover:brightness-[0.97]`}
       >
         <span className={`w-6 h-6 rounded-lg ${c.iconBg} flex items-center justify-center shrink-0`}>

@@ -110,7 +110,7 @@
   color: var(--ink);
   line-height: 1;
   letter-spacing: -0.02em;
-  font-family: 'Manrope', 'Inter', sans-serif;
+  font-family: 'Inter', 'IBM Plex Sans', sans-serif;
 }
 
 .dash-metric-card__trend {
@@ -315,7 +315,7 @@
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.02em;
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Inter', 'IBM Plex Sans', sans-serif;
 }
 
 .dash-kpi-badge__label {

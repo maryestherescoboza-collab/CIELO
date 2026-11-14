@@ -24,6 +24,12 @@ export const CACHE_STALE_MARGIN_MS = 10 * MINUTO;
 /** Ventana de frescura en sesión para revalidación SWR de estudiantes por curso (evita re-consultas al cambiar entre módulos). */
 export const ESTUDIANTES_SWR_FRESH_MS = 10 * MINUTO;
 
+/** TTL de 90 días para el almacenamiento persistente de datos académicos en IndexedDB. */
+export const ACADEMIC_IDB_TTL_MS = DAYS(90);
+
+/** Ventana de frescura en sesión para revalidación SWR de cursos y períodos académicos (evita re-consultas redundantes al cambiar de pestaña o curso). */
+export const ACADEMIC_SWR_FRESH_MS = 10 * MINUTO;
+
 export interface CacheResourceConfig {
     key: CacheResource;
     ttlMs: number;

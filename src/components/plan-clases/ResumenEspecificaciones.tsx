@@ -143,7 +143,7 @@ function ListaIndicadores({ elementos, respaldo }: { elementos: ItemIndicador[];
           <li key={ind.id} className="leading-snug text-[#2E3330]/85">
             {ind.codigo && (
               <span
-                className="mr-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-black text-[#2E3330]"
+                className="mr-1.5 inline-block rounded px-2 py-0.5 text-[10px] font-black text-[#2E3330]"
                 style={{ backgroundColor: color ? `${color}1F` : 'rgba(46, 51, 48, 0.06)' }}
               >
                 {ind.codigo}
@@ -267,9 +267,9 @@ export default function ResumenEspecificaciones({
 
   if (resumen.length === 0) {
     return (
-      <div className="rounded-3xl border border-[#2E3330]/10 border-dashed p-8 text-center">
+      <div className="rounded-md border border-[#2E3330]/15 border-dashed p-6 text-left bg-white">
         <p className="font-bold text-[#2E3330]">Aún no hay selecciones guardadas</p>
-        <p className="text-[14px] text-[#2E3330]/60 mt-1">
+        <p className="text-[13px] text-[#2E3330]/60 mt-1">
           Completa los pasos anteriores para ver aquí el resumen por período.
         </p>
       </div>
@@ -285,7 +285,7 @@ export default function ResumenEspecificaciones({
           </h2>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[540px] border-collapse text-left text-[13px]">
+            <table className="w-full min-w-135 border-collapse text-left text-[13px]">
               <thead>
                 <tr>
                   <th className={`${COLUMNA} whitespace-nowrap`}>CE</th>

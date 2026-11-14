@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { BookOpen, StickyNote, LayoutTemplate, CalendarDays, ClipboardList } from 'lucide-react';
 import { usePlanClasesStore } from '../../../store/planClasesStore';
 import { useAppStore } from '../../../store/appStore';
@@ -18,6 +18,7 @@ const PLANTILLAS_HTML = [
 ];
 
 export default function PlanClasesSidebar() {
+  const navigate = useNavigate();
   const location = useLocation();
   const { secuenciaId, notaId } = useParams();
   const session = useAppStore((s) => s.session);
@@ -54,14 +55,11 @@ export default function PlanClasesSidebar() {
   const isPlanificacionActiva = (id: number) =>
     planificacionParamId !== null && planificacionParamId !== 'plantilla' && planificacionParamId === String(id);
 
-  const getNotasParaSecuencia = (sId: string) =>
-    notas.filter((n) => n.secuencia_id === sId);
-
   return (
-    <aside className="w-64 h-full flex flex-col shrink-0 bg-[#FAFAF8] border-r border-[#2E3330]/10 z-30 overflow-hidden">
-      <div className="flex flex-col h-full overflow-y-auto px-3 py-4 gap-4">
+    <aside className="w-full h-full flex flex-col min-w-0 bg-[#FAFAF8] border-r border-[#2E3330]/10 z-30 overflow-hidden">
+      <div className="flex flex-col h-full overflow-y-auto px-[clamp(0.6rem,1vw,1rem)] py-[clamp(0.75rem,1.2vw,1.25rem)] gap-[clamp(0.6rem,1vw,1rem)]">
         {/* Header */}
-        <div className="px-1 flex flex-col gap-0.5">
+        <div className="px-[clamp(0.25rem,0.5vw,0.5rem)] flex flex-col gap-0.5">
           <span className="text-[15px] font-extrabold text-[#2E3330] tracking-tight">
             Plan clases
           </span>
@@ -72,7 +70,7 @@ export default function PlanClasesSidebar() {
 
         {/* Secciones */}
         <div className="flex flex-col gap-3">
-          {/* Especificaciones curriculares */}
+          {/* 1. Especificaciones */}
           {totalEspecificaciones > 0 && (
             <SidebarSection
               title="Especificaciones"
@@ -80,6 +78,7 @@ export default function PlanClasesSidebar() {
               count={totalEspecificaciones}
               color="green"
               defaultOpen={location.pathname.includes('/especificaciones')}
+              onHeaderClick={() => navigate('/plan-de-clases/especificaciones')}
             >
               <SidebarItem
                 label="Organizar especificaciones"
@@ -89,75 +88,14 @@ export default function PlanClasesSidebar() {
             </SidebarSection>
           )}
 
-          {/* Mis notas */}
+          {/* 2. Planificación (antes Plantillas) */}
           <SidebarSection
-            title="Mis fichas"
-            icon={StickyNote}
-            count={totalNotas}
-            color="orange"
-            defaultOpen={location.pathname.includes('/mis-notas') || !!notaId}
-          >
-            {notas.map((nota) => (
-              <SidebarItem
-                key={nota.id}
-                label={nota.titulo}
-                path={`/plan-de-clases/secuencias/${nota.secuencia_id}/notas/${nota.id}/editar`}
-                isActive={isNotaActive(nota.id)}
-              />
-            ))}
-          </SidebarSection>
-
-          {/* Secuencias */}
-          <SidebarSection
-            title="Secuencias"
-            icon={BookOpen}
-            count={totalSecuenciasPc}
-            color="yellow"
-            defaultOpen={location.pathname.includes('/secuencias') && !notaId}
-          >
-            {secuencias.map((secuencia) => {
-              const notasDeSecuencia = getNotasParaSecuencia(secuencia.id);
-              const isActive = isSecuenciaActive(secuencia.id) || isSecuenciaNotasActive(secuencia.id);
-
-              if (notasDeSecuencia.length === 0) {
-                return (
-                  <SidebarItem
-                    key={secuencia.id}
-                    label={secuencia.titulo}
-                    path={`/plan-de-clases/secuencias/${secuencia.id}/notas`}
-                    isActive={isActive}
-                  />
-                );
-              }
-
-              return (
-                <div key={secuencia.id} className="flex flex-col gap-0.5">
-                  <SidebarItem
-                    label={secuencia.titulo}
-                    path={`/plan-de-clases/secuencias/${secuencia.id}/notas`}
-                    isActive={isActive && !notaId}
-                  />
-                  {notasDeSecuencia.map((nota) => (
-                    <SidebarItem
-                      key={nota.id}
-                      label={nota.titulo}
-                      path={`/plan-de-clases/secuencias/${nota.secuencia_id}/notas/${nota.id}/editar`}
-                      isActive={isNotaActive(nota.id)}
-                      depth={1}
-                    />
-                  ))}
-                </div>
-              );
-            })}
-          </SidebarSection>
-
-          {/* Plantillas */}
-          <SidebarSection
-            title="Plantillas"
+            title="Planificación"
             icon={LayoutTemplate}
             count={totalPlanificaciones + totalPlantillasHtml}
             color="green"
             defaultOpen={location.pathname.includes('/planificacion')}
+            onHeaderClick={() => navigate('/planificacion')}
           >
             {/* Sub-sección: Planificación de clase diaria */}
             <SidebarNestedSection
@@ -190,19 +128,69 @@ export default function PlanClasesSidebar() {
             ))}
           </SidebarSection>
 
-          {/* Actividades */}
+          {/* 3. Actividades */}
           <SidebarSection
             title="Actividades"
             icon={BookOpen}
             count={totalActividades}
             color="orange"
             defaultOpen={location.pathname.includes('/actividades')}
+            onHeaderClick={() => navigate('/plan-de-clases/actividades')}
           >
             <SidebarItem
               label="Ver actividades"
               path="/plan-de-clases/actividades"
               isActive={location.pathname.includes('/actividades')}
             />
+          </SidebarSection>
+
+          {/* 4. Secuencias */}
+          <SidebarSection
+            title="Secuencias"
+            icon={BookOpen}
+            count={totalSecuenciasPc}
+            color="yellow"
+            defaultOpen={location.pathname.includes('/secuencias')}
+            onHeaderClick={() => navigate('/plan-de-clases/secuencias')}
+          >
+            {secuencias.map((secuencia) => {
+              const isActive = isSecuenciaActive(secuencia.id) || isSecuenciaNotasActive(secuencia.id);
+
+              return (
+                <SidebarItem
+                  key={secuencia.id}
+                  label={secuencia.titulo}
+                  path={`/plan-de-clases/secuencias/${secuencia.id}/notas`}
+                  isActive={isActive}
+                />
+              );
+            })}
+          </SidebarSection>
+
+          {/* 5. Mis fichas */}
+          <SidebarSection
+            title="Mis fichas"
+            icon={StickyNote}
+            count={totalNotas}
+            color="orange"
+            defaultOpen={location.pathname.includes('/mis-notas') || !!notaId}
+            onHeaderClick={() => {
+              const targetNota = (notaId && notas.find((n) => n.id === notaId)) || notas[0];
+              if (targetNota) {
+                navigate(`/plan-de-clases/secuencias/${targetNota.secuencia_id}/notas/${targetNota.id}/editar`);
+              } else {
+                navigate('/plan-de-clases/mis-notas');
+              }
+            }}
+          >
+            {notas.map((nota) => (
+              <SidebarItem
+                key={nota.id}
+                label={nota.titulo}
+                path={`/plan-de-clases/secuencias/${nota.secuencia_id}/notas/${nota.id}/editar`}
+                isActive={isNotaActive(nota.id)}
+              />
+            ))}
           </SidebarSection>
         </div>
       </div>

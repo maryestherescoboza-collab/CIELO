@@ -1,118 +1,137 @@
 import { useAppStore, type AcademicCacheEntry } from '../store/appStore';
-import { CACHE_TTL_MS } from './cacheConfig';
-import type { Actividad, CalificacionActividad } from '../types';
+import { CACHE_TTL_MS, ACADEMIC_SWR_FRESH_MS } from './cacheConfig';
+import type { Actividad, CalificacionActividad, RecuperacionBC, CursoDetalleEvaluacion, RecuperacionCotejo } from '../types';
+import { normalizeArea } from '../utils/academic';
+import {
+    getIdbAcademicSlice,
+    saveIdbAcademicSlice,
+    upsertIdbAcademicRow,
+    clearIdbAcademicCacheByUser,
+    type AcademicSliceData
+} from './academicIdb';
+
+export { type AcademicSliceData } from './academicIdb';
 
 /**
- * Paso 7 — Caché académico EN MEMORIA por curso + período.
+ * Caché académico de CIELO — Arquitectura de 2 capas:
+ * 1. Capa L1 (Memoria Zustand): Acceso síncrono instantáneo (0ms) durante la sesión.
+ * 2. Capa L2 (IndexedDB): Persistencia duradera de hasta 90 días, tolerante a recargas,
+ *    navegación entre cursos, reinicio de pestaña y trabajo sin conexión.
  *
- * Unidad de caché: «actividades + calificaciones» de un curso en UN período.
- * Clave compuesta: `${userId}:${centroId}:${cursoId}:${periodo}`.
- *
- * Reglas de aislamiento:
- *  - Los períodos son conjuntos independientes: tener P1 en caché NUNCA implica
- *    que P2, P3 o P4 estén cargados.
- *  - Una slice solo es válida si pertenece EXACTAMENTE al contexto actual
- *    (usuario + centro + curso + período) y no ha expirado.
- *  - Ante cualquier duda de pertenencia se devuelve MISS (null) → el llamador
- *    consulta Supabase. La seguridad tiene prioridad sobre ahorrar consultas.
- *  - Contiene SOLO datos fuente (nunca promedios ni resultados derivados).
- *  - NO se persiste en localStorage: vive en memoria y muere con la sesión
- *    (se limpia al cambiar de usuario).
+ * Aislamiento estricto:
+ *  - Clave: `${userId}:${centroId}:${cursoId}:${asignatura}:${periodo}`.
+ *  - Ninguna actividad ni calificación se mezcla entre asignaturas o períodos.
+ *  - P2 es el período inicial obligatorio.
  */
 
 export const PERIODOS_ACADEMICOS = ['P1', 'P2', 'P3', 'P4'] as const;
 
-/** Token especial para actividades con `periodo` NULL (bucket propio).
- *  `calificaciones.periodo` es NOT NULL, así que solo «actividades» lo usa. */
+/** Token especial para actividades con `periodo` NULL (bucket propio). */
 export const NULL_PERIODO_TOKEN = '__actividad_sin_periodo__';
 
-/** TTL de la slice: el más conservador de la pareja (calificaciones, 30 días).
- *  Al ser memoria, de todos modos termina con la sesión. */
 const SLICE_TTL_MS = CACHE_TTL_MS.calificaciones;
 
-export interface AcademicSliceData {
-    actividades: Actividad[];
-    calificaciones: CalificacionActividad[];
+export type AcademicRowType = 'actividades' | 'calificaciones' | 'recuperaciones' | 'cursoDetalle' | 'recuperacionesCotejo';
+
+/**
+ * Control en memoria de frescura SWR por sesión.
+ * Evita re-consultar a Supabase repetitivamente al cambiar de curso, pestaña o período
+ * si la combinación ya fue verificada en la ventana de frescura.
+ */
+const sessionAcademicVerifiedAt = new Map<string, number>();
+
+export function isAcademicSliceFreshInSession(
+    userId: string | null | undefined,
+    cursoId: number | null | undefined,
+    periodo: string | null | undefined,
+    asignatura?: string | null | undefined,
+): boolean {
+    if (!userId || !cursoId) return false;
+    const key = `${userId}:${cursoId}:${normalizeArea(asignatura) || 'all'}:${periodo || 'sin-periodo'}`;
+    const last = sessionAcademicVerifiedAt.get(key);
+    if (!last) return false;
+    return Date.now() - last < ACADEMIC_SWR_FRESH_MS;
 }
 
-export type AcademicRowType = 'actividades' | 'calificaciones';
+export function markAcademicSliceVerifiedInSession(
+    userId: string | null | undefined,
+    cursoId: number | null | undefined,
+    periodo: string | null | undefined,
+    asignatura?: string | null | undefined,
+): void {
+    if (!userId || !cursoId) return;
+    const key = `${userId}:${cursoId}:${normalizeArea(asignatura) || 'all'}:${periodo || 'sin-periodo'}`;
+    sessionAcademicVerifiedAt.set(key, Date.now());
+}
 
+/**
+ * Genera la clave compuesta del caché académico.
+ * Soporta compatibilidad con llamadas de 4 argumentos `(userId, centroId, cursoId, periodo)`
+ * y las llamadas completas de 5 argumentos `(userId, centroId, cursoId, asignatura, periodo)`.
+ */
 export function academicCacheKey(
     userId: string | null | undefined,
     centroId: string | null | undefined,
     cursoId: number | null | undefined,
-    periodo: string | null | undefined,
+    asignaturaOrPeriodo: string | null | undefined,
+    maybePeriodo?: string | null | undefined,
 ): string {
-    return `${userId || 'sin-usuario'}:${centroId || 'sin-centro'}:${cursoId ?? 'sin-curso'}:${periodo || 'sin-periodo'}`;
+    let asignatura = 'general';
+    let periodo = 'sin-periodo';
+
+    if (maybePeriodo !== undefined) {
+        asignatura = normalizeArea(asignaturaOrPeriodo) || 'general';
+        periodo = maybePeriodo || 'sin-periodo';
+    } else {
+        periodo = asignaturaOrPeriodo || 'sin-periodo';
+    }
+
+    return `${userId || 'sin-usuario'}:${centroId || 'sin-centro'}:${cursoId ?? 'sin-curso'}:${asignatura}:${periodo}`;
 }
 
 function makeEntry(
     userId: string | null | undefined,
     centroId: string | null | undefined,
     cursoId: number,
+    asignatura: string,
     periodo: string,
     data: AcademicSliceData,
 ): AcademicCacheEntry {
     const nowMs = Date.now();
     return {
-        key: academicCacheKey(userId, centroId, cursoId, periodo),
+        key: academicCacheKey(userId, centroId, cursoId, asignatura, periodo),
         userId: userId || 'sin-usuario',
         centroId: centroId || undefined,
         cursoId,
         periodo,
-        data,
+        data: {
+            actividades: data.actividades || [],
+            calificaciones: data.calificaciones || [],
+        },
         cachedAt: nowMs,
         expiresAt: nowMs + SLICE_TTL_MS,
     };
 }
 
 /**
- * Lee la slice válida del contexto exacto `{userId, centroId, cursoId, periodo}`.
- * Devuelve null (MISS) si no existe, no coincide la clave, expiró, o los arrays
- * no son listas válidas. Nunca devuelve una slice de otro usuario/curso/período.
+ * Lee la slice válida en memoria L1.
  */
 export function getValidAcademicSlice(
     userId: string | null | undefined,
     centroId: string | null | undefined,
     cursoId: number | null | undefined,
-    periodo: string | null | undefined,
+    asignaturaOrPeriodo: string | null | undefined,
+    maybePeriodo?: string | null | undefined,
 ): AcademicSliceData | null {
-    const ts = () => new Date().toISOString();
-    if (!userId || !cursoId) {
-        console.log(`[DIAG][CACHE_READ] miss motivo=sin-usuario-o-curso key="${academicCacheKey(userId, centroId, cursoId, periodo)}" userId=${userId ?? 'sin-usuario'} centroId=${centroId ?? 'sin-centro'} cursoId=${cursoId ?? 'sin-curso'} periodo=${periodo ?? 'sin-periodo'} ts=${ts()}`);
-        return null;
-    }
-    const key = academicCacheKey(userId, centroId, cursoId, periodo);
+    if (!userId || !cursoId) return null;
+
+    const key = academicCacheKey(userId, centroId, cursoId, asignaturaOrPeriodo, maybePeriodo);
     const entry = useAppStore.getState().academicCache[key];
-    if (!entry) {
-        console.log(`[DIAG][CACHE_READ] miss motivo=no-existe key="${key}" userId=${userId} centroId=${centroId ?? 'sin-centro'} cursoId=${cursoId} periodo=${periodo ?? 'sin-periodo'} ts=${ts()}`);
-        return null;
-    }
-    if (entry.key !== key) {
-        console.log(`[DIAG][CACHE_READ] miss motivo=key-no-coincide key="${key}" userId=${userId} centroId=${centroId ?? 'sin-centro'} cursoId=${cursoId} periodo=${periodo ?? 'sin-periodo'} ts=${ts()}`);
-        return null;
-    }
-    if (entry.userId !== userId) {
-        console.log(`[DIAG][CACHE_READ] miss motivo=userId-no-coincide key="${key}" userId=${userId} centroId=${centroId ?? 'sin-centro'} cursoId=${cursoId} periodo=${periodo ?? 'sin-periodo'} ts=${ts()}`);
-        return null;
-    }
-    if (entry.cursoId !== cursoId) {
-        console.log(`[DIAG][CACHE_READ] miss motivo=cursoId-no-coincide key="${key}" userId=${userId} centroId=${centroId ?? 'sin-centro'} cursoId=${cursoId} periodo=${periodo ?? 'sin-periodo'} ts=${ts()}`);
-        return null;
-    }
-    if (Date.now() >= entry.expiresAt) {
-        console.log(`[DIAG][CACHE_READ] miss motivo=expirado key="${key}" userId=${userId} centroId=${centroId ?? 'sin-centro'} cursoId=${cursoId} periodo=${periodo ?? 'sin-periodo'} ts=${ts()}`);
-        return null;
-    }
-    if (!entry.data) {
-        console.log(`[DIAG][CACHE_READ] miss motivo=sin-data key="${key}" userId=${userId} centroId=${centroId ?? 'sin-centro'} cursoId=${cursoId} periodo=${periodo ?? 'sin-periodo'} ts=${ts()}`);
-        return null;
-    }
-    if (!Array.isArray(entry.data.actividades) || !Array.isArray(entry.data.calificaciones)) {
-        console.log(`[DIAG][CACHE_READ] miss motivo=arrays-invalidos key="${key}" userId=${userId} centroId=${centroId ?? 'sin-centro'} cursoId=${cursoId} periodo=${periodo ?? 'sin-periodo'} ts=${ts()}`);
-        return null;
-    }
-    console.log(`[DIAG][CACHE_READ] hit key="${key}" userId=${userId} centroId=${centroId ?? 'sin-centro'} cursoId=${cursoId} periodo=${periodo ?? 'sin-periodo'} actividades=${entry.data.actividades.length} calificaciones=${entry.data.calificaciones.length} ts=${ts()}`);
+    if (!entry) return null;
+    if (entry.key !== key || entry.userId !== userId || entry.cursoId !== cursoId) return null;
+    // Las calificaciones NUNCA se descartan automáticamente: siempre se conservan intactas
+    if (!entry.data || !Array.isArray(entry.data.actividades) || !Array.isArray(entry.data.calificaciones)) return null;
+
     return entry.data;
 }
 
@@ -120,37 +139,79 @@ export function hasValidAcademicSlice(
     userId: string | null | undefined,
     centroId: string | null | undefined,
     cursoId: number | null | undefined,
-    periodo: string | null | undefined,
+    asignaturaOrPeriodo: string | null | undefined,
+    maybePeriodo?: string | null | undefined,
 ): boolean {
-    return getValidAcademicSlice(userId, centroId, cursoId, periodo) !== null;
+    return getValidAcademicSlice(userId, centroId, cursoId, asignaturaOrPeriodo, maybePeriodo) !== null;
 }
 
 /**
- * Guarda (o reemplaza) la slice de un curso+período. Renueva cachedAt/expiresAt.
- * `periodo` null se guarda bajo el token NULL_PERIODO_TOKEN.
+ * Cache-First: Lee primero de memoria (L1), luego de IndexedDB (L2).
+ * Si existe en IndexedDB, rehidrata memoria L1 de inmediato para accesos síncronos posteriores.
+ */
+export async function ensureAcademicSliceFromIdb(
+    userId: string | null | undefined,
+    centroId: string | null | undefined,
+    cursoId: number | null | undefined,
+    asignatura: string | null | undefined,
+    periodo: string | null | undefined,
+): Promise<AcademicSliceData | null> {
+    if (!userId || !cursoId) return null;
+
+    const memSlice = getValidAcademicSlice(userId, centroId, cursoId, asignatura, periodo);
+    if (memSlice) return memSlice;
+
+    const idbData = await getIdbAcademicSlice(userId, centroId, cursoId, asignatura, periodo);
+    if (idbData) {
+        saveAcademicSlice(userId, centroId, cursoId, asignatura, periodo, idbData);
+        return idbData;
+    }
+
+    return null;
+}
+
+/**
+ * Guarda la slice de un curso en memoria L1 y en IndexedDB L2 (90 días).
  */
 export function saveAcademicSlice(
     userId: string | null | undefined,
     centroId: string | null | undefined,
     cursoId: number | null | undefined,
-    periodo: string | null | undefined,
-    data: AcademicSliceData,
+    asignaturaOrPeriodo: string | null | undefined,
+    periodoOrData: string | AcademicSliceData | null | undefined,
+    maybeData?: AcademicSliceData,
 ): void {
     if (!userId || !cursoId) return;
+
+    let asignatura = 'general';
+    let periodo = 'sin-periodo';
+    let data: AcademicSliceData;
+
+    if (maybeData !== undefined) {
+        asignatura = normalizeArea(asignaturaOrPeriodo) || 'general';
+        periodo = (periodoOrData as string) || 'sin-periodo';
+        data = maybeData;
+    } else {
+        periodo = (asignaturaOrPeriodo as string) || NULL_PERIODO_TOKEN;
+        data = (periodoOrData as AcademicSliceData) || { actividades: [], calificaciones: [] };
+    }
+
+    // 1. Guardar en memoria L1 (Zustand)
     useAppStore.getState().setAcademicCache(
-        makeEntry(userId, centroId, cursoId, periodo || NULL_PERIODO_TOKEN, data)
+        makeEntry(userId, centroId, cursoId, asignatura, periodo, data)
     );
-    console.log(`[DIAG][CACHE_WRITE] key="${academicCacheKey(userId, centroId, cursoId, periodo || NULL_PERIODO_TOKEN)}" userId=${userId} centroId=${centroId ?? 'sin-centro'} cursoId=${cursoId} periodo=${periodo || NULL_PERIODO_TOKEN} actividades=${data.actividades.length} calificaciones=${data.calificaciones.length} ts=${new Date().toISOString()}`);
+
+    // 2. Persistir asíncronamente en IndexedDB L2 (90 días)
+    void saveIdbAcademicSlice(userId, centroId, cursoId, asignatura, periodo, data);
 }
 
 /**
- * Elimina las slices académicas de un usuario. Si se pasa `cursoId`, solo se
- * eliminan las slices de ESE curso (invalidación granular); sin cursoId, todas
- * las del usuario (cambio de usuario/sesión/contexto de identidad).
+ * Elimina las slices académicas de un usuario en memoria L1 y en IndexedDB L2.
  */
 export function clearAcademicCacheByUser(userId: string | null | undefined, cursoId?: number): void {
     if (!userId) return;
-    const antes = Object.keys(useAppStore.getState().academicCache).length;
+
+    // Limpieza L1
     useAppStore.getState().setAcademicCache(prev => {
         const prefix = `${userId}:`;
         let changed = false;
@@ -163,46 +224,57 @@ export function clearAcademicCacheByUser(userId: string | null | undefined, curs
         }
         return changed ? next : prev;
     });
-    const despues = Object.keys(useAppStore.getState().academicCache).length;
-    console.log(`[DIAG][CACHE_CLEAR] userId=${userId} cursoId=${cursoId ?? 'todos'} slicesAntes=${antes} slicesDespues=${despues} ts=${new Date().toISOString()}`);
+
+    // Limpieza L2
+    void clearIdbAcademicCacheByUser(userId, cursoId);
+
+    // Limpieza de control de sesión
+    if (cursoId) {
+        for (const k of Array.from(sessionAcademicVerifiedAt.keys())) {
+            if (k.startsWith(`${userId}:${cursoId}:`)) {
+                sessionAcademicVerifiedAt.delete(k);
+            }
+        }
+    } else {
+        sessionAcademicVerifiedAt.clear();
+    }
 }
 
 /**
- * Write-through de Realtime: actualiza ÚNICAMENTE el registro afectado dentro de
- * las slices existentes del curso, sin invalidar ni sobrescribir otros cursos o
- * períodos. En DELETE también elimina la identidad de cualquier slice del curso
- * (p. ej. si una actividad cambió de período, la fila se retira de la slice vieja).
- * Si no existe la slice destino (porque el período aún no se cargó), no se crea
- * nada: una inyección desde Realtime no constituye completitud.
+ * Write-through selectivo para mutaciones locales y Realtime en memoria L1 y en IndexedDB L2.
  */
 export function upsertAcademicRow(
     tipo: AcademicRowType,
-    row: Actividad | CalificacionActividad,
+    row: Actividad | CalificacionActividad | RecuperacionBC | CursoDetalleEvaluacion | RecuperacionCotejo,
     cursoId: number,
     periodo: string | null,
     removed?: boolean,
+    asignaturaParam?: string | null,
 ): void {
     const store = useAppStore.getState();
     const uid = store.session?.user?.id;
     if (!uid) return;
     const centroId = store.state.cursos.find(c => c.id === cursoId)?.centroId ?? null;
-    const targetKey = academicCacheKey(uid, centroId, cursoId, periodo || NULL_PERIODO_TOKEN);
+    const asigRow = (row as any).asignatura || asignaturaParam || '';
+    const normAsig = normalizeArea(asigRow) || 'general';
+    const normPeriodo = periodo || (row as any).periodo || NULL_PERIODO_TOKEN;
+    const targetKey = academicCacheKey(uid, centroId, cursoId, normAsig, normPeriodo);
 
+    // 1. Actualizar memoria L1
     useAppStore.getState().setAcademicCache(prev => {
         const prefix = `${uid}:`;
         let changed = false;
         const next: Record<string, AcademicCacheEntry> = {};
 
-        // 1) Retirar la identidad del registro de todas las slices de este usuario+curso.
         for (const key of Object.keys(prev)) {
             const entry = prev[key];
             if (!key.startsWith(prefix) || entry.cursoId !== cursoId) {
                 next[key] = entry;
                 continue;
             }
-            const data: AcademicSliceData = {
-                actividades: entry.data.actividades,
-                calificaciones: entry.data.calificaciones,
+            const data = {
+                actividades: [...entry.data.actividades],
+                calificaciones: [...entry.data.calificaciones],
             };
             let dirty = false;
             if (tipo === 'actividades') {
@@ -210,7 +282,7 @@ export function upsertAcademicRow(
                 const antes = data.actividades.length;
                 data.actividades = data.actividades.filter(a => !(a.id === id));
                 dirty = data.actividades.length !== antes;
-            } else {
+            } else if (tipo === 'calificaciones') {
                 const cal = row as CalificacionActividad;
                 const antes = data.calificaciones.length;
                 data.calificaciones = data.calificaciones.filter(
@@ -222,11 +294,10 @@ export function upsertAcademicRow(
             next[key] = { ...entry, data };
         }
 
-        // 2) Si NO es borrado y la slice destino ya existe, insertar/actualizar SOLO ahí.
         if (!removed) {
-            const cur = next[targetKey];
+            const cur = next[targetKey] || prev[targetKey];
             if (cur) {
-                const data: AcademicSliceData = {
+                const data = {
                     actividades: [...cur.data.actividades],
                     calificaciones: [...cur.data.calificaciones],
                 };
@@ -235,7 +306,7 @@ export function upsertAcademicRow(
                     const idx = data.actividades.findIndex(a => a.id === act.id);
                     if (idx !== -1) data.actividades[idx] = act;
                     else data.actividades.push(act);
-                } else {
+                } else if (tipo === 'calificaciones') {
                     const cal = row as CalificacionActividad;
                     const idx = data.calificaciones.findIndex(
                         c => c.estudianteId === cal.estudianteId && c.actividadId === cal.actividadId
@@ -248,12 +319,18 @@ export function upsertAcademicRow(
             }
         }
 
-        const sliceDestinoExistia = !!useAppStore.getState().academicCache[targetKey];
-        const identidad = tipo === 'actividades'
-            ? `actividadId=${(row as Actividad).id}`
-            : `estudianteId=${(row as CalificacionActividad).estudianteId} actividadId=${(row as CalificacionActividad).actividadId}`;
-        console.log(`[DIAG][CACHE_WRITE_REALTIME] tipo=${tipo} removed=${!!removed} cursoId=${cursoId} periodo=${periodo ?? NULL_PERIODO_TOKEN} centroId=${centroId ?? 'sin-centro'} ${identidad} sliceDestinoExistia=${sliceDestinoExistia} key="${targetKey}" ts=${new Date().toISOString()}`);
-
         return changed ? next : prev;
     });
+
+    // 2. Write-through a IndexedDB L2
+    void upsertIdbAcademicRow(
+        tipo,
+        row,
+        cursoId,
+        normAsig,
+        normPeriodo,
+        uid,
+        centroId,
+        removed
+    );
 }
