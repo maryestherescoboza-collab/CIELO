@@ -17,18 +17,42 @@ const MAX_PROCESSING_ATTEMPTS = 8;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-const PAYPAL_PLANS: Record<string, { planId: string, amount: string, currency: string }> = {
+interface PayPalPlanConfig {
+  planId: string;
+  name: string;
+  amount: string;          // Monto esperado por cuota/transacción individual
+  currency: string;        // 'USD'
+  interval: "MONTH" | "YEAR";
+  totalCycles: number;     // 12 para anual, 0 para recurrente continuo
+  totalCommitment?: string;// '48.00'
+}
+
+const PAYPAL_PLANS: Record<string, PayPalPlanConfig> = {
   "docente_mensual_definitivo": {
     planId: "P-4131029904627403DNLCUUHA",
+    name: "Docente Mensual",
     amount: "5.00",
-    currency: "USD"
+    currency: "USD",
+    interval: "MONTH",
+    totalCycles: 0,
   },
   "docente_anual_definitivo": {
     planId: "P-1WC41170AP726083TNLCUWQY",
-    amount: "48.00",
-    currency: "USD"
+    name: "Docente Anual (12 cuotas)",
+    amount: "4.00",
+    currency: "USD",
+    interval: "MONTH",
+    totalCycles: 12,
+    totalCommitment: "48.00"
   }
 };
+
+function toCents(val: string | number | undefined): number | null {
+  if (val === undefined || val === null) return null;
+  const parsed = typeof val === "number" ? val : parseFloat(val);
+  if (isNaN(parsed)) return null;
+  return Math.round(parsed * 100);
+}
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -391,9 +415,30 @@ Deno.serve(async (req: Request) => {
       });
 
       if (!subResponse.ok) {
+        const httpStatus = subResponse.status;
+        let retryable = true;
+
+        if (httpStatus === 404) {
+          // Si el recurso no existe en PayPal: permitir máximo 2 reintentos breves por posible
+          // consistencia eventual de centros de datos de PayPal. Tras 2 intentos, marcar no reintentable.
+          const { data: evRow } = await supabase
+            .from("paypal_webhook_events")
+            .select("attempts")
+            .eq("event_id", eventId)
+            .maybeSingle();
+          const currentAttempts = evRow?.attempts ?? 0;
+          retryable = currentAttempts < 2;
+        } else if (httpStatus === 400 || httpStatus === 401 || httpStatus === 403) {
+          // Errores de cliente/autenticación no se resuelven con reintentos
+          retryable = false;
+        } else if (httpStatus === 429 || httpStatus >= 500) {
+          // Sobrecarga o error interno de PayPal: reintentable con backoff
+          retryable = true;
+        }
+
         throw new WebhookError(
-          `Could not fetch subscription details from PayPal API (status ${subResponse.status})`,
-          true
+          `PayPal API returned HTTP ${httpStatus} for subscription ${subscriptionId}`,
+          retryable
         );
       }
 
@@ -497,15 +542,85 @@ Deno.serve(async (req: Request) => {
 
         case "PAYMENT.SALE.COMPLETED": {
           // Validar el pago completado.
-          const amount = event.resource?.amount?.total;
+          const amountStr = event.resource?.amount?.total;
           const currency = event.resource?.amount?.currency;
+          const txId = event.resource?.id;
 
           if (currency !== "USD") {
             throw new WebhookError(`Currency mismatch. Expected USD, got ${currency}`, false);
           }
 
-          if (amount !== expectedPlan.amount) {
-            throw new WebhookError(`Amount mismatch. Expected ${expectedPlan.amount}, got ${amount}`, false);
+          // Validación monetaria estricta con tolerancia cero en centavos
+          const receivedCents = toCents(amountStr);
+          const expectedCents = toCents(expectedPlan.amount);
+
+          if (receivedCents === null || receivedCents !== expectedCents) {
+            throw new WebhookError(
+              `Amount mismatch for ${expectedPlan.name}. Expected exactly ${expectedPlan.amount} USD (${expectedCents} cents), got ${amountStr} USD (${receivedCents} cents)`,
+              false
+            );
+          }
+
+          // Registro e idempotencia de cuotas individuales
+          if (txId) {
+            const { data: existingTx, error: txCheckError } = await supabase
+              .from("paypal_pagos")
+              .select("id, cuota_numero")
+              .eq("transaction_id", txId)
+              .maybeSingle();
+
+            if (txCheckError) {
+              throw new WebhookError(`DB error checking transaction: ${txCheckError.message}`, true);
+            }
+
+            if (!existingTx) {
+              // Contar cuotas previas para asignar el número de cuota correlativo
+              const { count: cuotasPrevias, error: countError } = await supabase
+                .from("paypal_pagos")
+                .select("*", { count: 'exact', head: true })
+                .eq("paypal_subscription_id", subscriptionId);
+
+              if (countError) {
+                throw new WebhookError(`DB error counting previous quotas: ${countError.message}`, true);
+              }
+
+              const cuotaNumero = (cuotasPrevias ?? 0) + 1;
+              const totalCuotas = expectedPlan.totalCycles || 12;
+
+              const { error: insertTxError } = await supabase
+                .from("paypal_pagos")
+                .insert({
+                  suscripcion_id: effectiveSub.id,
+                  paypal_subscription_id: subscriptionId,
+                  transaction_id: txId,
+                  user_id: effectiveSub.user_id,
+                  plan_id: expectedPlan.planId,
+                  amount: parseFloat(amountStr || expectedPlan.amount),
+                  currency: "USD",
+                  cuota_numero: cuotaNumero,
+                  total_cuotas: totalCuotas,
+                  estado: "completado",
+                  pago_fecha: new Date().toISOString()
+                });
+
+              if (insertTxError) {
+                throw new WebhookError(`DB error inserting quota payment: ${insertTxError.message}`, true);
+              }
+
+              // Actualizar seguimiento en la fila principal de la suscripción
+              await supabase
+                .from("suscripciones")
+                .update({
+                  cuotas_pagadas: cuotaNumero,
+                  total_cuotas: totalCuotas,
+                  ultimo_pago_at: new Date().toISOString()
+                })
+                .eq("id", effectiveSub.id);
+
+              console.log(`[paypal-webhook] Cuota ${cuotaNumero} de ${totalCuotas} registrada exitosamente para suscripción ${subscriptionId}. Tx: ${txId}`);
+            } else {
+              console.log(`[paypal-webhook] Transacción ${txId} ya procesada (cuota ${existingTx.cuota_numero}). Idempotencia garantizada.`);
+            }
           }
 
           if (!paypalSub.billing_info?.next_billing_time) {

@@ -566,6 +566,9 @@ export function useSupabaseData(skipInit = false) {
             const currentUserProfile = mappedPerfiles.find((p: any) => p.userId === session.user.id);
             let resolvedSuscripcionActual = undefined;
             if (suscripciones && suscripciones.length > 0) {
+                const now = new Date();
+                
+                // 1. Prioridad: Suscripciones activas
                 const institucionales = suscripciones.filter((s: any) => s.centro_id === userCentroId && s.tipo === 'institucional' && s.estado === 'activa');
                 const individuales = suscripciones.filter((s: any) => s.user_id === session.user.id && s.tipo === 'individual' && s.estado === 'activa');
                 const promocionales = suscripciones.filter((s: any) => s.user_id === session.user.id && s.tipo === 'promocional' && s.estado === 'activa');
@@ -576,6 +579,35 @@ export function useSupabaseData(skipInit = false) {
                     resolvedSuscripcionActual = individuales[0];
                 } else if (promocionales.length > 0) {
                     resolvedSuscripcionActual = promocionales[0];
+                } else {
+                    // 2. Suscripción cancelada con período pagado todavía vigente (fecha_fin > now)
+                    const canceladaVigente = suscripciones.find((s: any) => 
+                        s.user_id === session.user.id && 
+                        s.estado === 'cancelada' && 
+                        s.fecha_fin && 
+                        new Date(s.fecha_fin) > now
+                    );
+                    
+                    if (canceladaVigente) {
+                        resolvedSuscripcionActual = canceladaVigente;
+                    } else {
+                        // 3. Suscripción pendiente más reciente (para mostrar aviso de verificación sin otorgar Premium)
+                        const pendientes = suscripciones
+                            .filter((s: any) => s.user_id === session.user.id && s.estado === 'pendiente')
+                            .sort((a: any, b: any) => new Date(b.created_at || b.updated_at || 0).getTime() - new Date(a.created_at || a.updated_at || 0).getTime());
+                        
+                        if (pendientes.length > 0) {
+                            resolvedSuscripcionActual = pendientes[0];
+                        } else {
+                            // 4. Última cancelada o vencida (para consultar historial sin dar acceso)
+                            const historicas = suscripciones
+                                .filter((s: any) => s.user_id === session.user.id)
+                                .sort((a: any, b: any) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
+                            if (historicas.length > 0) {
+                                resolvedSuscripcionActual = historicas[0];
+                            }
+                        }
+                    }
                 }
             }
 

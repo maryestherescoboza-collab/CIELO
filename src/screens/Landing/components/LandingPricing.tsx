@@ -39,8 +39,8 @@ export function LandingPricing() {
   const planAnual = {
     name: 'Docente Anual',
     price: 4,
-    badge: 'Ahorra 20%',
-    subtitle: 'Compromiso anual de 12 meses al precio más bajo para docentes independientes.',
+    badge: '12 Cuotas Mensuales',
+    subtitle: '12 cuotas mensuales de US$4.00 administradas por PayPal (Compromiso total: US$48.00). Sin cobro único anual.',
     features: featuresComunes,
   };
 
@@ -93,11 +93,10 @@ export function LandingPricing() {
               type="button"
               onClick={() => setMobilePlan(plan.id)}
               aria-pressed={mobilePlan === plan.id}
-              className={`flex-1 rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
-                mobilePlan === plan.id
-                  ? 'bg-[#2E3330] text-[#FCFCFA]'
-                  : 'text-[#5F665E] hover:bg-[#E9E9DB]'
-              }`}
+              className={`flex-1 rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${mobilePlan === plan.id
+                ? 'bg-[#2E3330] text-[#FCFCFA]'
+                : 'text-[#5F665E] hover:bg-[#E9E9DB]'
+                }`}
             >
               {plan.label}
             </button>
@@ -107,9 +106,8 @@ export function LandingPricing() {
         <div className="mt-6 border border-[#2E3330]/15 md:mt-16">
           <div className="grid grid-cols-1 divide-y divide-[#2E3330]/10 max-md:divide-y-0 md:grid-cols-3 md:divide-x md:divide-y-0">
             <div
-              className={`flex flex-col justify-between bg-[#FCFCFA] ${
-                mobilePlan !== 'mensual' ? 'max-md:hidden' : ''
-              }`}
+              className={`flex flex-col justify-between bg-[#FCFCFA] ${mobilePlan !== 'mensual' ? 'max-md:hidden' : ''
+                }`}
             >
               <div className="border-b border-[#2E3330]/10 p-6 sm:p-8">
                 <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330]">
@@ -147,7 +145,7 @@ export function LandingPricing() {
                 <button
                   type="button"
                   onClick={() => handlePlanSelection('individual')}
-                  className="w-full rounded-full border border-[#DEAE4D] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330] transition-colors hover:bg-[#E9E9DB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2E3330]"
+                  className="w-full rounded-full border border-[#DEAE4D] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330] transition-colors hover:bg-[#E9E9DB] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2E3330]"
                 >
                   Comenzar gratis
                 </button>
@@ -155,9 +153,8 @@ export function LandingPricing() {
             </div>
 
             <div
-              className={`flex flex-col justify-between bg-[#F3EFE4] ${
-                mobilePlan !== 'anual' ? 'max-md:hidden' : ''
-              }`}
+              className={`flex flex-col justify-between bg-[#F3EFE4] ${mobilePlan !== 'anual' ? 'max-md:hidden' : ''
+                }`}
             >
               <div className="border-b border-[#2E3330]/10 p-6 sm:p-8">
                 <div className="flex flex-wrap items-center gap-2">
@@ -200,7 +197,7 @@ export function LandingPricing() {
                 <button
                   type="button"
                   onClick={() => handlePlanSelection('individual')}
-                  className="w-full rounded-full bg-[#DEAE4D] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330] transition-colors hover:bg-[#D4A33F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2E3330]"
+                  className="w-full rounded-full bg-[#DEAE4D] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330] transition-colors hover:bg-[#D4A33F] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2E3330]"
                 >
                   Comenzar prueba gratis
                 </button>
@@ -208,9 +205,8 @@ export function LandingPricing() {
             </div>
 
             <div
-              className={`flex flex-col justify-between bg-[#FCFCFA] ${
-                mobilePlan !== 'institucional' ? 'max-md:hidden' : ''
-              }`}
+              className={`flex flex-col justify-between bg-[#FCFCFA] ${mobilePlan !== 'institucional' ? 'max-md:hidden' : ''
+                }`}
             >
               <div className="border-b border-[#2E3330]/10 p-6 sm:p-8">
                 <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2E3330]">

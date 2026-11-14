@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, memo } from 'react';
+import { useEffect, useState, useCallback, memo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { usePremiumAccess } from '../hooks/usePremiumAccess';
 import { CieloPill } from '../components/ui/CieloPill';
@@ -40,6 +40,8 @@ const PayPalSubscriptionButton = memo(function PayPalSubscriptionButton({
   onError,
   onCancel
 }: PayPalSubscriptionButtonProps) {
+  const isCreatingRef = useRef(false);
+
   // Diagnóstico seguro de ciclo de vida del componente
   useEffect(() => {
     console.log(`[PayPal Diagnostic] Botón [${planType}] MONTADO en el DOM.`);
@@ -58,6 +60,11 @@ const PayPalSubscriptionButton = memo(function PayPalSubscriptionButton({
   }, [planType]);
 
   const handleCreateSubscription = useCallback(async () => {
+    if (isCreatingRef.current) {
+      console.warn(`[PayPal Diagnostic] [${planType}] Solicitud concurrente bloqueada.`);
+      return;
+    }
+    isCreatingRef.current = true;
     console.log(`[PayPal Diagnostic] [${planType}] createSubscription iniciado.`);
     try {
       const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -88,11 +95,13 @@ const PayPalSubscriptionButton = memo(function PayPalSubscriptionButton({
         throw new Error('No se recibió el ID de suscripción de PayPal');
       }
 
-      console.log(`[PayPal Diagnostic] [${planType}] Suscripción creada en PayPal. ID recibido: ${data.subscriptionId}`);
+      console.log(`[PayPal Diagnostic] [${planType}] Suscripción lista en PayPal. ID: ${data.subscriptionId}`);
       return data.subscriptionId;
     } catch (err: any) {
       console.error(`[PayPal Diagnostic] [${planType}] Fallo en createSubscription:`, err?.message || err);
       throw err;
+    } finally {
+      isCreatingRef.current = false;
     }
   }, [planType]);
 
@@ -223,18 +232,24 @@ function SuscripcionContent() {
 
   const planMensual = {
     name: 'CIELO Docente Mensual',
-    subtitle: 'Empieza con 15 días gratis. Después, solo 5 USD al mes.',
-    secondary: 'El cobro lo administra PayPal mes a mes. Tu primer pago se realiza recién 15 días después de comenzar.',
+    subtitle: 'Incluye 15 días gratis de prueba en PayPal. Después, solo US$5.00 al mes.',
+    secondary: 'Tu primer cobro de US$5.00 se realizará 15 días después de suscribirte. El cobro lo administra PayPal mes a mes y puedes cancelar en cualquier momento.',
     features: featuresComunes
   };
 
   const planAnual = {
     name: 'CIELO Docente Anual',
-    badge: 'Ahorra 20%',
-    subtitle: 'Mismo acceso premium con 15 días gratis, pero a un menor costo.',
+    badge: '12 Cuotas Mensuales',
+    subtitle: 'Incluye 15 días gratis de prueba en PayPal. Después, 12 cuotas mensuales de US$4.00.',
     secondary: (
-      <span className="block text-xs not-italic text-zinc-500">
-        <strong className="text-zinc-800 font-bold">Compromiso de 12 meses.</strong> Pagarás una cuota cada mes durante 12 meses. PayPal hará los cobros automáticamente.
+      <span className="block text-xs not-italic text-zinc-600 space-y-1">
+        <strong className="text-zinc-900 font-bold block">Compromiso contractual de 12 meses:</strong>
+        <span className="block text-[11px] leading-relaxed">
+          Empieza con 15 días gratis en PayPal. Tu primer débito se realizará 15 días después, seguido de las cuotas mensuales de <strong className="text-zinc-900">US$4.00</strong> administradas automáticamente por PayPal (Compromiso total: <strong className="text-zinc-900">US$48.00</strong>).
+        </span>
+        <span className="block text-[10px] text-zinc-500">
+          No es un pago único anual. No se aplican cobros adelantados de US$48.
+        </span>
       </span>
     ),
     features: featuresComunes
@@ -377,7 +392,7 @@ function SuscripcionContent() {
                   {planMensual.secondary}
                 </p>
                 
-                <div className="relative z-0 min-h-[44px]">
+                <div className="relative z-0 min-h-11">
                   {hasPremium && suscripcionActual?.tipo === 'individual' && suscripcionActual.estado === 'activa' ? (
                     <button disabled className="w-full py-2 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.2)] text-zinc-400 text-[10px] font-medium tracking-widest uppercase rounded-sm">
                       Plan Actual
@@ -449,7 +464,7 @@ function SuscripcionContent() {
                   {planAnual.secondary}
                 </p>
                 
-                <div className="relative z-0 min-h-[44px]">
+                <div className="relative z-0 min-h-11">
                   {hasPremium && suscripcionActual?.tipo === 'individual' && suscripcionActual.estado === 'activa' ? (
                     <button disabled className="w-full py-2 px-4 bg-white border border-dashed border-[rgba(120,135,110,0.2)] text-zinc-400 text-[10px] font-medium tracking-widest uppercase rounded-sm">
                       Plan Actual

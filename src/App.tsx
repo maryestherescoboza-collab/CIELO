@@ -9,6 +9,10 @@ import Landing from './screens/Landing';
 import ConfirmarCorreo from './screens/ConfirmarCorreo';
 import Terminos from './screens/legal/Terminos';
 import Privacidad from './screens/legal/Privacidad';
+import { lazyLoad } from './utils/lazyLoad';
+
+const SuscripcionPaypalRetorno = lazyLoad(() => import('./screens/SuscripcionPaypalRetorno'));
+const SuscripcionPaypalCancelada = lazyLoad(() => import('./screens/SuscripcionPaypalCancelada'));
 import { ErrorBoundary } from './components/ErrorBoundary';
 import NotificationsOverlay from './components/NotificationsOverlay';
 import InvitationModal from './components/courses/InvitationModal';
@@ -328,7 +332,25 @@ export default function App() {
     if (pathname === '/reset-password') {
       return <ResetPassword />;
     }
-    return <Auth onAuthSuccess={() => actions.refresh()} />;
+    if (pathname === '/suscripcion/paypal/retorno') {
+      return <SuscripcionPaypalRetorno />;
+    }
+    if (pathname === '/suscripcion/paypal/cancelada') {
+      return <SuscripcionPaypalCancelada />;
+    }
+    return (
+      <Auth 
+        onAuthSuccess={() => {
+          const pendingReturn = sessionStorage.getItem('cielo_pending_paypal_return');
+          if (pendingReturn) {
+            sessionStorage.removeItem('cielo_pending_paypal_return');
+            navigate(pendingReturn, { replace: true });
+          } else {
+            actions.refresh();
+          }
+        }} 
+      />
+    );
   }
 
   const isPrintView = pathname.startsWith('/print-boletines');
@@ -341,7 +363,11 @@ export default function App() {
     );
   }
 
-  if (necesitaVinculacionCentro && session?.user?.id) {
+  const isSuscripcionRoute = 
+    pathname === '/suscripcion' ||
+    pathname.startsWith('/suscripcion/');
+
+  if (necesitaVinculacionCentro && session?.user?.id && !isSuscripcionRoute) {
     return (
       <ErrorBoundary>
         <div className="min-h-screen bg-[#FBFBFA] flex items-center justify-center p-4 relative">
