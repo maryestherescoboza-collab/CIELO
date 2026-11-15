@@ -1,6 +1,8 @@
 /**
  * Manages user-scoped onboarding progress for CIELO's interactive guide.
+ * Includes local storage cache and cloud synchronization with Supabase user_metadata.
  */
+import { supabase } from '../lib/supabase';
 
 export type StageStatus = 'pendiente' | 'en_progreso' | 'completada';
 
@@ -23,6 +25,29 @@ export interface IniciacionProgress {
 
 const STORAGE_KEY_PREFIX = 'cielo_iniciacion_progreso_';
 
+/**
+ * Resuelve el ID del usuario autenticado actual desde el almacenamiento de sesión si no se proporciona.
+ */
+export function getResolvedUserId(userId?: string | null): string {
+  if (userId && userId !== 'anonymous' && userId !== 'default-user') return userId;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && ((key.startsWith('sb-') && key.endsWith('-auth-token')) || key === 'supabase.auth.token')) {
+        const val = localStorage.getItem(key);
+        if (val) {
+          const parsed = JSON.parse(val);
+          const uid = parsed?.user?.id || parsed?.currentSession?.user?.id;
+          if (uid) return uid;
+        }
+      }
+    }
+  } catch {
+    // Ignore JSON parse errors
+  }
+  return userId || 'default-user';
+}
+
 export function getDefaultIniciacionProgress(userId: string): IniciacionProgress {
   return {
     userId,
@@ -41,56 +66,107 @@ export function getDefaultIniciacionProgress(userId: string): IniciacionProgress
   };
 }
 
-export function loadIniciacionProgress(userId?: string): IniciacionProgress {
-  if (!userId) return getDefaultIniciacionProgress('anonymous');
+export function loadIniciacionProgress(userId?: string | null): IniciacionProgress {
+  const resolvedId = getResolvedUserId(userId);
   try {
-    const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${userId}`);
+    const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${resolvedId}`);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
         return {
-          ...getDefaultIniciacionProgress(userId),
+          ...getDefaultIniciacionProgress(resolvedId),
           ...parsed,
-          userId,
+          userId: resolvedId,
         };
       }
     }
   } catch (e) {
     console.warn('[iniciacionState] Failed to load progress:', e);
   }
-  return getDefaultIniciacionProgress(userId);
+  return getDefaultIniciacionProgress(resolvedId);
 }
 
-export function saveIniciacionProgress(progress: IniciacionProgress) {
-  if (!progress.userId) return;
+export function saveIniciacionProgress(progress: IniciacionProgress, syncToCloud = true) {
+  const uid = getResolvedUserId(progress.userId);
+  progress.userId = uid;
   try {
     progress.lastUpdated = new Date().toISOString();
     localStorage.setItem(
-      `${STORAGE_KEY_PREFIX}${progress.userId}`,
+      `${STORAGE_KEY_PREFIX}${uid}`,
       JSON.stringify(progress)
     );
-    // Dispatch custom event for UI reactivity across components
+
+    // Despachar evento para reactividad instantánea en los componentes
     window.dispatchEvent(
       new CustomEvent('cielo-iniciacion-updated', { detail: progress })
     );
+
+    // Persistir en Supabase user_metadata para mantener el progreso entre dispositivos y sesiones
+    if (syncToCloud && uid !== 'default-user' && uid !== 'anonymous') {
+      supabase.auth.updateUser({
+        data: { cielo_iniciacion: progress }
+      }).catch(err => {
+        console.warn('[iniciacionState] Error sincronizando con Supabase:', err);
+      });
+    }
   } catch (e) {
     console.warn('[iniciacionState] Failed to save progress:', e);
   }
 }
 
+/**
+ * Sincroniza el progreso del usuario con Supabase Auth (conserva el progreso entre dispositivos).
+ */
+export async function syncIniciacionProgressWithCloud(userId?: string | null): Promise<IniciacionProgress> {
+  const uid = getResolvedUserId(userId);
+  let localProgress = loadIniciacionProgress(uid);
+
+  try {
+    const { data } = await supabase.auth.getUser();
+    const cloudProgress = data?.user?.user_metadata?.cielo_iniciacion as IniciacionProgress | undefined;
+
+    if (cloudProgress && cloudProgress.lastUpdated) {
+      const localTime = localProgress.lastUpdated ? new Date(localProgress.lastUpdated).getTime() : 0;
+      const cloudTime = new Date(cloudProgress.lastUpdated).getTime();
+
+      if (cloudTime > localTime) {
+        localProgress = {
+          ...getDefaultIniciacionProgress(uid),
+          ...cloudProgress,
+          userId: uid,
+        };
+        saveIniciacionProgress(localProgress, false);
+        return localProgress;
+      }
+    }
+
+    // Si local tiene progreso no sincronizado, actualizar la nube
+    if (localProgress.currentStepIndex > 0 && uid !== 'default-user') {
+      supabase.auth.updateUser({
+        data: { cielo_iniciacion: localProgress }
+      }).catch(() => {});
+    }
+  } catch (e) {
+    console.warn('[iniciacionState] Cloud sync error:', e);
+  }
+
+  return localProgress;
+}
+
 export function updateStageStatus(
-  userId: string,
+  userId: string | null,
   stage: 1 | 2 | 3 | 4 | 5,
   status: StageStatus,
   stepIndex?: number
 ) {
-  const progress = loadIniciacionProgress(userId);
+  const uid = getResolvedUserId(userId);
+  const progress = loadIniciacionProgress(uid);
   progress.stages[stage] = status;
   progress.currentStage = stage;
   if (typeof stepIndex === 'number') {
     progress.currentStepIndex = stepIndex;
   }
-  // Check if all stages are completed
+  // Verificar si todas las etapas están completadas
   const allCompleted = [1, 2, 3, 4, 5].every(
     (s) => progress.stages[s as 1 | 2 | 3 | 4 | 5] === 'completada'
   );
@@ -101,8 +177,23 @@ export function updateStageStatus(
   saveIniciacionProgress(progress);
 }
 
-export function setIniciacionCompleted(userId: string) {
-  const progress = loadIniciacionProgress(userId);
+/**
+ * Conserva el progreso exacto al pulsar «Guardar y salir».
+ * NUNCA borra ni reinicia el progreso.
+ */
+export function saveIniciacionProgressOnExit(userId: string | null, stepIndex: number, currentStage?: number) {
+  const uid = getResolvedUserId(userId);
+  const progress = loadIniciacionProgress(uid);
+  progress.currentStepIndex = stepIndex;
+  if (currentStage) {
+    progress.currentStage = currentStage;
+  }
+  saveIniciacionProgress(progress, true);
+}
+
+export function setIniciacionCompleted(userId: string | null) {
+  const uid = getResolvedUserId(userId);
+  const progress = loadIniciacionProgress(uid);
   progress.completed = true;
   progress.completedAt = new Date().toISOString();
   progress.stages[1] = 'completada';
@@ -113,14 +204,18 @@ export function setIniciacionCompleted(userId: string) {
   saveIniciacionProgress(progress);
 }
 
-export function dismissIniciacionWelcome(userId: string) {
-  const progress = loadIniciacionProgress(userId);
+export function dismissIniciacionWelcome(userId: string | null) {
+  const uid = getResolvedUserId(userId);
+  const progress = loadIniciacionProgress(uid);
   progress.dismissedWelcome = true;
   saveIniciacionProgress(progress);
 }
 
-export function resetIniciacionProgress(userId: string) {
-  const initial = getDefaultIniciacionProgress(userId);
-  saveIniciacionProgress(initial);
+/**
+ * Reinicia voluntariamente todo el recorrido solo ante la acción explícita «Comenzar desde cero».
+ */
+export function resetIniciacionProgress(userId: string | null) {
+  const uid = getResolvedUserId(userId);
+  const initial = getDefaultIniciacionProgress(uid);
+  saveIniciacionProgress(initial, true);
 }
-

@@ -7,7 +7,11 @@ import { resolveAudioUrl } from './audioRegistry';
 import type { GuideExecutionState } from './guideConfirmation';
 import {
   updateStageStatus,
-  setIniciacionCompleted
+  setIniciacionCompleted,
+  loadIniciacionProgress,
+  saveIniciacionProgressOnExit,
+  resetIniciacionProgress,
+  getResolvedUserId
 } from './iniciacionState';
 
 let driverObj: any = null;
@@ -72,7 +76,7 @@ export function stopActiveGuide() {
 /**
  * Starts a guide by its ID from the catalog, optionally resuming from a specific step.
  */
-export function startGuide(guideId: string, initialStep = 0, userId?: string) {
+export function startGuide(guideId: string, initialStep?: number, userId?: string, forceFromZero = false) {
   stopActiveGuide();
 
   const normalized = guideId.trim().toLowerCase();
@@ -86,8 +90,19 @@ export function startGuide(guideId: string, initialStep = 0, userId?: string) {
   if (!guide) return;
 
   currentGuideId = guide.id;
-  activeUserId = userId || null;
-  currentStepIndex = Math.max(0, Math.min(initialStep, guide.steps.length - 1));
+  activeUserId = getResolvedUserId(userId);
+
+  // Si es la guía de iniciación y no se especificó un paso forzado desde cero, retomar progreso
+  if (currentGuideId === 'iniciacion' && initialStep === undefined && !forceFromZero) {
+    const saved = loadIniciacionProgress(activeUserId);
+    if (saved.currentStepIndex > 0 && !saved.completed) {
+      currentStepIndex = Math.max(0, Math.min(saved.currentStepIndex, guide.steps.length - 1));
+    } else {
+      currentStepIndex = 0;
+    }
+  } else {
+    currentStepIndex = Math.max(0, Math.min(initialStep || 0, guide.steps.length - 1));
+  }
 
   // Configure Driver.js instance
   driverObj = driver({
@@ -244,9 +259,16 @@ function buildPopoverHtml(step: GuideStep, currentIdx: number, totalSteps: numbe
             ${ICON_ROTATE_CCW}
           </button>
         </div>
-        <button type="button" id="cielo-guide-exit-btn" class="cielo-tour-exit-action" title="Guardar progreso y salir">
-          Guardar y salir
-        </button>
+        <div class="cielo-tour-footer-actions">
+          ${currentGuideId === 'iniciacion' && currentStepIndex > 0 ? `
+            <button type="button" id="cielo-guide-restart-btn" class="cielo-tour-restart-action" title="Reiniciar voluntariamente todo el recorrido desde cero">
+              Comenzar desde cero
+            </button>
+          ` : ''}
+          <button type="button" id="cielo-guide-exit-btn" class="cielo-tour-exit-action" title="Guardar progreso y salir">
+            Guardar y salir
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -293,10 +315,27 @@ function bindPopoverControls() {
       };
     }
 
+    const restartBtn = document.getElementById('cielo-guide-restart-btn');
+    if (restartBtn) {
+      restartBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (window.confirm('¿Deseas reiniciar la guía de iniciación desde el principio?')) {
+          resetIniciacionProgress(activeUserId);
+          stopActiveGuide();
+          setTimeout(() => {
+            startGuide('iniciacion', 0, activeUserId || undefined, true);
+          }, 150);
+        }
+      };
+    }
+
     const exitBtn = document.getElementById('cielo-guide-exit-btn');
     if (exitBtn) {
       exitBtn.onclick = (e) => {
         e.stopPropagation();
+        if (currentGuideId === 'iniciacion') {
+          saveIniciacionProgressOnExit(activeUserId, currentStepIndex);
+        }
         stopActiveGuide();
       };
     }

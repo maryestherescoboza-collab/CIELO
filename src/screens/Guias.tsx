@@ -1,7 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { startGuide } from '../guides/driverGuides';
 import { useAppStore } from '../store/appStore';
+import { 
+  loadIniciacionProgress, 
+  resetIniciacionProgress, 
+  syncIniciacionProgressWithCloud 
+} from '../guides/iniciacionState';
 
 export type StageCategory = 
   | 'Todas'
@@ -278,6 +283,19 @@ export default function Guias() {
   const navigate = useNavigate();
   const [busqueda, setBusqueda] = useState('');
   const [etapaSeleccionada, setEtapaSeleccionada] = useState<StageCategory>('Todas');
+  const [progresoIniciacion, setProgresoIniciacion] = useState(() => loadIniciacionProgress());
+
+  useEffect(() => {
+    syncIniciacionProgressWithCloud().then((p) => {
+      if (p) setProgresoIniciacion(p);
+    });
+
+    const handleUpdated = (e: any) => {
+      if (e.detail) setProgresoIniciacion(e.detail);
+    };
+    window.addEventListener('cielo-iniciacion-updated', handleUpdated);
+    return () => window.removeEventListener('cielo-iniciacion-updated', handleUpdated);
+  }, []);
 
   const guiasFiltradas = useMemo(() => {
     const q = normalizarTexto(busqueda.trim());
@@ -321,10 +339,29 @@ export default function Guias() {
       return;
     }
 
+    if (guia.id === 'iniciacion') {
+      navigate('/inicio');
+      setTimeout(() => {
+        startGuide('iniciacion');
+      }, 220);
+      return;
+    }
+
     navigate('/inicio');
     setTimeout(() => {
       startGuide(guia.id);
     }, 220);
+  };
+
+  const handleComenzarDesdeCero = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('¿Deseas reiniciar la guía de iniciación desde el paso 1?')) {
+      resetIniciacionProgress(null);
+      navigate('/inicio');
+      setTimeout(() => {
+        startGuide('iniciacion', 0, undefined, true);
+      }, 220);
+    }
   };
 
   const handleLimpiarFiltros = () => {
@@ -427,18 +464,55 @@ export default function Guias() {
                 {/* Parte Inferior: Pasos, Minutos y Botón Comenzar */}
                 <div className="pt-4 mt-2 border-t border-(--border-soft)">
                   <div className="text-[11px] font-medium text-(--ink-soft) mb-3 select-none">
-                    {guia.id === 'iniciacion' 
-                      ? '5 etapas · 23 pasos · 5 min'
-                      : `${guia.pasos} pasos · ${guia.minutos} min`
-                    }
+                    {guia.id === 'iniciacion' ? (
+                      progresoIniciacion.completed ? (
+                        '5 etapas · 23 pasos completados'
+                      ) : progresoIniciacion.currentStepIndex > 0 ? (
+                        `Paso ${progresoIniciacion.currentStepIndex + 1} de 23 pendiente (Etapa ${progresoIniciacion.currentStage})`
+                      ) : (
+                        '5 etapas · 23 pasos · 5 min'
+                      )
+                    ) : (
+                      `${guia.pasos} pasos · ${guia.minutos} min`
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleComenzarGuia(guia)}
-                    className="w-full py-2.5 px-4 rounded-[10px] bg-(--ink) text-white hover:bg-(--ink)/90 active:scale-[0.99] text-xs font-bold transition-all text-center cursor-pointer select-none"
-                  >
-                    Comenzar guía
-                  </button>
+
+                  {guia.id === 'iniciacion' && progresoIniciacion.currentStepIndex > 0 && !progresoIniciacion.completed ? (
+                    <div className="space-y-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleComenzarGuia(guia)}
+                        className="w-full py-2.5 px-4 rounded-[10px] bg-(--ink) text-white hover:bg-(--ink)/90 active:scale-[0.99] text-xs font-bold transition-all text-center cursor-pointer select-none"
+                      >
+                        Continuar guía
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleComenzarDesdeCero}
+                        className="text-[11px] text-(--ink-soft) hover:text-(--ink) underline font-medium cursor-pointer transition-colors block mx-auto text-center pt-1 select-none"
+                        title="Reiniciar voluntariamente todo el recorrido desde el paso 1"
+                      >
+                        Comenzar desde cero
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (guia.id === 'iniciacion' && progresoIniciacion.completed) {
+                          handleComenzarDesdeCero({ stopPropagation: () => {} } as any);
+                        } else {
+                          handleComenzarGuia(guia);
+                        }
+                      }}
+                      className="w-full py-2.5 px-4 rounded-[10px] bg-(--ink) text-white hover:bg-(--ink)/90 active:scale-[0.99] text-xs font-bold transition-all text-center cursor-pointer select-none"
+                    >
+                      {guia.id === 'iniciacion' && progresoIniciacion.completed
+                        ? 'Comenzar desde cero'
+                        : 'Comenzar guía'
+                      }
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
