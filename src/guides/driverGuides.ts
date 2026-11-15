@@ -3,6 +3,7 @@ import 'driver.js/dist/driver.css';
 import { CATALOGO_GUIAS, type Guide, type GuideStep } from './catalogoGuias';
 import { initGuideEventListeners, cleanupGuideEventListeners } from './guideEvents';
 import { voiceNarrator } from './voiceNarrator';
+import { resolveAudioUrl } from './audioRegistry';
 import {
   updateStageStatus,
   setIniciacionCompleted
@@ -336,8 +337,15 @@ function highlightElement(step: GuideStep, resolvedSelector: string, guide: Guid
       }
     });
 
-    // Speak instruction using Web Speech API
-    voiceNarrator.speak(step.voz || step.texto);
+    // Reproducir narración neuronal (con fallback transparente a SpeechSynthesis)
+    const audioUrl = resolveAudioUrl(currentGuideId, currentStepIndex);
+    voiceNarrator.speak(step.voz || step.texto, audioUrl);
+
+    // Precargar de manera anticipada el audio del siguiente paso para latencia cero
+    if (guide.steps[currentStepIndex + 1]) {
+      const nextAudioUrl = resolveAudioUrl(currentGuideId, currentStepIndex + 1);
+      voiceNarrator.preload(nextAudioUrl);
+    }
 
     // Bind audio toolbar buttons inside popover
     bindPopoverControls();

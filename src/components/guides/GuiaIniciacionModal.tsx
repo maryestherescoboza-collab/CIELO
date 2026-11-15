@@ -9,6 +9,7 @@ import {
 } from '../../guides/iniciacionState';
 import { startGuide, isGuideActive } from '../../guides/driverGuides';
 import { voiceNarrator } from '../../guides/voiceNarrator';
+import { resolveAudioUrl } from '../../guides/audioRegistry';
 
 interface Props {
   userId?: string;
@@ -35,7 +36,8 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
       const timer = setTimeout(() => {
         if (!isGuideActive()) {
           setShowWelcome(true);
-          voiceNarrator.speak('Bienvenido a CIELO. Aprende a evaluar por competencias con nuestra guía interactiva y narrada. Pulsa en Comenzar recorrido para iniciar.');
+          const audioUrl = resolveAudioUrl(undefined, undefined, 'iniciacion_welcome');
+          voiceNarrator.speak('Bienvenido a CIELO. Aprende a evaluar por competencias con nuestra guía interactiva y narrada. Pulsa en Comenzar recorrido para iniciar.', audioUrl);
         }
       }, 1500);
       return () => clearTimeout(timer);
@@ -56,7 +58,8 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
     const handleCelebration = () => {
       setShowWelcome(false);
       setShowCelebration(true);
-      voiceNarrator.speak('¡Felicidades! Has completado tu guía de iniciación. Ya conoces los primeros pasos para trabajar con CIELO. Ahora estás listo para evaluar por competencias.');
+      const audioUrl = resolveAudioUrl(undefined, undefined, 'iniciacion_celebration');
+      voiceNarrator.speak('¡Felicidades! Has completado tu guía de iniciación. Ya conoces los primeros pasos para trabajar con CIELO. Ahora estás listo para evaluar por competencias.', audioUrl);
     };
 
     window.addEventListener('cielo-iniciacion-updated', handleUpdated);

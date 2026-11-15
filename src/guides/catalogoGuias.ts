@@ -246,14 +246,14 @@ export const CATALOGO_GUIAS: Guide[] = [
     steps: [
       {
         selector: '#nav-cursos',
-        texto: 'Haz clic en «Cursos» para acceder a tus cursos.',
-        voz: 'Haz clic en Cursos para acceder a tus cursos.',
+        texto: 'Vamos al módulo de cursos. Pulsa en «Cursos» para ver tus secciones.',
+        voz: 'Vamos al módulo de cursos. Pulsa en Cursos para ver tus secciones.',
         evento: 'click'
       },
       {
         selector: '#btn-nuevo-curso, [data-guide="btn-nuevo-curso"]',
-        texto: 'Haz clic en «Nuevo curso» para crear tu primer curso.',
-        voz: 'Haz clic en Nuevo curso para crear tu primer curso.',
+        texto: 'Ahora, pulsa en «Nuevo curso» para empezar a configurarlo.',
+        voz: 'Ahora, pulsa en Nuevo curso para empezar a configurarlo.',
         evento: 'click'
       }
     ]
@@ -264,38 +264,38 @@ export const CATALOGO_GUIAS: Guide[] = [
     steps: [
       {
         selector: '#nav-cursos',
-        texto: 'Haz clic en «Cursos».',
-        voz: 'Haz clic en Cursos.',
+        texto: 'Primero abramos la sección de cursos. Pulsa en «Cursos».',
+        voz: 'Primero abramos la sección de cursos. Pulsa en Cursos.',
         evento: 'click'
       },
       {
         selector: '[data-guide="btn-abrir-registro-academico"]',
-        texto: 'Haz clic en «Abrir registro académico».',
-        voz: 'Haz clic en Abrir registro académico.',
+        texto: 'Entra a tu curso pulsando en «Abrir registro académico».',
+        voz: 'Entra a tu curso pulsando en Abrir registro académico.',
         evento: 'click'
       },
       {
         selector: '[data-guide="btn-agregar-estudiante"]',
-        texto: 'Haz clic en «+» para agregar un estudiante.',
-        voz: 'Haz clic en más para agregar un estudiante.',
+        texto: 'Para añadir un estudiante a tu lista, pulsa en el botón «+».',
+        voz: 'Para añadir un estudiante a tu lista, pulsa en el botón más.',
         evento: 'click'
       },
       {
         selector: '[data-guide="celda-estudiante"]',
-        texto: 'Haz clic en la celda del estudiante y escribe su nombre con el formato: Nombre, Apellido.',
-        voz: 'Haz clic en la celda del estudiante y escribe su nombre.',
+        texto: 'Escribe aquí los apellidos y nombres de tu estudiante.',
+        voz: 'Escribe aquí los apellidos y nombres de tu estudiante.',
         evento: 'change'
       },
       {
         selector: '[data-guide="btn-agregar-actividad"]',
-        texto: 'Haz clic en «Agregar actividad» para crear una nueva actividad.',
-        voz: 'Haz clic en Agregar actividad para crear una nueva actividad.',
+        texto: 'Ahora, pulsa en «Agregar actividad» para planificar una nueva evaluación.',
+        voz: 'Ahora, pulsa en Agregar actividad para planificar una nueva evaluación.',
         evento: 'click'
       },
       {
         selector: '[data-guide="celda-actividad"]',
-        texto: 'Haz clic sobre «Activ. #» para cambiar el nombre de la actividad.',
-        voz: 'Haz clic sobre la actividad para cambiar su nombre.',
+        texto: 'Puedes renombrar la actividad haciendo clic sobre su título.',
+        voz: 'Puedes renombrar la actividad haciendo clic sobre su título.',
         evento: 'change'
       }
     ]
@@ -306,38 +306,38 @@ export const CATALOGO_GUIAS: Guide[] = [
     steps: [
       {
         selector: '#nav-inicio',
-        texto: 'Haz clic en «Inicio» para ir al panel principal.',
-        voz: 'Haz clic en Inicio para ir al panel principal.',
+        texto: 'Vamos al panel principal. Pulsa en «Inicio».',
+        voz: 'Vamos al panel principal. Pulsa en Inicio.',
         evento: 'click'
       },
       {
         selector: '[data-guide="btn-organizar-calendario"]',
-        texto: 'Haz clic en «Organizar calendario» para abrir el calendario escolar.',
-        voz: 'Haz clic en Organizar calendario para abrir el calendario escolar.',
+        texto: 'Abre el calendario escolar pulsando en «Organizar calendario».',
+        voz: 'Abre el calendario escolar pulsando en Organizar calendario.',
         evento: 'click'
       },
       {
         selector: '[data-guide="btn-pase-de-lista"]',
-        texto: 'Haz clic en «Pase de lista» para iniciar el registro de asistencia del día.',
-        voz: 'Haz clic en Pase de lista para iniciar el registro de asistencia del día.',
+        texto: 'Inicia el registro del día pulsando en «Pase de lista».',
+        voz: 'Inicia el registro del día pulsando en Pase de lista.',
         evento: 'click'
       },
       {
         selector: '[data-guide="btn-curso-asistencia"]',
-        texto: 'Haz clic en la asignatura o curso al que deseas pasar lista.',
-        voz: 'Haz clic en la asignatura o curso al que deseas pasar lista.',
+        texto: 'Selecciona el curso o asignatura donde tomarás la asistencia.',
+        voz: 'Selecciona el curso o asignatura donde tomarás la asistencia.',
         evento: 'click'
       },
       {
         selector: '[data-guide="btn-continuar-asistencia"]',
-        texto: 'Haz clic en «Continuar» para ver la lista de tus estudiantes.',
-        voz: 'Haz clic en Continuar para ver la lista de tus estudiantes.',
+        texto: 'Pulsa en «Continuar» para ver la lista de tus estudiantes.',
+        voz: 'Pulsa en Continuar para ver la lista de tus estudiantes.',
         evento: 'click'
       },
       {
         selector: '[data-guide="btn-estado-estudiante"]',
-        texto: 'Haz un clic sobre el círculo del estudiante para cambiar su estado a Ausente.',
-        voz: 'Haz un clic sobre el círculo del estudiante para cambiar su estado a Ausente.',
+        texto: 'Toca el círculo del estudiante para cambiar su estado a Ausente.',
+        voz: 'Toca el círculo del estudiante para cambiar su estado a Ausente.',
         evento: 'click'
       },
       {
