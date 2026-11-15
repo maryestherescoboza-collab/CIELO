@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { startGuide } from '../guides/driverGuides';
+import { useAppStore } from '../store/appStore';
 
 export type StageCategory = 
   | 'Todas'
@@ -295,6 +296,31 @@ export default function Guias() {
   }, [busqueda, etapaSeleccionada]);
 
   const handleComenzarGuia = (guia: GuiaItem) => {
+    if (guia.id === 'guia-12' || guia.id === 'agregar-actividad') {
+      const existingModal = document.querySelector('[data-guide="modal-actividad-selector-contenidos"]');
+      if (existingModal) {
+        startGuide('agregar-actividad');
+        return;
+      }
+
+      const cursos = useAppStore.getState().state.cursos;
+      const primerCurso = cursos && cursos.length > 0 ? cursos[0] : null;
+
+      if (primerCurso) {
+        navigate(`/curso-detalle/${primerCurso.id}`);
+      } else {
+        navigate('/cursos');
+      }
+
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('cielo:abrir-modal-actividad'));
+        setTimeout(() => {
+          startGuide('agregar-actividad');
+        }, 300);
+      }, 350);
+      return;
+    }
+
     navigate('/inicio');
     setTimeout(() => {
       startGuide(guia.id);

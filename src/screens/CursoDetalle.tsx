@@ -118,6 +118,12 @@ export default function CursoDetalle(props: Props) {
 
     const [showVincular, setShowVincular] = useState(false);
     const [showAgregarActividad, setShowAgregarActividad] = useState(false);
+
+    useEffect(() => {
+        const handleOpenModal = () => setShowAgregarActividad(true);
+        window.addEventListener('cielo:abrir-modal-actividad', handleOpenModal);
+        return () => window.removeEventListener('cielo:abrir-modal-actividad', handleOpenModal);
+    }, []);
     const [visibleActivityId, setVisibleActivityId] = useState<number | null>(null);
     const [showWarningsModal, setShowWarningsModal] = useState(false);
     const [periodLoading, setPeriodLoading] = useState(false);

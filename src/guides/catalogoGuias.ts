@@ -1055,27 +1055,58 @@ export const CATALOGO_GUIAS: Guide[] = [
     titulo: '12 Crear una actividad',
     steps: [
       {
-        selector: '#nav-cursos',
-        texto: 'Pulsa en «Cursos» y entra al registro académico.',
-        voz: 'Pulsa en Cursos y entra al registro académico.',
+        selector: '[data-guide="modal-actividad-selector-contenidos"]',
+        texto: 'Primero, elige el contenido que trabajarás en esta actividad.',
+        voz: 'Primero, elige el contenido que trabajarás en esta actividad.',
         evento: 'click',
-        tituloEtapa: 'Contenido: 12 Crear una actividad'
+        targetActionSelector: '[data-guide="item-contenido"], [data-guide="modal-actividad-selector-contenidos"] button',
+        tituloEtapa: 'Paso 1: Elige el contenido'
       },
       {
-        selector: '[data-guide="btn-abrir-registro-academico"]',
-        texto: 'Abre el registro académico para acceder a la matriz de evaluación.',
-        voz: 'Abre el registro académico para acceder a la matriz de evaluación.',
+        selector: '[data-guide="modal-actividad-selector-indicadores"]',
+        texto: 'Ahora, selecciona el indicador de logro que deseas evaluar.',
+        voz: 'Ahora, selecciona el indicador de logro que deseas evaluar.',
         evento: 'click',
-        tituloEtapa: 'Contenido: 12 Crear una actividad'
+        targetActionSelector: '[data-guide="item-indicador"]',
+        tituloEtapa: 'Paso 2: Selecciona el indicador'
       },
       {
-        selector: '[data-guide="btn-agregar-actividad"]',
-        texto: 'Pulsa en «+ AGREGAR ACTIVIDAD» y vincula tus indicadores de logro curriculares.',
-        voz: 'Pulsa en Agregar actividad y vincula tus indicadores de logro curriculares.',
+        selector: '[data-guide="modal-actividad-producto"]',
+        texto: 'Por último, escribe el producto o evidencia que elaborará el estudiante. Por ejemplo: cuaderno de trabajo.',
+        voz: 'Por último, escribe el producto o evidencia que elaborará el estudiante. Por ejemplo: cuaderno de trabajo.',
+        evento: 'change',
+        targetActionSelector: '[data-guide="modal-actividad-producto"]',
+        tituloEtapa: 'Paso 3: Escribe el producto'
+      }
+    ]
+  },
+  {
+    id: 'agregar-actividad',
+    titulo: 'Agregar actividad',
+    steps: [
+      {
+        selector: '[data-guide="modal-actividad-selector-contenidos"]',
+        texto: 'Primero, elige el contenido que trabajarás en esta actividad.',
+        voz: 'Primero, elige el contenido que trabajarás en esta actividad.',
         evento: 'click',
-        targetActionSelector: '[data-guide="modal-actividad-guardar"]',
-        esperarOperacion: 'actividad_guardar',
-        tituloEtapa: 'Contenido: 12 Crear una actividad'
+        targetActionSelector: '[data-guide="item-contenido"], [data-guide="modal-actividad-selector-contenidos"] button',
+        tituloEtapa: 'Paso 1: Elige el contenido'
+      },
+      {
+        selector: '[data-guide="modal-actividad-selector-indicadores"]',
+        texto: 'Ahora, selecciona el indicador de logro que deseas evaluar.',
+        voz: 'Ahora, selecciona el indicador de logro que deseas evaluar.',
+        evento: 'click',
+        targetActionSelector: '[data-guide="item-indicador"]',
+        tituloEtapa: 'Paso 2: Selecciona el indicador'
+      },
+      {
+        selector: '[data-guide="modal-actividad-producto"]',
+        texto: 'Por último, escribe el producto o evidencia que elaborará el estudiante. Por ejemplo: cuaderno de trabajo.',
+        voz: 'Por último, escribe el producto o evidencia que elaborará el estudiante. Por ejemplo: cuaderno de trabajo.',
+        evento: 'change',
+        targetActionSelector: '[data-guide="modal-actividad-producto"]',
+        tituloEtapa: 'Paso 3: Escribe el producto'
       }
     ]
   },

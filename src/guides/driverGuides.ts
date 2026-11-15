@@ -80,7 +80,8 @@ export function startGuide(guideId: string, initialStep = 0, userId?: string) {
     g.id === normalized ||
     g.id === `guia-${normalized}` ||
     g.id === `guia-${normalized.padStart(2, '0')}` ||
-    g.id.replace('guia-', '') === normalized.padStart(2, '0')
+    g.id.replace('guia-', '') === normalized.padStart(2, '0') ||
+    (normalized.includes('actividad') && (g.id === 'agregar-actividad' || g.id === 'guia-12'))
   );
   if (!guide) return;
 

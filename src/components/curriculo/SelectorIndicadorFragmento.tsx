@@ -877,7 +877,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
 
                     {/* CONTENIDOS CURRICULARES: Presentación compacta, minimalista y visual en cuadrícula */}
                     {contenidos.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        <div data-guide="modal-actividad-selector-contenidos" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                             {contenidosFiltrados.map((cont) => {
                                 const isSelectedContenido = selectedContenidoId === cont.id;
                                 const isContenidoOfActiveIndicator =
@@ -901,6 +901,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                                 return (
                                     <button
                                         key={cont.id}
+                                        data-guide="item-contenido"
                                         type="button"
                                         disabled={disabled}
                                         onClick={() => handleSelectContenido(cont)}
@@ -946,7 +947,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                     )}
 
                     {/* SECCIÓN DE INDICADORES DE LOGRO */}
-                    <div className="bg-[#FAF7F2]/80 border border-slate-300 rounded-xl p-3.5 space-y-3 shadow-xs transition-all">
+                    <div data-guide="modal-actividad-selector-indicadores" className="bg-[#FAF7F2]/80 border border-slate-300 rounded-xl p-3.5 space-y-3 shadow-xs transition-all">
                         {/* Caso: No hay ningún indicador en el catálogo para este grado/asignatura */}
                         {indicadores.length === 0 ? (
                             <p className="text-xs text-slate-600 italic p-2 text-center">
@@ -965,6 +966,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                                             return (
                                                 <div
                                                     key={`afin-${ind.id}`}
+                                                    data-guide="item-indicador"
                                                     onClick={() => handleSelectIndicador(ind)}
                                                     className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-2.5 ${
                                                         isSelected
@@ -1060,6 +1062,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                                                     return (
                                                         <div
                                                             key={`sec-${ind.id}`}
+                                                            data-guide="item-indicador"
                                                             onClick={() => handleSelectIndicador(ind)}
                                                             className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-2.5 ${
                                                                 isSelected
