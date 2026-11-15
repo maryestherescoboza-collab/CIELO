@@ -11,6 +11,7 @@ export interface TutorialItem {
   duration: string;
   isNew?: boolean;
   sticker: 
+    | 'iniciacion'
     | 'brick' 
     | 'students' 
     | 'calendar' 
@@ -28,6 +29,17 @@ export interface TutorialItem {
 
 export const TUTORIALES_DATA: TutorialItem[] = [
   // SECCIÓN 1: GESTIÓN Y CURSOS
+  {
+    id: 't-iniciacion',
+    guideId: 'iniciacion',
+    eyebrow: 'Microlecciones CIELO',
+    title: 'Guía de iniciación (5 Etapas)',
+    category: 'gestion',
+    duration: '2:30',
+    isNew: true,
+    sticker: 'iniciacion',
+    description: 'Recorrido interactivo y narrado por las 5 etapas fundamentales de CIELO.'
+  },
   {
     id: 't-crear-curso',
     guideId: 'crear-curso',
@@ -162,6 +174,25 @@ export const TUTORIALES_DATA: TutorialItem[] = [
 // ── ILUSTRACIONES TIPO STICKER VECTORIAL (ESTILO EDITORIAL PADLET) ──
 export const StickerIllustration: React.FC<{ type: TutorialItem['sticker'] }> = ({ type }) => {
   switch (type) {
+    case 'iniciacion':
+      // Estrella dorada brillante con birrete y destellos
+      return (
+        <svg viewBox="0 0 100 100" className="w-full h-full select-none" fill="none">
+          <ellipse cx="50" cy="50" rx="36" ry="36" fill="#FEF3C7" stroke="#2E2A40" strokeWidth="2.5" />
+          {/* Birrete / Graduación */}
+          <polygon points="50,22 84,34 50,46 16,34" fill="#3B82F6" stroke="#2E2A40" strokeWidth="2.5" strokeLinejoin="round" />
+          <path d="M28 38 L28 54 Q50 64 72 54 L72 38" fill="#1D4ED8" stroke="#2E2A40" strokeWidth="2.5" />
+          {/* Borla */}
+          <path d="M50 34 L78 48 L78 60" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="78" cy="62" r="3.5" fill="#F59E0B" />
+          {/* Estrella brillante */}
+          <polygon points="50,60 53,67 61,68 55,73 57,80 50,76 43,80 45,73 39,68 47,67" fill="#FBBF24" stroke="#2E2A40" strokeWidth="1.5" />
+          {/* Destellos */}
+          <path d="M20 20 L22 24 L26 26 L22 28 L20 32 L18 28 L14 26 L18 24 Z" fill="#F43F5E" />
+          <path d="M80 16 L81 19 L84 20 L81 21 L80 24 L79 21 L76 20 L79 19 Z" fill="#10B981" />
+        </svg>
+      );
+
     case 'brick':
       // Muro de ladrillos con espátula/palustre y regla
       return (
@@ -520,9 +551,9 @@ export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
         </span>
         {[
           { id: 'all', label: 'Todos los tutoriales', count: TUTORIALES_DATA.length },
-          { id: 'gestion', label: 'Gestión y Cursos', count: 4 },
-          { id: 'evaluacion', label: 'Evaluación e Instrumentos', count: 5 },
-          { id: 'ia', label: 'Inteligencia Artificial', count: 3 }
+          { id: 'gestion', label: 'Gestión y Cursos', count: TUTORIALES_DATA.filter(t => t.category === 'gestion').length },
+          { id: 'evaluacion', label: 'Evaluación e Instrumentos', count: TUTORIALES_DATA.filter(t => t.category === 'evaluacion').length },
+          { id: 'ia', label: 'Inteligencia Artificial', count: TUTORIALES_DATA.filter(t => t.category === 'ia').length }
         ].map((cat) => {
           const active = selectedCategory === cat.id;
           return (
