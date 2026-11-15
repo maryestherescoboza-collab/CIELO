@@ -75,10 +75,16 @@ export function stopActiveGuide() {
 export function startGuide(guideId: string, initialStep = 0, userId?: string) {
   stopActiveGuide();
 
-  const guide = CATALOGO_GUIAS.find(g => g.id === guideId);
+  const normalized = guideId.trim().toLowerCase();
+  const guide = CATALOGO_GUIAS.find(g => 
+    g.id === normalized ||
+    g.id === `guia-${normalized}` ||
+    g.id === `guia-${normalized.padStart(2, '0')}` ||
+    g.id.replace('guia-', '') === normalized.padStart(2, '0')
+  );
   if (!guide) return;
 
-  currentGuideId = guideId;
+  currentGuideId = guide.id;
   activeUserId = userId || null;
   currentStepIndex = Math.max(0, Math.min(initialStep, guide.steps.length - 1));
 

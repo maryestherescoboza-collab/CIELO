@@ -740,5 +740,662 @@ export const CATALOGO_GUIAS: Guide[] = [
         evento: 'click'
       }
     ]
+  },
+
+  // ── LAS 23 GUÍAS OFICIALES DE CIELO ──
+  // Cursos (01 a 03)
+  {
+    id: 'guia-01',
+    titulo: '01 Crear un curso',
+    steps: [
+      {
+        selector: '#nav-cursos',
+        texto: 'Vamos al módulo de cursos. Pulsa en «Cursos» para ver tus secciones.',
+        voz: 'Vamos al módulo de cursos. Pulsa en Cursos para ver tus secciones.',
+        evento: 'click',
+        tituloEtapa: 'Cursos: 01 Crear un curso'
+      },
+      {
+        selector: '[data-guide="btn-nuevo-curso"], #btn-nuevo-curso',
+        texto: 'Ahora, pulsa en «Nuevo curso» para abrir la ventana de configuración.',
+        voz: 'Ahora, pulsa en Nuevo curso para empezar a configurarlo.',
+        evento: 'click',
+        tituloEtapa: 'Cursos: 01 Crear un curso'
+      },
+      {
+        selector: '[data-guide="modal-curso-formulario"], .cielo-modal-card',
+        texto: 'Selecciona el grado escolar, la sección y la asignatura. Luego pulsa en «Confirmar Curso».',
+        voz: 'Selecciona el grado escolar, la sección y la asignatura. Luego pulsa en Confirmar Curso.',
+        evento: 'click',
+        targetActionSelector: '[data-guide="modal-curso-confirmar"]',
+        esperarOperacion: 'curso_guardar',
+        mensajeExito: '¡Excelente! Tu curso ya está creado.',
+        tituloEtapa: 'Cursos: 01 Crear un curso'
+      }
+    ]
+  },
+  {
+    id: 'guia-02',
+    titulo: '02 Editar o archivar un curso',
+    steps: [
+      {
+        selector: '#nav-cursos',
+        texto: 'Entra a la vista de cursos pulsando en «Cursos».',
+        voz: 'Entra a la vista de cursos pulsando en Cursos.',
+        evento: 'click',
+        tituloEtapa: 'Cursos: 02 Editar o archivar un curso'
+      },
+      {
+        selector: '[data-guide="btn-abrir-registro-academico"]',
+        texto: 'Aquí puedes visualizar tus cursos activos. Para editar datos o archivar un curso, usa el menú de opciones del curso.',
+        voz: 'Aquí puedes visualizar tus cursos activos. Para editar datos o archivar un curso, usa el menú de opciones del curso.',
+        evento: 'click',
+        tituloEtapa: 'Cursos: 02 Editar o archivar un curso'
+      },
+      {
+        selector: 'header, [data-guide="btn-alertas"]',
+        texto: 'Al archivar un curso, se conservan todas las calificaciones de períodos escolares anteriores.',
+        voz: 'Al archivar un curso, se conservan todas las calificaciones de períodos escolares anteriores.',
+        evento: 'click',
+        tituloEtapa: 'Cursos: 02 Editar o archivar un curso'
+      }
+    ]
+  },
+  {
+    id: 'guia-03',
+    titulo: '03 Duplicar un curso',
+    steps: [
+      {
+        selector: '#nav-cursos',
+        texto: 'Abre el catálogo de tus cursos pulsando en «Cursos».',
+        voz: 'Abre el catálogo de tus cursos pulsando en Cursos.',
+        evento: 'click',
+        tituloEtapa: 'Cursos: 03 Duplicar un curso'
+      },
+      {
+        selector: '[data-guide="btn-abrir-registro-academico"]',
+        texto: 'Selecciona el curso base que deseas clonar para otra sección.',
+        voz: 'Selecciona el curso base que deseas clonar para otra sección.',
+        evento: 'click',
+        tituloEtapa: 'Cursos: 03 Duplicar un curso'
+      },
+      {
+        selector: '[data-guide="btn-nuevo-curso"], #btn-nuevo-curso',
+        texto: 'Al duplicar, CIELO mantendrá tus actividades e indicadores ahorrándote tiempo de planificación.',
+        voz: 'Al duplicar, CIELO mantendrá tus actividades e indicadores ahorrándote tiempo de planificación.',
+        evento: 'click',
+        tituloEtapa: 'Cursos: 03 Duplicar un curso'
+      }
+    ]
+  },
+
+  // Asignaturas (04 a 06)
+  {
+    id: 'guia-04',
+    titulo: '04 Agregar asignaturas',
+    steps: [
+      {
+        selector: '#nav-cursos',
+        texto: 'Pulsa en «Cursos» para revisar las asignaturas vinculadas a tus grados.',
+        voz: 'Pulsa en Cursos para revisar las asignaturas vinculadas a tus grados.',
+        evento: 'click',
+        tituloEtapa: 'Asignaturas: 04 Agregar asignaturas'
+      },
+      {
+        selector: '[data-guide="btn-abrir-registro-academico"]',
+        texto: 'Abre el registro académico para asociar asignaturas oficiales del currículo.',
+        voz: 'Abre el registro académico para asociar asignaturas oficiales del currículo.',
+        evento: 'click',
+        tituloEtapa: 'Asignaturas: 04 Agregar asignaturas'
+      },
+      {
+        selector: '[data-guide="btn-agregar-actividad"]',
+        texto: 'Selecciona la materia correspondiente para vincular sus competencias específicas.',
+        voz: 'Selecciona la materia correspondiente para vincular sus competencias específicas.',
+        evento: 'click',
+        tituloEtapa: 'Asignaturas: 04 Agregar asignaturas'
+      }
+    ]
+  },
+  {
+    id: 'guia-05',
+    titulo: '05 Asignar docentes',
+    steps: [
+      {
+        selector: '#nav-cursos',
+        texto: 'Pulsa en «Cursos» para ver las asignaciones de tu centro educativo.',
+        voz: 'Pulsa en Cursos para ver las asignaciones de tu centro educativo.',
+        evento: 'click',
+        tituloEtapa: 'Asignaturas: 05 Asignar docentes'
+      },
+      {
+        selector: '[data-guide="btn-abrir-registro-academico"]',
+        texto: 'Selecciona la materia donde colaborará otro maestro.',
+        voz: 'Selecciona la materia donde colaborará otro maestro.',
+        evento: 'click',
+        tituloEtapa: 'Asignaturas: 05 Asignar docentes'
+      },
+      {
+        selector: 'header, [data-guide="btn-alertas"]',
+        texto: 'Define los permisos y asignaciones del equipo docente según corresponda.',
+        voz: 'Define los permisos y asignaciones del equipo docente según corresponda.',
+        evento: 'click',
+        tituloEtapa: 'Asignaturas: 05 Asignar docentes'
+      }
+    ]
+  },
+  {
+    id: 'guia-06',
+    titulo: '06 Configurar horarios',
+    steps: [
+      {
+        selector: '#nav-inicio',
+        texto: 'Vamos al panel principal de CIELO pulsando en «Inicio».',
+        voz: 'Vamos al panel principal de CIELO pulsando en Inicio.',
+        evento: 'click',
+        tituloEtapa: 'Asignaturas: 06 Configurar horarios'
+      },
+      {
+        selector: '[data-guide="btn-organizar-calendario"]',
+        texto: 'Pulsa en «Organizar calendario» para visualizar tu semana escolar.',
+        voz: 'Pulsa en Organizar calendario para visualizar tu semana escolar.',
+        evento: 'click',
+        tituloEtapa: 'Asignaturas: 06 Configurar horarios'
+      },
+      {
+        selector: '[data-guide="btn-pase-de-lista"]',
+        texto: 'Configura los días y bloques horarios de tus clases presenciales.',
+        voz: 'Configura los días y bloques horarios de tus clases presenciales.',
+        evento: 'click',
+        tituloEtapa: 'Asignaturas: 06 Configurar horarios'
+      }
+    ]
+  },
+
+  // Estudiantes (07 a 10)
+  {
+    id: 'guia-07',
+    titulo: '07 Inscribir estudiantes',
+    steps: [
+      {
+        selector: '#nav-cursos',
+        texto: 'Primero abramos la sección de cursos. Pulsa en «Cursos».',
+        voz: 'Primero abramos la sección de cursos. Pulsa en Cursos.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 07 Inscribir estudiantes'
+      },
+      {
+        selector: '[data-guide="btn-abrir-registro-academico"]',
+        texto: 'Abre el registro académico donde agregarás a tus alumnos.',
+        voz: 'Abre el registro académico donde agregarás a tus alumnos.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 07 Inscribir estudiantes'
+      },
+      {
+        selector: '[data-guide="btn-agregar-estudiante"]',
+        texto: 'Pulsa en el botón «+» para inscribir un nuevo estudiante en tu lista.',
+        voz: 'Pulsa en el botón más para inscribir un nuevo estudiante.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 07 Inscribir estudiantes'
+      }
+    ]
+  },
+  {
+    id: 'guia-08',
+    titulo: '08 Importar desde Excel',
+    steps: [
+      {
+        selector: '#nav-cursos',
+        texto: 'Pulsa en «Cursos» y entra al registro académico.',
+        voz: 'Pulsa en Cursos y entra al registro académico.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 08 Importar desde Excel'
+      },
+      {
+        selector: '[data-guide="btn-abrir-registro-academico"]',
+        texto: 'Abre el registro académico donde cargarás la nómina estudiantil.',
+        voz: 'Abre el registro académico donde cargarás la nómina estudiantil.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 08 Importar desde Excel'
+      },
+      {
+        selector: '[data-guide="btn-agregar-estudiante"]',
+        texto: 'Usa la importación masiva para pegar listas de estudiantes desde Excel en un solo paso.',
+        voz: 'Usa la importación masiva para pegar listas de estudiantes desde Excel en un solo paso.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 08 Importar desde Excel'
+      }
+    ]
+  },
+  {
+    id: 'guia-09',
+    titulo: '09 Gestionar grupos',
+    steps: [
+      {
+        selector: '#nav-estudiante',
+        texto: 'Abre el módulo de «Estudiantes» en la barra de navegación.',
+        voz: 'Abre el módulo de Estudiantes en la barra de navegación.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 09 Gestionar grupos'
+      },
+      {
+        selector: '[data-guide="btn-abrir-registro-academico"]',
+        texto: 'Selecciona el grupo o sección escolar que vas a organizar.',
+        voz: 'Selecciona el grupo o sección escolar que vas a organizar.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 09 Gestionar grupos'
+      },
+      {
+        selector: '[data-guide="celda-estudiante"]',
+        texto: 'Agrupa a tus estudiantes en equipos para dinámicas de aula y proyectos colectivos.',
+        voz: 'Agrupa a tus estudiantes en equipos para dinámicas de aula y proyectos colectivos.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 09 Gestionar grupos'
+      }
+    ]
+  },
+  {
+    id: 'guia-10',
+    titulo: '10 Invitar por enlace',
+    steps: [
+      {
+        selector: '#nav-inicio',
+        texto: 'Ve a la pantalla de «Inicio» para consultar los accesos rápidos.',
+        voz: 'Ve a la pantalla de Inicio para consultar los accesos rápidos.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 10 Invitar por enlace'
+      },
+      {
+        selector: '[data-guide="btn-alertas"], header',
+        texto: 'Desde aquí puedes acceder al generador de enlaces y códigos QR para tus estudiantes.',
+        voz: 'Desde aquí puedes acceder al generador de enlaces y códigos QR para tus estudiantes.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 10 Invitar por enlace'
+      },
+      {
+        selector: 'header',
+        texto: 'Copia el enlace de acceso seguro para compartirlo por correo o mensajería con las familias.',
+        voz: 'Copia el enlace de acceso seguro para compartirlo por correo o mensajería con las familias.',
+        evento: 'click',
+        tituloEtapa: 'Estudiantes: 10 Invitar por enlace'
+      }
+    ]
+  },
+
+  // Contenido (11 a 13)
+  {
+    id: 'guia-11',
+    titulo: '11 Subir materiales',
+    steps: [
+      {
+        selector: '#nav-plan-clases',
+        texto: 'Ingresa a la sección de contenidos pulsando en «Plan clases».',
+        voz: 'Ingresa a la sección de contenidos pulsando en Plan clases.',
+        evento: 'click',
+        tituloEtapa: 'Contenido: 11 Subir materiales'
+      },
+      {
+        selector: '[data-guide="btn-organizar-calendario"]',
+        texto: 'Selecciona la secuencia o tema curricular donde adjuntarás los recursos didácticos.',
+        voz: 'Selecciona la secuencia o tema curricular donde adjuntarás los recursos didácticos.',
+        evento: 'click',
+        tituloEtapa: 'Contenido: 11 Subir materiales'
+      },
+      {
+        selector: '[data-guide="btn-agregar-actividad"]',
+        texto: 'Carga documentos PDF, guías o enlaces web para el estudio de tus estudiantes.',
+        voz: 'Carga documentos PDF, guías o enlaces web para el estudio de tus estudiantes.',
+        evento: 'click',
+        tituloEtapa: 'Contenido: 11 Subir materiales'
+      }
+    ]
+  },
+  {
+    id: 'guia-12',
+    titulo: '12 Crear una actividad',
+    steps: [
+      {
+        selector: '#nav-cursos',
+        texto: 'Pulsa en «Cursos» y entra al registro académico.',
+        voz: 'Pulsa en Cursos y entra al registro académico.',
+        evento: 'click',
+        tituloEtapa: 'Contenido: 12 Crear una actividad'
+      },
+      {
+        selector: '[data-guide="btn-abrir-registro-academico"]',
+        texto: 'Abre el registro académico para acceder a la matriz de evaluación.',
+        voz: 'Abre el registro académico para acceder a la matriz de evaluación.',
+        evento: 'click',
+        tituloEtapa: 'Contenido: 12 Crear una actividad'
+      },
+      {
+        selector: '[data-guide="btn-agregar-actividad"]',
+        texto: 'Pulsa en «+ AGREGAR ACTIVIDAD» y vincula tus indicadores de logro curriculares.',
+        voz: 'Pulsa en Agregar actividad y vincula tus indicadores de logro curriculares.',
+        evento: 'click',
+        targetActionSelector: '[data-guide="modal-actividad-guardar"]',
+        esperarOperacion: 'actividad_guardar',
+        tituloEtapa: 'Contenido: 12 Crear una actividad'
+      }
+    ]
+  },
+  {
+    id: 'guia-13',
+    titulo: '13 Programar publicaciones',
+    steps: [
+      {
+        selector: '#nav-plan-clases',
+        texto: 'Abre el módulo «Plan clases» en la navegación principal.',
+        voz: 'Abre el módulo Plan clases en la navegación principal.',
+        evento: 'click',
+        tituloEtapa: 'Contenido: 13 Programar publicaciones'
+      },
+      {
+        selector: '[data-guide="btn-organizar-calendario"]',
+        texto: 'Revisa el calendario de secuencias didácticas y asignaciones.',
+        voz: 'Revisa el calendario de secuencias didácticas y asignaciones.',
+        evento: 'click',
+        tituloEtapa: 'Contenido: 13 Programar publicaciones'
+      },
+      {
+        selector: '[data-guide="btn-agregar-actividad"]',
+        texto: 'Asigna la fecha y hora de entrega para que las tareas se publiquen automáticamente.',
+        voz: 'Asigna la fecha y hora de entrega para que las tareas se publiquen automáticamente.',
+        evento: 'click',
+        tituloEtapa: 'Contenido: 13 Programar publicaciones'
+      }
+    ]
+  },
+
+  // Evaluación (14 a 17)
+  {
+    id: 'guia-14',
+    titulo: '14 Crear una evaluación',
+    steps: [
+      {
+        selector: '#nav-rubrica',
+        texto: 'Pulsa en «Rúbrica» para abrir el creador de instrumentos de evaluación.',
+        voz: 'Pulsa en Rúbrica para abrir el creador de instrumentos de evaluación.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 14 Crear una evaluación'
+      },
+      {
+        selector: '#nav-cotejo',
+        texto: 'También puedes pulsar en «Cotejo» para instrumentos de verificación por criterios.',
+        voz: 'También puedes pulsar en Cotejo para instrumentos de verificación por criterios.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 14 Crear una evaluación'
+      },
+      {
+        selector: '[data-guide="btn-generar-ia"]',
+        texto: 'Usa el asistente de inteligencia artificial para redactar criterios según el indicador.',
+        voz: 'Usa el asistente de inteligencia artificial para redactar criterios según el indicador.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 14 Crear una evaluación'
+      },
+      {
+        selector: '[data-guide="btn-guardar-plantilla"]',
+        texto: 'Guarda la evaluación para aplicarla en tus clases y generar calificaciones automáticas.',
+        voz: 'Guarda la evaluación para aplicarla en tus clases y generar calificaciones automáticas.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 14 Crear una evaluación'
+      }
+    ]
+  },
+  {
+    id: 'guia-15',
+    titulo: '15 Calificar entregas',
+    steps: [
+      {
+        selector: '#nav-cursos',
+        texto: 'Abre «Cursos» y pulsa en tu registro académico.',
+        voz: 'Abre Cursos y pulsa en tu registro académico.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 15 Calificar entregas'
+      },
+      {
+        selector: '[data-guide="btn-abrir-registro-academico"]',
+        texto: 'Entra a la planilla de calificaciones del curso.',
+        voz: 'Entra a la planilla de calificaciones del curso.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 15 Calificar entregas'
+      },
+      {
+        selector: '[data-guide="modo-eval-pincel"]',
+        texto: 'Activa el modo Pincel para calificar de manera rápida y visual.',
+        voz: 'Activa el modo Pincel para calificar de manera rápida y visual.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 15 Calificar entregas'
+      },
+      {
+        selector: '[data-guide="celda-evaluacion"]',
+        texto: 'Aplica el nivel de logro correspondiente a cada estudiante.',
+        voz: 'Aplica el nivel de logro correspondiente a cada estudiante.',
+        evento: 'click',
+        esperarOperacion: 'evaluacion_guardar',
+        mensajeExito: '¡Calificación registrada correctamente!',
+        tituloEtapa: 'Evaluación: 15 Calificar entregas'
+      }
+    ]
+  },
+  {
+    id: 'guia-16',
+    titulo: '16 Dar retroalimentación',
+    steps: [
+      {
+        selector: '#nav-sellos',
+        texto: 'Ingresa a «Sellos» para registrar reconocimientos formativos y formativos.',
+        voz: 'Ingresa a Sellos para registrar reconocimientos formativos.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 16 Dar retroalimentación'
+      },
+      {
+        selector: '[data-guide="celda-evaluacion"]',
+        texto: 'Selecciona el estudiante o la casilla de evaluación a retroalimentar.',
+        voz: 'Selecciona el estudiante o la casilla de evaluación a retroalimentar.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 16 Dar retroalimentación'
+      },
+      {
+        selector: '[data-guide="barra-niveles-dominio"]',
+        texto: 'Añade observaciones constructivas y orientaciones pedagógicas de mejora.',
+        voz: 'Añade observaciones constructivas y orientaciones pedagógicas de mejora.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 16 Dar retroalimentación'
+      }
+    ]
+  },
+  {
+    id: 'guia-17',
+    titulo: '17 Libro de calificaciones',
+    steps: [
+      {
+        selector: '#nav-cursos',
+        texto: 'Dirígete a «Cursos» para ver las secciones activas.',
+        voz: 'Dirígete a Cursos para ver las secciones activas.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 17 Libro de calificaciones'
+      },
+      {
+        selector: '[data-guide="btn-abrir-registro-academico"]',
+        texto: 'Entra al registro académico del curso que deseas auditar.',
+        voz: 'Entra al registro académico del curso que deseas auditar.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 17 Libro de calificaciones'
+      },
+      {
+        selector: 'header',
+        texto: 'Revisa los promedios acumulados, las ponderaciones y el consolidado oficial por período.',
+        voz: 'Revisa los promedios acumulados, las ponderaciones y el consolidado oficial por período.',
+        evento: 'click',
+        tituloEtapa: 'Evaluación: 17 Libro de calificaciones'
+      }
+    ]
+  },
+
+  // Seguimiento (18 a 20)
+  {
+    id: 'guia-18',
+    titulo: '18 Tomar asistencia',
+    steps: [
+      {
+        selector: '#nav-inicio',
+        texto: 'Vamos al panel principal. Pulsa en «Inicio».',
+        voz: 'Vamos al panel principal. Pulsa en Inicio.',
+        evento: 'click',
+        tituloEtapa: 'Seguimiento: 18 Tomar asistencia'
+      },
+      {
+        selector: '[data-guide="btn-organizar-calendario"]',
+        texto: 'Abre el calendario escolar pulsando en «Organizar calendario».',
+        voz: 'Abre el calendario escolar pulsando en Organizar calendario.',
+        evento: 'click',
+        tituloEtapa: 'Seguimiento: 18 Tomar asistencia'
+      },
+      {
+        selector: '[data-guide="btn-pase-de-lista"]',
+        texto: 'Inicia el registro del día pulsando en «Pase de lista».',
+        voz: 'Inicia el registro del día pulsando en Pase de lista.',
+        evento: 'click',
+        tituloEtapa: 'Seguimiento: 18 Tomar asistencia'
+      },
+      {
+        selector: '[data-guide="btn-estado-estudiante"]',
+        texto: 'Toca el círculo del estudiante para alternar entre Presente, Ausente, Tardanza o Excusa.',
+        voz: 'Toca el círculo del estudiante para alternar su estado de asistencia.',
+        evento: 'click',
+        tituloEtapa: 'Seguimiento: 18 Tomar asistencia'
+      }
+    ]
+  },
+  {
+    id: 'guia-19',
+    titulo: '19 Reportes de progreso',
+    steps: [
+      {
+        selector: '#nav-dashboard',
+        texto: 'Ingresa al «Dashboard» para ver analíticas globales de rendimiento.',
+        voz: 'Ingresa al Dashboard para ver analíticas globales de rendimiento.',
+        evento: 'click',
+        tituloEtapa: 'Seguimiento: 19 Reportes de progreso'
+      },
+      {
+        selector: '#nav-incidencias',
+        texto: 'Consulta el historial de incidencias y anotaciones pedagógicas.',
+        voz: 'Consulta el historial de incidencias y anotaciones pedagógicas.',
+        evento: 'click',
+        tituloEtapa: 'Seguimiento: 19 Reportes de progreso'
+      },
+      {
+        selector: 'header',
+        texto: 'Genera reportes imprimibles o descargables en formato oficial.',
+        voz: 'Genera reportes imprimibles o descargables en formato oficial.',
+        evento: 'click',
+        tituloEtapa: 'Seguimiento: 19 Reportes de progreso'
+      }
+    ]
+  },
+  {
+    id: 'guia-20',
+    titulo: '20 Comunicarte con las familias',
+    steps: [
+      {
+        selector: '#nav-estudiante',
+        texto: 'Abre la sección de «Estudiantes» para consultar los contactos de tutores y familias.',
+        voz: 'Abre la sección de Estudiantes para consultar los contactos de tutores y familias.',
+        evento: 'click',
+        tituloEtapa: 'Seguimiento: 20 Comunicarte con las familias'
+      },
+      {
+        selector: '[data-guide="btn-alertas"]',
+        texto: 'Revisa las notificaciones y comunicaciones pendientes.',
+        voz: 'Revisa las notificaciones y comunicaciones pendientes.',
+        evento: 'click',
+        tituloEtapa: 'Seguimiento: 20 Comunicarte con las familias'
+      },
+      {
+        selector: 'header',
+        texto: 'Envía boletines y reportes directamente a las familias para mantener una comunicación fluida.',
+        voz: 'Envía boletines y reportes directamente a las familias para mantener una comunicación fluida.',
+        evento: 'click',
+        tituloEtapa: 'Seguimiento: 20 Comunicarte con las familias'
+      }
+    ]
+  },
+
+  // Cuenta (21 a 23)
+  {
+    id: 'guia-21',
+    titulo: '21 Perfil y notificaciones',
+    steps: [
+      {
+        selector: 'header',
+        texto: 'Localiza en la cabecera superior tu botón de «Perfil Docente».',
+        voz: 'Localiza en la cabecera superior tu botón de Perfil Docente.',
+        evento: 'click',
+        tituloEtapa: 'Cuenta: 21 Perfil y notificaciones'
+      },
+      {
+        selector: '[data-guide="btn-alertas"]',
+        texto: 'Revisa las preferencias del sistema y la campana de alertas.',
+        voz: 'Revisa las preferencias del sistema y la campana de alertas.',
+        evento: 'click',
+        tituloEtapa: 'Cuenta: 21 Perfil y notificaciones'
+      },
+      {
+        selector: 'header',
+        texto: 'Personaliza tus datos de contacto institucional, avatar y centro educativo.',
+        voz: 'Personaliza tus datos de contacto institucional, avatar y centro educativo.',
+        evento: 'click',
+        tituloEtapa: 'Cuenta: 21 Perfil y notificaciones'
+      }
+    ]
+  },
+  {
+    id: 'guia-22',
+    titulo: '22 Roles y permisos',
+    steps: [
+      {
+        selector: 'header',
+        texto: 'Abre la configuración general del centro educativo desde la cabecera superior.',
+        voz: 'Abre la configuración general del centro educativo desde la cabecera superior.',
+        evento: 'click',
+        tituloEtapa: 'Cuenta: 22 Roles y permisos'
+      },
+      {
+        selector: '#nav-comunidad',
+        texto: 'Visita la sección «Comunidad» para gestionar la coordinación con otros docentes.',
+        voz: 'Visita la sección Comunidad para gestionar la coordinación con otros docentes.',
+        evento: 'click',
+        tituloEtapa: 'Cuenta: 22 Roles y permisos'
+      },
+      {
+        selector: 'header',
+        texto: 'Establece los roles de visualización y edición correspondientes.',
+        voz: 'Establece los roles de visualización y edición correspondientes.',
+        evento: 'click',
+        tituloEtapa: 'Cuenta: 22 Roles y permisos'
+      }
+    ]
+  },
+  {
+    id: 'guia-23',
+    titulo: '23 Guardar y salir',
+    steps: [
+      {
+        selector: 'header',
+        texto: 'En la parte superior derecha de CIELO, haz clic en tu perfil docente.',
+        voz: 'En la parte superior derecha de CIELO, haz clic en tu perfil docente.',
+        evento: 'click',
+        tituloEtapa: 'Cuenta: 23 Guardar y salir'
+      },
+      {
+        selector: '[data-guide="btn-alertas"], header',
+        texto: 'Pulsa en «Cerrar sesión» para desconectar tu cuenta de forma segura y proteger tus datos.',
+        voz: 'Pulsa en Cerrar sesión para desconectar tu cuenta de forma segura y proteger tus datos.',
+        evento: 'click',
+        tituloEtapa: 'Cuenta: 23 Guardar y salir'
+      }
+    ]
   }
 ];

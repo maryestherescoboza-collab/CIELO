@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Bell, HelpCircle } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import type { SearchResults } from '../../types';
@@ -28,6 +29,7 @@ const Header: React.FC<HeaderProps> = ({
     docenteNombre, avatarUrl,
     onOpenSettings
 }) => {
+    const navigate = useNavigate();
     const { isPresenting, togglePresentation } = usePresentation();
     const [showTutorialModal, setShowTutorialModal] = useState(false);
     return (
@@ -168,6 +170,16 @@ const Header: React.FC<HeaderProps> = ({
                         onClose={() => setShowTutorialModal(false)}
                     />
                 </div>
+
+                {/* Botón Guías */}
+                <button 
+                    id="btn-guias"
+                    className="relative hidden lg:flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/55 hover:border-(--primary) transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill shrink-0 cursor-pointer" 
+                    onClick={() => navigate('/guias')}
+                    aria-label="Ver las 23 guías de CIELO"
+                >
+                    <span>Guías</span>
+                </button>
 
                 <div className="h-6 w-px bg-(--border-soft) mx-1 hidden lg:block"></div>
 
