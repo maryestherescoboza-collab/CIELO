@@ -14,15 +14,14 @@ const paypalScriptOptions = {
   clientId: PAYPAL_CLIENT_ID,
   vault: true,
   intent: "subscription",
-  currency: "USD",
-  "enable-funding": "card"
+  currency: "USD"
 } as const;
 
 const STATIC_FORCE_RERENDER: any[] = [];
 
 const BUTTON_STYLE = {
   layout: "vertical" as const,
-  color: "silver" as const,
+  color: "gold" as const,
   shape: "rect" as const,
   label: "subscribe" as const
 };
@@ -40,7 +39,7 @@ const PayPalSubscriptionButton = memo(function PayPalSubscriptionButton({
   onError,
   onCancel
 }: PayPalSubscriptionButtonProps) {
-  const isCreatingRef = useRef(false);
+  const inFlightPromiseRef = useRef<Promise<string> | null>(null);
 
   // Diagnóstico seguro de ciclo de vida del componente
   useEffect(() => {
@@ -60,50 +59,66 @@ const PayPalSubscriptionButton = memo(function PayPalSubscriptionButton({
   }, [planType]);
 
   const handleCreateSubscription = useCallback(async () => {
-    if (isCreatingRef.current) {
-      console.warn(`[PayPal Diagnostic] [${planType}] Solicitud concurrente bloqueada.`);
-      return;
+    // Si ya existe una petición en curso, retornar la misma promesa activa para evitar reentradas
+    // y NUNCA devolver undefined (que congelaría el spinner del SDK de PayPal indefinidamente).
+    if (inFlightPromiseRef.current) {
+      console.warn(`[PayPal Diagnostic] [${planType}] Solicitud concurrente en vuelo: reutilizando promesa activa.`);
+      return inFlightPromiseRef.current;
     }
-    isCreatingRef.current = true;
-    console.log(`[PayPal Diagnostic] [${planType}] createSubscription iniciado.`);
-    try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-      
-      if (userError || !userId) {
-        console.error(`[PayPal Diagnostic] [${planType}] Usuario no autenticado para crear suscripción.`);
-        throw new Error("Usuario no autenticado");
+
+    const creationPromise = (async () => {
+      console.log(`[PayPal Diagnostic] [${planType}] createSubscription iniciado.`);
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        const userId = userData.user?.id;
+        
+        if (userError || !userId) {
+          console.error(`[PayPal Diagnostic] [${planType}] Usuario no autenticado para crear suscripción.`);
+          throw new Error("Usuario no autenticado");
+        }
+
+        console.log(`[PayPal Diagnostic] [${planType}] Solicitando creación de suscripción en servidor.`);
+        
+        // Timeout de seguridad de 20 segundos para evitar spinner infinito en fallo de red
+        const invokePromise = supabase.functions.invoke('paypal-create-subscription', {
+          body: { planType }
+        });
+        
+        const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) => {
+          setTimeout(() => reject(new Error("La solicitud a PayPal tardó más de 20 segundos. Por favor reintenta.")), 20000);
+        });
+
+        const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+
+        if (error) {
+          console.error(`[PayPal Diagnostic] [${planType}] Error en Edge Function paypal-create-subscription:`, error.message || error);
+          throw error;
+        }
+
+        if (data?.error) {
+          console.error(`[PayPal Diagnostic] [${planType}] Error devuelto por paypal-create-subscription:`, data.error);
+          throw new Error(data.error);
+        }
+
+        if (!data?.subscriptionId) {
+          console.error(`[PayPal Diagnostic] [${planType}] subscriptionId no recibido en la respuesta.`);
+          throw new Error('No se recibió el ID de suscripción de PayPal');
+        }
+
+        console.log(`[PayPal Diagnostic] [${planType}] Suscripción lista en PayPal. ID: ${data.subscriptionId}`);
+        return data.subscriptionId;
+      } catch (err: any) {
+        console.error(`[PayPal Diagnostic] [${planType}] Fallo en createSubscription:`, err?.message || err);
+        onError(err);
+        throw err;
+      } finally {
+        inFlightPromiseRef.current = null;
       }
+    })();
 
-      console.log(`[PayPal Diagnostic] [${planType}] Solicitando creación de suscripción en servidor.`);
-      const { data, error } = await supabase.functions.invoke('paypal-create-subscription', {
-        body: { planType }
-      });
-
-      if (error) {
-        console.error(`[PayPal Diagnostic] [${planType}] Error en Edge Function paypal-create-subscription:`, error.message || error);
-        throw error;
-      }
-
-      if (data?.error) {
-        console.error(`[PayPal Diagnostic] [${planType}] Error devuelto por paypal-create-subscription:`, data.error);
-        throw new Error(data.error);
-      }
-
-      if (!data?.subscriptionId) {
-        console.error(`[PayPal Diagnostic] [${planType}] subscriptionId no recibido en la respuesta.`);
-        throw new Error('No se recibió el ID de suscripción de PayPal');
-      }
-
-      console.log(`[PayPal Diagnostic] [${planType}] Suscripción lista en PayPal. ID: ${data.subscriptionId}`);
-      return data.subscriptionId;
-    } catch (err: any) {
-      console.error(`[PayPal Diagnostic] [${planType}] Fallo en createSubscription:`, err?.message || err);
-      throw err;
-    } finally {
-      isCreatingRef.current = false;
-    }
-  }, [planType]);
+    inFlightPromiseRef.current = creationPromise;
+    return creationPromise;
+  }, [planType, onError]);
 
   const handleApproveCallback = useCallback(async (data: { subscriptionID?: string | null }) => {
     console.log(`[PayPal Diagnostic] [${planType}] onApprove recibido de PayPal. ID: ${data.subscriptionID}`);
@@ -128,17 +143,56 @@ const PayPalSubscriptionButton = memo(function PayPalSubscriptionButton({
     onError(err);
   }, [planType, onError]);
 
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  const handleDirectRedirect = async () => {
+    if (isRedirecting) return;
+    setIsRedirecting(true);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user?.id) {
+        throw new Error("Usuario no autenticado");
+      }
+      const { data, error } = await supabase.functions.invoke('paypal-create-subscription', {
+        body: { planType }
+      });
+      if (error || data?.error || !data?.approval_url) {
+        throw new Error(data?.error || error?.message || "No se pudo obtener la URL de PayPal");
+      }
+      window.location.href = data.approval_url;
+    } catch (err: any) {
+      console.error("[PayPal Diagnostic] Fallo en redirección directa:", err);
+      onError(err);
+      setIsRedirecting(false);
+    }
+  };
+
   return (
-    <PayPalButtons
-      style={BUTTON_STYLE}
-      forceReRender={STATIC_FORCE_RERENDER}
-      onInit={handleInit}
-      onClick={handleClick}
-      createSubscription={handleCreateSubscription}
-      onApprove={handleApproveCallback}
-      onCancel={handleCancelCallback}
-      onError={handleErrorCallback}
-    />
+    <div className="w-full flex flex-col items-center">
+      <PayPalButtons
+        style={BUTTON_STYLE}
+        forceReRender={STATIC_FORCE_RERENDER}
+        onInit={handleInit}
+        onClick={handleClick}
+        createSubscription={handleCreateSubscription}
+        onApprove={handleApproveCallback}
+        onCancel={handleCancelCallback}
+        onError={handleErrorCallback}
+      />
+      <div className="mt-2 text-center flex flex-col items-center gap-1.5">
+        <p className="text-[10px] text-zinc-500 font-medium">
+          Acepta tarjetas de débito/crédito (Visa, Mastercard) y saldo PayPal
+        </p>
+        <button
+          type="button"
+          onClick={handleDirectRedirect}
+          disabled={isRedirecting}
+          className="text-[11px] text-zinc-500 hover:text-zinc-800 underline underline-offset-2 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {isRedirecting ? 'Abriendo PayPal...' : '¿Problemas con la ventana emergente? Pagar en página completa'}
+        </button>
+      </div>
+    </div>
   );
 });
 
@@ -207,9 +261,16 @@ function SuscripcionContent() {
 
   const handleError = useCallback((err: any) => {
     console.error("[PayPal Diagnostic] Error capturado en el flujo de pago:", err?.message || err);
+    const msg = err?.message || String(err);
+    let userText = 'No se pudo completar la operación con PayPal. Por favor verifica los datos o intenta nuevamente.';
+    if (msg.includes('tiempo') || msg.includes('timeout') || msg.includes('20 segundos')) {
+      userText = 'La conexión con PayPal tardó más de lo esperado. Por favor verifica tu conexión y vuelve a intentar.';
+    } else if (msg.includes('no autenticado') || msg.includes('sesión')) {
+      userText = 'Tu sesión ha expirado o no estás autenticado. Por favor inicia sesión nuevamente para continuar.';
+    }
     setCheckoutMessage({
       type: 'error',
-      text: 'No se pudo completar la operación con PayPal. Por favor verifica los datos o intenta nuevamente.'
+      text: userText
     });
   }, []);
 

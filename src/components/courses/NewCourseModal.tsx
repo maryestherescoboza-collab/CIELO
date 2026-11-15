@@ -152,6 +152,7 @@ export function NewCourseModal({
         <div className="flex gap-4 w-full">
             <button className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all" onClick={onClose}>Descartar</button>
             <button
+                data-guide="modal-curso-confirmar"
                 className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-slate-900 text-white shadow-md shadow-slate-900/20 transition-all hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!canSubmit}
                 onClick={onConfirm}
@@ -179,6 +180,7 @@ export function NewCourseModal({
                             </label>
                             <div className="relative">
                                 <select
+                                    data-guide="modal-curso-grado"
                                     className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
                                     value={form.grado}
                                     onChange={e => setForm((f: any) => ({ ...f, grado: e.target.value }))}
@@ -194,6 +196,7 @@ export function NewCourseModal({
                                 <Hash size={12} /> Sección
                             </label>
                             <input
+                                data-guide="modal-curso-seccion"
                                 className="w-full bg-slate-100 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all uppercase placeholder:text-slate-400"
                                 placeholder="A"
                                 maxLength={2}
@@ -220,6 +223,7 @@ export function NewCourseModal({
                         </div>
                         <div className="relative">
                             <select
+                                data-guide="modal-curso-asignatura"
                                 className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
                                 value={form.esOptativa ? OPCION_AGREGAR_OPTATIVA : form.asignatura}
                                 onChange={e => handleSelectAsignaturaChange(e.target.value)}

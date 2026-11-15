@@ -91,6 +91,7 @@ const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
             </button>
             <button
                 type="button"
+                data-guide="modal-actividad-guardar"
                 onClick={handleConfirm}
                 disabled={isSaving}
                 className="rounded-full px-6 py-2.5 text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
@@ -125,20 +126,23 @@ const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
         >
             <div className="space-y-5 py-2">
                 {/* Selector curricular y resaltador de fragmento */}
-                <SelectorIndicadorFragmento
-                    grado={curso?.grado}
-                    asignatura={asignatura || curso?.asignatura}
-                    cursoId={curso?.id}
-                    periodo={curso?.periodo}
-                    onChange={setIndicadorData}
-                    disabled={isSaving}
-                />
+                <div data-guide="modal-actividad-indicador">
+                    <SelectorIndicadorFragmento
+                        grado={curso?.grado}
+                        asignatura={asignatura || curso?.asignatura}
+                        cursoId={curso?.id}
+                        periodo={curso?.periodo}
+                        onChange={setIndicadorData}
+                        disabled={isSaving}
+                    />
+                </div>
 
                 <div className="space-y-1.5 pt-1">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                         Producto / Evidencia de aprendizaje *
                     </label>
                     <input
+                        data-guide="modal-actividad-producto"
                         className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] placeholder:text-slate-500 outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-semibold transition-all"
                         placeholder="Ej: Cuaderno de trabajo, Proyecto grupal, Canva, Infografía, Debate…"
                         value={producto}

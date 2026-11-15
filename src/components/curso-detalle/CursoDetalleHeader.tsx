@@ -267,6 +267,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                                 <button
                                     type="button"
                                     role="radio"
+                                    data-guide="modo-eval-pincel"
                                     aria-checked={evalMode === 'pincel'}
                                     aria-label="Modo Pincel"
                                     title="Modo Pincel"
@@ -284,6 +285,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                                 <button
                                     type="button"
                                     role="radio"
+                                    data-guide="modo-eval-numerico"
                                     aria-checked={evalMode === 'numerico'}
                                     aria-label="Modo Numérico"
                                     title="Modo Numérico"
@@ -301,6 +303,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                                 <button
                                     type="button"
                                     role="radio"
+                                    data-guide="modo-eval-libre"
                                     aria-checked={evalMode === 'libre'}
                                     aria-label="Valor libre"
                                     title="Valor libre"
@@ -314,7 +317,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     </div>
 
                     {(evalMode === 'pincel' || evalMode === 'numerico') && (
-                    <div className="flex items-center gap-1.5 bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
+                    <div data-guide="barra-niveles-dominio" className="flex items-center gap-1.5 bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
                         {[100, 85, 70, 55].map(val => {
                             const isActive = activePaintColor === val;
                             let colorClasses = '';
@@ -350,10 +353,14 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             };
                             const tt = tooltips[val];
 
+                            const guideAttr = evalMode === 'pincel'
+                                ? (val === 100 ? 'nivel-pincel-100' : 'puntuacion')
+                                : (val === 85 ? 'nivel-num-85' : 'puntuacion');
+
                             return (
                                 <div key={val} className="relative group flex items-center justify-center">
                                     <button
-                                        data-guide="puntuacion"
+                                        data-guide={guideAttr}
                                         onClick={() => setActivePaintColor(val)}
                                         className={`w-9 h-9 rounded-full transition-all flex items-center justify-center font-bold text-xs ${isActive ? 'scale-105 shadow-sm ring-2 ring-white/50' : 'hover:scale-105'} ${colorClasses}`}
                                     >

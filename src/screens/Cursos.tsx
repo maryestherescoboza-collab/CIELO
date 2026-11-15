@@ -135,6 +135,7 @@ export default function Cursos({
                      <CieloPill
                         as="button"
                         id="btn-nuevo-curso"
+                        data-guide="btn-nuevo-curso"
                         variant="primary"
                         className="px-6 gap-2.5 shrink-0 h-9"
                         onClick={() => setShowModal(true)}
@@ -156,6 +157,7 @@ export default function Cursos({
                             </p>
                             <CieloPill
                                 as="button"
+                                data-guide="btn-nuevo-curso"
                                 variant="primary"
                                 className="mt-8 h-12 px-8"
                                 onClick={() => setShowModal(true)}

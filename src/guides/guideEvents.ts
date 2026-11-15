@@ -11,7 +11,7 @@ let lastActiveStepIndex = -1;
  */
 export function initGuideEventListeners(
   selector: string,
-  eventType: 'click' | 'change',
+  eventType: 'click' | 'change' | 'dblclick',
   onAdvance: () => void
 ) {
   cleanupGuideEventListeners();

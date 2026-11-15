@@ -1119,3 +1119,125 @@ input[type="range"]:focus::-webkit-slider-thumb {
   }
 }
 /* END: Modulo Estudiante - ajustes responsive */
+
+/* BEGIN: CIELO Interactive Onboarding & Guide Styles */
+.driver-popover {
+  background: #FFFFFF !important;
+  color: #2E3330 !important;
+  border-radius: 20px !important;
+  padding: 16px 18px !important;
+  box-shadow: 0 12px 36px -6px rgba(46, 51, 48, 0.22), 0 0 0 1px rgba(46, 51, 48, 0.08) !important;
+  border: 1px solid rgba(46, 51, 48, 0.1) !important;
+  max-width: 380px !important;
+  z-index: 100000000 !important;
+}
+
+.driver-popover-description {
+  color: #2E3330 !important;
+  font-family: inherit !important;
+}
+
+.cielo-tour-popover-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cielo-tour-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cielo-tour-stage-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #EBF5EE;
+  color: #1E4D2B;
+  border: 1px solid rgba(104, 156, 99, 0.25);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cielo-tour-step-counter {
+  font-size: 10px;
+  font-weight: 800;
+  color: #5F665E;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cielo-tour-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #1A1D1B;
+  margin: 0;
+}
+
+.cielo-tour-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(46, 51, 48, 0.12);
+  margin-top: 2px;
+}
+
+.cielo-tour-audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cielo-tour-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  background: #F4F3ED;
+  border: 1px solid rgba(46, 51, 48, 0.08);
+  font-size: 11px;
+  font-weight: 700;
+  color: #2E3330;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cielo-tour-btn:hover {
+  background: #EAE8DE;
+  border-color: rgba(46, 51, 48, 0.16);
+}
+
+.cielo-tour-btn.is-muted {
+  background: #FEE4E2;
+  color: #912018;
+  border-color: #FDA29B;
+}
+
+.cielo-tour-exit-action {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #5F665E;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+
+.cielo-tour-exit-action:hover {
+  color: #1A1D1B;
+  text-decoration: underline;
+}
+/* END: CIELO Interactive Onboarding & Guide Styles */

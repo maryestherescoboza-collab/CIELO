@@ -177,7 +177,25 @@ const Header: React.FC<HeaderProps> = ({
                     </button>
                     
                     {showTutorialMenu && (
-                        <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-(--border-soft) shadow-md py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-(--border-soft) shadow-md py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[85vh] overflow-y-auto">
+                            <div className="px-3 pb-1.5 mb-1.5 border-b border-(--border-soft)">
+                                <button
+                                    type="button"
+                                    className="w-full flex items-center justify-between p-2 rounded-xl bg-[#EBF5EE] text-[#1E4D2B] hover:bg-[#DCF0E2] transition-colors font-bold text-xs cursor-pointer"
+                                    onClick={() => {
+                                        setShowTutorialMenu(false);
+                                        startGuide('iniciacion');
+                                    }}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <span>✨</span>
+                                        <span>Guía de iniciación</span>
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-wider bg-white/80 px-2 py-0.5 rounded-full font-black text-[#1E4D2B]">
+                                        5 Etapas
+                                    </span>
+                                </button>
+                            </div>
                             {[
                                 { id: 'plan-recuperacion-p1', label: 'Plan de recuperación P1' },
                                 { id: 'crear-curso', label: 'Crear un curso' },

@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     });
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    
+
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Usuario no autenticado' }), {
         status: 401,
@@ -114,25 +114,25 @@ Deno.serve(async (req) => {
 
     const PLAN_ID = planType === 'anual' ? PLAN_ID_ANUAL : PLAN_ID_MENSUAL;
 
-    // Evitar acumulaciones y solicitudes duplicadas: si el usuario ya tiene un intento pendiente
-    // idéntico creado hace menos de 5 minutos para el mismo plan, reutilizarlo de forma segura.
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    // Evitar acumulaciones y solicitudes concurrentes: si el usuario ya tiene un intento en vuelo
+    // creado hace menos de 30 segundos para el mismo plan, reutilizarlo de forma segura.
+    const recentThreshold = new Date(Date.now() - 30 * 1000).toISOString();
     const { data: recentPending } = await supabaseAdmin
       .from('suscripciones')
       .select('paypal_subscription_id, plan_id, created_at')
       .eq('user_id', user.id)
       .eq('estado', 'pendiente')
       .eq('plan_id', PLAN_ID)
-      .gt('created_at', fiveMinutesAgo)
+      .gt('created_at', recentThreshold)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (recentPending && recentPending.paypal_subscription_id) {
       console.log(`[paypal-create-subscription] Reutilizando intento de suscripción reciente para usuario ${user.id}: ${recentPending.paypal_subscription_id}`);
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         subscriptionId: recentPending.paypal_subscription_id,
-        reused: true 
+        reused: true
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -193,7 +193,7 @@ Deno.serve(async (req) => {
       } catch {
         errObj = { message: await createSubRes.text() };
       }
-      
+
       const safeError = {
         status: createSubRes.status,
         name: errObj.name,
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
 
     const subData = await createSubRes.json();
     const subscriptionId = subData.id;
-    
+
     // Obtener la URL de aprobación
     const approveLink = subData.links?.find((link: { rel?: string; href?: string }) => link.rel === "approve");
     if (!approveLink) {
@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
-    
+
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Function error:", error);

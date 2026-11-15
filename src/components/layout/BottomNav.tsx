@@ -177,6 +177,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                         return (
                             <button 
                                 key={item.label}
+                                id="nav-estudiante"
+                                data-guide="nav-estudiante"
                                 ref={estudiantesBtnRef}
                                 type="button"
                                 onClick={handleToggleEstudiantesMenu} 
@@ -198,8 +200,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                     return (
                         <button 
                             key={item.label} 
-                            id={item.screen === 'cursos' ? 'nav-cursos' : item.screen === 'plan-de-clases' ? 'nav-plan-clases' : undefined}
-                            data-guide={item.screen === 'plan-de-clases' ? 'nav-plan-clases' : undefined}
+                            id={item.screen === 'plan-de-clases' ? 'nav-plan-clases' : `nav-${item.screen}`}
+                            data-guide={item.screen === 'plan-de-clases' ? 'nav-plan-clases' : `nav-${item.screen}`}
                             onClick={() => { onNavigate(item.screen); setShowMore(false); setShowEstudiantesMenu(false); }} 
                             aria-label={item.label}
                             title={item.label}
