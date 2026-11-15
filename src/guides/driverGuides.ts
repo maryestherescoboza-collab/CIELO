@@ -129,7 +129,6 @@ const ICON_VOLUME_X = `<svg width="16" height="16" viewBox="0 0 24 24" fill="non
 const ICON_PAUSE = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
 const ICON_PLAY = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
 const ICON_ROTATE_CCW = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>`;
-const ICON_CHEVRON_RIGHT = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
 
 const EMBLEM_SVG = `
   <div class="cielo-tour-emblem-wrap">
@@ -226,8 +225,7 @@ function buildPopoverHtml(step: GuideStep, currentIdx: number, totalSteps: numbe
           </button>
         </div>
         <button type="button" id="cielo-guide-exit-btn" class="cielo-tour-exit-action" title="Guardar progreso y salir">
-          <span>Guardar y salir</span>
-          ${ICON_CHEVRON_RIGHT}
+          Guardar y salir
         </button>
       </div>
     </div>
