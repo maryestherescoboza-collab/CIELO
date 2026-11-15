@@ -14,21 +14,21 @@ export default function Tutoriales() {
   };
 
   return (
-    <div className="min-h-screen bg-(--background) p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-neutral-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto space-y-4">
-        {/* Barra superior de retorno */}
+        {/* Barra superior de retorno minimalista */}
         <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-(--border-soft) text-xs font-bold text-(--ink-soft) hover:text-(--ink) hover:bg-(--linen)/40 transition-colors shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-neutral-200 text-xs font-semibold text-neutral-700 hover:text-black hover:border-black transition-all cursor-pointer shadow-none"
           >
             <ArrowLeft size={14} />
             <span>Volver</span>
           </button>
         </div>
 
-        {/* Vista principal estilo Padlet */}
+        {/* Vista principal minimalista monocromática */}
         <CentroTutorialesView
           onSelectTutorial={handleSelectTutorial}
           isModal={false}
@@ -37,4 +37,3 @@ export default function Tutoriales() {
     </div>
   );
 }
-
