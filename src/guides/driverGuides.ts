@@ -123,37 +123,111 @@ function getResolvedSelector(selector: string): string {
   return selector;
 }
 
+// ── CONSTANTES VISUALES: ICONOS LUCIDE PARA EL POPOVER DEL TOUR ──
+const ICON_VOLUME_2 = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+const ICON_VOLUME_X = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="22" y1="9" x2="16" y2="15"></line><line x1="16" y1="9" x2="22" y2="15"></line></svg>`;
+const ICON_PAUSE = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+const ICON_PLAY = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+const ICON_ROTATE_CCW = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>`;
+const ICON_CHEVRON_RIGHT = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
+
+const EMBLEM_SVG = `
+  <div class="cielo-tour-emblem-wrap">
+    <svg viewBox="0 0 64 64" class="cielo-tour-emblem-svg" fill="none">
+      <circle cx="32" cy="32" r="28" fill="#FFF7ED" stroke="#FFEDD5" stroke-width="1.5" />
+      <path d="M14 18 L18 20 M10 30 L14 30 M15 42 L18 40" stroke="#FDBA74" stroke-width="2" stroke-linecap="round" />
+      <polygon points="32,18 52,27 32,36 12,27" fill="#EB8847" stroke="#9A3412" stroke-width="2.2" stroke-linejoin="round" />
+      <path d="M20 31 L20 42 Q32 49 44 42 L44 31" fill="#C2410C" stroke="#9A3412" stroke-width="2.2" />
+      <path d="M32,27 L48,36 L48,46" stroke="#DEAE4D" stroke-width="2" stroke-linecap="round" />
+      <circle cx="48" cy="47" r="2.8" fill="#DEAE4D" stroke="#B45309" stroke-width="1" />
+    </svg>
+  </div>
+`;
+
+/**
+ * Separa el texto de la instrucción en un titular con alta presencia y descripción cómoda.
+ */
+function parseStepContent(texto: string): { title: string; description: string } {
+  const match = texto.match(/^([^.!?]+[.!?])\s*(.*)$/);
+  if (match && match[1] && match[2] && match[2].trim().length > 0) {
+    return {
+      title: match[1].trim(),
+      description: match[2].trim()
+    };
+  }
+  return {
+    title: texto.trim(),
+    description: ''
+  };
+}
+
 /**
  * Builds the interactive HTML content for the guide popover, including voice and exit controls.
  */
 function buildPopoverHtml(step: GuideStep, currentIdx: number, totalSteps: number, guide: Guide): string {
   const isMuted = voiceNarrator.isMuted();
   const isPaused = voiceNarrator.isPaused();
-  const stageHeader = step.tituloEtapa
-    ? `<div class="cielo-tour-stage-badge">${step.tituloEtapa}</div>`
-    : `<div class="cielo-tour-stage-badge">${guide.titulo}</div>`;
+
+  let stageNumber = step.etapa || 1;
+  let sectionTitle = guide.titulo;
+
+  if (step.tituloEtapa) {
+    const etapaMatch = step.tituloEtapa.match(/Etapa\s*(\d+)\s*:\s*(.*)/i);
+    if (etapaMatch) {
+      stageNumber = parseInt(etapaMatch[1], 10) || stageNumber;
+      sectionTitle = etapaMatch[2].trim();
+    } else {
+      sectionTitle = step.tituloEtapa.trim();
+    }
+  } else if (guide.titulo) {
+    sectionTitle = guide.titulo.replace(/^Guía\s*(de)?\s*/i, '').trim();
+  }
+
+  const { title, description } = parseStepContent(step.texto);
+  const progressPercent = Math.round(((currentIdx + 1) / totalSteps) * 100);
 
   return `
     <div class="cielo-tour-popover-card">
       <div class="cielo-tour-header">
-        ${stageHeader}
-        <span class="cielo-tour-step-counter">Paso ${currentIdx + 1} de ${totalSteps}</span>
+        <div class="cielo-tour-header-left">
+          <div class="cielo-tour-stage-indicator">
+            <span class="cielo-tour-stage-num">${stageNumber}</span>
+          </div>
+          <span class="cielo-tour-header-divider"></span>
+          <h4 class="cielo-tour-section-title">${sectionTitle}</h4>
+        </div>
+        <div class="cielo-tour-progress-badge">
+          Paso ${currentIdx + 1} de ${totalSteps}
+        </div>
       </div>
-      <p class="cielo-tour-text">${step.texto}</p>
+
+      <div class="cielo-tour-progress-track">
+        <div class="cielo-tour-progress-bar" style="width: ${progressPercent}%"></div>
+      </div>
+
+      <div class="cielo-tour-body">
+        ${EMBLEM_SVG}
+        <div class="cielo-tour-content-text">
+          <h3 class="cielo-tour-headline">${title}</h3>
+          ${description ? `<p class="cielo-tour-description">${description}</p>` : ''}
+        </div>
+      </div>
+
       <div class="cielo-tour-footer">
         <div class="cielo-tour-audio-controls">
-          <button type="button" id="cielo-guide-mute-btn" class="cielo-tour-btn ${isMuted ? 'is-muted' : ''}" title="${isMuted ? 'Activar voz' : 'Silenciar voz'}">
-            ${isMuted ? '🔇' : '🔊'}
+          <button type="button" id="cielo-guide-mute-btn" class="cielo-tour-ctrl-btn ${isMuted ? 'is-muted' : ''}" title="${isMuted ? 'Activar voz' : 'Silenciar voz'}">
+            ${isMuted ? ICON_VOLUME_X : ICON_VOLUME_2}
           </button>
-          <button type="button" id="cielo-guide-pause-btn" class="cielo-tour-btn" title="${isPaused ? 'Reanudar voz' : 'Pausar voz'}">
-            ${isPaused ? '▶' : '⏸'}
+          <button type="button" id="cielo-guide-pause-btn" class="cielo-tour-ctrl-btn" title="${isPaused ? 'Reanudar voz' : 'Pausar voz'}">
+            ${isPaused ? ICON_PLAY : ICON_PAUSE}
           </button>
-          <button type="button" id="cielo-guide-replay-btn" class="cielo-tour-btn" title="Repetir instrucción">
-            🔁
+          <button type="button" id="cielo-guide-replay-btn" class="cielo-tour-ctrl-btn" title="Repetir instrucción">
+            ${ICON_ROTATE_CCW}
           </button>
         </div>
         <button type="button" id="cielo-guide-exit-btn" class="cielo-tour-exit-action" title="Guardar progreso y salir">
-          Guardar y salir
+          <span>Guardar y salir</span>
+          ${ICON_CHEVRON_RIGHT}
         </button>
       </div>
     </div>
@@ -171,7 +245,7 @@ function bindPopoverControls() {
         e.stopPropagation();
         const nextMuted = !voiceNarrator.isMuted();
         voiceNarrator.setMuted(nextMuted);
-        muteBtn.innerHTML = nextMuted ? '🔇' : '🔊';
+        muteBtn.innerHTML = nextMuted ? ICON_VOLUME_X : ICON_VOLUME_2;
         muteBtn.title = nextMuted ? 'Activar voz' : 'Silenciar voz';
         muteBtn.classList.toggle('is-muted', nextMuted);
       };
@@ -183,11 +257,11 @@ function bindPopoverControls() {
         e.stopPropagation();
         if (voiceNarrator.isPaused()) {
           voiceNarrator.resume();
-          pauseBtn.innerHTML = '⏸';
+          pauseBtn.innerHTML = ICON_PAUSE;
           pauseBtn.title = 'Pausar voz';
         } else {
           voiceNarrator.pause();
-          pauseBtn.innerHTML = '▶';
+          pauseBtn.innerHTML = ICON_PLAY;
           pauseBtn.title = 'Reanudar voz';
         }
       };
