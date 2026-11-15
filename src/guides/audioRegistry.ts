@@ -1,11 +1,44 @@
 /**
  * Registro y resolución de audios neuronales para las guías interactivas de CIELO.
- * Permite reproducir audios pregenerados de alta calidad neuronal (Microsoft Azure AI Speech / ElevenLabs)
+ * Permite reproducir audios pregenerados de alta calidad neuronal (ElevenLabs / Azure AI Speech es-DO-EmilioNeural)
  * alojados en Supabase Storage o assets estáticos con fallback transparente a SpeechSynthesis.
  */
 
 // Bucket público oficial de CIELO para audios de guías
 export const SUPABASE_AUDIO_STORAGE_URL = 'https://sgjnactnhmpmbbgexcox.supabase.co/storage/v1/object/public/cielo-audios-guias';
+
+/**
+ * Especificación de la Voz Neuronal Masculina Oficial de CIELO:
+ * - Motor Principal: ElevenLabs (Modelo eleven_multilingual_v2, Voz masculina adulta "Daniel")
+ *   - Estabilidad: 0.45 (rango 0.40–0.50)
+ *   - Similitud: 0.75
+ *   - Estilo: 0.05
+ *   - Velocidad: 1.10x (ágil, natural y conversacional)
+ * - Alternativa Azure Speech:
+ *   - Voz: es-DO-EmilioNeural (Masculina dominicana)
+ *   - Velocidad: +10% (1.10x)
+ */
+export const NEURAL_VOICE_SPEC = {
+  gender: 'male',
+  language: 'es-DO',
+  playbackRate: 1.10,
+  elevenlabs: {
+    voiceId: 'onwK4e9ZLuTAKqWW03F9', // Daniel - Español latinoamericano adulto, cálido, cercano y profesional
+    modelId: 'eleven_multilingual_v2',
+    settings: {
+      stability: 0.45,
+      similarity_boost: 0.75,
+      style: 0.05,
+      use_speaker_boost: true,
+      speed: 1.10
+    }
+  },
+  azure: {
+    voiceName: 'es-DO-EmilioNeural', // Voz masculina dominicana
+    rate: '+10%',
+    pitch: '0%'
+  }
+};
 
 /**
  * Genera una clave determinista basada en el texto o paso para caché e invalidación.

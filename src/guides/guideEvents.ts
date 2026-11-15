@@ -8,6 +8,7 @@ let lastActiveStepIndex = -1;
 /**
  * Initializes a global event listener on document.body using event delegation (capture phase)
  * to detect when the user interacts with the targeted element of the active guide step.
+ * Incluye protección contra llamadas repetidas o dobles eventos por paso.
  */
 export function initGuideEventListeners(
   selector: string,
@@ -17,6 +18,7 @@ export function initGuideEventListeners(
   cleanupGuideEventListeners();
 
   lastStepActivationTime = Date.now();
+  let hasAdvanced = false;
 
   if (selector === '[data-guide="seleccionar-estudiantes"]') {
     const currentIdx = getCurrentStepIndex();
@@ -27,8 +29,9 @@ export function initGuideEventListeners(
   }
 
   const handleEvent = (e: Event) => {
-    // Prevent automated skipping from rapid successive clicks, double clicks, 
-    // or mouseup events triggered when dropdowns close.
+    if (hasAdvanced) return;
+
+    // Prevenir saltos accidentales por rebotes de clics en menos de 400ms
     if (eventType === 'click' && Date.now() - lastStepActivationTime < 400) {
       return;
     }
@@ -41,6 +44,8 @@ export function initGuideEventListeners(
       if (target && (target.matches(selector) || target.closest(selector))) {
         studentClickCount++;
         if (studentClickCount >= 3) {
+          hasAdvanced = true;
+          cleanupGuideEventListeners();
           moveNext();
         } else {
           // Reposicionar el popup/overlay del tutorial después de que el DOM y el scroll se actualicen
@@ -53,8 +58,8 @@ export function initGuideEventListeners(
     }
 
     if (target && (target.matches(selector) || target.closest(selector))) {
-      // For change events on text inputs, the change event only fires when the value is modified and blurred.
-      // This ensures we do not advance simply on focus.
+      hasAdvanced = true;
+      cleanupGuideEventListeners();
       onAdvance();
     }
   };

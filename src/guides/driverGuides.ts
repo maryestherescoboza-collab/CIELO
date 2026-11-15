@@ -31,31 +31,41 @@ export function getActiveUserId(): string | null {
   return activeUserId;
 }
 
+let isStoppingGuide = false;
+
 /**
  * Stops the active guide, destroys the Driver.js instance, stops voice narration,
  * and cleans up event listeners and observers.
  */
 export function stopActiveGuide() {
-  voiceNarrator.stop();
+  if (isStoppingGuide) return;
+  isStoppingGuide = true;
 
-  if (activeMutationObserver) {
-    activeMutationObserver.disconnect();
-    activeMutationObserver = null;
-  }
+  try {
+    voiceNarrator.stop();
 
-  cleanupGuideEventListeners();
-
-  if (driverObj) {
-    try {
-      driverObj.destroy();
-    } catch {
-      // Ignore destruction errors
+    if (activeMutationObserver) {
+      activeMutationObserver.disconnect();
+      activeMutationObserver = null;
     }
-    driverObj = null;
-  }
 
-  currentGuideId = null;
-  currentStepIndex = 0;
+    cleanupGuideEventListeners();
+
+    if (driverObj) {
+      const instance = driverObj;
+      driverObj = null;
+      try {
+        instance.destroy();
+      } catch {
+        // Ignore destruction errors
+      }
+    }
+
+    currentGuideId = null;
+    currentStepIndex = 0;
+  } finally {
+    isStoppingGuide = false;
+  }
 }
 
 /**
@@ -337,9 +347,11 @@ function highlightElement(step: GuideStep, resolvedSelector: string, guide: Guid
       }
     });
 
-    // Reproducir narración neuronal (con fallback transparente a SpeechSynthesis)
+    // Reproducir narración neuronal de forma estrictamente idempotente (una sola vez por paso)
+    const stepText = step.voz || step.texto;
+    const stepKey = `${currentGuideId}:${currentStepIndex}:${stepText}`;
     const audioUrl = resolveAudioUrl(currentGuideId, currentStepIndex);
-    voiceNarrator.speak(step.voz || step.texto, audioUrl);
+    voiceNarrator.speak(stepText, audioUrl, { stepKey });
 
     // Precargar de manera anticipada el audio del siguiente paso para latencia cero
     if (guide.steps[currentStepIndex + 1]) {

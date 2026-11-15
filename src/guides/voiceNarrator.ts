@@ -1,12 +1,18 @@
 /**
  * Servicio de narración neuronal para CIELO.
  *
- * Arquitectura híbrida:
- * 1. Reproducción de audio neuronal natural pregenerado (Microsoft Azure AI Speech es-DO-RamonaNeural / ElevenLabs)
- *    almacenado en Supabase Storage o CDN con precarga anticipada (0ms latencia).
- * 2. Fallback de emergencia a Web Speech API (SpeechSynthesis) si el archivo de audio no está disponible o falla la red.
- * 3. Controles integrales: Play, Pausa, Reanudar, Repetir y Silenciar (persistido en localStorage).
+ * Arquitectura de voz neuronal masculina:
+ * 1. Motor principal: ElevenLabs (Voz masculina latina, cálida, natural y profesional) / Azure Speech (es-DO-EmilioNeural).
+ * 2. Velocidad de narración ágil y conversacional: 1.10x.
+ * 3. Control estricto de idempotencia por stepKey y token atómico para evitar reproducciones duplicadas.
+ * 4. Fallback de emergencia exclusivo y seguro a Web Speech API con selección de voz masculina.
+ * 5. Una sola fuente activa: detención y purga inmediata de cualquier audio o síntesis previa.
  */
+
+export interface SpeakOptions {
+  stepKey?: string;
+  force?: boolean;
+}
 
 class VoiceNarrator {
   private audioElement: HTMLAudioElement | null = null;
@@ -22,6 +28,10 @@ class VoiceNarrator {
   private isPausedState = false;
   private isUsingFallbackSynth = false;
 
+  // Control de idempotencia y sincronización atómica
+  private lastPlayedKey: string | null = null;
+  private currentPlaybackToken = 0;
+
   private listeners: Set<() => void> = new Set();
 
   constructor() {
@@ -35,12 +45,6 @@ class VoiceNarrator {
         this.notify();
       };
 
-      this.audioElement.onerror = () => {
-        // En caso de error de red o audio inexistente, activar fallback SpeechSynthesis
-        console.info('[voiceNarrator] Audio neuronal no disponible. Activando fallback sintético.');
-        this.fallbackToSpeechSynthesis(this.currentText);
-      };
-
       // 2. Inicialización de SpeechSynthesis como respaldo
       if ('speechSynthesis' in window) {
         this.synth = window.speechSynthesis;
@@ -50,7 +54,7 @@ class VoiceNarrator {
         }
       }
 
-      // 3. Recuperar estado de silencio
+      // 3. Recuperar estado de silencio persistido
       try {
         const savedMute = localStorage.getItem('cielo_narrator_muted');
         if (savedMute !== null) {
@@ -71,16 +75,52 @@ class VoiceNarrator {
     }
   }
 
-  private getSpanishVoice(): SpeechSynthesisVoice | null {
+  /**
+   * Selecciona una voz MASCULINA en español, priorizando dominicano/latinoamericano.
+   * Evita explícitamente voces femeninas o sintéticas robotizadas.
+   */
+  private getSpanishMaleVoice(): SpeechSynthesisVoice | null {
     if (!this.cachedVoices.length && this.synth) {
       this.loadVoices();
     }
-    const priorityCodes = ['es-DO', 'es-US', 'es-MX', 'es-419', 'es-ES'];
-    for (const code of priorityCodes) {
-      const match = this.cachedVoices.find(v => v.lang.toLowerCase() === code.toLowerCase());
+
+    const spanishVoices = this.cachedVoices.filter(v => 
+      v.lang.toLowerCase().startsWith('es')
+    );
+
+    if (!spanishVoices.length) return null;
+
+    const femaleKeywords = [
+      'ramona', 'sabina', 'helena', 'laura', 'monica', 'paulina', 
+      'sofia', 'zira', 'elena', 'lucia', 'hilda', 'mia', 'female', 'mujer'
+    ];
+
+    const maleKeywords = [
+      'emilio', 'jorge', 'alvaro', 'pablo', 'raul', 'diego', 
+      'manuel', 'gonzalo', 'carlos', 'miguel', 'david', 'male', 'hombre'
+    ];
+
+    // Prioridad 1: Voz dominicana masculina específica (es-DO Emilio)
+    const domMale = spanishVoices.find(v => 
+      v.lang.toLowerCase().includes('do') && 
+      (v.name.toLowerCase().includes('emilio') || !femaleKeywords.some(fk => v.name.toLowerCase().includes(fk)))
+    );
+    if (domMale) return domMale;
+
+    // Prioridad 2: Voces masculinas conocidas por nombre
+    for (const kw of maleKeywords) {
+      const match = spanishVoices.find(v => v.name.toLowerCase().includes(kw));
       if (match) return match;
     }
-    return this.cachedVoices.find(v => v.lang.toLowerCase().startsWith('es')) || null;
+
+    // Prioridad 3: Cualquier voz en español que no sea identificada como femenina
+    const nonFemale = spanishVoices.find(v => 
+      !femaleKeywords.some(fk => v.name.toLowerCase().includes(fk))
+    );
+    if (nonFemale) return nonFemale;
+
+    // Prioridad 4: Primera voz en español disponible
+    return spanishVoices[0];
   }
 
   /**
@@ -98,10 +138,20 @@ class VoiceNarrator {
   }
 
   /**
-   * Reproduce una instrucción, priorizando el archivo de audio neuronal.
+   * Reproduce una instrucción de forma idempotente, garantizando UNA SOLA emisión por paso.
    */
-  public speak(text: string, audioUrl?: string | null) {
+  public speak(text: string, audioUrl?: string | null, options?: SpeakOptions) {
+    // 1. Control de Idempotencia: si ya se reprodujo este paso y no es forzado, ignorar
+    if (!options?.force && options?.stepKey && options.stepKey === this.lastPlayedKey) {
+      return;
+    }
+
+    // 2. Detener inmediatamente cualquier audio o narración anterior
     this.stop();
+
+    // 3. Registrar nuevo token y clave de reproducción activa
+    const token = ++this.currentPlaybackToken;
+    this.lastPlayedKey = options?.stepKey || null;
     this.currentText = text;
     this.currentAudioUrl = audioUrl || null;
     this.isPausedState = false;
@@ -112,49 +162,79 @@ class VoiceNarrator {
       return;
     }
 
-    // 1. Si disponemos de una URL de audio neuronal válida, reproducirla con HTMLAudio
+    let fallbackTriggered = false;
+    const triggerFallback = (reason: string) => {
+      // Garantizar que el fallback solo se ejecute UNA vez y si este token sigue vigente
+      if (fallbackTriggered || this.currentPlaybackToken !== token) return;
+      fallbackTriggered = true;
+      console.info(`[voiceNarrator] Fallback SpeechSynthesis activado (${reason})`);
+      this.fallbackToSpeechSynthesis(text, token);
+    };
+
+    // 4. Si disponemos de URL de audio neuronal, intentar reproducirla
     if (audioUrl && this.audioElement) {
       try {
+        this.audioElement.playbackRate = 1.10; // Velocidad 1.10x ágil y natural
         this.audioElement.src = audioUrl;
         this.audioElement.currentTime = 0;
+
+        this.audioElement.onerror = () => {
+          triggerFallback('error al cargar archivo');
+        };
+
         const playPromise = this.audioElement.play();
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
+              if (this.currentPlaybackToken !== token) {
+                this.audioElement?.pause();
+                return;
+              }
               this.notify();
             })
             .catch((err) => {
-              // El navegador puede bloquear autoplay sin interacción previa del usuario
+              if (this.currentPlaybackToken !== token) return;
+              if (err.name === 'AbortError') {
+                // Operación cancelada limpiamente por stop() o avance de paso
+                return;
+              }
               if (err.name === 'NotAllowedError') {
                 console.warn('[voiceNarrator] Autoplay bloqueado hasta interacción del usuario.');
-              } else {
-                console.warn('[voiceNarrator] Fallo de reproducción audio neuronal:', err);
-                this.fallbackToSpeechSynthesis(text);
+                return;
               }
+              triggerFallback(`fallo de reproducción: ${err.name}`);
             });
         }
         return;
       } catch (err) {
-        console.warn('[voiceNarrator] Error iniciando audio HTML:', err);
+        console.warn('[voiceNarrator] Error iniciando HTMLAudioElement:', err);
+        triggerFallback('excepción síncrona');
+        return;
       }
     }
 
-    // 2. Si no hay audioUrl o falló el elemento de audio, usar SpeechSynthesis
-    this.fallbackToSpeechSynthesis(text);
+    // 5. Si no hay URL de audio neuronal disponible, recurrir al fallback
+    triggerFallback('sin URL neuronal');
   }
 
   /**
-   * Fallback de emergencia utilizando SpeechSynthesis con voz española y entonación mejorada.
+   * Fallback de emergencia utilizando SpeechSynthesis con voz MASCULINA y velocidad 1.10x.
    */
-  private fallbackToSpeechSynthesis(text: string) {
-    if (!this.synth || this.isMutedState) {
+  private fallbackToSpeechSynthesis(text: string, token: number) {
+    if (this.currentPlaybackToken !== token || !this.synth || this.isMutedState) {
       this.notify();
       return;
     }
 
     this.isUsingFallbackSynth = true;
 
-    // Limpieza de etiquetas
+    // Purga obligatoria de cualquier emisión pendiente en cola del navegador
+    try {
+      this.synth.cancel();
+    } catch {
+      // Ignorar
+    }
+
     const cleanText = text
       .replace(/<[^>]*>?/gm, ' ')
       .replace(/[«»]/g, '')
@@ -165,30 +245,36 @@ class VoiceNarrator {
 
     try {
       const utterance = new SpeechSynthesisUtterance(cleanText);
-      const voice = this.getSpanishVoice();
+      const voice = this.getSpanishMaleVoice();
       if (voice) {
         utterance.voice = voice;
         utterance.lang = voice.lang;
       } else {
-        utterance.lang = 'es-ES';
+        utterance.lang = 'es-DO';
       }
-      utterance.rate = 0.95; // Ritmo pausado y pedagógico
-      utterance.pitch = 1.0;
+
+      // Velocidad ágil de narración (1.10x) y tono masculino
+      utterance.rate = 1.10;
+      utterance.pitch = 0.98;
       utterance.volume = 1.0;
 
       utterance.onend = () => {
-        this.currentUtterance = null;
-        this.isPausedState = false;
-        this.notify();
+        if (this.currentPlaybackToken === token) {
+          this.currentUtterance = null;
+          this.isPausedState = false;
+          this.notify();
+        }
       };
 
       utterance.onerror = (e) => {
         if (e.error !== 'canceled' && e.error !== 'interrupted') {
           console.warn('[voiceNarrator] Fallback utterance error:', e.error);
         }
-        this.currentUtterance = null;
-        this.isPausedState = false;
-        this.notify();
+        if (this.currentPlaybackToken === token) {
+          this.currentUtterance = null;
+          this.isPausedState = false;
+          this.notify();
+        }
       };
 
       this.currentUtterance = utterance;
@@ -251,27 +337,33 @@ class VoiceNarrator {
     }
 
     if (this.currentText) {
-      this.speak(this.currentText, this.currentAudioUrl);
+      this.replay();
     }
   }
 
   /**
-   * Repite la instrucción actual desde el inicio.
+   * Repite la instrucción actual desde el inicio forzando la reproducción voluntaria.
    */
   public replay() {
     if (this.currentText) {
-      this.speak(this.currentText, this.currentAudioUrl);
+      this.speak(this.currentText, this.currentAudioUrl, { 
+        stepKey: this.lastPlayedKey || undefined, 
+        force: true 
+      });
     }
   }
 
   /**
-   * Detiene toda reproducción en curso.
+   * Detiene toda reproducción en curso, invalida tokens activos y vacía las colas.
    */
   public stop() {
+    ++this.currentPlaybackToken;
+
     if (this.audioElement) {
       try {
         this.audioElement.pause();
         this.audioElement.currentTime = 0;
+        this.audioElement.removeAttribute('src');
       } catch {
         // Ignorar
       }
@@ -291,7 +383,7 @@ class VoiceNarrator {
   }
 
   /**
-   * Activa o desactiva el sonido.
+   * Activa o desactiva el sonido y persiste la preferencia.
    */
   public setMuted(muted: boolean) {
     this.isMutedState = muted;
@@ -308,7 +400,7 @@ class VoiceNarrator {
     if (muted) {
       this.stop();
     } else if (this.currentText) {
-      this.speak(this.currentText, this.currentAudioUrl);
+      this.replay();
     } else {
       this.notify();
     }
