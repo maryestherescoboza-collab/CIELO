@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Bell, HelpCircle } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import type { SearchResults } from '../../types';
-import { startGuide } from '../../guides/driverGuides';
 import { PresentationToggle } from '../PresentationToggle';
 import { usePresentation } from '../../contexts/PresentationContext';
 import { UserAvatar } from '../ui/UserAvatar';
+import { CentroTutorialesModal } from '../tutorials/CentroTutorialesModal';
 
 interface HeaderProps {
     darkMode: boolean;
@@ -29,20 +29,7 @@ const Header: React.FC<HeaderProps> = ({
     onOpenSettings
 }) => {
     const { isPresenting, togglePresentation } = usePresentation();
-    const [showTutorialMenu, setShowTutorialMenu] = React.useState(false);
-    const tutorialRef = React.useRef<HTMLDivElement>(null);
-
-    React.useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (tutorialRef.current && !tutorialRef.current.contains(event.target as Node)) {
-                setShowTutorialMenu(false);
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
+    const [showTutorialModal, setShowTutorialModal] = useState(false);
     return (
         <header className="flex items-center justify-between px-4 pb-2 pt-[calc(8px+env(safe-area-inset-top))] bg-white border-b border-(--border-soft) sticky top-0 z-40 transition-all">
             <div className="flex items-center">
@@ -164,50 +151,22 @@ const Header: React.FC<HeaderProps> = ({
                     )}
                 </button>
 
-                {/* Tutorial Button & Dropdown */}
-                <div className="relative hidden lg:block" ref={tutorialRef}>
+                {/* Botón Centro de Tutoriales */}
+                <div className="relative hidden lg:block">
                     <button 
                         id="btn-tutorial"
-                        className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/55 hover:border-(--primary) transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill shrink-0" 
-                        onClick={() => setShowTutorialMenu(prev => !prev)}
-                        aria-label="Ver tutoriales"
+                        className="relative flex items-center justify-center gap-1.5 rounded-full bg-[#FFFFFF] border border-(--border-soft) text-(--ink-soft) hover:bg-(--linen)/55 hover:border-(--primary) transition-all px-4.5 py-2 min-h-9 font-semibold text-xs tracking-[0.08em] artisan-pill shrink-0 cursor-pointer" 
+                        onClick={() => setShowTutorialModal(true)}
+                        aria-label="Ver centro de microlecciones y tutoriales"
                     >
                         <HelpCircle size={14} />
                         <span>Tutorial</span>
                     </button>
                     
-                    {showTutorialMenu && (
-                        <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-(--border-soft) shadow-md py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[85vh] overflow-y-auto">
-                            {[
-                                { id: 'plan-recuperacion-p1', label: 'Plan de recuperación P1' },
-                                { id: 'crear-curso', label: 'Crear un curso' },
-                                { id: 'crear-actividades-alumnos', label: 'Agregar actividades y alumnos' },
-                                { id: 'pase-de-lista', label: 'Cómo hacer el pase de lista' },
-                                { id: 'evaluar-actividad', label: 'Evaluar una actividad por indicador' },
-                                { id: 'evaluar-rubrica', label: 'Cómo evaluar con rúbrica' },
-                                { id: 'evaluar-cotejo', label: 'Cómo evaluar con cotejo' },
-                                { id: 'crear-plantilla-rubrica', label: 'Crear una plantilla de rúbrica' },
-                                { id: 'crear-plantilla-cotejo', label: 'Crear una plantilla de lista de cotejo' },
-                                { id: 'crear-actividades-ia', label: 'Crear actividades con IA' },
-                                { id: 'crear-rubrica-ia', label: 'Crear rúbrica con IA' },
-                                { id: 'crear-cotejo-ia', label: 'Crear lista de cotejo con IA' }
-                            ].map(item => (
-                                <button
-                                    key={item.id}
-                                    className="w-full flex items-center gap-2.5 px-4 py-1.5 text-[13px] font-semibold text-(--ink-soft) hover:bg-(--linen) hover:text-(--ink) transition-colors group"
-                                    onClick={() => {
-                                        setShowTutorialMenu(false);
-                                        startGuide(item.id);
-                                    }}
-                                >
-                                    <div className="shrink-0 flex items-center justify-center w-4.5 h-4.5 rounded-full bg-(--warning-soft) text-(--warning) border border-(--warning)/20">
-                                        <span className="text-[10px] font-bold leading-none">?</span>
-                                    </div>
-                                    <span>{item.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <CentroTutorialesModal
+                        isOpen={showTutorialModal}
+                        onClose={() => setShowTutorialModal(false)}
+                    />
                 </div>
 
                 <div className="h-6 w-px bg-(--border-soft) mx-1 hidden lg:block"></div>
