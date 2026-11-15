@@ -9,7 +9,6 @@ import BottomNav from './layout/BottomNav';
 import ProfileSidebar from './layout/ProfileSidebar';
 import NotificationDropdown from './layout/NotificationDropdown';
 import ResetModal from './layout/ResetModal';
-import { GuiaIniciacionModal } from './guides/GuiaIniciacionModal';
 import { useAlertaRecuperacionP1 } from '../hooks/useAlertaRecuperacionP1';
 import { usePersistenceStore } from '../store/persistenceStore';
 
@@ -267,7 +266,6 @@ export default function Layout({
 
     return (
         <div className="app-shell">
-            <GuiaIniciacionModal userId={session?.user?.id} />
             {!hideNavigation && (
                 <>
                     <Header 

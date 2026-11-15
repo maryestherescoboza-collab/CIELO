@@ -63,6 +63,9 @@ export function stopActiveGuide() {
 export function startGuide(guideId: string, initialStep = 0, userId?: string) {
   stopActiveGuide();
 
+  // Guía inicial oculta para todos los docentes
+  if (guideId === 'iniciacion') return;
+
   const guide = CATALOGO_GUIAS.find(g => g.id === guideId);
   if (!guide) return;
 
