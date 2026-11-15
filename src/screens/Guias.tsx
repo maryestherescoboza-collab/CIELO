@@ -4,6 +4,7 @@ import { startGuide } from '../guides/driverGuides';
 
 export type StageCategory = 
   | 'Todas'
+  | 'Iniciación'
   | 'Cursos'
   | 'Asignaturas'
   | 'Estudiantes'
@@ -13,8 +14,8 @@ export type StageCategory =
   | 'Cuenta';
 
 export interface GuiaItem {
-  numero: string; // "01", "02", etc.
-  id: string; // "guia-01", etc.
+  numero: string; // "00", "01", "02", etc.
+  id: string; // "iniciacion", "guia-01", etc.
   etapa: Exclude<StageCategory, 'Todas'>;
   titulo: string;
   descripcion: string;
@@ -23,6 +24,17 @@ export interface GuiaItem {
 }
 
 export const GUIAS_OFICIALES: GuiaItem[] = [
+  // Guía de iniciación (recorrido fundamental)
+  {
+    numero: '00',
+    id: 'iniciacion',
+    etapa: 'Iniciación',
+    titulo: 'Guía de iniciación',
+    descripcion: 'Recorrido guiado de 5 etapas para dominar CIELO: cursos, estudiantes, actividades, evaluación y niveles de logro.',
+    pasos: 23,
+    minutos: 5
+  },
+
   // Cursos (01 a 03)
   {
     numero: '01',
@@ -247,6 +259,7 @@ export const GUIAS_OFICIALES: GuiaItem[] = [
 
 const ETAPAS_FILTRO: StageCategory[] = [
   'Todas',
+  'Iniciación',
   'Cursos',
   'Asignaturas',
   'Estudiantes',
@@ -256,23 +269,27 @@ const ETAPAS_FILTRO: StageCategory[] = [
   'Cuenta'
 ];
 
+function normalizarTexto(str: string): string {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 export default function Guias() {
   const navigate = useNavigate();
   const [busqueda, setBusqueda] = useState('');
   const [etapaSeleccionada, setEtapaSeleccionada] = useState<StageCategory>('Todas');
 
   const guiasFiltradas = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
+    const q = normalizarTexto(busqueda.trim());
     return GUIAS_OFICIALES.filter(guia => {
       const matchEtapa = etapaSeleccionada === 'Todas' || guia.etapa === etapaSeleccionada;
       if (!matchEtapa) return false;
 
       if (!q) return true;
       return (
-        guia.numero.toLowerCase().includes(q) ||
-        guia.titulo.toLowerCase().includes(q) ||
-        guia.descripcion.toLowerCase().includes(q) ||
-        guia.etapa.toLowerCase().includes(q)
+        normalizarTexto(guia.numero).includes(q) ||
+        normalizarTexto(guia.titulo).includes(q) ||
+        normalizarTexto(guia.descripcion).includes(q) ||
+        normalizarTexto(guia.etapa).includes(q)
       );
     });
   }, [busqueda, etapaSeleccionada]);
@@ -303,7 +320,7 @@ export default function Guias() {
               Guías
             </h1>
             <p className="text-sm text-(--ink-soft) mt-1 max-w-2xl">
-              23 guías paso a paso para dominar CIELO, optimizar tu gestión académica y evaluar con confianza.
+              Guía de iniciación y tutoriales paso a paso para dominar CIELO, optimizar tu gestión académica y evaluar con confianza.
             </p>
           </div>
 
@@ -363,7 +380,11 @@ export default function Guias() {
                     <span className="text-3xl sm:text-4xl font-extrabold text-(--ink) tracking-tight select-none">
                       {guia.numero}
                     </span>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-(--ink-soft) bg-(--linen)/60 px-2.5 py-1 rounded-[10px] border border-(--border-soft) select-none">
+                    <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-[10px] border select-none ${
+                      guia.id === 'iniciacion'
+                        ? 'bg-(--ink) text-white border-(--ink)'
+                        : 'text-(--ink-soft) bg-(--linen)/60 border-(--border-soft)'
+                    }`}>
                       {guia.etapa}
                     </span>
                   </div>
@@ -380,7 +401,10 @@ export default function Guias() {
                 {/* Parte Inferior: Pasos, Minutos y Botón Comenzar */}
                 <div className="pt-4 mt-2 border-t border-(--border-soft)">
                   <div className="text-[11px] font-medium text-(--ink-soft) mb-3 select-none">
-                    {guia.pasos} pasos · {guia.minutos} min
+                    {guia.id === 'iniciacion' 
+                      ? '5 etapas · 23 pasos · 5 min'
+                      : `${guia.pasos} pasos · ${guia.minutos} min`
+                    }
                   </div>
                   <button
                     type="button"
