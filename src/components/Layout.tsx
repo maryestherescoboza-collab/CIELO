@@ -9,7 +9,6 @@ import BottomNav from './layout/BottomNav';
 import ProfileSidebar from './layout/ProfileSidebar';
 import NotificationDropdown from './layout/NotificationDropdown';
 import ResetModal from './layout/ResetModal';
-import { useAlertaRecuperacionP1 } from '../hooks/useAlertaRecuperacionP1';
 import { usePersistenceStore } from '../store/persistenceStore';
 
 interface Props {
@@ -195,8 +194,7 @@ export default function Layout({
         return activeProfile?.avatar || null;
     };
 
-    const alertaP1 = useAlertaRecuperacionP1();
-    const hasUnread = useMemo(() => state.notificaciones.some(n => !n.leida) || alertaP1.visible, [state.notificaciones, alertaP1.visible]);
+    const hasUnread = useMemo(() => state.notificaciones.some(n => !n.leida), [state.notificaciones]);
 
     const logrosPedagogicos = useMemo(() => {
         const result = {

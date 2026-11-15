@@ -1,8 +1,6 @@
 import React, { useRef, useEffect, useMemo, useCallback } from 'react';
-import { Bell, Link, SquareCheck, FileText, ArrowRight, HelpCircle, X, CheckCheck } from 'lucide-react';
+import { Bell, Link, SquareCheck, X, CheckCheck } from 'lucide-react';
 import type { Notification } from '../../types';
-import { useAlertaRecuperacionP1 } from '../../hooks/useAlertaRecuperacionP1';
-import { startGuide } from '../../guides/driverGuides';
 
 interface NotificationDropdownProps {
     showNotifs: boolean;
@@ -20,7 +18,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     onClose
 }) => {
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const alertaP1 = useAlertaRecuperacionP1();
 
     // 1. Gestión de eventos globales: Click Outside y tecla Escape (Accesibilidad DX/UX)
     useEffect(() => {
@@ -92,7 +89,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                     <h3 className="text-xs font-black text-(--ink) uppercase tracking-widest">
                         Centro de Actividad
                     </h3>
-                    {(hayGeneralesSinLeer || alertaP1.visible) && (
+                    {hayGeneralesSinLeer && (
                         <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                     )}
                 </div>
@@ -109,105 +106,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             </div>
 
             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-                {/* ALERTA MINIMALISTA: PLAN DE RECUPERACIÓN P1 (Colimetría CIELO, sin IA) */}
-                {alertaP1.usuarioCalifica && (
-                    <div
-                        data-guide="alerta-recuperacion-p1"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => {
-                            onClose?.();
-                            alertaP1.irAPlanRecuperacion();
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                onClose?.();
-                                alertaP1.irAPlanRecuperacion();
-                            }
-                        }}
-                        className="p-3.5 rounded-2xl bg-white border border-(--border-soft) hover:border-(--primary) hover:bg-(--linen)/25 transition-all cursor-pointer group shadow-2xs relative"
-                    >
-                        <div className="flex gap-3 items-start">
-                            {/* Icono pedagógico sobrio */}
-                            <div className="w-8 h-8 rounded-full bg-(--primary)/20 text-(--ink) flex items-center justify-center shrink-0 mt-0.5">
-                                <FileText size={15} />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-1 mb-1">
-                                    <span className="text-[10px] font-bold text-(--ink-soft) uppercase tracking-wider">
-                                        Período P1
-                                    </span>
-                                    {alertaP1.visible ? (
-                                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" title="Alerta pendiente" />
-                                    ) : (
-                                        <span className="text-[9px] font-bold text-(--ink-soft)">Visto</span>
-                                    )}
-                                </div>
-
-                                <h4 className="text-xs font-black text-(--ink) leading-snug group-hover:text-(--primary) transition-colors">
-                                    ¡Plan de recuperación del P1 listo!
-                                </h4>
-
-                                <p className="text-xs text-(--ink-soft) leading-relaxed mt-0.5">
-                                    Evaluaciones del P1 procesadas. Consulta el plan de recuperación pedagógica de tus asignaturas.
-                                </p>
-
-                                {alertaP1.cursosConP1.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mt-2">
-                                        {alertaP1.cursosConP1.slice(0, 3).map((c) => (
-                                            <span
-                                                key={`${c.cursoId}-${c.asignatura}`}
-                                                className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-(--linen)/60 text-(--ink) border border-(--border-soft)"
-                                            >
-                                                {c.cursoLabel} • {c.asignatura}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-(--border-soft)/60">
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-(--ink) group-hover:text-(--primary) transition-colors">
-                                        <span>Ir al plan</span>
-                                        <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
-                                    </span>
-
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onClose?.();
-                                                startGuide('plan-recuperacion-p1');
-                                            }}
-                                            className="inline-flex items-center gap-1 text-[10px] font-semibold text-(--ink-soft) hover:text-(--ink) px-2 py-0.5 rounded-full hover:bg-(--linen) transition-colors cursor-pointer"
-                                            title="Ver tutorial paso a paso"
-                                        >
-                                            <HelpCircle size={11} />
-                                            <span>Ver guía</span>
-                                        </button>
-
-                                        {alertaP1.visible && (
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    alertaP1.dismiss();
-                                                }}
-                                                className="text-[10px] font-semibold text-(--ink-soft) hover:text-(--ink) px-1.5 py-0.5 rounded-full hover:bg-(--linen) transition-colors cursor-pointer"
-                                                title="Marcar como leída y apagar círculo rojo"
-                                            >
-                                                Entendido
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* SECCIÓN NOTIFICACIONES GENERALES */}
                 {notificacionesGenerales.length > 0 && (
                     <div className="space-y-2.5">
