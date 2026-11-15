@@ -11,6 +11,7 @@ import type { BCKey, Actividad } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
 import { getActivityBcPoints, getProductoFinalMaxPoints, hasProductoFinalCustomPoints } from '../../utils/academic';
 import { CieloModal } from '../ui/CieloModal';
+import { notifyGuideOperationSuccess } from '../../guides/guideConfirmation';
 interface GradeTableProps {
     actividades: Actividad[];
     estudiantes: any[];
@@ -613,6 +614,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                                         } else {
                                                                             onUpdateEstudianteRef.current(est.id, { nombre, apellido });
                                                                         }
+                                                                        notifyGuideOperationSuccess('estudiante_guardar', '¡Muy bien! Ya tienes estudiantes para trabajar.');
                                                                     } else {
                                                                         e.target.value = est.displayName;
                                                                     }

@@ -10,6 +10,11 @@ import { LinkTeacherModal } from '../components/courses/LinkTeacherModal';
 import VincularDocentesModal from '../components/curso-detalle/VincularDocentesModal';
 import { getAsignaturaNombre, crearAsignaturaOptativaId } from '../constants/asignaturas';
 import { CieloPill } from '../components/ui/CieloPill';
+import { 
+    notifyGuideOperationStarted, 
+    notifyGuideOperationSuccess, 
+    notifyGuideOperationError 
+} from '../guides/guideConfirmation';
 
 interface Props {
     onAddCurso: (c: Omit<Curso, 'id' | 'grupoId'>) => Promise<any>;
@@ -63,6 +68,7 @@ export default function Cursos({
         if (!finalAsignatura) return;
 
         setIsSaving(true);
+        notifyGuideOperationStarted('curso_guardar');
         try {
             const generatedNombre = `${form.grado} de Secundaria - Sección ${form.seccion}`;
             const result = await onAddCurso({
@@ -79,9 +85,13 @@ export default function Cursos({
             if (result) {
                 setShowModal(false);
                 resetForm();
+                notifyGuideOperationSuccess('curso_guardar', '¡Excelente! Tu curso ya está creado.');
+            } else {
+                notifyGuideOperationError('curso_guardar', 'No se pudo crear el curso.');
             }
         } catch (error) {
             console.error('Error creating course:', error);
+            notifyGuideOperationError('curso_guardar', 'Error al guardar el curso en Supabase.');
         } finally {
             setIsSaving(false);
         }

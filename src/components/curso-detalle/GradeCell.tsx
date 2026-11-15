@@ -1,6 +1,7 @@
 import React from 'react';
 import { nextGradeScore } from '../../utils/gradeCycle';
 import { formatGradeScore } from '../../utils/academic';
+import { notifyGuideOperationSuccess } from '../../guides/guideConfirmation';
 
 interface GradeCellProps {
     estId: number;
@@ -90,6 +91,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
                 const nextScore = nextGradeScore(score, activePaintColor, cicloRef.current.vacio && !seleccionCambiada);
                 cicloRef.current = { seleccion: activePaintColor, vacio: nextScore === null };
                 onSetGrade(nextScore);
+                notifyGuideOperationSuccess('evaluacion_guardar', '¡Evaluación registrada!');
             }}
         >
             <div className="flex items-center justify-center min-h-12 h-full relative overflow-visible">
@@ -195,6 +197,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
                                 const convertedScore = (num / limit) * 100;
                                 onSetGrade(convertedScore);
                                 e.target.value = formatGradeScore(convertedScore);
+                                notifyGuideOperationSuccess('evaluacion_guardar', '¡Evaluación registrada!');
                             } else {
                                 if (num < 0 || num > 100) {
                                     e.target.value = score !== null ? formatGradeScore(score) : '';
@@ -202,6 +205,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
                                 }
                                 onSetGrade(num);
                                 e.target.value = formatGradeScore(num);
+                                notifyGuideOperationSuccess('evaluacion_guardar', '¡Evaluación registrada!');
                             }
                         }}
                         onKeyDown={(e) => {

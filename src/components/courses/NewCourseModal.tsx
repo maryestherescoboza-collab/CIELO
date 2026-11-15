@@ -172,7 +172,7 @@ export function NewCourseModal({
             maxWidth="xl"
             footer={modalFooter}
         >
-            <div className="space-y-6">
+            <div data-guide="modal-curso-formulario" className="space-y-6">
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-3">
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">

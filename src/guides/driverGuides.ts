@@ -4,6 +4,7 @@ import { CATALOGO_GUIAS, type Guide, type GuideStep } from './catalogoGuias';
 import { initGuideEventListeners, cleanupGuideEventListeners } from './guideEvents';
 import { voiceNarrator } from './voiceNarrator';
 import { resolveAudioUrl } from './audioRegistry';
+import type { GuideExecutionState } from './guideConfirmation';
 import {
   updateStageStatus,
   setIniciacionCompleted
@@ -220,6 +221,7 @@ function buildPopoverHtml(step: GuideStep, currentIdx: number, totalSteps: numbe
         <div class="cielo-tour-content-text">
           <h3 class="cielo-tour-headline">${title}</h3>
           ${description ? `<p class="cielo-tour-description">${description}</p>` : ''}
+          <div id="cielo-tour-status-container" class="cielo-tour-status-container"></div>
         </div>
       </div>
 
@@ -330,6 +332,39 @@ export function highlightStep() {
 }
 
 /**
+ * Actualiza el indicador visual de estado de ejecución dentro del popover.
+ */
+function updatePopoverStatus(state: GuideExecutionState, message?: string) {
+  const container = document.getElementById('cielo-tour-status-container');
+  if (!container) return;
+
+  if (state === 'operacion_en_proceso') {
+    container.innerHTML = `
+      <div class="cielo-tour-status-pill in-progress">
+        <span class="cielo-tour-spinner"></span>
+        <span>${message || 'Guardando en CIELO…'}</span>
+      </div>
+    `;
+  } else if (state === 'operacion_completada') {
+    container.innerHTML = `
+      <div class="cielo-tour-status-pill success">
+        <span class="cielo-tour-check">✓</span>
+        <span>${message || '¡Operación confirmada!'}</span>
+      </div>
+    `;
+  } else if (state === 'operacion_fallida') {
+    container.innerHTML = `
+      <div class="cielo-tour-status-pill error">
+        <span>⚠</span>
+        <span>${message || 'Error en la operación. Inténtalo de nuevo.'}</span>
+      </div>
+    `;
+  } else {
+    container.innerHTML = '';
+  }
+}
+
+/**
  * Displays the Driver.js popover on the target element and initializes interaction listeners.
  */
 function highlightElement(step: GuideStep, resolvedSelector: string, guide: Guide) {
@@ -366,10 +401,12 @@ function highlightElement(step: GuideStep, resolvedSelector: string, guide: Guid
   }
 
   // Setup event listener that triggers advancing to next step when user interacts with target element
-  initGuideEventListeners(step.selector, step.evento, () => {
+  initGuideEventListeners(step, () => {
     requestAnimationFrame(() => {
       advanceStep();
     });
+  }, (state, message) => {
+    updatePopoverStatus(state, message);
   });
 }
 

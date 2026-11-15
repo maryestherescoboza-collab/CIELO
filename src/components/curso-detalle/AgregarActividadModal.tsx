@@ -4,6 +4,11 @@ import { CieloModal } from '../ui/CieloModal';
 import { SelectorIndicadorFragmento, type SelectorIndicadorData } from '../curriculo/SelectorIndicadorFragmento';
 import { esAsignaturaOptativa, getAsignaturaNombre } from '../../constants/asignaturas';
 import type { Curso, BCKey } from '../../types';
+import { 
+    notifyGuideOperationStarted, 
+    notifyGuideOperationSuccess, 
+    notifyGuideOperationError 
+} from '../../guides/guideConfirmation';
 
 interface AgregarActividadModalProps {
     show: boolean;
@@ -62,6 +67,7 @@ const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
 
         setIsSaving(true);
         setError(null);
+        notifyGuideOperationStarted('actividad_guardar');
         try {
             const ok = await onConfirm(ind, prod, {
                 indicadores_json: indicadorData.indicadoresJson,
@@ -69,11 +75,14 @@ const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
             });
             if (ok) {
                 onClose();
+                notifyGuideOperationSuccess('actividad_guardar', '¡Perfecto! Tu actividad ha sido creada.');
             } else {
                 setError('No se pudo guardar la actividad. Inténtelo nuevamente.');
+                notifyGuideOperationError('actividad_guardar', 'No se pudo guardar la actividad.');
             }
         } catch {
             setError('Error inesperado al guardar la actividad. Inténtelo nuevamente.');
+            notifyGuideOperationError('actividad_guardar', 'Error inesperado al guardar la actividad.');
         } finally {
             setIsSaving(false);
         }
@@ -124,7 +133,7 @@ const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
             icon={<PlusCircle size={20} strokeWidth={2.4} className="text-[#689C63]" />}
             footer={modalFooter}
         >
-            <div className="space-y-5 py-2">
+            <div data-guide="modal-actividad-formulario" className="space-y-5 py-2">
                 {/* Selector curricular y resaltador de fragmento */}
                 <div data-guide="modal-actividad-indicador">
                     <SelectorIndicadorFragmento

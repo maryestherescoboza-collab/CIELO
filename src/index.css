@@ -994,9 +994,62 @@ input[type="range"]:focus::-webkit-slider-thumb {
   color: #2E3330 !important;
 }
 
-/* Permitir click-through en el overlay de driver.js para interactuar libremente con los estudiantes y el boton evaluar */
-.driver-overlay, .driver-active-overlay {
+/* ==========================================================================
+   CIELO Interactive Guide & Driver.js Interactivity Architecture
+   Garantiza que controles, desplegables, formularios y modales NUNCA se bloqueen
+   ========================================================================== */
+
+/* 1. La capa visual oscura (SVG y overlays) no debe interceptar eventos de puntero */
+.driver-overlay,
+.driver-active-overlay {
   pointer-events: none !important;
+}
+
+/* 2. Anular el bloqueo global de driver.js sobre los controles reales de CIELO */
+.driver-active input,
+.driver-active select,
+.driver-active textarea,
+.driver-active button,
+.driver-active a,
+.driver-active [role="button"],
+.driver-active [role="combobox"],
+.driver-active [role="listbox"],
+.driver-active [role="option"],
+.driver-active [role="menu"],
+.driver-active [role="menuitem"],
+.driver-active [role="dialog"],
+.driver-active form,
+.driver-active .cielo-modal-card,
+.driver-active .cielo-modal-card *,
+.driver-active [data-radix-popper-content-wrapper],
+.driver-active [data-radix-popper-content-wrapper] *,
+.driver-active [data-floating-ui-portal],
+.driver-active [data-floating-ui-portal] *,
+.driver-active .driver-active-element,
+.driver-active .driver-active-element *,
+.driver-active .driver-popover,
+.driver-active .driver-popover * {
+  pointer-events: auto !important;
+}
+
+/* 3. Elevación de modales por encima de la capa de Driver para evitar stacking contexts atrapados */
+.driver-active .fixed.z-100,
+.driver-active [role="dialog"],
+.driver-active .cielo-modal-backdrop {
+  z-index: 1000000010 !important;
+  pointer-events: auto !important;
+}
+
+/* 4. Elevación prioritaria para menús flotantes, desplegables, combobox y portales */
+[role="listbox"],
+[role="menu"],
+[data-radix-popper-content-wrapper],
+.select-dropdown,
+.cielo-dropdown-menu,
+.cielo-combobox-menu,
+select option {
+  z-index: 1000000050 !important;
+  pointer-events: auto !important;
 }
 
 /* Regla Obligatoria: Texto negro sobre fondo #79C599 (bg-primary / var(--primary)) */
@@ -1347,6 +1400,65 @@ input[type="range"]:focus::-webkit-slider-thumb {
 
 .cielo-tour-exit-action:active {
   color: #0F172A;
+}
+
+/* Indicadores de estado de ejecución de operaciones */
+.cielo-tour-status-container {
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.cielo-tour-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.cielo-tour-status-pill.in-progress {
+  background: #FFF7ED;
+  color: #C2410C;
+  border: 1px solid #FFEDD5;
+}
+
+.cielo-tour-status-pill.success {
+  background: #F0FDF4;
+  color: #166534;
+  border: 1px solid #DCFCE7;
+}
+
+.cielo-tour-status-pill.error {
+  background: #FEF2F2;
+  color: #991B1B;
+  border: 1px solid #FEE2E2;
+}
+
+.cielo-tour-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #C2410C;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: cieloTourSpin 0.75s linear infinite;
+}
+
+.cielo-tour-check {
+  font-weight: 900;
+  color: #166534;
+}
+
+@keyframes cieloTourSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 640px) {

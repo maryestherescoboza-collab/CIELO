@@ -1,3 +1,5 @@
+import type { GuideOperationType } from './guideConfirmation';
+
 export interface GuideStep {
   selector: string;
   texto: string;
@@ -5,6 +7,9 @@ export interface GuideStep {
   etapa?: number;
   tituloEtapa?: string;
   evento: 'click' | 'change' | 'dblclick';
+  targetActionSelector?: string;
+  esperarOperacion?: GuideOperationType;
+  mensajeExito?: string;
 }
 
 export interface Guide {
@@ -36,36 +41,15 @@ export const CATALOGO_GUIAS: Guide[] = [
         evento: 'click'
       },
       {
-        selector: '[data-guide="modal-curso-grado"]',
-        texto: 'Selecciona el grado escolar que vas a impartir.',
-        voz: 'Selecciona el grado escolar que vas a impartir.',
+        selector: '[data-guide="modal-curso-formulario"], .cielo-modal-card',
+        texto: 'Selecciona el grado escolar que vas a impartir, escribe la sección y elige la asignatura. Cuando termines, pulsa en «Confirmar Curso».',
+        voz: 'Selecciona el grado escolar que vas a impartir, escribe la sección y elige la asignatura. Cuando termines, pulsa en Confirmar Curso.',
         etapa: 1,
         tituloEtapa: 'Etapa 1: Crear un curso',
-        evento: 'change'
-      },
-      {
-        selector: '[data-guide="modal-curso-seccion"]',
-        texto: 'Escribe la sección correspondiente (por ejemplo: A, B o C).',
-        voz: 'Escribe la sección correspondiente.',
-        etapa: 1,
-        tituloEtapa: 'Etapa 1: Crear un curso',
-        evento: 'change'
-      },
-      {
-        selector: '[data-guide="modal-curso-asignatura"]',
-        texto: 'Selecciona la asignatura oficial o agrega una optativa.',
-        voz: 'Selecciona la asignatura oficial o agrega una optativa.',
-        etapa: 1,
-        tituloEtapa: 'Etapa 1: Crear un curso',
-        evento: 'change'
-      },
-      {
-        selector: '[data-guide="modal-curso-confirmar"]',
-        texto: 'Pulsa en «Confirmar Curso» para guardarlo en CIELO.',
-        voz: 'Pulsa en Confirmar Curso para guardarlo. ¡Excelente! Ya tienes tu primer curso.',
-        etapa: 1,
-        tituloEtapa: 'Etapa 1: Crear un curso',
-        evento: 'click'
+        evento: 'click',
+        targetActionSelector: '[data-guide="modal-curso-confirmar"]',
+        esperarOperacion: 'curso_guardar',
+        mensajeExito: '¡Excelente! Tu curso ya está creado.'
       },
 
       // ETAPA 2: AGREGAR ALUMNOS
@@ -88,10 +72,12 @@ export const CATALOGO_GUIAS: Guide[] = [
       {
         selector: '[data-guide="celda-estudiante"]',
         texto: 'Escribe el nombre del estudiante con el formato: Apellidos, Nombres y pulsa Enter.',
-        voz: 'Escribe el nombre del estudiante con el formato Apellidos, Nombres. ¡Muy bien! Ya tienes estudiantes para trabajar.',
+        voz: 'Escribe el nombre del estudiante con el formato Apellidos, Nombres.',
         etapa: 2,
         tituloEtapa: 'Etapa 2: Agregar estudiantes',
-        evento: 'change'
+        evento: 'change',
+        esperarOperacion: 'estudiante_guardar',
+        mensajeExito: '¡Muy bien! Ya tienes estudiantes para trabajar.'
       },
 
       // ETAPA 3: CREAR UNA ACTIVIDAD
@@ -104,28 +90,15 @@ export const CATALOGO_GUIAS: Guide[] = [
         evento: 'click'
       },
       {
-        selector: '[data-guide="modal-actividad-indicador"]',
-        texto: 'Selecciona el indicador de logro que vas a evaluar. El indicador te dice qué aprendizaje observarás en el estudiante.',
-        voz: 'Selecciona el indicador de logro que vas a evaluar. El indicador te dice qué aprendizaje observarás en el estudiante.',
+        selector: '[data-guide="modal-actividad-formulario"], .cielo-modal-card',
+        texto: 'Selecciona el indicador de logro que vas a evaluar y escribe el producto o evidencia. Luego pulsa en «Agregar actividad».',
+        voz: 'Selecciona el indicador de logro que vas a evaluar y escribe el producto o evidencia. Luego pulsa en Agregar actividad.',
         etapa: 3,
         tituloEtapa: 'Etapa 3: Crear una actividad',
-        evento: 'click'
-      },
-      {
-        selector: '[data-guide="modal-actividad-producto"]',
-        texto: 'El producto es la evidencia que permitirá comprobar ese aprendizaje (ej: Cuaderno, Proyecto, Debate).',
-        voz: 'El producto es la evidencia que permitirá comprobar ese aprendizaje. Escribe el producto o evidencia.',
-        etapa: 3,
-        tituloEtapa: 'Etapa 3: Crear una actividad',
-        evento: 'change'
-      },
-      {
-        selector: '[data-guide="modal-actividad-guardar"]',
-        texto: 'Pulsa en «Agregar actividad» para guardarla en tu curso.',
-        voz: 'Pulsa en Agregar actividad para guardarla. ¡Perfecto! Tu actividad está lista.',
-        etapa: 3,
-        tituloEtapa: 'Etapa 3: Crear una actividad',
-        evento: 'click'
+        evento: 'click',
+        targetActionSelector: '[data-guide="modal-actividad-guardar"]',
+        esperarOperacion: 'actividad_guardar',
+        mensajeExito: '¡Perfecto! Tu actividad está lista.'
       },
 
       // ETAPA 4: APRENDER A EVALUAR (Pincel, Libre, Numérico)
@@ -152,7 +125,9 @@ export const CATALOGO_GUIAS: Guide[] = [
         voz: 'Haz clic sobre una celda vacía para registrar la evaluación con el pincel.',
         etapa: 4,
         tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Pincel)',
-        evento: 'click'
+        evento: 'click',
+        esperarOperacion: 'evaluacion_guardar',
+        mensajeExito: '¡Evaluación con pincel registrada!'
       },
       // 4.B Modo Libre
       {
@@ -169,7 +144,9 @@ export const CATALOGO_GUIAS: Guide[] = [
         voz: 'Observa el desempeño del estudiante y selecciona el nivel que corresponda.',
         etapa: 4,
         tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Libre)',
-        evento: 'change'
+        evento: 'change',
+        esperarOperacion: 'evaluacion_guardar',
+        mensajeExito: '¡Calificación registrada correctamente!'
       },
       // 4.C Modo Numérico
       {
@@ -194,7 +171,9 @@ export const CATALOGO_GUIAS: Guide[] = [
         voz: 'Haz clic en la celda del estudiante para asignarle la puntuación numérica.',
         etapa: 4,
         tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Numérico)',
-        evento: 'click'
+        evento: 'click',
+        esperarOperacion: 'evaluacion_guardar',
+        mensajeExito: '¡Puntuación numérica guardada!'
       },
 
       // ETAPA 5: EXPLICAR INDICADORES Y NIVELES DE LOGRO
