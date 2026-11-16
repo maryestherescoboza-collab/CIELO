@@ -24,7 +24,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({
     searchQuery, setSearchQuery,
     searchResults, onSelectSearchResult,
-    setShowNotifs, hasUnread,
+    setShowNotifs, hasUnread: _hasUnread,
     docenteNombre, avatarUrl,
     onOpenSettings
 }) => {
@@ -143,12 +143,6 @@ const Header: React.FC<HeaderProps> = ({
                 >
                     <Bell size={14} className="shrink-0" />
                     <span className="hidden lg:inline shrink-0">Alertas</span>
-                    {hasUnread && (
-                        <span className="absolute top-1.5 right-2 flex h-2.5 w-2.5 items-center justify-center pointer-events-none">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
-                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-600 border border-white animate-pulse"></span>
-                        </span>
-                    )}
                 </button>
 
                 {/* Botón Centro de Tutoriales */}
