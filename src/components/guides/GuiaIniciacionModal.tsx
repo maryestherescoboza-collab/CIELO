@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, CheckCircle2, Award, Volume2, ArrowRight } from 'lucide-react';
 import { CieloModal } from '../ui/CieloModal';
 import {
   loadIniciacionProgress,
   dismissIniciacionWelcome,
   resetIniciacionProgress,
+  getResolvedUserId,
   type IniciacionProgress
 } from '../../guides/iniciacionState';
 import { startGuide, isGuideActive } from '../../guides/driverGuides';
@@ -16,22 +18,22 @@ interface Props {
 }
 
 export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
+  const navigate = useNavigate();
   const [showWelcome, setShowWelcome] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [progress, setProgress] = useState<IniciacionProgress>(() => loadIniciacionProgress(userId));
+  const effectiveUserId = getResolvedUserId(userId);
+  const [progress, setProgress] = useState<IniciacionProgress>(() => loadIniciacionProgress(effectiveUserId));
 
   const refreshProgress = useCallback(() => {
-    if (!userId) return;
-    const p = loadIniciacionProgress(userId);
+    const p = loadIniciacionProgress(effectiveUserId);
     setProgress(p);
-  }, [userId]);
+  }, [effectiveUserId]);
 
   // Sincronizar progreso y manejar apertura de bienvenida para usuarios
   useEffect(() => {
-    if (!userId) return;
     refreshProgress();
 
-    const p = loadIniciacionProgress(userId);
+    const p = loadIniciacionProgress(effectiveUserId);
     if (!p.completed && !p.dismissedWelcome && !isGuideActive()) {
       const timer = setTimeout(() => {
         if (!isGuideActive()) {
@@ -46,7 +48,7 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [userId, refreshProgress]);
+  }, [effectiveUserId, refreshProgress]);
 
   // Escuchar eventos globales del ciclo de vida de la guía
   useEffect(() => {
@@ -82,18 +84,18 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
   const handleStartTour = () => {
     setShowWelcome(false);
     voiceNarrator.stop();
-    if (!userId) return;
     const stepToStart = progress.completed ? 0 : (progress.currentStepIndex || 0);
-    startGuide('iniciacion', stepToStart, userId);
+    navigate('/inicio');
+    setTimeout(() => {
+      startGuide('iniciacion', stepToStart, effectiveUserId);
+    }, 220);
   };
 
   const handleDismissWelcome = () => {
     setShowWelcome(false);
     voiceNarrator.stop();
-    if (userId) {
-      dismissIniciacionWelcome(userId);
-      refreshProgress();
-    }
+    dismissIniciacionWelcome(effectiveUserId);
+    refreshProgress();
   };
 
   const handleCloseCelebration = () => {
@@ -122,9 +124,11 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
   const handleRestartTour = () => {
     setShowCelebration(false);
     voiceNarrator.stop();
-    if (!userId) return;
-    resetIniciacionProgress(userId);
-    startGuide('iniciacion', 0, userId);
+    resetIniciacionProgress(effectiveUserId);
+    navigate('/inicio');
+    setTimeout(() => {
+      startGuide('iniciacion', 0, effectiveUserId, true);
+    }, 220);
   };
 
   return (

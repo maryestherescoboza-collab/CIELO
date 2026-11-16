@@ -419,11 +419,12 @@ function highlightElement(step: GuideStep, resolvedSelector: string, guide: Guid
   try {
     const popoverHtml = buildPopoverHtml(step, currentStepIndex, guide.steps.length, guide);
 
+    const isBottomNav = resolvedSelector.includes('nav-');
     driverObj.highlight({
       element: resolvedSelector,
       popover: {
         description: popoverHtml,
-        side: 'bottom',
+        side: isBottomNav ? 'top' : 'bottom',
         align: 'start'
       }
     });

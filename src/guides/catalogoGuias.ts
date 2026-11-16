@@ -25,7 +25,7 @@ export const CATALOGO_GUIAS: Guide[] = [
     steps: [
       // ETAPA 1: CREAR UN CURSO
       {
-        selector: '#nav-cursos',
+        selector: '#nav-cursos, [data-guide="nav-cursos"]',
         texto: 'Vamos a crear tu primer curso. Aquí organizarás a tus estudiantes y asignaturas. Pulsa en «Cursos».',
         voz: 'Vamos a crear tu primer curso. Aquí organizarás a tus estudiantes y asignaturas. Pulsa en Cursos.',
         etapa: 1,
