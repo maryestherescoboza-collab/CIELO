@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Sparkles, CheckCircle2, BookOpen, Users, ClipboardCheck, Palette, Award, Volume2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Award, Volume2, ArrowRight } from 'lucide-react';
 import { CieloModal } from '../ui/CieloModal';
 import {
   loadIniciacionProgress,
@@ -38,7 +38,7 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
           setShowWelcome(true);
           const audioUrl = resolveAudioUrl(undefined, undefined, 'iniciacion_welcome');
           voiceNarrator.speak(
-            'Bienvenido a CIELO. Aprende a evaluar por competencias con nuestra guía interactiva y narrada. Pulsa en Comenzar recorrido para iniciar.',
+            'Te acompañaremos paso a paso en una experiencia interactiva para que aprendas a utilizar las funciones fundamentales de CIELO.',
             audioUrl,
             { stepKey: 'modal_welcome' }
           );
@@ -115,44 +115,13 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
       <CieloModal
         isOpen={showWelcome}
         onClose={handleDismissWelcome}
-        title="Bienvenido a CIELO"
-        subtitle="Tu plataforma de evaluación pedagógica por competencias"
-        icon={<Sparkles size={20} className="text-[#DEAE4D]" />}
         maxWidth="xl"
       >
         <div className="space-y-6 py-2">
           <div className="bg-[#F8F9F7] border border-[rgba(46,51,48,0.08)] rounded-2xl p-4.5">
             <p className="text-sm font-medium text-[#2E3330] leading-relaxed">
-              Te acompañaremos paso a paso en una experiencia interactiva y narrada con voz en español para que aprendas a utilizar las funciones fundamentales de CIELO realizando acciones reales en tu aula.
+              Te acompañaremos paso a paso en una experiencia interactiva para que aprendas a utilizar las funciones fundamentales de CIELO.
             </p>
-          </div>
-
-          <div className="space-y-2.5">
-            <h4 className="text-[11px] font-black uppercase tracking-widest text-[#5F665E]">
-              Lo que aprenderás en este recorrido:
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center gap-2.5 p-2.5 bg-white border border-[rgba(46,51,48,0.06)] rounded-xl shadow-xs">
-                <BookOpen size={16} className="text-[#689C63] shrink-0" />
-                <span className="font-semibold text-[#2E3330]">1. Crear tu primer curso</span>
-              </div>
-              <div className="flex items-center gap-2.5 p-2.5 bg-white border border-[rgba(46,51,48,0.06)] rounded-xl shadow-xs">
-                <Users size={16} className="text-[#537BAC] shrink-0" />
-                <span className="font-semibold text-[#2E3330]">2. Agregar tus alumnos</span>
-              </div>
-              <div className="flex items-center gap-2.5 p-2.5 bg-white border border-[rgba(46,51,48,0.06)] rounded-xl shadow-xs">
-                <ClipboardCheck size={16} className="text-[#DEAE4D] shrink-0" />
-                <span className="font-semibold text-[#2E3330]">3. Crear una actividad</span>
-              </div>
-              <div className="flex items-center gap-2.5 p-2.5 bg-white border border-[rgba(46,51,48,0.06)] rounded-xl shadow-xs">
-                <Palette size={16} className="text-[#EB8847] shrink-0" />
-                <span className="font-semibold text-[#2E3330]">4. Modos de evaluación</span>
-              </div>
-              <div className="sm:col-span-2 flex items-center gap-2.5 p-2.5 bg-white border border-[rgba(46,51,48,0.06)] rounded-xl shadow-xs">
-                <Award size={16} className="text-[#689C63] shrink-0" />
-                <span className="font-semibold text-[#2E3330]">5. Indicadores y niveles de logro oficial</span>
-              </div>
-            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
