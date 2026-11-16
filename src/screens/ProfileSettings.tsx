@@ -1657,40 +1657,38 @@ function PlanSuscripcionTab({ session: _session }: { session: Session | null }) 
     descripcion: 'No dispones de una suscripción activa actualmente.'
   };
 
-  if (suscripcionActual) {
-    if (suscripcionActual.estado === 'activa') {
-      estadoBadge = {
-        texto: 'Activa',
-        color: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-        descripcion: 'Tu suscripción se encuentra activa y al día con PayPal.'
-      };
-    } else if (suscripcionActual.estado === 'cancelada') {
-      const fechaFinValida = suscripcionActual.fecha_fin && new Date() < new Date(suscripcionActual.fecha_fin);
-      if (fechaFinValida) {
-        estadoBadge = {
-          texto: 'Pendiente de finalización',
-          color: 'bg-amber-50 text-amber-800 border-amber-200',
-          descripcion: `Tu suscripción fue cancelada. Mantendrás acceso a todas las funciones hasta el ${new Date(suscripcionActual.fecha_fin!).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' })}.`
-        };
-      } else {
-        estadoBadge = {
-          texto: 'Cancelada',
-          color: 'bg-slate-100 text-slate-700 border-slate-200',
-          descripcion: 'Tu suscripción ha finalizado.'
-        };
-      }
-    } else if (suscripcionActual.estado === 'pendiente') {
-      estadoBadge = {
-        texto: 'Pendiente de confirmación',
-        color: 'bg-amber-50 text-amber-800 border-amber-200',
-        descripcion: 'Tienes un pago pendiente de confirmación por parte de PayPal.'
-      };
-    }
+  if (suscripcionActual?.estado === 'activa') {
+    estadoBadge = {
+      texto: 'Activa',
+      color: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      descripcion: 'Tu suscripción se encuentra activa y al día con PayPal.'
+    };
   } else if (hasTrial) {
     estadoBadge = {
       texto: 'Período de prueba',
       color: 'bg-blue-50 text-blue-800 border-blue-200',
       descripcion: `Disfrutas de acceso de prueba completo (${trialDaysLeft} días restantes).`
+    };
+  } else if (suscripcionActual?.estado === 'cancelada') {
+    const fechaFinValida = suscripcionActual.fecha_fin && new Date() < new Date(suscripcionActual.fecha_fin);
+    if (fechaFinValida) {
+      estadoBadge = {
+        texto: 'Pendiente de finalización',
+        color: 'bg-amber-50 text-amber-800 border-amber-200',
+        descripcion: `Tu suscripción fue cancelada. Mantendrás acceso a todas las funciones hasta el ${new Date(suscripcionActual.fecha_fin!).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' })}.`
+      };
+    } else {
+      estadoBadge = {
+        texto: 'Cancelada',
+        color: 'bg-slate-100 text-slate-700 border-slate-200',
+        descripcion: 'Tu suscripción ha finalizado.'
+      };
+    }
+  } else if (suscripcionActual?.estado === 'pendiente') {
+    estadoBadge = {
+      texto: 'Pendiente de confirmación',
+      color: 'bg-amber-50 text-amber-800 border-amber-200',
+      descripcion: 'Tienes un pago pendiente de confirmación por parte de PayPal.'
     };
   }
 

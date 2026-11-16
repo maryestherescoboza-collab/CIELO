@@ -101,7 +101,7 @@ export default function Inicio({ onAddActividad, docenteNombre, onUpdateInstitut
                     <div>
                         <h1 className="text-2xl font-black text-[#2E3330] tracking-tight mb-2 font-notion-title flex items-center gap-3">
                             <span>Saludos, <span className="text-primary">{docenteNombre.split(' ')[0]}</span></span>
-                            {hasTrial && !suscripcionActual?.estado && (
+                            {hasTrial && suscripcionActual?.estado !== 'activa' && (
                                 <span className="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-md uppercase tracking-wider">
                                     {trialDaysLeft > 0 
                                         ? `Prueba gratuita · ${trialDaysLeft} días restantes` 
