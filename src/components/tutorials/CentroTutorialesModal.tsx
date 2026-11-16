@@ -1,30 +1,20 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { X, Search, Play, Compass } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { X, Search } from 'lucide-react';
 import { startGuide } from '../../guides/driverGuides';
+import { loadIniciacionProgress, resetIniciacionProgress } from '../../guides/iniciacionState';
 
 export interface TutorialItem {
   id: string;
   guideId: string;
+  numero: string;
   eyebrow: string;
   title: string;
   category: 'gestion' | 'evaluacion' | 'ia';
+  etapa: string;
   duration: string;
+  pasos: number;
   isNew?: boolean;
-  sticker: 
-    | 'iniciacion'
-    | 'brick' 
-    | 'students' 
-    | 'calendar' 
-    | 'recovery' 
-    | 'grade' 
-    | 'rubric' 
-    | 'checklist' 
-    | 'rubric-template' 
-    | 'checklist-template' 
-    | 'robot-activity' 
-    | 'robot-rubric' 
-    | 'robot-checklist';
-  description?: string;
+  description: string;
 }
 
 export const TUTORIALES_DATA: TutorialItem[] = [
@@ -32,54 +22,64 @@ export const TUTORIALES_DATA: TutorialItem[] = [
   {
     id: 't-iniciacion',
     guideId: 'iniciacion',
+    numero: '00',
     eyebrow: 'Microlecciones CIELO',
-    title: 'Guía de iniciación (5 Etapas)',
+    title: 'Guía de iniciación',
     category: 'gestion',
-    duration: '2:30',
+    etapa: 'Iniciación',
+    duration: '5 min',
+    pasos: 23,
     isNew: true,
-    sticker: 'iniciacion',
-    description: 'Recorrido interactivo y narrado por las 5 etapas fundamentales de CIELO.'
+    description: 'Recorrido guiado de 5 etapas para dominar CIELO: cursos, estudiantes, actividades, evaluación y niveles de logro.'
   },
   {
     id: 't-crear-curso',
     guideId: 'crear-curso',
+    numero: '01',
     eyebrow: 'Microlecciones CIELO',
     title: 'Crear un curso nuevo',
     category: 'gestion',
-    duration: '0:45',
+    etapa: 'Cursos',
+    duration: '2 min',
+    pasos: 3,
     isNew: true,
-    sticker: 'brick',
     description: 'Aprende a configurar tu primer curso con grado, sección y asignaturas oficiales.'
   },
   {
     id: 't-actividades-alumnos',
     guideId: 'crear-actividades-alumnos',
+    numero: '02',
     eyebrow: 'Microlecciones CIELO',
     title: 'Agregar actividades y alumnos',
     category: 'gestion',
-    duration: '1:10',
-    sticker: 'students',
+    etapa: 'Estudiantes',
+    duration: '2 min',
+    pasos: 3,
     description: 'Inscribe a tus estudiantes e inicializa tus primeras actividades pedagógicas.'
   },
   {
     id: 't-pase-lista',
     guideId: 'pase-de-lista',
+    numero: '03',
     eyebrow: 'Microlecciones CIELO',
     title: 'Cómo hacer el pase de lista',
     category: 'gestion',
-    duration: '0:50',
+    etapa: 'Asistencia',
+    duration: '2 min',
+    pasos: 3,
     isNew: true,
-    sticker: 'calendar',
-    description: 'Registra asistencias, ausencias justificadas y retardos con un solo toque.'
+    description: 'Registra asistencias, ausencias justificadas y tardanzas con un solo toque.'
   },
   {
     id: 't-recuperacion-p1',
     guideId: 'plan-recuperacion-p1',
+    numero: '04',
     eyebrow: 'Microlecciones CIELO',
     title: 'Plan de recuperación pedagógica',
     category: 'gestion',
-    duration: '1:30',
-    sticker: 'recovery',
+    etapa: 'Seguimiento',
+    duration: '2 min',
+    pasos: 3,
     description: 'Consulta los estudiantes que requieren nivelación y genera su plan adaptativo.'
   },
 
@@ -87,52 +87,62 @@ export const TUTORIALES_DATA: TutorialItem[] = [
   {
     id: 't-evaluar-actividad',
     guideId: 'evaluar-actividad',
+    numero: '05',
     eyebrow: 'Microlecciones CIELO',
     title: 'Evaluar una actividad por indicador',
     category: 'evaluacion',
-    duration: '0:40',
-    sticker: 'grade',
+    etapa: 'Evaluación',
+    duration: '2 min',
+    pasos: 3,
     description: 'Asigna puntuaciones directas alineadas a las competencias curriculares.'
   },
   {
     id: 't-evaluar-rubrica',
     guideId: 'evaluar-rubrica',
+    numero: '06',
     eyebrow: 'Microlecciones CIELO',
     title: 'Cómo evaluar con rúbrica analítica',
     category: 'evaluacion',
-    duration: '1:20',
+    etapa: 'Rúbrica',
+    duration: '2 min',
+    pasos: 3,
     isNew: true,
-    sticker: 'rubric',
     description: 'Valora cada criterio con escala de cuatro niveles y retroalimentación inmediata.'
   },
   {
     id: 't-evaluar-cotejo',
     guideId: 'evaluar-cotejo',
+    numero: '07',
     eyebrow: 'Microlecciones CIELO',
     title: 'Cómo evaluar con lista de cotejo',
     category: 'evaluacion',
-    duration: '0:55',
-    sticker: 'checklist',
+    etapa: 'Cotejo',
+    duration: '2 min',
+    pasos: 3,
     description: 'Aplica instrumentos dicotómicos de verificación rápida de evidencias.'
   },
   {
     id: 't-plantilla-rubrica',
     guideId: 'crear-plantilla-rubrica',
+    numero: '08',
     eyebrow: 'Microlecciones CIELO',
     title: 'Crear una plantilla de rúbrica',
     category: 'evaluacion',
-    duration: '1:15',
-    sticker: 'rubric-template',
+    etapa: 'Plantillas',
+    duration: '2 min',
+    pasos: 3,
     description: 'Diseña matrices reutilizables para cualquier período escolar.'
   },
   {
     id: 't-plantilla-cotejo',
     guideId: 'crear-plantilla-cotejo',
+    numero: '09',
     eyebrow: 'Microlecciones CIELO',
     title: 'Crear una plantilla de cotejo',
     category: 'evaluacion',
-    duration: '1:00',
-    sticker: 'checklist-template',
+    etapa: 'Plantillas',
+    duration: '2 min',
+    pasos: 3,
     description: 'Estructura indicadores y descriptores para listas de observación.'
   },
 
@@ -140,67 +150,151 @@ export const TUTORIALES_DATA: TutorialItem[] = [
   {
     id: 't-actividades-ia',
     guideId: 'crear-actividades-ia',
+    numero: '10',
     eyebrow: 'Microlecciones CIELO',
     title: 'Generar actividades con IA',
     category: 'ia',
-    duration: '1:15',
+    etapa: 'IA Pedagógica',
+    duration: '2 min',
+    pasos: 3,
     isNew: true,
-    sticker: 'robot-activity',
     description: 'Crea secuencias didácticas completas alineadas al currículo oficial MINERD.'
   },
   {
     id: 't-rubrica-ia',
     guideId: 'crear-rubrica-ia',
+    numero: '11',
     eyebrow: 'Microlecciones CIELO',
     title: 'Crear rúbricas inteligentes con IA',
     category: 'ia',
-    duration: '1:05',
+    etapa: 'IA Pedagógica',
+    duration: '2 min',
+    pasos: 3,
     isNew: true,
-    sticker: 'robot-rubric',
     description: 'Redacta criterios e indicadores de logro pedagógicos en segundos.'
   },
   {
     id: 't-cotejo-ia',
     guideId: 'crear-cotejo-ia',
+    numero: '12',
     eyebrow: 'Microlecciones CIELO',
     title: 'Crear lista de cotejo con IA',
     category: 'ia',
-    duration: '0:50',
-    sticker: 'robot-checklist',
+    etapa: 'IA Pedagógica',
+    duration: '2 min',
+    pasos: 3,
     description: 'Produce ítems de verificación automáticos a partir de tus temas de clase.'
   }
 ];
 
-// ── COMPONENTE DE TARJETA MINIMALISTA MONOCROMÁTICA ──
+// ── COMPONENTE DE TARJETA CON DISEÑO IDÉNTICO A GUÍAS ──
+// Tarjeta: rounded-[14px], border border-(--border-soft), sin iconos ni emojis.
+// Elemento visual hero: número grande tipográfico "00", "01"...
+// Botones y chips: rounded-[10px].
 interface CardProps {
   item: TutorialItem;
-  onSelect: (item: TutorialItem) => void;
+  onSelect: (item: TutorialItem, reset?: boolean) => void;
+  progresoIniciacion?: {
+    currentStepIndex: number;
+    currentStage: number;
+    completed: boolean;
+  };
 }
 
-export const TutorialCard: React.FC<CardProps> = ({ item, onSelect }) => {
+export const TutorialCard = ({
+  item,
+  onSelect,
+  progresoIniciacion = { currentStepIndex: 0, currentStage: 1, completed: false }
+}: CardProps) => {
+  const isIniciacion = item.guideId === 'iniciacion';
+  const hasIniciacionProgress = isIniciacion && progresoIniciacion.currentStepIndex > 0 && !progresoIniciacion.completed;
+  const isCompleted = isIniciacion && progresoIniciacion.completed;
+
+  const handleComenzarDesdeCero = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('¿Deseas reiniciar la guía de iniciación desde el paso 1?')) {
+      resetIniciacionProgress(null);
+      onSelect(item, true);
+    }
+  };
+
   return (
-    <div
-      onClick={() => onSelect(item)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect(item);
-        }
-      }}
-      className="group relative bg-white hover:bg-neutral-50/70 border border-neutral-200 hover:border-black rounded-2xl p-5 sm:p-6 transition-all duration-200 cursor-pointer flex items-center justify-between gap-4 min-h-[96px] sm:min-h-[104px]"
-    >
-      {/* LADO IZQUIERDO: Nombre del tutorial */}
-      <div className="flex-1 min-w-0 pr-2">
-        <h4 className="text-sm sm:text-base font-bold text-black tracking-tight leading-snug line-clamp-2">
+    <div className="bg-white border border-(--border-soft) rounded-[14px] p-5 sm:p-6 flex flex-col justify-between hover:border-(--ink-soft)/40 hover:shadow-md transition-all duration-200 group">
+      {/* Parte Superior: Número grande tipográfico + Etapa */}
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-3xl sm:text-4xl font-extrabold text-(--ink) tracking-tight select-none">
+            {item.numero}
+          </span>
+          <span
+            className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-[10px] border select-none ${
+              isIniciacion
+                ? 'bg-(--ink) text-white border-(--ink)'
+                : 'text-(--ink-soft) bg-(--linen)/60 border-(--border-soft)'
+            }`}
+          >
+            {item.etapa}
+          </span>
+        </div>
+
+        {/* Título y Descripción */}
+        <h3 className="text-base font-bold text-(--ink) mt-4 mb-2 leading-snug">
           {item.title}
-        </h4>
+        </h3>
+        <p className="text-xs text-(--ink-soft) leading-relaxed line-clamp-2">
+          {item.description}
+        </p>
       </div>
 
-      {/* LADO DERECHO: Icono de reproducción protagonista dentro de círculo negro */}
-      <div className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-black flex items-center justify-center transition-transform duration-200 group-hover:scale-105 bg-white">
-        <Play size={18} fill="currentColor" className="text-black translate-x-0.5" />
+      {/* Parte Inferior: Pasos, Minutos y Botón Comenzar */}
+      <div className="pt-4 mt-4 border-t border-(--border-soft)">
+        <div className="text-[11px] font-medium text-(--ink-soft) mb-3 select-none">
+          {isIniciacion ? (
+            isCompleted ? (
+              '5 etapas · 23 pasos completados'
+            ) : hasIniciacionProgress ? (
+              `Paso ${progresoIniciacion.currentStepIndex + 1} de 23 pendiente (Etapa ${progresoIniciacion.currentStage})`
+            ) : (
+              '5 etapas · 23 pasos · 5 min'
+            )
+          ) : (
+            `${item.pasos} pasos · ${item.duration}`
+          )}
+        </div>
+
+        {hasIniciacionProgress ? (
+          <div className="space-y-1.5">
+            <button
+              type="button"
+              onClick={() => onSelect(item, false)}
+              className="w-full py-2.5 px-4 rounded-[10px] bg-(--ink) text-white hover:bg-(--ink)/90 active:scale-[0.99] text-xs font-bold transition-all text-center cursor-pointer select-none"
+            >
+              Continuar tutorial
+            </button>
+            <button
+              type="button"
+              onClick={handleComenzarDesdeCero}
+              className="text-[11px] text-(--ink-soft) hover:text-(--ink) underline font-medium cursor-pointer transition-colors block mx-auto text-center pt-1 select-none"
+              title="Reiniciar voluntariamente todo el recorrido desde el paso 1"
+            >
+              Comenzar desde cero
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              if (isCompleted) {
+                handleComenzarDesdeCero({ stopPropagation: () => {} } as any);
+              } else {
+                onSelect(item, false);
+              }
+            }}
+            className="w-full py-2.5 px-4 rounded-[10px] bg-(--ink) text-white hover:bg-(--ink)/90 active:scale-[0.99] text-xs font-bold transition-all text-center cursor-pointer select-none"
+          >
+            {isCompleted ? 'Comenzar desde cero' : 'Comenzar tutorial'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -208,18 +302,32 @@ export const TutorialCard: React.FC<CardProps> = ({ item, onSelect }) => {
 
 // ── VISTA PRINCIPAL DEL CENTRO DE MICROLECCIONES ──
 interface CentroTutorialesViewProps {
-  onSelectTutorial: (item: TutorialItem) => void;
+  onSelectTutorial: (item: TutorialItem, reset?: boolean) => void;
   onClose?: () => void;
   isModal?: boolean;
 }
 
-export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
+export const CentroTutorialesView = ({
   onSelectTutorial,
   onClose,
   isModal = true
-}) => {
+}: CentroTutorialesViewProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'gestion' | 'evaluacion' | 'ia'>('all');
+  const [progresoIniciacion, setProgresoIniciacion] = useState(() => loadIniciacionProgress());
+
+  // Escuchar cambios de progreso de la guía de iniciación
+  useEffect(() => {
+    const handler = () => {
+      setProgresoIniciacion(loadIniciacionProgress());
+    };
+    window.addEventListener('storage', handler);
+    window.addEventListener('cielo:iniciacion_updated', handler);
+    return () => {
+      window.removeEventListener('storage', handler);
+      window.removeEventListener('cielo:iniciacion_updated', handler);
+    };
+  }, []);
 
   // Filtrado reactivo de tutoriales
   const filteredItems = useMemo(() => {
@@ -228,7 +336,9 @@ export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
       const matchSearch =
         searchQuery.trim() === '' ||
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.etapa.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.numero.includes(searchQuery.trim());
       return matchCategory && matchSearch;
     });
   }, [searchQuery, selectedCategory]);
@@ -246,39 +356,43 @@ export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
   }, [filteredItems]);
 
   return (
-    <div className={`w-full flex flex-col bg-white ${isModal ? 'max-h-[92vh] rounded-3xl border border-neutral-200 shadow-xl overflow-hidden' : 'min-h-[80vh] rounded-3xl border border-neutral-200'}`}>
-      {/* 2. ENCABEZADO MONOCROMÁTICO */}
-      <div className="px-6 sm:px-8 py-6 border-b border-neutral-200 flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white">
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl border border-neutral-200 flex items-center justify-center text-black bg-white shrink-0">
-            <Compass size={22} strokeWidth={2} />
-          </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-black tracking-tight leading-tight">
-              Centro de Microlecciones y Tutoriales
-            </h2>
-            <p className="text-xs sm:text-sm text-neutral-500 font-normal mt-0.5">
-              Guías interactivas guiadas en la plataforma para dominar la evaluación por competencias
-            </p>
-          </div>
+    <div
+      className={`w-full flex flex-col bg-white ${
+        isModal
+          ? 'max-h-[92vh] rounded-[16px] border border-(--border-soft) shadow-xl overflow-hidden'
+          : 'min-h-[80vh] rounded-[16px] border border-(--border-soft)'
+      }`}
+    >
+      {/* ENCABEZADO */}
+      <div className="px-6 sm:px-8 py-6 border-b border-(--border-soft) flex flex-col md:flex-row md:items-center justify-between gap-5 bg-white">
+        <div>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-(--ink-soft)">
+            Aprendizaje guiado
+          </span>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-(--ink) tracking-tight leading-tight mt-0.5">
+            Centro de Microlecciones y Tutoriales
+          </h2>
+          <p className="text-xs sm:text-sm text-(--ink-soft) font-normal mt-1">
+            Tutoriales paso a paso narrados en la plataforma para dominar la evaluación por competencias.
+          </p>
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          {/* Buscador minimalista monocromático */}
-          <div className="relative w-full md:w-64">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+          {/* Buscador con tokens CIELO */}
+          <div className="relative w-full md:w-72">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-(--ink-soft)" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar tutorial..."
-              className="w-full pl-9 pr-8 py-2 bg-white rounded-full border border-neutral-200 text-xs font-medium text-black placeholder:text-neutral-400 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
+              className="w-full pl-9 pr-8 py-2 bg-white rounded-[10px] border border-(--border-soft) text-xs font-medium text-(--ink) placeholder:text-(--ink-soft) focus:outline-none focus:border-(--ink) transition-all"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-(--ink-soft) hover:text-(--ink) cursor-pointer"
                 aria-label="Limpiar búsqueda"
               >
                 <X size={13} />
@@ -291,22 +405,22 @@ export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-full transition-colors cursor-pointer shrink-0"
+              className="p-2 text-(--ink-soft) hover:text-(--ink) hover:bg-(--linen)/30 rounded-[10px] transition-colors cursor-pointer shrink-0 border border-transparent hover:border-(--border-soft)"
               aria-label="Cerrar modal"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           )}
         </div>
       </div>
 
-      {/* 3. BARRA DE FILTROS Y CATEGORÍAS */}
-      <div className="px-6 sm:px-8 py-3.5 border-b border-neutral-200 bg-white flex items-center gap-2 overflow-x-auto scrollbar-none">
+      {/* BARRA DE FILTROS POR CATEGORÍA (CHIPS CON 10PX) */}
+      <div className="px-6 sm:px-8 py-3.5 border-b border-(--border-soft) bg-white flex items-center gap-2 overflow-x-auto no-scrollbar">
         {[
           { id: 'all', label: 'Todos los tutoriales', count: TUTORIALES_DATA.length },
-          { id: 'gestion', label: 'Gestión y Cursos', count: TUTORIALES_DATA.filter(t => t.category === 'gestion').length },
-          { id: 'evaluacion', label: 'Evaluación e Instrumentos', count: TUTORIALES_DATA.filter(t => t.category === 'evaluacion').length },
-          { id: 'ia', label: 'Inteligencia Artificial', count: TUTORIALES_DATA.filter(t => t.category === 'ia').length }
+          { id: 'gestion', label: 'Gestión y Cursos', count: TUTORIALES_DATA.filter((t) => t.category === 'gestion').length },
+          { id: 'evaluacion', label: 'Evaluación e Instrumentos', count: TUTORIALES_DATA.filter((t) => t.category === 'evaluacion').length },
+          { id: 'ia', label: 'Inteligencia Artificial', count: TUTORIALES_DATA.filter((t) => t.category === 'ia').length }
         ].map((cat) => {
           const active = selectedCategory === cat.id;
           return (
@@ -314,16 +428,16 @@ export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
               key={cat.id}
               type="button"
               onClick={() => setSelectedCategory(cat.id as any)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
+              className={`px-3.5 py-1.5 rounded-[10px] text-xs font-semibold whitespace-nowrap transition-all border cursor-pointer flex items-center gap-2 ${
                 active
-                  ? 'bg-black text-white border border-black'
-                  : 'bg-white text-neutral-600 border border-neutral-200 hover:border-neutral-400 hover:text-black'
+                  ? 'bg-(--ink) text-white border-(--ink)'
+                  : 'bg-white text-(--ink-soft) border-(--border-soft) hover:text-(--ink) hover:bg-(--linen)/30'
               }`}
             >
               <span>{cat.label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  active ? 'bg-neutral-800 text-neutral-200' : 'bg-neutral-100 text-neutral-500'
+                className={`text-[10px] px-1.5 py-0.5 rounded-[10px] font-bold ${
+                  active ? 'bg-white/20 text-white' : 'bg-(--linen) text-(--ink-soft)'
                 }`}
               >
                 {cat.count}
@@ -333,23 +447,28 @@ export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
         })}
       </div>
 
-      {/* 4. CUERPO DE TARJETAS Y CONTENIDO */}
-      <div className={`flex-1 overflow-y-auto px-6 sm:px-8 py-8 space-y-9 ${isModal ? 'max-h-[66vh]' : ''}`}>
+      {/* CUERPO DE TARJETAS Y CONTENIDO */}
+      <div className={`flex-1 overflow-y-auto px-6 sm:px-8 py-8 space-y-8 ${isModal ? 'max-h-[66vh]' : ''}`}>
         {filteredItems.length === 0 ? (
-          <div className="text-center py-16 text-neutral-400">
-            <Compass size={36} className="mx-auto mb-3 opacity-40 text-black" />
-            <p className="text-sm font-bold text-black">No se encontraron tutoriales</p>
-            <p className="text-xs text-neutral-500 mt-1">Prueba con otra palabra clave en el buscador.</p>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedCategory('all');
-              }}
-              className="mt-4 px-4 py-2 rounded-full bg-white border border-neutral-200 text-xs font-semibold text-black hover:border-black cursor-pointer transition-colors"
-            >
-              Restablecer filtros
-            </button>
+          <div className="p-12 text-center bg-white border border-(--border-soft) rounded-[14px] my-6 space-y-3">
+            <h3 className="text-base font-bold text-(--ink)">
+              No se encontraron tutoriales
+            </h3>
+            <p className="text-xs text-(--ink-soft) max-w-sm mx-auto">
+              No hay tutoriales que coincidan con «{searchQuery}». Intenta con otro término o limpia los filtros.
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('all');
+                }}
+                className="px-4 py-2 rounded-[10px] bg-white border border-(--border-soft) text-xs font-bold text-(--ink) hover:bg-(--linen)/30 transition-all cursor-pointer"
+              >
+                Limpiar búsqueda y filtros
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -358,18 +477,23 @@ export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
               <div>
                 <div className="flex items-baseline justify-between mb-4">
                   <div className="flex items-baseline gap-2.5">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-black">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-(--ink)">
                       Gestión y Cursos
                     </h3>
-                    <span className="text-xs text-neutral-400 font-medium">
+                    <span className="text-xs text-(--ink-soft) font-medium">
                       {gestionItems.length} {gestionItems.length === 1 ? 'tutorial' : 'tutoriales'}
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {gestionItems.map((item) => (
-                    <TutorialCard key={item.id} item={item} onSelect={onSelectTutorial} />
+                    <TutorialCard
+                      key={item.id}
+                      item={item}
+                      onSelect={onSelectTutorial}
+                      progresoIniciacion={progresoIniciacion}
+                    />
                   ))}
                 </div>
               </div>
@@ -380,18 +504,23 @@ export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
               <div>
                 <div className="flex items-baseline justify-between mb-4">
                   <div className="flex items-baseline gap-2.5">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-black">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-(--ink)">
                       Evaluación e Instrumentos
                     </h3>
-                    <span className="text-xs text-neutral-400 font-medium">
+                    <span className="text-xs text-(--ink-soft) font-medium">
                       {evaluacionItems.length} tutoriales
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {evaluacionItems.map((item) => (
-                    <TutorialCard key={item.id} item={item} onSelect={onSelectTutorial} />
+                    <TutorialCard
+                      key={item.id}
+                      item={item}
+                      onSelect={onSelectTutorial}
+                      progresoIniciacion={progresoIniciacion}
+                    />
                   ))}
                 </div>
               </div>
@@ -402,18 +531,23 @@ export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
               <div>
                 <div className="flex items-baseline justify-between mb-4">
                   <div className="flex items-baseline gap-2.5">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-black">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-(--ink)">
                       Inteligencia Artificial
                     </h3>
-                    <span className="text-xs text-neutral-400 font-medium">
+                    <span className="text-xs text-(--ink-soft) font-medium">
                       {iaItems.length} {iaItems.length === 1 ? 'tutorial' : 'tutoriales'}
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {iaItems.map((item) => (
-                    <TutorialCard key={item.id} item={item} onSelect={onSelectTutorial} />
+                    <TutorialCard
+                      key={item.id}
+                      item={item}
+                      onSelect={onSelectTutorial}
+                      progresoIniciacion={progresoIniciacion}
+                    />
                   ))}
                 </div>
               </div>
@@ -422,12 +556,12 @@ export const CentroTutorialesView: React.FC<CentroTutorialesViewProps> = ({
         )}
       </div>
 
-      {/* PIE DE PÁGINA MONOCROMÁTICO */}
-      <div className="px-6 sm:px-8 py-3.5 border-t border-neutral-200 bg-white text-xs flex flex-col sm:flex-row items-center justify-between gap-2">
-        <span className="text-neutral-500 font-medium">
+      {/* PIE DE PÁGINA */}
+      <div className="px-6 sm:px-8 py-3.5 border-t border-(--border-soft) bg-white text-xs flex flex-col sm:flex-row items-center justify-between gap-2">
+        <span className="text-(--ink-soft) font-medium">
           Selecciona cualquier microlección para activar el recorrido interactivo guiado en CIELO.
         </span>
-        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest shrink-0">
+        <span className="text-[11px] font-bold text-(--ink-soft) uppercase tracking-widest shrink-0">
           CIELO Learning
         </span>
       </div>
@@ -441,7 +575,7 @@ interface CentroTutorialesModalProps {
   onClose: () => void;
 }
 
-export const CentroTutorialesModal: React.FC<CentroTutorialesModalProps> = ({ isOpen, onClose }) => {
+export const CentroTutorialesModal = ({ isOpen, onClose }: CentroTutorialesModalProps) => {
   // Cerrar con Escape
   useEffect(() => {
     if (!isOpen) return;
@@ -464,10 +598,14 @@ export const CentroTutorialesModal: React.FC<CentroTutorialesModalProps> = ({ is
     };
   }, [isOpen]);
 
-  const handleSelectTutorial = (item: TutorialItem) => {
+  const handleSelectTutorial = (item: TutorialItem, reset = false) => {
     onClose();
     setTimeout(() => {
-      startGuide(item.guideId);
+      if (reset && item.guideId === 'iniciacion') {
+        startGuide('iniciacion', 0, undefined, true);
+      } else {
+        startGuide(item.guideId);
+      }
     }, 150);
   };
 
