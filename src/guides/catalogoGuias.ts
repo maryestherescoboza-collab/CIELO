@@ -128,79 +128,82 @@ export const CATALOGO_GUIAS: Guide[] = [
         mensajeExito: '¡Perfecto! Tu actividad está creada y lista para evaluar.'
       },
 
-      // ETAPA 4: APRENDER A EVALUAR (Pincel, Libre, Numérico)
+      // ETAPA 4: APRENDER A EVALUAR (Pincel, Numérico, Libre)
       // 4.A Modo Pincel
       {
         selector: '[data-guide="modo-eval-pincel"]',
-        texto: 'Con el modo pincel puedes evaluar rápidamente a tus estudiantes. Pulsa para activarlo.',
-        voz: 'Con el modo pincel puedes evaluar rápidamente a tus estudiantes. Pulsa para activarlo.',
+        texto: 'Pulsa aquí para activar el modo Pincel.',
+        voz: 'Pulsa aquí para activar el modo Pincel.',
         etapa: 4,
-        tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Pincel)',
+        tituloEtapa: 'Etapa 4: Modo Pincel',
         evento: 'click'
       },
       {
-        selector: '[data-guide="nivel-pincel-100"]',
-        texto: 'Selecciona un nivel (por ejemplo, 100 Dominio completo) para cargarlo en el pincel.',
-        voz: 'Selecciona un nivel y aplícalo a los indicadores correspondientes.',
+        selector: '[data-guide="barra-niveles-dominio"]',
+        texto: 'Selecciona el nivel de logro de cada estudiante y visualízalo mediante colores. Cada color representa un nivel.',
+        voz: 'Selecciona el nivel de logro de cada estudiante y visualízalo mediante colores. Cada color representa un nivel.',
         etapa: 4,
-        tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Pincel)',
-        evento: 'click'
+        tituloEtapa: 'Etapa 4: Modo Pincel',
+        evento: 'click',
+        targetActionSelector: '[data-guide~="nivel-pincel"], [data-guide="barra-niveles-dominio"] button'
       },
       {
         selector: '[data-guide="celda-evaluacion"]',
-        texto: 'Haz clic sobre una celda vacía para pintar la evaluación con el nivel seleccionado.',
-        voz: 'Haz clic sobre una celda vacía para registrar la evaluación con el pincel.',
+        texto: 'Haz clic sobre una celda vacía para registrar la evaluación con el nivel seleccionado.',
+        voz: 'Haz clic sobre una celda vacía para registrar la evaluación con el nivel seleccionado.',
         etapa: 4,
-        tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Pincel)',
+        tituloEtapa: 'Etapa 4: Modo Pincel',
         evento: 'click',
         esperarOperacion: 'evaluacion_guardar',
         mensajeExito: '¡Evaluación con pincel registrada!'
       },
-      // 4.B Modo Libre
+      // 4.B Modo Numérico
+      {
+        selector: '[data-guide="modo-eval-numerico"]',
+        texto: 'Pulsa aquí para activar el modo Numérico.',
+        voz: 'Pulsa aquí para activar el modo Numérico.',
+        etapa: 4,
+        tituloEtapa: 'Etapa 4: Modo Numérico',
+        evento: 'click'
+      },
+      {
+        selector: '[data-guide="barra-niveles-dominio"]',
+        texto: 'Selecciona el nivel de logro y visualízalo mediante su valor numérico.',
+        voz: 'Selecciona el nivel de logro y visualízalo mediante su valor numérico.',
+        etapa: 4,
+        tituloEtapa: 'Etapa 4: Modo Numérico',
+        evento: 'click',
+        targetActionSelector: '[data-guide~="nivel-num"], [data-guide="barra-niveles-dominio"] button'
+      },
+      {
+        selector: '[data-guide="celda-evaluacion"]',
+        texto: 'Haz clic en una celda para asignarle la puntuación numérica.',
+        voz: 'Haz clic en una celda para asignarle la puntuación numérica.',
+        etapa: 4,
+        tituloEtapa: 'Etapa 4: Modo Numérico',
+        evento: 'click',
+        esperarOperacion: 'evaluacion_guardar',
+        mensajeExito: '¡Puntuación numérica guardada!'
+      },
+      // 4.C Modo Libre
       {
         selector: '[data-guide="modo-eval-libre"]',
-        texto: 'Con el modo libre puedes elegir el nivel de cada indicador por separado. Pulsa para activarlo.',
-        voz: 'Con el modo libre puedes elegir el nivel de cada indicador por separado. Pulsa para activarlo.',
+        texto: 'Pulsa aquí para activar el modo Libre.',
+        voz: 'Pulsa aquí para activar el modo Libre.',
         etapa: 4,
-        tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Libre)',
+        tituloEtapa: 'Etapa 4: Modo Libre',
         evento: 'click'
       },
       {
         selector: '[data-guide="celda-evaluacion-input"]',
-        texto: 'Observa el desempeño del estudiante y escribe su puntuación o nivel directamente en la casilla.',
-        voz: 'Observa el desempeño del estudiante y selecciona el nivel que corresponda.',
+        texto: 'Asigna directamente cualquier puntuación que desees, por ejemplo: 93, 88 o 75.',
+        voz: 'Asigna directamente cualquier puntuación que desees, por ejemplo: 93, 88 o 75.',
         etapa: 4,
-        tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Libre)',
+        tituloEtapa: 'Etapa 4: Modo Libre',
         evento: 'change',
+        targetActionSelector: '[data-guide="celda-evaluacion-input"]',
         esperarOperacion: 'evaluacion_guardar',
-        mensajeExito: '¡Calificación registrada correctamente!'
-      },
-      // 4.C Modo Numérico
-      {
-        selector: '[data-guide="modo-eval-numerico"]',
-        texto: 'Con el modo numérico puedes registrar una puntuación predefinida. Pulsa para activarlo.',
-        voz: 'Con el modo numérico puedes registrar una puntuación. Pulsa para activarlo.',
-        etapa: 4,
-        tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Numérico)',
-        evento: 'click'
-      },
-      {
-        selector: '[data-guide="nivel-num-85"]',
-        texto: 'Selecciona una puntuación numérica (por ejemplo, 85).',
-        voz: 'Selecciona la puntuación que obtuvo el estudiante.',
-        etapa: 4,
-        tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Numérico)',
-        evento: 'click'
-      },
-      {
-        selector: '[data-guide="celda-evaluacion"]',
-        texto: 'Haz clic en la celda del estudiante para asignarle la puntuación numérica.',
-        voz: 'Haz clic en la celda del estudiante para asignarle la puntuación numérica.',
-        etapa: 4,
-        tituloEtapa: 'Etapa 4: Aprender a evaluar (Modo Numérico)',
-        evento: 'click',
-        esperarOperacion: 'evaluacion_guardar',
-        mensajeExito: '¡Puntuación numérica guardada!'
+        mensajeExito: '¡Calificación personalizada guardada!'
       },
 
       // ETAPA 5: EXPLICAR INDICADORES Y NIVELES DE LOGRO

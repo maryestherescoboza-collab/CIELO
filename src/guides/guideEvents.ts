@@ -275,9 +275,16 @@ export function initGuideEventListeners(
 
   // Delegación de eventos en fase de captura para interceptar el evento de interacción
   document.body.addEventListener(step.evento, handleEvent, true);
+  const isChangeEvent = step.evento === 'change';
+  if (isChangeEvent) {
+    document.body.addEventListener('blur', handleEvent, true);
+  }
 
   activeListenerCleanup = () => {
     document.body.removeEventListener(step.evento, handleEvent, true);
+    if (isChangeEvent) {
+      document.body.removeEventListener('blur', handleEvent, true);
+    }
   };
 }
 

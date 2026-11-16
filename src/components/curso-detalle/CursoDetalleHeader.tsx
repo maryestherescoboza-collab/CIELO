@@ -354,8 +354,8 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             const tt = tooltips[val];
 
                             const guideAttr = evalMode === 'pincel'
-                                ? (val === 100 ? 'nivel-pincel-100' : 'puntuacion')
-                                : (val === 85 ? 'nivel-num-85' : 'puntuacion');
+                                ? `nivel-pincel nivel-pincel-${val}`
+                                : `nivel-num nivel-num-${val}`;
 
                             return (
                                 <div key={val} className="relative group flex items-center justify-center">
