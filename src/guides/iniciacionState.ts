@@ -6,6 +6,33 @@ import { supabase } from '../lib/supabase';
 
 export type StageStatus = 'pendiente' | 'en_progreso' | 'completada';
 
+/**
+ * Fecha de corte oficial de implementación de la guía inicial en CIELO.
+ * Solo las cuentas creadas a partir de esta fecha (15 de noviembre de 2026)
+ * son candidatas a recibir la bienvenida interactiva automática tras su registro.
+ * Todas las cuentas previas a esta fecha son consideradas existentes y nunca
+ * recibirán la bienvenida automática.
+ */
+export const GUIA_INICIACION_CUTOFF_ISO = '2026-11-15T00:00:00.000Z';
+export const GUIA_INICIACION_CUTOFF_TIME = new Date(GUIA_INICIACION_CUTOFF_ISO).getTime();
+
+/**
+ * Determina con certeza si una cuenta es nueva según su fecha real de creación (created_at).
+ * - Cuentas existentes (creadas antes de la fecha de corte): retorna false.
+ * - Cuentas nuevas (creadas a partir de la fecha de corte): retorna true.
+ * - Si no es posible determinar con certeza la antigüedad (ej. sin created_at): retorna false.
+ */
+export function isNewUserAccount(user: { created_at?: string } | null | undefined): boolean {
+  if (!user || !user.created_at) {
+    return false;
+  }
+  const createdAtTime = new Date(user.created_at).getTime();
+  if (isNaN(createdAtTime)) {
+    return false;
+  }
+  return createdAtTime >= GUIA_INICIACION_CUTOFF_TIME;
+}
+
 export interface IniciacionProgress {
   userId: string;
   completed: boolean;
@@ -66,24 +93,47 @@ export function getDefaultIniciacionProgress(userId: string): IniciacionProgress
   };
 }
 
-export function loadIniciacionProgress(userId?: string | null): IniciacionProgress {
+export function loadIniciacionProgress(
+  userId?: string | null,
+  userMetadata?: Record<string, any>
+): IniciacionProgress {
   const resolvedId = getResolvedUserId(userId);
+  let progress = getDefaultIniciacionProgress(resolvedId);
+
   try {
     const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${resolvedId}`);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
-        return {
-          ...getDefaultIniciacionProgress(resolvedId),
+        progress = {
+          ...progress,
           ...parsed,
           userId: resolvedId,
         };
       }
     }
   } catch (e) {
-    console.warn('[iniciacionState] Failed to load progress:', e);
+    console.warn('[iniciacionState] Failed to load progress from localStorage:', e);
   }
-  return getDefaultIniciacionProgress(resolvedId);
+
+  // Sincronizar inmediatamente con metadata persistida en Supabase Auth
+  // (mantiene el estado ante cambios de dispositivo, sesiones nuevas y borrado de caché)
+  if (userMetadata?.cielo_iniciacion && typeof userMetadata.cielo_iniciacion === 'object') {
+    const cloudProgress = userMetadata.cielo_iniciacion as Partial<IniciacionProgress>;
+    if (cloudProgress.dismissedWelcome) {
+      progress.dismissedWelcome = true;
+    }
+    if (cloudProgress.completed) {
+      progress.completed = true;
+    }
+    if (typeof cloudProgress.currentStepIndex === 'number' && cloudProgress.currentStepIndex > progress.currentStepIndex) {
+      progress.currentStepIndex = cloudProgress.currentStepIndex;
+      progress.currentStage = cloudProgress.currentStage || progress.currentStage;
+      progress.stages = { ...progress.stages, ...cloudProgress.stages };
+    }
+  }
+
+  return progress;
 }
 
 export function saveIniciacionProgress(progress: IniciacionProgress, syncToCloud = true) {

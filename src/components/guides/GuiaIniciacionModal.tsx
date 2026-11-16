@@ -2,11 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, CheckCircle2, Award, Volume2, ArrowRight } from 'lucide-react';
 import { CieloModal } from '../ui/CieloModal';
+import { useAppStore } from '../../store/appStore';
 import {
   loadIniciacionProgress,
   dismissIniciacionWelcome,
   resetIniciacionProgress,
   getResolvedUserId,
+  isNewUserAccount,
   type IniciacionProgress
 } from '../../guides/iniciacionState';
 import { startGuide, isGuideActive } from '../../guides/driverGuides';
@@ -15,40 +17,76 @@ import { resolveAudioUrl } from '../../guides/audioRegistry';
 
 interface Props {
   userId?: string;
+  user?: {
+    id?: string;
+    created_at?: string;
+    user_metadata?: Record<string, any>;
+  } | null;
 }
 
-export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
+export const GuiaIniciacionModal: React.FC<Props> = ({ userId, user: propUser }) => {
   const navigate = useNavigate();
+  const session = useAppStore((s) => s.session);
+  const authInitialized = useAppStore((s) => s.authInitialized);
+  const loading = useAppStore((s) => s.loading);
+
+  const currentUser = propUser || session?.user;
+  const effectiveUserId = getResolvedUserId(userId || currentUser?.id);
+
   const [showWelcome, setShowWelcome] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const effectiveUserId = getResolvedUserId(userId);
-  const [progress, setProgress] = useState<IniciacionProgress>(() => loadIniciacionProgress(effectiveUserId));
+  const [progress, setProgress] = useState<IniciacionProgress>(() =>
+    loadIniciacionProgress(effectiveUserId, currentUser?.user_metadata)
+  );
 
   const refreshProgress = useCallback(() => {
-    const p = loadIniciacionProgress(effectiveUserId);
+    const p = loadIniciacionProgress(effectiveUserId, currentUser?.user_metadata);
     setProgress(p);
-  }, [effectiveUserId]);
+  }, [effectiveUserId, currentUser?.user_metadata]);
 
-  // Sincronizar progreso y manejar apertura de bienvenida para usuarios
+  // Sincronizar progreso y manejar apertura de bienvenida ÚNICAMENTE para usuarios NUEVOS
   useEffect(() => {
-    refreshProgress();
-
-    const p = loadIniciacionProgress(effectiveUserId);
-    if (!p.completed && !p.dismissedWelcome && !isGuideActive()) {
-      const timer = setTimeout(() => {
-        if (!isGuideActive()) {
-          setShowWelcome(true);
-          const audioUrl = resolveAudioUrl(undefined, undefined, 'iniciacion_welcome');
-          voiceNarrator.speak(
-            'Te acompañaremos paso a paso en una experiencia interactiva para que aprendas a utilizar las funciones fundamentales de CIELO.',
-            audioUrl,
-            { stepKey: 'modal_welcome' }
-          );
-        }
-      }, 1500);
-      return () => clearTimeout(timer);
+    // 1. Esperar a que la autenticación y la carga del perfil hayan finalizado completamente
+    if (!authInitialized || loading || !currentUser) {
+      return;
     }
-  }, [effectiveUserId, refreshProgress]);
+
+    // 2. IDENTIFICACIÓN SEGURA: Verificar antigüedad de la cuenta con created_at
+    // Cuentas existentes o cuya antigüedad no pueda determinarse con certeza NUNCA reciben bienvenida automática
+    if (!isNewUserAccount(currentUser)) {
+      return;
+    }
+
+    refreshProgress();
+    const p = loadIniciacionProgress(effectiveUserId, currentUser.user_metadata);
+
+    // 3. Si ya completó la guía o ya la descartó, o si la guía ya está activa, no mostrar
+    if (p.completed || p.dismissedWelcome || isGuideActive()) {
+      return;
+    }
+
+    // 4. Guard de sesión: presentarlo una sola vez sin repetirlo al cambiar de módulo o actualizar página
+    const sessionKey = `cielo_iniciacion_welcome_prompted_${effectiveUserId}`;
+    if (sessionStorage.getItem(sessionKey)) {
+      return;
+    }
+
+    // Programar la aparición suave tras completar el primer acceso
+    const timer = setTimeout(() => {
+      if (!isGuideActive()) {
+        sessionStorage.setItem(sessionKey, '1');
+        setShowWelcome(true);
+        const audioUrl = resolveAudioUrl(undefined, undefined, 'iniciacion_welcome');
+        voiceNarrator.speak(
+          'Te acompañaremos paso a paso en una experiencia interactiva para que aprendas a utilizar las funciones fundamentales de CIELO.',
+          audioUrl,
+          { stepKey: 'modal_welcome' }
+        );
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [authInitialized, loading, currentUser, effectiveUserId, refreshProgress]);
 
   // Escuchar eventos globales del ciclo de vida de la guía
   useEffect(() => {
@@ -84,6 +122,8 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
   const handleStartTour = () => {
     setShowWelcome(false);
     voiceNarrator.stop();
+    dismissIniciacionWelcome(effectiveUserId);
+    refreshProgress();
     const stepToStart = progress.completed ? 0 : (progress.currentStepIndex || 0);
     navigate('/inicio');
     setTimeout(() => {

@@ -265,7 +265,7 @@ export default function Layout({
 
     return (
         <div className="app-shell">
-            <GuiaIniciacionModal userId={session?.user?.id} />
+            <GuiaIniciacionModal userId={session?.user?.id} user={session?.user} />
             {!hideNavigation && (
                 <>
                     <Header 
