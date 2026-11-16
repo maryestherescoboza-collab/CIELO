@@ -19,6 +19,8 @@ let currentGuideId: string | null = null;
 let currentStepIndex = 0;
 let activeUserId: string | null = null;
 let activeMutationObserver: MutationObserver | null = null;
+let isAdvancingStep = false;
+let currentStepToken = 0;
 
 export function isGuideActive(): boolean {
   return !!currentGuideId;
@@ -45,6 +47,7 @@ let isStoppingGuide = false;
 export function stopActiveGuide() {
   if (isStoppingGuide) return;
   isStoppingGuide = true;
+  isAdvancingStep = false;
 
   try {
     voiceNarrator.stop();
@@ -363,11 +366,13 @@ export function highlightStep() {
   }
 
   // Check if target element exists in DOM; if not, wait using MutationObserver
+  const expectedGuideId = currentGuideId;
+  const expectedStepIndex = currentStepIndex;
   const resolvedSelector = getResolvedSelector(step.selector);
   const element = document.querySelector(resolvedSelector);
   if (!element) {
     waitForElement(resolvedSelector, () => {
-      if (currentGuideId === guide.id) {
+      if (currentGuideId === expectedGuideId && currentStepIndex === expectedStepIndex) {
         highlightElement(step, resolvedSelector, guide);
       }
     });
@@ -461,33 +466,47 @@ function highlightElement(step: GuideStep, resolvedSelector: string, guide: Guid
  * Advances the active guide to the next step.
  */
 export function advanceStep() {
-  if (!currentGuideId) return;
+  if (!currentGuideId || isAdvancingStep) return;
+  isAdvancingStep = true;
+  const token = ++currentStepToken;
 
-  const guide = CATALOGO_GUIAS.find(g => g.id === currentGuideId);
-  if (!guide) return;
+  try {
+    voiceNarrator.stop();
+    cleanupGuideEventListeners();
 
-  voiceNarrator.stop();
-
-  const prevStep = guide.steps[currentStepIndex];
-  currentStepIndex++;
-
-  if (currentGuideId === 'iniciacion' && activeUserId && prevStep?.etapa) {
-    const nextStep = guide.steps[currentStepIndex];
-    // If we transitioned to a new stage or completed all steps
-    if (!nextStep || nextStep.etapa !== prevStep.etapa) {
-      updateStageStatus(activeUserId, prevStep.etapa as 1 | 2 | 3 | 4 | 5, 'completada', currentStepIndex);
+    const guide = CATALOGO_GUIAS.find(g => g.id === currentGuideId);
+    if (!guide) {
+      stopActiveGuide();
+      return;
     }
-  }
 
-  if (currentStepIndex >= guide.steps.length) {
-    // Guide completed!
-    if (currentGuideId === 'iniciacion' && activeUserId) {
-      setIniciacionCompleted(activeUserId);
-      window.dispatchEvent(new CustomEvent('cielo-iniciacion-celebration'));
+    const prevStep = guide.steps[currentStepIndex];
+    currentStepIndex++;
+
+    if (currentGuideId === 'iniciacion' && activeUserId && prevStep?.etapa) {
+      const nextStep = guide.steps[currentStepIndex];
+      // If we transitioned to a new stage or completed all steps
+      if (!nextStep || nextStep.etapa !== prevStep.etapa) {
+        updateStageStatus(activeUserId, prevStep.etapa as 1 | 2 | 3 | 4 | 5, 'completada', currentStepIndex);
+      }
     }
-    stopActiveGuide();
-  } else {
-    highlightStep();
+
+    if (currentStepIndex >= guide.steps.length) {
+      // Guide completed!
+      if (currentGuideId === 'iniciacion' && activeUserId) {
+        setIniciacionCompleted(activeUserId);
+        window.dispatchEvent(new CustomEvent('cielo-iniciacion-celebration'));
+      }
+      stopActiveGuide();
+    } else {
+      highlightStep();
+    }
+  } finally {
+    setTimeout(() => {
+      if (token === currentStepToken) {
+        isAdvancingStep = false;
+      }
+    }, 200);
   }
 }
 

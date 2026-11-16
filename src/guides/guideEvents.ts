@@ -1,4 +1,4 @@
-import { highlightStep, moveNext, getCurrentStepIndex } from './driverGuides';
+import { highlightStep, getCurrentStepIndex } from './driverGuides';
 import type { GuideStep } from './catalogoGuias';
 import { 
   subscribeGuideOperations, 
@@ -9,16 +9,21 @@ import { voiceNarrator } from './voiceNarrator';
 
 let activeListenerCleanup: (() => void) | null = null;
 let activeOperationCleanup: (() => void) | null = null;
+let activeSpeechWaitCleanup: (() => void) | null = null;
+let activeNarratorSubCleanup: (() => void) | null = null;
+
 let lastStepActivationTime = 0;
 let studentClickCount = 0;
 let lastActiveStepIndex = -1;
 
 /**
  * Inicializa la escucha de eventos e interacciones del paso activo.
- * - Detecta clics e interacciones de usuario en el target action.
- * - Si el paso requiere confirmación real (esperarOperacion), no avanza prematuramente:
- *   espera la respuesta exitosa del proceso asíncrono real de CIELO (ej. Supabase INSERT),
- *   muestra la confirmación breve, ejecuta la pausa natural y solo entonces avanza.
+ * - Sincroniza la narración neuronal con la navegación: prohíbe avances prematuros mientras
+ *   la voz o explicación siga activa.
+ * - Espera que el usuario complete la interacción real.
+ * - Si el paso requiere confirmación de backend (esperarOperacion), aguarda la respuesta exitosa
+ *   real de CIELO (ej. Supabase INSERT), reproduce la confirmación y espera que concluya la voz
+ *   antes de avanzar al siguiente paso.
  */
 export function initGuideEventListeners(
   step: GuideStep,
@@ -30,8 +35,9 @@ export function initGuideEventListeners(
   lastStepActivationTime = Date.now();
   let hasAdvanced = false;
   let isOperationInProgress = false;
+  let isUserActionCompleted = false;
+  let isSpeechCompleted = !voiceNarrator.isSpeaking();
 
-  // Selector del objetivo de acción: si tiene targetActionSelector usa ese, sino el selector del paso
   const actionSelector = step.targetActionSelector || step.selector;
 
   if (step.selector === '[data-guide="seleccionar-estudiantes"]') {
@@ -42,17 +48,54 @@ export function initGuideEventListeners(
     }
   }
 
+  // Ejecuta la transición de forma atómica únicamente cuando ambas condiciones se cumplan
+  const triggerAdvance = () => {
+    if (hasAdvanced) return;
+    hasAdvanced = true;
+    cleanupGuideEventListeners();
+    onAdvance();
+  };
+
+  const tryAdvance = () => {
+    if (hasAdvanced || isOperationInProgress) return;
+    // Solo permitir el avance si el usuario interactuó Y la narración ha finalizado
+    if (isUserActionCompleted && isSpeechCompleted) {
+      triggerAdvance();
+    }
+  };
+
+  const markActionDone = () => {
+    if (hasAdvanced || isOperationInProgress) return;
+    isUserActionCompleted = true;
+    tryAdvance();
+  };
+
+  // 1. Escuchar fin de narración de voz del paso actual
+  activeSpeechWaitCleanup = voiceNarrator.whenSpeechEnds(() => {
+    isSpeechCompleted = true;
+    tryAdvance();
+  });
+
+  // 2. Si el usuario reanuda o repite la voz (replay), actualizar estado para no cortar la repetición
+  activeNarratorSubCleanup = voiceNarrator.subscribe(() => {
+    if (voiceNarrator.isSpeaking()) {
+      isSpeechCompleted = false;
+      if (activeSpeechWaitCleanup) activeSpeechWaitCleanup();
+      activeSpeechWaitCleanup = voiceNarrator.whenSpeechEnds(() => {
+        isSpeechCompleted = true;
+        tryAdvance();
+      });
+    }
+  });
+
   // ── REGLA ESPECÍFICA: PASO 3 DE AGREGAR ACTIVIDAD (PRODUCTO) ──
   // No avanzar hasta detectar que el campo Producto tiene contenido válido (mínimo 3 caracteres).
   if (step.selector === '[data-guide="modal-actividad-producto"]') {
     let debounceTimer: any = null;
 
     const checkAndAdvance = (val: string) => {
-      if (hasAdvanced) return;
       if (val.trim().length >= 3) {
-        hasAdvanced = true;
-        cleanupGuideEventListeners();
-        onAdvance();
+        markActionDone();
       }
     };
 
@@ -63,7 +106,7 @@ export function initGuideEventListeners(
       if (val.trim().length >= 3) {
         debounceTimer = setTimeout(() => {
           checkAndAdvance(val);
-        }, 1200);
+        }, 800);
       }
     };
 
@@ -122,22 +165,22 @@ export function initGuideEventListeners(
       },
       onSuccess: (detail: GuideOperationEventDetail) => {
         if (detail.operation === expectedOp && !hasAdvanced) {
-          hasAdvanced = true;
           isOperationInProgress = false;
           const successMsg = detail.message || step.mensajeExito || '¡Operación confirmada con éxito!';
-          
           onStateChange?.('operacion_completada', successMsg);
 
-          // Narrar breve confirmación si está configurada
+          // Si hay mensaje de éxito, reproducir la locución y esperar que concluya antes de avanzar
           if (step.mensajeExito) {
             voiceNarrator.speak(step.mensajeExito, null, { force: true });
+            voiceNarrator.whenSpeechEnds(() => {
+              if (hasAdvanced) return;
+              setTimeout(() => {
+                triggerAdvance();
+              }, 400); // Pausa natural de 400ms tras concluir la voz
+            });
+          } else {
+            triggerAdvance();
           }
-
-          // Pausa natural (1.4s) antes de avanzar al siguiente proceso
-          setTimeout(() => {
-            cleanupGuideEventListeners();
-            onAdvance();
-          }, 1400);
         }
       },
       onError: (detail: GuideOperationEventDetail) => {
@@ -153,8 +196,8 @@ export function initGuideEventListeners(
   const handleEvent = (e: Event) => {
     if (hasAdvanced || isOperationInProgress) return;
 
-    // Prevenir saltos accidentales por rebotes de clics en menos de 400ms
-    if (step.evento === 'click' && Date.now() - lastStepActivationTime < 400) {
+    // Prevenir saltos accidentales por rebotes de clics en menos de 300ms
+    if (step.evento === 'click' && Date.now() - lastStepActivationTime < 300) {
       return;
     }
 
@@ -166,9 +209,7 @@ export function initGuideEventListeners(
       if (target.matches(step.selector) || target.closest(step.selector)) {
         studentClickCount++;
         if (studentClickCount >= 3) {
-          hasAdvanced = true;
-          cleanupGuideEventListeners();
-          moveNext();
+          markActionDone();
         } else {
           requestAnimationFrame(() => {
             highlightStep();
@@ -185,11 +226,7 @@ export function initGuideEventListeners(
       if (!clickedItem) {
         return;
       }
-      hasAdvanced = true;
-      setTimeout(() => {
-        cleanupGuideEventListeners();
-        onAdvance();
-      }, 400);
+      markActionDone();
       return;
     }
 
@@ -200,11 +237,7 @@ export function initGuideEventListeners(
       if (!clickedItem) {
         return;
       }
-      hasAdvanced = true;
-      setTimeout(() => {
-        cleanupGuideEventListeners();
-        onAdvance();
-      }, 400);
+      markActionDone();
       return;
     }
 
@@ -223,9 +256,7 @@ export function initGuideEventListeners(
       }
 
       // Si es una interacción inmediata (como navegación de tabs o abrir modal)
-      hasAdvanced = true;
-      cleanupGuideEventListeners();
-      onAdvance();
+      markActionDone();
     }
   };
 
@@ -238,7 +269,7 @@ export function initGuideEventListeners(
 }
 
 /**
- * Limpia los listeners activos del paso y cancela suscripciones pendientes de operaciones.
+ * Limpia los listeners activos del paso, cancela suscripciones pendientes de operaciones y voz.
  */
 export function cleanupGuideEventListeners() {
   if (activeListenerCleanup) {
@@ -248,5 +279,13 @@ export function cleanupGuideEventListeners() {
   if (activeOperationCleanup) {
     activeOperationCleanup();
     activeOperationCleanup = null;
+  }
+  if (activeSpeechWaitCleanup) {
+    activeSpeechWaitCleanup();
+    activeSpeechWaitCleanup = null;
+  }
+  if (activeNarratorSubCleanup) {
+    activeNarratorSubCleanup();
+    activeNarratorSubCleanup = null;
   }
 }

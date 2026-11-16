@@ -27,12 +27,14 @@ class VoiceNarrator {
   private currentText = '';
   private isPausedState = false;
   private isUsingFallbackSynth = false;
+  private isPlaybackActive = false;
 
   // Control de idempotencia y sincronización atómica
   private lastPlayedKey: string | null = null;
   private currentPlaybackToken = 0;
 
   private listeners: Set<() => void> = new Set();
+  private onEndCallbacks: Set<() => void> = new Set();
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -41,7 +43,16 @@ class VoiceNarrator {
       this.audioElement.preload = 'auto';
 
       this.audioElement.onended = () => {
+        this.isPlaybackActive = false;
         this.isPausedState = false;
+        this.dispatchSpeechEnded();
+        this.notify();
+      };
+
+      this.audioElement.onerror = () => {
+        this.isPlaybackActive = false;
+        this.isPausedState = false;
+        this.dispatchSpeechEnded();
         this.notify();
       };
 
@@ -123,6 +134,20 @@ class VoiceNarrator {
     return spanishVoices[0];
   }
 
+  private dispatchSpeechEnded() {
+    if (this.onEndCallbacks.size > 0) {
+      const cbs = Array.from(this.onEndCallbacks);
+      this.onEndCallbacks.clear();
+      cbs.forEach(cb => {
+        try {
+          cb();
+        } catch (err) {
+          console.error('[voiceNarrator] onEnd callback error:', err);
+        }
+      });
+    }
+  }
+
   /**
    * Precarga el audio del siguiente paso en segundo plano para evitar retrasos de buffering.
    */
@@ -156,8 +181,11 @@ class VoiceNarrator {
     this.currentAudioUrl = audioUrl || null;
     this.isPausedState = false;
     this.isUsingFallbackSynth = false;
+    this.isPlaybackActive = true;
 
     if (this.isMutedState) {
+      this.isPlaybackActive = false;
+      this.dispatchSpeechEnded();
       this.notify();
       return;
     }
@@ -188,6 +216,7 @@ class VoiceNarrator {
             .then(() => {
               if (this.currentPlaybackToken !== token) {
                 this.audioElement?.pause();
+                this.isPlaybackActive = false;
                 return;
               }
               this.notify();
@@ -200,6 +229,9 @@ class VoiceNarrator {
               }
               if (err.name === 'NotAllowedError') {
                 console.warn('[voiceNarrator] Autoplay bloqueado hasta interacción del usuario.');
+                this.isPlaybackActive = false;
+                this.dispatchSpeechEnded();
+                this.notify();
                 return;
               }
               triggerFallback(`fallo de reproducción: ${err.name}`);
@@ -222,6 +254,8 @@ class VoiceNarrator {
    */
   private fallbackToSpeechSynthesis(text: string, token: number) {
     if (this.currentPlaybackToken !== token || !this.synth || this.isMutedState) {
+      this.isPlaybackActive = false;
+      this.dispatchSpeechEnded();
       this.notify();
       return;
     }
@@ -241,7 +275,11 @@ class VoiceNarrator {
       .replace(/\s+/g, ' ')
       .trim();
 
-    if (!cleanText) return;
+    if (!cleanText) {
+      this.isPlaybackActive = false;
+      this.dispatchSpeechEnded();
+      return;
+    }
 
     try {
       const utterance = new SpeechSynthesisUtterance(cleanText);
@@ -261,7 +299,9 @@ class VoiceNarrator {
       utterance.onend = () => {
         if (this.currentPlaybackToken === token) {
           this.currentUtterance = null;
+          this.isPlaybackActive = false;
           this.isPausedState = false;
+          this.dispatchSpeechEnded();
           this.notify();
         }
       };
@@ -272,7 +312,9 @@ class VoiceNarrator {
         }
         if (this.currentPlaybackToken === token) {
           this.currentUtterance = null;
+          this.isPlaybackActive = false;
           this.isPausedState = false;
+          this.dispatchSpeechEnded();
           this.notify();
         }
       };
@@ -379,6 +421,8 @@ class VoiceNarrator {
     }
 
     this.isPausedState = false;
+    this.isPlaybackActive = false;
+    this.onEndCallbacks.clear();
     this.notify();
   }
 
@@ -399,6 +443,7 @@ class VoiceNarrator {
 
     if (muted) {
       this.stop();
+      this.dispatchSpeechEnded();
     } else if (this.currentText) {
       this.replay();
     } else {
@@ -412,10 +457,48 @@ class VoiceNarrator {
 
   public isSpeaking(): boolean {
     if (this.isMutedState) return false;
-    if (this.audioElement && !this.audioElement.paused && !this.audioElement.ended) {
+    if (this.isPlaybackActive) return true;
+    if (this.audioElement && !this.audioElement.paused && !this.audioElement.ended && this.audioElement.currentTime > 0) {
       return true;
     }
     return !!(this.synth && (this.synth.speaking || this.currentUtterance) && !this.synth.paused);
+  }
+
+  /**
+   * Ejecuta el callback cuando la narración actual concluya completamente.
+   * Si no hay narración activa (o está silenciado), ejecuta el callback de inmediato.
+   */
+  public whenSpeechEnds(callback: () => void): () => void {
+    if (!this.isSpeaking()) {
+      callback();
+      return () => {};
+    }
+
+    let executed = false;
+    const runOnce = () => {
+      if (executed) return;
+      executed = true;
+      clearTimeout(safetyTimer);
+      this.onEndCallbacks.delete(runOnce);
+      callback();
+    };
+
+    this.onEndCallbacks.add(runOnce);
+
+    // Límite de seguridad para evitar que la guía quede congelada si el navegador
+    // no dispara onended (por ejemplo, suspensión de pestaña o error no capturado).
+    const safetyTimer = setTimeout(() => {
+      if (!executed) {
+        this.isPlaybackActive = false;
+        runOnce();
+      }
+    }, 18000);
+
+    return () => {
+      executed = true;
+      clearTimeout(safetyTimer);
+      this.onEndCallbacks.delete(runOnce);
+    };
   }
 
   public isPaused(): boolean {
