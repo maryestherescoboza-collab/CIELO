@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { CheckCircle2, Award, Volume2, ArrowRight } from 'lucide-react';
+import { X, CheckCircle2, Award, Volume2, ArrowRight } from 'lucide-react';
 import { CieloModal } from '../ui/CieloModal';
 import {
   loadIniciacionProgress,
@@ -101,6 +101,24 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
     voiceNarrator.stop();
   };
 
+  // Bloquear scroll de fondo y soportar tecla Escape en el modal de bienvenida
+  useEffect(() => {
+    if (!showWelcome) return;
+
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleDismissWelcome();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showWelcome, handleDismissWelcome]);
+
   const handleRestartTour = () => {
     setShowCelebration(false);
     voiceNarrator.stop();
@@ -111,39 +129,55 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId }) => {
 
   return (
     <>
-      {/* Modal de Bienvenida e Invitación */}
-      <CieloModal
-        isOpen={showWelcome}
-        onClose={handleDismissWelcome}
-        maxWidth="xl"
-      >
-        <div className="space-y-6 py-2">
-          <div className="bg-[#F8F9F7] border border-[rgba(46,51,48,0.08)] rounded-2xl p-4.5">
-            <p className="text-sm font-medium text-[#2E3330] leading-relaxed">
-              Te acompañaremos paso a paso en una experiencia interactiva para que aprendas a utilizar las funciones fundamentales de CIELO.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleStartTour}
-              className="w-full sm:flex-1 h-11 rounded-full text-xs font-bold uppercase tracking-wider bg-[#2E3330] text-white hover:bg-black transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-            >
-              <Volume2 size={16} />
-              <span>Comenzar recorrido</span>
-              <ArrowRight size={15} />
-            </button>
+      {/* Modal de Bienvenida e Invitación (Minimalista, sin tarjetas anidadas) */}
+      {showWelcome && (
+        <div
+          className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={handleDismissWelcome}
+        >
+          <div
+            className="relative w-full max-w-xl bg-white border border-(--border-soft) rounded-[20px] shadow-xl p-6 sm:p-8 animate-in zoom-in-95 duration-200 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Botón cerrar en esquina superior derecha */}
             <button
               type="button"
               onClick={handleDismissWelcome}
-              className="w-full sm:w-auto px-6 h-11 rounded-full text-xs font-bold uppercase tracking-wider text-[#5F665E] hover:bg-[#F2EFE9] border border-[rgba(46,51,48,0.12)] transition-all cursor-pointer"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 rounded-full text-[#5F665E] hover:text-[#2E3330] hover:bg-[#F2EFE9] transition-colors cursor-pointer"
+              aria-label="Cerrar bienvenida"
             >
-              Hacerlo más tarde
+              <X size={18} />
             </button>
+
+            {/* Mensaje de bienvenida directo sobre fondo blanco, sin tarjetas anidadas */}
+            <div className="pt-1 pb-6 pr-6">
+              <p className="text-base sm:text-[17px] font-medium text-[#2E3330] leading-relaxed">
+                Te acompañaremos paso a paso en una experiencia interactiva para que aprendas a utilizar las funciones fundamentales de CIELO.
+              </p>
+            </div>
+
+            {/* Botones de acción */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleStartTour}
+                className="w-full sm:flex-1 h-11 rounded-full text-xs font-bold uppercase tracking-wider bg-[#2E3330] text-white hover:bg-black transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer select-none"
+              >
+                <Volume2 size={16} />
+                <span>Comenzar recorrido</span>
+                <ArrowRight size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={handleDismissWelcome}
+                className="w-full sm:w-auto px-6 h-11 rounded-full text-xs font-bold uppercase tracking-wider text-[#5F665E] hover:bg-[#F2EFE9] border border-[rgba(46,51,48,0.12)] transition-all cursor-pointer select-none"
+              >
+                Hacerlo más tarde
+              </button>
+            </div>
           </div>
         </div>
-      </CieloModal>
+      )}
 
       {/* Modal de Finalización y Felicitaciones */}
       <CieloModal
