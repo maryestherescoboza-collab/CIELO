@@ -83,22 +83,49 @@ export const CATALOGO_GUIAS: Guide[] = [
       // ETAPA 3: CREAR UNA ACTIVIDAD
       {
         selector: '[data-guide="btn-agregar-actividad"]',
-        texto: 'Ahora vamos a crear una actividad. Pulsa en «+ AGREGAR ACTIVIDAD».',
-        voz: 'Ahora vamos a crear una actividad. Pulsa en Agregar actividad.',
+        texto: 'Ahora vamos a crear tu primera actividad. Pulsa en «+ AGREGAR ACTIVIDAD».',
+        voz: 'Ahora vamos a crear tu primera actividad. Pulsa en Agregar actividad.',
         etapa: 3,
         tituloEtapa: 'Etapa 3: Crear una actividad',
         evento: 'click'
       },
       {
-        selector: '[data-guide="modal-actividad-formulario"], .cielo-modal-card',
-        texto: 'Selecciona el indicador de logro que vas a evaluar y escribe el producto o evidencia. Luego pulsa en «Agregar actividad».',
-        voz: 'Selecciona el indicador de logro que vas a evaluar y escribe el producto o evidencia. Luego pulsa en Agregar actividad.',
+        selector: '[data-guide="modal-actividad-selector-contenidos"], [data-guide="modal-actividad-selector-indicadores"]',
+        texto: 'Primero, elige el contenido curricular que trabajarás en esta actividad.',
+        voz: 'Primero, elige el contenido que trabajarás en esta actividad.',
         etapa: 3,
-        tituloEtapa: 'Etapa 3: Crear una actividad',
+        tituloEtapa: 'Paso 1: Elige el contenido',
+        evento: 'click',
+        targetActionSelector: '[data-guide="item-contenido"], [data-guide="modal-actividad-selector-contenidos"] button'
+      },
+      {
+        selector: '[data-guide="modal-actividad-selector-indicadores"]',
+        texto: 'Ahora, selecciona el indicador de logro que deseas evaluar.',
+        voz: 'Ahora, selecciona el indicador de logro que deseas evaluar.',
+        etapa: 3,
+        tituloEtapa: 'Paso 2: Selecciona el indicador',
+        evento: 'click',
+        targetActionSelector: '[data-guide="item-indicador"]'
+      },
+      {
+        selector: '[data-guide="modal-actividad-producto"]',
+        texto: 'Por último, escribe el producto o evidencia que elaborará el estudiante. Por ejemplo: cuaderno de trabajo.',
+        voz: 'Por último, escribe el producto o evidencia que elaborará el estudiante. Por ejemplo: cuaderno de trabajo.',
+        etapa: 3,
+        tituloEtapa: 'Paso 3: Escribe el producto',
+        evento: 'change',
+        targetActionSelector: '[data-guide="modal-actividad-producto"]'
+      },
+      {
+        selector: '[data-guide="modal-actividad-guardar"]',
+        texto: 'Pulsa en «Agregar actividad» para confirmar y guardar tu actividad en el curso.',
+        voz: 'Pulsa en Agregar actividad para confirmar y guardar tu actividad en el curso.',
+        etapa: 3,
+        tituloEtapa: 'Etapa 3: Guardar actividad',
         evento: 'click',
         targetActionSelector: '[data-guide="modal-actividad-guardar"]',
         esperarOperacion: 'actividad_guardar',
-        mensajeExito: '¡Perfecto! Tu actividad está lista.'
+        mensajeExito: '¡Perfecto! Tu actividad está creada y lista para evaluar.'
       },
 
       // ETAPA 4: APRENDER A EVALUAR (Pincel, Libre, Numérico)

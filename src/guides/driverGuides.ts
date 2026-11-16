@@ -365,6 +365,15 @@ export function highlightStep() {
     updateStageStatus(activeUserId, step.etapa as 1 | 2 | 3 | 4 | 5, 'en_progreso', currentStepIndex);
   }
 
+  // Si estamos en el paso de guardar actividad pero el modal ya se cerró (porque se guardó previamente)
+  if (step.selector === '[data-guide="modal-actividad-guardar"]') {
+    const modalExists = document.querySelector('[data-guide="modal-actividad-formulario"], .cielo-modal-card');
+    if (!modalExists) {
+      advanceStep();
+      return;
+    }
+  }
+
   // Check if target element exists in DOM; if not, wait using MutationObserver
   const expectedGuideId = currentGuideId;
   const expectedStepIndex = currentStepIndex;
@@ -425,6 +434,15 @@ function highlightElement(step: GuideStep, resolvedSelector: string, guide: Guid
     const popoverHtml = buildPopoverHtml(step, currentStepIndex, guide.steps.length, guide);
 
     const isBottomNav = resolvedSelector.includes('nav-');
+    const targetElement = document.querySelector(resolvedSelector);
+    if (targetElement && typeof (targetElement as any).scrollIntoView === 'function') {
+      try {
+        (targetElement as any).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch {
+        // Ignore scroll errors
+      }
+    }
+
     driverObj.highlight({
       element: resolvedSelector,
       popover: {

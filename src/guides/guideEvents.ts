@@ -134,6 +134,14 @@ export function initGuideEventListeners(
       }
     };
 
+    const opCleanup = subscribeGuideOperations({
+      onSuccess: (detail) => {
+        if (detail.operation === 'actividad_guardar') {
+          markActionDone();
+        }
+      }
+    });
+
     document.body.addEventListener('input', handleInput, true);
     document.body.addEventListener('keydown', handleKeydown as any, true);
     document.body.addEventListener('change', handleChangeOrBlur, true);
@@ -141,6 +149,7 @@ export function initGuideEventListeners(
     document.body.addEventListener('click', handleClickGuardar, true);
 
     activeListenerCleanup = () => {
+      opCleanup();
       if (debounceTimer) clearTimeout(debounceTimer);
       document.body.removeEventListener('input', handleInput, true);
       document.body.removeEventListener('keydown', handleKeydown as any, true);
@@ -220,19 +229,23 @@ export function initGuideEventListeners(
     }
 
     // ── REGLA ESPECÍFICA: PASO 1 DE ACTIVIDAD (CONTENIDOS) ──
-    // No avanzar si el usuario no pulsa sobre un ítem de contenido real
-    if (step.selector === '[data-guide="modal-actividad-selector-contenidos"]') {
+    // No avanzar si el usuario no pulsa sobre un ítem de contenido real (o indicador si es fallback)
+    if (step.selector === '[data-guide="modal-actividad-selector-contenidos"]' || step.selector.includes('modal-actividad-selector-contenidos')) {
       const clickedItem = target.closest('[data-guide="item-contenido"]') || target.closest('[data-guide="modal-actividad-selector-contenidos"] button');
-      if (!clickedItem) {
+      if (clickedItem) {
+        markActionDone();
         return;
       }
-      markActionDone();
+      if (target.closest('[data-guide="item-indicador"]')) {
+        markActionDone();
+        return;
+      }
       return;
     }
 
     // ── REGLA ESPECÍFICA: PASO 2 DE ACTIVIDAD (INDICADORES DE LOGRO) ──
     // No avanzar si el usuario no selecciona un indicador real
-    if (step.selector === '[data-guide="modal-actividad-selector-indicadores"]') {
+    if (step.selector === '[data-guide="modal-actividad-selector-indicadores"]' || step.selector.includes('modal-actividad-selector-indicadores')) {
       const clickedItem = target.closest('[data-guide="item-indicador"]');
       if (!clickedItem) {
         return;
