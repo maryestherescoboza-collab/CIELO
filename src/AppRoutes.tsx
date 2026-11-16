@@ -35,7 +35,6 @@ const SuscripcionPaypalRetorno = lazyLoad(() => import('./screens/SuscripcionPay
 const SuscripcionPaypalCancelada = lazyLoad(() => import('./screens/SuscripcionPaypalCancelada'));
 const SuscripcionInstitucional = lazyLoad(() => import('./screens/SuscripcionInstitucional'));
 const Tutoriales = lazyLoad(() => import('./screens/Tutoriales'));
-const Guias = lazyLoad(() => import('./screens/Guias'));
 
 import LoadingMessage from './components/LoadingMessage';
 import { BookOpen } from 'lucide-react';
@@ -424,7 +423,6 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
             />
       } />
       <Route path="/tutoriales" element={<Tutoriales />} />
-      <Route path="/guias" element={<Guias />} />
       </Route>
       <Route path="/suscripcion" element={<Suscripcion />} />
       <Route path="/suscripcion/institucional" element={<SuscripcionInstitucional />} />
