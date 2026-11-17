@@ -1,5 +1,5 @@
 import React from 'react';
-import FloatingWorkWindow, { type WorkWindowPosition } from './FloatingWorkWindow';
+import type { WorkWindowPosition } from './FloatingWorkWindow';
 import { supabase } from '../../../lib/supabase';
 import type { Actividad, Secuencia } from '../../../types';
 
@@ -70,17 +70,16 @@ export const ensureSecuenciasSeleccion = (
 
 export interface WorkspaceDatosProps {
     activity: Actividad;
-    position: WorkWindowPosition;
-    zIndex: number;
-    onStartDrag: (id: string, e: React.PointerEvent) => void;
-    onWindowFocus: (id: string) => void;
+    position?: WorkWindowPosition;
+    zIndex?: number;
+    onStartDrag?: (id: string, e: React.PointerEvent) => void;
+    onWindowFocus?: (id: string) => void;
     onClose: () => void;
     onUpdateActividad: (id: number, patch: Partial<Actividad>) => void;
 }
 
-// Ventana "Datos de la actividad" (referencia: ventana única con fecha /
-// indicador / producto). Los campos editables escriben SOLO en la actividad real
-// a través de las funciones existentes (updateActividad).
+// Vista institucional de la actividad (Nombre de la actividad | Fecha | Indicador de logro | Producto)
+// Organizada en una fila horizontal con apariencia de tabla institucional limpia y compacta.
 const extraerInfoCurricular = (activity: Actividad) => {
     let items: any[] = [];
     if (Array.isArray(activity.indicadores_json)) {
@@ -102,10 +101,7 @@ const extraerInfoCurricular = (activity: Actividad) => {
 
 const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
     activity,
-    position,
-    zIndex,
-    onStartDrag,
-    onWindowFocus,
+    zIndex = 50,
     onClose,
     onUpdateActividad,
 }) => {
@@ -119,80 +115,113 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
     const infoCurricular = extraerInfoCurricular(activity);
 
     return (
-        <FloatingWorkWindow
-            id="datos"
-            title="Datos de la actividad"
-            barColor="#F0C24E"
-            position={position}
-            zIndex={zIndex}
-            width={320}
-            onStartDrag={onStartDrag}
-            onWindowFocus={onWindowFocus}
-            onClose={onClose}
+        <div
+            className="pointer-events-auto fixed top-4 left-4 right-4 max-w-6xl mx-auto bg-[#FFFDF8] rounded-lg shadow-[5px_5px_0_0_#000000] border-2 border-black overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 font-sans"
+            style={{ zIndex }}
         >
-            <div className="ws-field">
-                <div className="ws-field-label">
-                    <span className="ws-dot ws-dot-yellow" />
-                    Fecha
-                </div>
-                <input
-                    type="date"
-                    className="ws-field-input ws-date-input"
-                    defaultValue={activity.fecha || ''}
-                    onBlur={(e) => commit({ fecha: e.currentTarget.value }, e.currentTarget.value, activity.fecha)}
-                />
-            </div>
+            {/* Botón de cierre estilo brutalista */}
+            <button
+                type="button"
+                onClick={onClose}
+                className="absolute top-2 right-2.5 z-10 w-6 h-6 flex items-center justify-center border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-all cursor-pointer text-[11px] font-black shadow-[2px_2px_0_0_#000] active:translate-x-px active:translate-y-px rounded-sm"
+                title="Cerrar vista"
+                aria-label="Cerrar vista"
+            >
+                ✕
+            </button>
 
-            <div className="ws-field">
-                <div className="ws-field-label">
-                    <span className="ws-dot ws-dot-blue" />
-                    Indicador de logro
-                </div>
-                <textarea
-                    className="ws-field-input"
-                    rows={2}
-                    defaultValue={activity.indicador || ''}
-                    placeholder="¿Qué debe demostrar el estudiante al finalizar?"
-                    onBlur={(e) => commit({ indicador: e.currentTarget.value }, e.currentTarget.value, activity.indicador)}
-                />
-                {infoCurricular && (
-                    <div className="mt-1.5 p-2 bg-[#FAF7F2] border border-black/10 rounded-lg text-xs space-y-1">
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase">
-                            {infoCurricular.codigo && (
-                                <span className="px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded text-[9px] font-black">
-                                    {infoCurricular.codigo}
-                                </span>
-                            )}
-                            <span>Currículo oficial</span>
-                        </div>
-                        {infoCurricular.descripcion && (
-                            <p className="text-[11px] text-[#5F665E] leading-snug line-clamp-2" title={infoCurricular.descripcion}>
-                                {infoCurricular.descripcion}
-                            </p>
-                        )}
-                        {infoCurricular.fragmento && (
-                            <div className="text-[10px] font-bold text-emerald-800 pt-0.5">
-                                Fragmento evaluado: <span className="italic font-semibold">«{infoCurricular.fragmento}»</span>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+            {/* Tabla horizontal brutalista con líneas negras */}
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-190">
+                    <thead>
+                        <tr className="bg-[#F2EFE9] border-b-2 border-black text-[11px] font-black uppercase tracking-[0.14em] text-black">
+                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[24%]">
+                                Nombre de la actividad
+                            </th>
+                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[15%]">
+                                Fecha
+                            </th>
+                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[38%]">
+                                Indicador de logro
+                            </th>
+                            <th scope="col" className="px-4 py-3 w-[23%] pr-11">
+                                Producto
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr className="divide-x-2 divide-black align-top bg-white">
+                            {/* 1. Nombre de la actividad */}
+                            <td className="p-3.5">
+                                <textarea
+                                    className="w-full resize-none bg-transparent font-black text-black text-[13px] leading-snug outline-none focus:bg-[#FAF8F5] rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
+                                    rows={2}
+                                    defaultValue={activity.nombre || ''}
+                                    placeholder="Nombre de la actividad..."
+                                    onBlur={(e) => commit({ nombre: e.currentTarget.value }, e.currentTarget.value, activity.nombre)}
+                                />
+                            </td>
 
-            <div className="ws-field">
-                <div className="ws-field-label">
-                    <span className="ws-dot ws-dot-coral" />
-                    Producto
-                </div>
-                <textarea
-                    className="ws-field-input"
-                    rows={2}
-                    defaultValue={activity.producto || ''}
-                    placeholder="Evidencia de trabajo..."
-                    onBlur={(e) => commit({ producto: e.currentTarget.value }, e.currentTarget.value, activity.producto)}
-                />
+                            {/* 2. Fecha */}
+                            <td className="p-3.5">
+                                <input
+                                    type="date"
+                                    className="w-full bg-transparent font-bold text-black text-[12px] outline-none focus:bg-[#FAF8F5] rounded p-1 transition-all font-sans cursor-pointer"
+                                    defaultValue={activity.fecha || ''}
+                                    onBlur={(e) => commit({ fecha: e.currentTarget.value }, e.currentTarget.value, activity.fecha)}
+                                />
+                            </td>
+
+                            {/* 3. Indicador de logro */}
+                            <td className="p-3.5">
+                                <div className="flex flex-col gap-2">
+                                    <textarea
+                                        className="w-full resize-none bg-transparent text-neutral-900 font-medium text-[12px] leading-relaxed outline-none focus:bg-[#FAF8F5] rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
+                                        rows={2}
+                                        defaultValue={activity.indicador || ''}
+                                        placeholder="¿Qué debe demostrar el estudiante al finalizar?"
+                                        onBlur={(e) => commit({ indicador: e.currentTarget.value }, e.currentTarget.value, activity.indicador)}
+                                    />
+                                    {infoCurricular && (
+                                        <div className="p-2 bg-[#F6F3EC] border border-black rounded-sm text-[11px] space-y-1">
+                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-black uppercase tracking-wider">
+                                                {infoCurricular.codigo && (
+                                                    <span className="px-1.5 py-0.5 bg-black text-white rounded-none text-[9px] font-black">
+                                                        {infoCurricular.codigo}
+                                                    </span>
+                                                )}
+                                                <span>Currículo oficial</span>
+                                            </div>
+                                            {infoCurricular.descripcion && (
+                                                <p className="text-[11px] text-neutral-800 font-medium leading-snug line-clamp-2" title={infoCurricular.descripcion}>
+                                                    {infoCurricular.descripcion}
+                                                </p>
+                                            )}
+                                            {infoCurricular.fragmento && (
+                                                <div className="text-[10px] font-black text-emerald-900 pt-0.5">
+                                                    Fragmento evaluado: <span className="italic font-bold">«{infoCurricular.fragmento}»</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </td>
+
+                            {/* 4. Producto */}
+                            <td className="p-3.5">
+                                <textarea
+                                    className="w-full resize-none bg-transparent text-neutral-900 font-medium text-[12px] leading-relaxed outline-none focus:bg-[#FAF8F5] rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
+                                    rows={2}
+                                    defaultValue={activity.producto || ''}
+                                    placeholder="Evidencia o producto esperado..."
+                                    onBlur={(e) => commit({ producto: e.currentTarget.value }, e.currentTarget.value, activity.producto)}
+                                />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </FloatingWorkWindow>
+        </div>
     );
 };
 

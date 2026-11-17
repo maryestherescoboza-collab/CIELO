@@ -21,10 +21,9 @@ import type {
 import { NotaEditor } from '../../components/plan-clases/NotaEditor';
 import { InfoClase, type InfoClaseDatos } from '../../components/plan-clases/InfoClase';
 import { CompartirModal } from '../../components/plan-clases/CompartirModal';
-import { CompartirCursosModal } from '../../components/plan-clases/CompartirCursosModal';
+import { WizardPublicarFichaModal } from '../../components/plan-clases/WizardPublicarFichaModal';
 import { PortalComentariosDocentePanel } from '../../components/plan-clases/PortalComentariosDocentePanel';
 import { ComentariosPanel } from '../../components/plan-clases/ComentariosPanel';
-import { FichaActividadesPanel } from '../../components/plan-clases/FichaActividadesPanel';
 import ConstructorRuta from '../../components/plan-clases/rutas/ConstructorRuta';
 import { usePlanClasesStore } from '../../store/planClasesStore';
 import { uid } from '../../utils/uid';
@@ -286,9 +285,6 @@ export default function NuevaNotaClase({
             <InfoClase datos={infoClase} onChange={handleInfoClaseChange} />
           </div>
 
-          {/* Actividades vinculadas a esta ficha + "Solicitar subir producto" */}
-          <FichaActividadesPanel notaId={notaId} />
-
           {/* Regla sutil */}
           <div className="my-[clamp(1rem,1.5vw,1.5rem)] h-px w-full opacity-40" style={{ background: 'rgba(46,51,48,0.12)' }} />
 
@@ -314,9 +310,10 @@ export default function NuevaNotaClase({
         onQuitar={quitarCompartida}
       />
 
-      <CompartirCursosModal
+      <WizardPublicarFichaModal
         abierto={compartirCursosAbierto}
         notaId={notaId}
+        notaTitulo={titulo}
         onCerrar={() => setCompartirCursosAbierto(false)}
       />
 

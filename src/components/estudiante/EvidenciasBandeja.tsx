@@ -123,6 +123,17 @@ export const EvidenciasBandeja: React.FC<EvidenciasBandejaProps> = ({ onCambiarS
     // Entrega seleccionada para calificar mediante el selector sticky de la derecha
     const [seleccionadaId, setSeleccionadaId] = useState<number | null>(null);
     const [guardandoSello, setGuardandoSello] = useState(false);
+    const [confirmacionSobrescritura, setConfirmacionSobrescritura] = useState<{
+        evidenciaId: number;
+        actividadId: number;
+        valorSello: number;
+        comentario: string | null;
+        prevSello: number | null;
+        prevEstado: any;
+        notaActual: number;
+        nuevoSello: number;
+        mensaje: string;
+    } | null>(null);
 
     /* ── Carga inicial de cursos ────────────────────────────────────────── */
     useEffect(() => {
@@ -195,7 +206,7 @@ export const EvidenciasBandeja: React.FC<EvidenciasBandejaProps> = ({ onCambiarS
     );
 
     /* ── Aplicar sello a la entrega seleccionada ────────────────────────── */
-    const aplicarSello = async (valorSello: number) => {
+    const aplicarSello = async (valorSello: number, sobrescribir = false) => {
         if (!entregaSeleccionada || guardandoSello) return;
 
         const evidenciaId = entregaSeleccionada.id;
@@ -233,7 +244,42 @@ export const EvidenciasBandeja: React.FC<EvidenciasBandejaProps> = ({ onCambiarS
 
         setGuardandoSello(true);
         try {
-            await evidenciasApiDocente.revisar(evidenciaId, valorSello, comentario);
+            const res = await evidenciasApiDocente.revisarV2(evidenciaId, valorSello, comentario, sobrescribir);
+            
+            // Si la RPC detecta una calificación manual previa diferente del sello
+            if (res.requiere_confirmacion) {
+                // Revertir optimismo momentáneamente hasta confirmación
+                setBandeja(prev => {
+                    if (!prev) return prev;
+                    return {
+                        ...prev,
+                        grupos: prev.grupos.map(g =>
+                            g.actividad_id === actividadId
+                                ? {
+                                    ...g,
+                                    evidencias: g.evidencias.map(e =>
+                                        e.id === evidenciaId
+                                            ? { ...e, estado: prevEstado, sello: prevSello }
+                                            : e
+                                    ),
+                                }
+                                : g
+                        ),
+                    };
+                });
+
+                setConfirmacionSobrescritura({
+                    evidenciaId,
+                    actividadId,
+                    valorSello,
+                    comentario,
+                    prevSello,
+                    prevEstado,
+                    notaActual: res.nota_actual ?? 0,
+                    nuevoSello: res.nuevo_sello ?? valorSello,
+                    mensaje: res.mensaje || 'Existe una calificación manual previa en esta actividad.',
+                });
+            }
         } catch (e) {
             // Revertir si falló la persistencia
             setBandeja(prev => {
@@ -690,6 +736,47 @@ export const EvidenciasBandeja: React.FC<EvidenciasBandejaProps> = ({ onCambiarS
                     </div>
                 </aside>
             </div>
+
+            {/* Modal de confirmación ante calificación manual previa */}
+            {confirmacionSobrescritura && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-[fadeIn_0.15s_ease-out]">
+                    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-[#CBD5E1] p-5 space-y-4">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                                <AlertCircle size={22} />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-[15px] font-black text-[#353A36]">Calificación previa detectada</h3>
+                                <p className="text-xs text-[#686D68] mt-1 leading-relaxed">
+                                    Esta actividad ya tiene una calificación de <strong className="text-[#353A36]">{confirmacionSobrescritura.notaActual} pts</strong> en la libreta oficial.
+                                    ¿Deseas reemplazarla por el sello pedagógico de <strong className="text-[#353A36]">{confirmacionSobrescritura.nuevoSello} pts</strong>?
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#CBD5E1]/40">
+                            <button
+                                type="button"
+                                onClick={() => setConfirmacionSobrescritura(null)}
+                                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-[#686D68] hover:bg-neutral-100 transition-colors"
+                            >
+                                Mantener nota actual
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const target = confirmacionSobrescritura;
+                                    setConfirmacionSobrescritura(null);
+                                    await aplicarSello(target.valorSello, true);
+                                }}
+                                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#353A36] text-white hover:bg-black transition-colors shadow-xs"
+                            >
+                                Actualizar con sello ({confirmacionSobrescritura.nuevoSello})
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -56,11 +56,11 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
         const vh = window.innerHeight;
         const clamp = (x: number, w: number) => Math.max(6, Math.min(x, Math.max(6, vw - w - 6)));
 return {
-            datos: { x: clamp(Math.max(6, (vw - 344) / 2 - 26), WINDOW_WIDTHS.datos), y: Math.max(6, Math.min(72, vh - 130)) },
-            competencias: { x: clamp(Math.max(6, (vw - 344) / 2 + 6), WINDOW_WIDTHS.competencias), y: Math.max(6, Math.min(150, vh - 170)) },
-            recursos: { x: clamp(Math.max(6, (vw - 344) / 2 + 38), WINDOW_WIDTHS.recursos), y: Math.max(6, Math.min(228, vh - 210)) },
-            ficha: { x: clamp(Math.max(6, (vw - 300) / 2 + 210), WINDOW_WIDTHS.ficha), y: Math.max(6, Math.min(110, vh - 150)) },
-            'producto-final': { x: clamp(Math.max(6, (vw - 420) / 2), WINDOW_WIDTHS['producto-final']), y: Math.max(6, Math.min(280, vh - 260)) },
+            datos: { x: clamp(Math.max(6, (vw - 344) / 2 - 26), WINDOW_WIDTHS.datos), y: 16 },
+            competencias: { x: clamp(Math.max(6, (vw - 344) / 2 + 6), WINDOW_WIDTHS.competencias), y: Math.max(185, Math.min(210, vh - 170)) },
+            recursos: { x: clamp(Math.max(6, (vw - 344) / 2 + 38), WINDOW_WIDTHS.recursos), y: Math.max(260, Math.min(290, vh - 210)) },
+            ficha: { x: clamp(Math.max(6, (vw - 300) / 2 + 210), WINDOW_WIDTHS.ficha), y: Math.max(185, Math.min(210, vh - 150)) },
+            'producto-final': { x: clamp(Math.max(6, (vw - 420) / 2), WINDOW_WIDTHS['producto-final']), y: Math.max(280, Math.min(310, vh - 260)) },
         };
     }, []);
 
@@ -165,18 +165,20 @@ return {
     return (
         <div className="ws-layer fixed inset-0 z-55 pointer-events-none" data-guide="actividad-workspace">
             <div className="ws-desk" aria-hidden="true" />
-            <div className="ws-activity-tag pointer-events-auto" style={{ top: 16, left: 16 }}>
-                <span className="ws-activity-tag-name">Espacio de trabajo · {activity.nombre}</span>
-                <button
-                    type="button"
-                    className="ws-close"
-                    onClick={onClose}
-                    title="Cerrar espacio de trabajo"
-                    aria-label="Cerrar espacio de trabajo"
-                >
-                    ✕
-                </button>
-            </div>
+            {!openWins.datos && (
+                <div className="ws-activity-tag pointer-events-auto" style={{ top: 16, left: 16 }}>
+                    <span className="ws-activity-tag-name">Espacio de trabajo · {activity.nombre}</span>
+                    <button
+                        type="button"
+                        className="ws-close"
+                        onClick={onClose}
+                        title="Cerrar espacio de trabajo"
+                        aria-label="Cerrar espacio de trabajo"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
 
             <FolderSequenceLauncher
                 activity={activity}
@@ -200,7 +202,7 @@ return {
                     zIndex={zMap.datos}
                     onStartDrag={startDrag}
                     onWindowFocus={(id) => bringToFront(id as ActivityWindowId)}
-                    onClose={() => closeWindow('datos')}
+                    onClose={onClose}
                     onUpdateActividad={onUpdateActividad}
                 />
             )}

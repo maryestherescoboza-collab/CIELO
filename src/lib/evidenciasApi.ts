@@ -435,6 +435,24 @@ export const evidenciasApiDocente = {
         const msg = mensajeDeError(data, 'No se pudo guardar la revision');
         if (msg) throw new Error(msg);
     },
+
+    async revisarV2(
+        evidenciaId: number,
+        sello: number,
+        comentario: string | null,
+        sobrescribirManual = false
+    ): Promise<{ ok?: boolean; requiere_confirmacion?: boolean; nota_actual?: number; nuevo_sello?: number; mensaje?: string; calificacion_id?: number }> {
+        const { data, error } = await supabase.rpc('docente_revisar_y_calificar_v2', {
+            p_evidencia_id: evidenciaId,
+            p_sello: sello,
+            p_comentario: comentario,
+            p_sobrescribir_manual: sobrescribirManual,
+        });
+        if (error) throw error;
+        const msg = mensajeDeError(data, 'No se pudo guardar la calificación');
+        if (msg) throw new Error(msg);
+        return desenrollar(data, 'Respuesta vacía al calificar');
+    },
 };
 
 /* ═════════════════════════════════════════════════════════════════════════

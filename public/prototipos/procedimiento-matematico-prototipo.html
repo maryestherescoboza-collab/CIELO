@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIELO — Editor Inteligente de Procedimiento Matemático</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=KaTeX_Main:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #2E3330;
+      --ink-soft: #5F665E;
+      --herb-garden: #689C63;
+      --herb-garden-hover: #558750;
+      --herb-garden-light: rgba(104, 156, 99, 0.12);
+      --olive-branch: #BFC9A6;
+      --french-blue: #537BAC;
+      --french-blue-light: rgba(83, 123, 172, 0.12);
+      --terra-cotta: #DB5B48;
+      --terra-cotta-light: rgba(219, 91, 72, 0.12);
+      --linen: #F7F7F4;
+      --paper: #FFFFFF;
+      --border-soft: #E2E5E0;
+      --border-focus: #689C63;
+      --shadow-sm: 0 1px 3px rgba(46, 51, 48, 0.06);
+      --shadow-md: 0 4px 12px rgba(46, 51, 48, 0.08);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #FAFAF7;
+      color: var(--ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Barra de Navegación Superior ── */
+    header {
+      background: var(--paper);
+      border-bottom: 1px solid var(--border-soft);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      background: var(--herb-garden);
+      color: white;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      letter-spacing: 0.05em;
+    }
+
+    .brand-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .mode-switcher {
+      display: inline-flex;
+      background: var(--linen);
+      padding: 4px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border-soft);
+    }
+
+    .mode-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mode-btn.active {
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Contenedor Principal ── */
+    main {
+      max-width: 1280px;
+      margin: 24px auto;
+      padding: 0 20px;
+    }
+
+    .view-container {
+      display: none;
+    }
+
+    .view-container.active {
+      display: block;
+    }
+
+    /* ── Layout Docente (2 Columnas) ── */
+    .editor-layout {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .editor-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-soft);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title .step-pill {
+      background: var(--herb-garden-light);
+      color: var(--herb-garden);
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-soft);
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--paper);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--herb-garden);
+      box-shadow: 0 0 0 3px var(--herb-garden-light);
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .data-field {
+      background: var(--linen);
+      padding: 10px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-soft);
+    }
+
+    .data-field label {
+      font-size: 11px;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .data-field input {
+      font-weight: 700;
+      font-size: 15px;
+      padding: 6px 10px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Botones de Acción ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--herb-garden);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--herb-garden-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--linen);
+      color: var(--ink);
+      border: 1px solid var(--border-soft);
+    }
+
+    .btn-secondary:hover {
+      background: #ECECE7;
+    }
+
+    .btn-full {
+      width: 100%;
+    }
+
+    /* ── Selector de Nivel de Ayuda (Andamiaje) ── */
+    .scaffolding-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--linen);
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-soft);
+      margin-bottom: 16px;
+    }
+
+    .scaffolding-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .scaffolding-options {
+      display: flex;
+      gap: 6px;
+    }
+
+    .scaff-pill {
+      background: var(--paper);
+      border: 1px solid var(--border-soft);
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .scaff-pill:hover {
+      border-color: var(--herb-garden);
+    }
+
+    .scaff-pill.active {
+      background: var(--herb-garden);
+      color: white;
+      border-color: var(--herb-garden);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Pasos del Procedimiento (Editor WYSIWYG) ── */
+    .steps-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step-item {
+      background: var(--paper);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .step-item:hover {
+      border-color: var(--olive-branch);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .step-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .step-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: var(--linen);
+      color: var(--ink-soft);
+    }
+
+    .step-math-line {
+      font-size: 20px;
+      font-family: 'KaTeX_Main', 'Times New Roman', serif;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 0;
+      user-select: none;
+    }
+
+    /* ── Tokens Interactivos Matemáticos (Docente) ── */
+    .token {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-weight: 600;
+      position: relative;
+    }
+
+    .token-static {
+      cursor: default;
+      color: var(--ink);
+    }
+
+    .token-active {
+      background: #F1F4EE;
+      border: 1px dashed #A4BA9D;
+      color: var(--ink);
+    }
+
+    .token-active:hover {
+      background: #E5EDE0;
+      border-color: var(--herb-garden);
+      transform: scale(1.05);
+    }
+
+    .token-blank {
+      background: var(--herb-garden-light);
+      border: 1.5px solid var(--herb-garden);
+      color: var(--herb-garden);
+      box-shadow: 0 0 0 2px rgba(104, 156, 99, 0.15);
+      border-radius: var(--radius-md);
+      padding: 3px 12px;
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+    }
+
+    .token-blank::after {
+      content: 'Espacio';
+      font-size: 9px;
+      background: var(--herb-garden);
+      color: white;
+      position: absolute;
+      top: -9px;
+      right: 4px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .helper-text {
+      font-size: 11px;
+      color: var(--ink-soft);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── Vista Previa Lateral / Sticky ── */
+    .preview-panel {
+      position: sticky;
+      top: 84px;
+    }
+
+    .preview-box {
+      background: var(--linen);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+
+    .preview-step {
+      font-size: 18px;
+      font-family: 'KaTeX_Main', serif;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(46, 51, 48, 0.06);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .preview-step:last-child {
+      border-bottom: none;
+    }
+
+    .preview-blank-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      height: 32px;
+      border: 1.5px dashed #A4BA9D;
+      background: white;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--ink-soft);
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+    }
+
+    /* ── VISTA ESTUDIANTE (Sin Drag & Drop, Teclado Puro) ── */
+    .student-container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .student-card {
+      background: var(--paper);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .student-enunciado {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.5;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .student-step {
+      font-size: 24px;
+      font-family: 'KaTeX_Main', serif;
+      padding: 14px 18px;
+      background: #FCFCFA;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .student-step:focus-within {
+      background: white;
+      border-color: var(--olive-branch);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Input en línea integrado en la expresión matemática */
+    .math-input {
+      font-family: 'JetBrains Mono', 'Inter', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      text-align: center;
+      height: 40px;
+      padding: 0 10px;
+      background: white;
+      border: 1.5px solid #CBD5C8;
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .math-input:focus {
+      border-color: var(--herb-garden);
+      box-shadow: 0 0 0 3px var(--herb-garden-light);
+      background: #FFFFFF;
+    }
+
+    /* Estados de validación */
+    .math-input.correct {
+      border-color: var(--herb-garden) !important;
+      background: #F0F7EE !important;
+      color: #356630 !important;
+    }
+
+    .math-input.incorrect {
+      border-color: var(--terra-cotta) !important;
+      background: #FDF1EE !important;
+      color: var(--terra-cotta) !important;
+    }
+
+    .feedback-banner {
+      display: none;
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .feedback-banner.success {
+      background: var(--herb-garden-light);
+      border: 1px solid var(--herb-garden);
+      color: #325A2E;
+      display: block;
+    }
+
+    .feedback-banner.error {
+      background: var(--terra-cotta-light);
+      border: 1px solid var(--terra-cotta);
+      color: #9E3524;
+      display: block;
+    }
+
+    .fraction {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      text-align: center;
+      font-size: 0.9em;
+      margin: 0 4px;
+    }
+
+    .fraction-top {
+      border-bottom: 1.5px solid var(--ink);
+      padding-bottom: 2px;
+    }
+
+    .fraction-bottom {
+      padding-top: 2px;
+    }
+
+    .sqrt-symbol {
+      font-size: 1.25em;
+      margin-right: -4px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra Superior -->
+  <header>
+    <div class="brand">
+      <span class="brand-badge">CIELO MATH</span>
+      <span class="brand-title">Procedimiento Matemático Inteligente</span>
+    </div>
+
+    <!-- Conmutador de Rol / Vista -->
+    <div class="mode-switcher">
+      <button class="mode-btn active" id="btnModeDocente" onclick="switchView('docente')">
+        ✏️ Modo Docente (Editor)
+      </button>
+      <button class="mode-btn" id="btnModeEstudiante" onclick="switchView('estudiante')">
+        🎓 Modo Estudiante (Prueba)
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- 1. VISTA DEL DOCENTE (WYSIWYG con Generación y Toque)                -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <div class="view-container active" id="viewDocente">
+      <div class="editor-layout">
+        
+        <!-- Columna Izquierda: Configuración y Marcado -->
+        <div>
+          <!-- Tarjeta 1: Enunciado y Parámetros -->
+          <div class="card">
+            <div class="card-title">
+              <span>1. Enunciado y Fórmula</span>
+              <span class="step-pill">Paso 1 de 4</span>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label for="inputEnunciado">Enunciado del problema</label>
+              <textarea id="inputEnunciado" rows="2">Calcula la hipotenusa (a) de un triángulo rectángulo cuyos catetos miden b = 3 cm y c = 4 cm.</textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div>
+                <label for="selectFormula">Fórmula canónica</label>
+                <select id="selectFormula" onchange="cambiarFormula()">
+                  <option value="pitagoras">Teorema de Pitágoras (a² = b² + c²)</option>
+                  <option value="area_triangulo">Área de un Triángulo (A = (b · h) / 2)</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Variantes aleatorias</label>
+                <select id="selectVariantes" onchange="toggleVariantes()">
+                  <option value="fijo">Valores fijos para todos</option>
+                  <option value="aleatorio">Rangos aleatorios por estudiante</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="data-grid" id="containerDataFields">
+              <div class="data-field">
+                <label>Cateto b</label>
+                <input type="number" id="valB" value="3" onchange="recalcularDesdeDatos()">
+              </div>
+              <div class="data-field">
+                <label>Cateto c</label>
+                <input type="number" id="valC" value="4" onchange="recalcularDesdeDatos()">
+              </div>
+            </div>
+
+            <div style="margin-top: 16px;">
+              <button class="btn btn-primary btn-full" onclick="generarProcedimientoCompleto()">
+                ⚡ Generar Procedimiento Resuelto (1 Clic)
+              </button>
+            </div>
+          </div>
+
+          <!-- Tarjeta 2: Marcado por Toque y Andamiaje -->
+          <div class="card">
+            <div class="card-title">
+              <span>2. Marcado de Espacios por Toque</span>
+              <span class="step-pill">WYSIWYG</span>
+            </div>
+
+            <!-- Selector de Nivel de Andamiaje -->
+            <div class="scaffolding-bar">
+              <span class="scaffolding-title">Nivel de ayuda:</span>
+              <div class="scaffolding-options">
+                <button class="scaff-pill" id="scaffGuiado" onclick="aplicarNivel('guiado')">Guiado (Muchos espacios)</button>
+                <button class="scaff-pill active" id="scaffMedio" onclick="aplicarNivel('medio')">Medio (Recomendado)</button>
+                <button class="scaff-pill" id="scaffFinal" onclick="aplicarNivel('final')">Solo respuesta final</button>
+              </div>
+            </div>
+
+            <p class="helper-text" style="margin-bottom: 14px;">
+              💡 <strong>Instrucción:</strong> Haz clic en cualquier término para convertirlo en un espacio en blanco <code>[ ? ]</code> o revertirlo. Las claves y equivalencias se calculan automáticamente.
+            </p>
+
+            <!-- Lista de pasos interactivos -->
+            <div class="steps-container" id="stepsEditorContainer">
+              <!-- Renderizado dinámico -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Vista Previa Fija (Side-by-side) -->
+        <div class="preview-panel">
+          <div class="card preview-box">
+            <div class="card-title">
+              <span>Vista previa en vivo</span>
+              <span class="step-badge" id="badgeTotalEspacios">3 espacios</span>
+            </div>
+
+            <p style="font-size: 12px; color: var(--ink-soft); margin-bottom: 12px;">
+              Así verá y responderá el estudiante en su pantalla:
+            </p>
+
+            <div id="livePreviewContainer">
+              <!-- Renderizado dinámico -->
+            </div>
+
+            <div style="margin-top: 20px;">
+              <button class="btn btn-primary btn-full" onclick="switchView('estudiante')">
+                ▶ Probar como estudiante
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- 2. VISTA DEL ESTUDIANTE (Teclado puro, sin drag & drop)               -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <div class="view-container" id="viewEstudiante">
+      <div class="student-container">
+        <div class="student-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span class="step-pill" style="background: var(--herb-garden-light); color: var(--herb-garden); font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 9999px;">
+              CIELO EVALUACIÓN
+            </span>
+            <span style="font-size: 12px; color: var(--ink-soft);">Navega con <strong>Tab</strong> o <strong>Enter</strong></span>
+          </div>
+
+          <div class="student-enunciado" id="studentEnunciadoDisplay">
+            Calcula la hipotenusa (a) de un triángulo rectángulo cuyos catetos miden b = 3 cm y c = 4 cm.
+          </div>
+
+          <form id="studentMathForm" onsubmit="validarRespuestasEstudiante(event)">
+            <div id="studentStepsContainer">
+              <!-- Renderizado dinámico de pasos con inputs en línea -->
+            </div>
+
+            <div class="feedback-banner" id="studentFeedback"></div>
+
+            <div style="margin-top: 24px; display: flex; gap: 12px;">
+              <button type="submit" class="btn btn-primary" style="flex: 1; padding: 12px 24px; font-size: 14px;">
+                ✓ Comprobar procedimiento
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="limpiarRespuestasEstudiante()">
+                Reiniciar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    /* ──────────────────────────────────────────────────────────────────────────
+       ESTADO Y MODELO DE DATOS INTELIGENTE
+       ────────────────────────────────────────────────────────────────────────── */
+    const state = {
+      formulaId: 'pitagoras',
+      enunciado: 'Calcula la hipotenusa (a) de un triángulo rectángulo cuyos catetos miden b = 3 cm y c = 4 cm.',
+      datos: {
+        b: 3,
+        c: 4
+      },
+      // Pasos con términos tokenizados. Cada token puede ser:
+      // { id, text, isStatic, isBlank, answer, inputType: 'numeric'|'alphanumeric' }
+      pasos: []
+    };
+
+    /* ──────────────────────────────────────────────────────────────────────────
+       MOTOR DE GENERACIÓN AUTOMÁTICA DE PASOS Y CLAVES
+       ────────────────────────────────────────────────────────────────────────── */
+    function calcularPasosPitagoras(b, c) {
+      const b2 = b * b;
+      const c2 = c * c;
+      const suma = b2 + c2;
+      const a = Math.sqrt(suma);
+      const esExacto = Number.isInteger(a);
+      const resultadoFinal = esExacto ? a.toString() : (Math.round(a * 100) / 100).toString();
+
+      return [
+        {
+          id: 'p1',
+          titulo: '1. Fórmula canónica',
+          tokens: [
+            { id: 'p1_t1', text: 'a²', isStatic: true },
+            { id: 'p1_t2', text: '=', isStatic: true },
+            { id: 'p1_t3', text: 'b²', isStatic: true },
+            { id: 'p1_t4', text: '+', isStatic: true },
+            { id: 'p1_t5', text: 'c²', isStatic: true }
+          ]
+        },
+        {
+          id: 'p2',
+          titulo: '2. Sustitución de catetos',
+          tokens: [
+            { id: 'p2_t1', text: 'a²', isStatic: true },
+            { id: 'p2_t2', text: '=', isStatic: true },
+            { id: 'p2_t3', text: '(', isStatic: true },
+            { id: 'p2_t4', text: b.toString(), isStatic: false, isBlank: false, answer: b.toString(), inputType: 'numeric' },
+            { id: 'p2_t5', text: ')²', isStatic: true },
+            { id: 'p2_t6', text: '+', isStatic: true },
+            { id: 'p2_t7', text: '(', isStatic: true },
+            { id: 'p2_t8', text: c.toString(), isStatic: false, isBlank: false, answer: c.toString(), inputType: 'numeric' },
+            { id: 'p2_t9', text: ')²', isStatic: true }
+          ]
+        },
+        {
+          id: 'p3',
+          titulo: '3. Cálculo de potencias',
+          tokens: [
+            { id: 'p3_t1', text: 'a²', isStatic: true },
+            { id: 'p3_t2', text: '=', isStatic: true },
+            { id: 'p3_t3', text: b2.toString(), isStatic: false, isBlank: false, answer: b2.toString(), inputType: 'numeric' },
+            { id: 'p3_t4', text: '+', isStatic: true },
+            { id: 'p3_t5', text: c2.toString(), isStatic: false, isBlank: false, answer: c2.toString(), inputType: 'numeric' }
+          ]
+        },
+        {
+          id: 'p4',
+          titulo: '4. Suma de cuadrados',
+          tokens: [
+            { id: 'p4_t1', text: 'a²', isStatic: true },
+            { id: 'p4_t2', text: '=', isStatic: true },
+            { id: 'p4_t3', text: suma.toString(), isStatic: false, isBlank: false, answer: suma.toString(), inputType: 'numeric' }
+          ]
+        },
+        {
+          id: 'p5',
+          titulo: '5. Raíz cuadrada y resultado',
+          tokens: [
+            { id: 'p5_t1', text: 'a', isStatic: true },
+            { id: 'p5_t2', text: '=', isStatic: true },
+            { id: 'p5_t3', text: '√', isStatic: true },
+            { id: 'p5_t4', text: suma.toString(), isStatic: false, isBlank: false, answer: suma.toString(), inputType: 'numeric' },
+            { id: 'p5_t5', text: '=', isStatic: true },
+            { id: 'p5_t6', text: resultadoFinal, isStatic: false, isBlank: true, answer: resultadoFinal, inputType: 'numeric' }
+          ]
+        }
+      ];
+    }
+
+    function generarProcedimientoCompleto() {
+      const b = parseFloat(document.getElementById('valB').value) || 3;
+      const c = parseFloat(document.getElementById('valC').value) || 4;
+      state.datos.b = b;
+      state.datos.c = c;
+      state.enunciado = document.getElementById('inputEnunciado').value;
+
+      state.pasos = calcularPasosPitagoras(b, c);
+      aplicarNivel('medio');
+    }
+
+    function recalcularDesdeDatos() {
+      const b = parseFloat(document.getElementById('valB').value) || 3;
+      const c = parseFloat(document.getElementById('valC').value) || 4;
+      
+      // Guardar mapa de qué tokens estaban como huecos (por paso y posición)
+      const blanksMap = {};
+      state.pasos.forEach((p, pIdx) => {
+        p.tokens.forEach((t, tIdx) => {
+          if (t.isBlank) blanksMap[`${pIdx}_${tIdx}`] = true;
+        });
+      });
+
+      // Recalcular
+      state.datos.b = b;
+      state.datos.c = c;
+      state.pasos = calcularPasosPitagoras(b, c);
+
+      // Restaurar estado de huecos
+      state.pasos.forEach((p, pIdx) => {
+        p.tokens.forEach((t, tIdx) => {
+          if (!t.isStatic && blanksMap[`${pIdx}_${tIdx}`]) {
+            t.isBlank = true;
+          }
+        });
+      });
+
+      renderizarEditorDocente();
+      renderizarVistaPrevia();
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────────
+       NIVELES DE ANDAMIAJE RÁPIDO
+       ────────────────────────────────────────────────────────────────────────── */
+    function aplicarNivel(nivel) {
+      document.querySelectorAll('.scaff-pill').forEach(btn => btn.classList.remove('active'));
+      if (nivel === 'guiado') document.getElementById('scaffGuiado').classList.add('active');
+      if (nivel === 'medio') document.getElementById('scaffMedio').classList.add('active');
+      if (nivel === 'final') document.getElementById('scaffFinal').classList.add('active');
+
+      state.pasos.forEach((p) => {
+        p.tokens.forEach(t => {
+          if (!t.isStatic) t.isBlank = false;
+        });
+      });
+
+      if (nivel === 'guiado') {
+        // Huecos en sustitución, potencias, suma y resultado
+        marcarTokenPorId('p2_t4', true);
+        marcarTokenPorId('p2_t8', true);
+        marcarTokenPorId('p3_t3', true);
+        marcarTokenPorId('p3_t5', true);
+        marcarTokenPorId('p4_t3', true);
+        marcarTokenPorId('p5_t6', true);
+      } else if (nivel === 'medio') {
+        // Sustitución de catetos y resultado final
+        marcarTokenPorId('p2_t4', true);
+        marcarTokenPorId('p2_t8', true);
+        marcarTokenPorId('p5_t6', true);
+      } else if (nivel === 'final') {
+        // Solo el valor final
+        marcarTokenPorId('p5_t6', true);
+      }
+
+      renderizarEditorDocente();
+      renderizarVistaPrevia();
+    }
+
+    function marcarTokenPorId(tokenId, esHueco) {
+      for (const p of state.pasos) {
+        for (const t of p.tokens) {
+          if (t.id === tokenId) {
+            t.isBlank = esHueco;
+            return;
+          }
+        }
+      }
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────────
+       MARCADO INTERACTIVO POR TOQUE (WYSIWYG)
+       ────────────────────────────────────────────────────────────────────────── */
+    function toggleToken(pasoId, tokenId) {
+      const paso = state.pasos.find(p => p.id === pasoId);
+      if (!paso) return;
+      const token = paso.tokens.find(t => t.id === tokenId);
+      if (!token || token.isStatic) return;
+
+      token.isBlank = !token.isBlank;
+      renderizarEditorDocente();
+      renderizarVistaPrevia();
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────────
+       RENDERIZADO: EDITOR DOCENTE
+       ────────────────────────────────────────────────────────────────────────── */
+    function renderizarEditorDocente() {
+      const container = document.getElementById('stepsEditorContainer');
+      container.innerHTML = '';
+
+      state.pasos.forEach((paso) => {
+        const item = document.createElement('div');
+        item.className = 'step-item';
+
+        const huecosEnPaso = paso.tokens.filter(t => t.isBlank).length;
+
+        item.innerHTML = `
+          <div class="step-header">
+            <span class="step-num">${paso.titulo}</span>
+            <span class="step-badge">${huecosEnPaso === 0 ? 'Explicativo (Sin huecos)' : `${huecosEnPaso} espacio${huecosEnPaso === 1 ? '' : 's'}`}</span>
+          </div>
+          <div class="step-math-line" id="line_${paso.id}"></div>
+        `;
+
+        const mathLine = item.querySelector(`#line_${paso.id}`);
+
+        paso.tokens.forEach(token => {
+          const span = document.createElement('span');
+          if (token.isStatic) {
+            span.className = 'token token-static';
+            span.innerText = token.text;
+          } else {
+            span.className = `token ${token.isBlank ? 'token-blank' : 'token-active'}`;
+            span.title = token.isBlank ? 'Espacio activo. Toca para volver a término resuelto' : 'Término resuelto. Toca para convertir en espacio [ ? ]';
+            span.innerText = token.isBlank ? `[ ${token.answer} ]` : token.text;
+            span.onclick = () => toggleToken(paso.id, token.id);
+          }
+          mathLine.appendChild(span);
+        });
+
+        container.appendChild(item);
+      });
+
+      actualizarContadorEspacios();
+    }
+
+    function actualizarContadorEspacios() {
+      let total = 0;
+      state.pasos.forEach(p => p.tokens.forEach(t => { if (t.isBlank) total++; }));
+      document.getElementById('badgeTotalEspacios').innerText = `${total} espacio${total === 1 ? '' : 's'}`;
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────────
+       RENDERIZADO: VISTA PREVIA LATERAL
+       ────────────────────────────────────────────────────────────────────────── */
+    function renderizarVistaPrevia() {
+      const container = document.getElementById('livePreviewContainer');
+      container.innerHTML = '';
+
+      state.pasos.forEach(paso => {
+        const div = document.createElement('div');
+        div.className = 'preview-step';
+
+        paso.tokens.forEach(token => {
+          if (token.isBlank) {
+            const blank = document.createElement('span');
+            blank.className = 'preview-blank-box';
+            blank.innerText = '____';
+            div.appendChild(blank);
+          } else {
+            const span = document.createElement('span');
+            span.innerText = token.text;
+            div.appendChild(span);
+          }
+        });
+
+        container.appendChild(div);
+      });
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────────
+       RENDERIZADO: VISTA ESTUDIANTE (TECLADO PURO, SIN DRAG & DROP)
+       ────────────────────────────────────────────────────────────────────────── */
+    function renderizarVistaEstudiante() {
+      document.getElementById('studentEnunciadoDisplay').innerText = state.enunciado;
+      const container = document.getElementById('studentStepsContainer');
+      container.innerHTML = '';
+
+      const feedback = document.getElementById('studentFeedback');
+      feedback.style.display = 'none';
+
+      let inputIndex = 0;
+
+      state.pasos.forEach(paso => {
+        const div = document.createElement('div');
+        div.className = 'student-step';
+
+        paso.tokens.forEach(token => {
+          if (token.isBlank) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'math-input';
+            input.dataset.answer = token.answer;
+            input.dataset.stepId = paso.id;
+            input.dataset.tokenId = token.id;
+            input.setAttribute('inputmode', token.inputType === 'numeric' ? 'decimal' : 'text');
+            input.autocomplete = 'off';
+            input.autocorrect = 'off';
+            input.autocapitalize = 'off';
+            input.spellcheck = false;
+
+            // Ancho proporcional a la longitud esperada + margen
+            const len = Math.max(token.answer.length, 2);
+            input.style.width = `${len * 18 + 26}px`;
+
+            // Navegación fluida: Enter salta al siguiente campo
+            input.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const inputs = Array.from(document.querySelectorAll('.math-input'));
+                const currentIndex = inputs.indexOf(input);
+                if (currentIndex < inputs.length - 1) {
+                  inputs[currentIndex + 1].focus();
+                } else {
+                  document.getElementById('studentMathForm').requestSubmit();
+                }
+              }
+            });
+
+            div.appendChild(input);
+            inputIndex++;
+          } else {
+            const span = document.createElement('span');
+            span.innerText = token.text;
+            div.appendChild(span);
+          }
+        });
+
+        container.appendChild(div);
+      });
+
+      // Auto-focus en el primer campo
+      setTimeout(() => {
+        const first = container.querySelector('.math-input');
+        if (first) first.focus();
+      }, 100);
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────────
+       VALIDACIÓN POR EQUIVALENCIA MATEMÁTICA
+       ────────────────────────────────────────────────────────────────────────── */
+    function normalizarMatematica(valor) {
+      if (!valor) return '';
+      return valor
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/,/g, '.'); // Tolerancia de coma decimal
+    }
+
+    function sonEquivalentes(esperadoRaw, usuarioRaw) {
+      const eNorm = normalizarMatematica(esperadoRaw);
+      const uNorm = normalizarMatematica(usuarioRaw);
+
+      if (eNorm === uNorm) return true;
+
+      const eNum = parseFloat(eNorm);
+      const uNum = parseFloat(uNorm);
+
+      if (!isNaN(eNum) && !isNaN(uNum)) {
+        // Tolerancia a ceros o decimales (ej. 13 vs 13.0)
+        return Math.abs(eNum - uNum) < 0.015;
+      }
+
+      return false;
+    }
+
+    function validarRespuestasEstudiante(e) {
+      e.preventDefault();
+      const inputs = document.querySelectorAll('.math-input');
+      let todosCorrectos = true;
+      let vacios = 0;
+
+      inputs.forEach(input => {
+        const esperado = input.dataset.answer;
+        const ingresado = input.value;
+
+        if (!ingresado.trim()) {
+          vacios++;
+          input.classList.remove('correct', 'incorrect');
+        } else if (sonEquivalentes(esperado, ingresado)) {
+          input.classList.add('correct');
+          input.classList.remove('incorrect');
+        } else {
+          input.classList.add('incorrect');
+          input.classList.remove('correct');
+          todosCorrectos = false;
+        }
+      });
+
+      const feedback = document.getElementById('studentFeedback');
+
+      if (vacios > 0) {
+        feedback.className = 'feedback-banner error';
+        feedback.innerHTML = `⚠️ Aún tienes ${vacios} espacio(s) sin completar. Llena todos los campos antes de comprobar.`;
+        return;
+      }
+
+      if (todosCorrectos) {
+        feedback.className = 'feedback-banner success';
+        feedback.innerHTML = `🎉 <strong>¡Excelente trabajo!</strong> Has completado todos los pasos del procedimiento matemático correctamente.`;
+      } else {
+        feedback.className = 'feedback-banner error';
+        feedback.innerHTML = `❌ <strong>Revisa tus respuestas:</strong> Algunos términos no son correctos o equivalentes. Corrige los campos en rojo y vuelve a intentar.`;
+      }
+    }
+
+    function limpiarRespuestasEstudiante() {
+      const inputs = document.querySelectorAll('.math-input');
+      inputs.forEach(input => {
+        input.value = '';
+        input.classList.remove('correct', 'incorrect');
+      });
+      document.getElementById('studentFeedback').style.display = 'none';
+      if (inputs[0]) inputs[0].focus();
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────────
+       CONTROL DE VISTAS (DOCENTE VS ESTUDIANTE)
+       ────────────────────────────────────────────────────────────────────────── */
+    function switchView(mode) {
+      document.getElementById('btnModeDocente').classList.toggle('active', mode === 'docente');
+      document.getElementById('btnModeEstudiante').classList.toggle('active', mode === 'estudiante');
+
+      document.getElementById('viewDocente').classList.toggle('active', mode === 'docente');
+      document.getElementById('viewEstudiante').classList.toggle('active', mode === 'estudiante');
+
+      if (mode === 'estudiante') {
+        renderizarVistaEstudiante();
+      } else {
+        renderizarEditorDocente();
+        renderizarVistaPrevia();
+      }
+    }
+
+    function cambiarFormula() {
+      generarProcedimientoCompleto();
+    }
+
+    function toggleVariantes() {
+      // Toggle demostrativo
+    }
+
+    // Inicialización al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      generarProcedimientoCompleto();
+    });
+  </script>
+</body>
+</html>

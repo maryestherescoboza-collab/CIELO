@@ -69,7 +69,7 @@
    el contenido; las secuencias permanecen disponibles al reabrir. */
 .ws-folder-exterior {
   position: absolute;
-  top: 64px;
+  top: 185px;
   left: 18px;
   z-index: 45;
   display: flex;

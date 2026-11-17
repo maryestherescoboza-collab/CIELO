@@ -44,15 +44,25 @@ export default function PortalFichaDetalle() {
     if (!id || !sessionToken) return;
     setLoading(true);
     try {
-      const { data, error: fetchError } = await supabase.rpc('portal_get_ficha_detalle', {
+      let fichaResp: any = null;
+      const { data: v2Data, error: v2Error } = await supabase.rpc('portal_get_ficha_detalle_v2', {
         p_session_token: sessionToken,
         p_nota_id: id
       });
+
+      if (!v2Error && v2Data && !v2Data.error) {
+        fichaResp = v2Data;
+      } else {
+        const { data: legacyData, error: legacyError } = await supabase.rpc('portal_get_ficha_detalle', {
+          p_session_token: sessionToken,
+          p_nota_id: id
+        });
+        if (legacyError) throw legacyError;
+        if (legacyData && legacyData.error) throw new Error(legacyData.error);
+        fichaResp = legacyData;
+      }
       
-      if (fetchError) throw fetchError;
-      if (data && data.error) throw new Error(data.error);
-      
-      setFicha(data);
+      setFicha(fichaResp);
 
       // Fetch comentarios
       const { data: comData, error: comError } = await supabase.rpc('portal_get_comentarios_ficha', {
