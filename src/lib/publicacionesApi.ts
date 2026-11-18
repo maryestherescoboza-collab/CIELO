@@ -131,21 +131,48 @@ export const publicacionesApi = {
         entradas: EntradaPublicacionWizard[],
         usuarioId: string
     ): Promise<void> {
-        // 1. Obtener publicaciones actuales
+        // 1. Obtener publicaciones actuales incluyendo actividad_id para detectar desvinculaciones
         const { data: actuales, error: errFetch } = await supabase
             .from('ficha_publicaciones')
-            .select('id, curso_id, asignatura')
+            .select('id, curso_id, asignatura, actividad_id')
             .eq('nota_id', notaId);
 
         if (errFetch) throw errFetch;
 
-        const actualesMap = new Map((actuales || []).map(a => [`${a.curso_id}_${a.asignatura}`, a.id]));
+        const actualesMap = new Map((actuales || []).map(a => [`${a.curso_id}_${a.asignatura}`, a]));
         const entradasMap = new Map(entradas.map(e => [`${e.cursoId}_${e.asignatura}`, e]));
+
+        // Recopilar IDs de actividades que podrían quedar desvinculadas de esta ficha
+        const actividadesCandidatasALimpiar = new Set<number>();
+
+        // Actividades de publicaciones que van a ser eliminadas
+        actuales?.forEach(act => {
+            const key = `${act.curso_id}_${act.asignatura}`;
+            if (!entradasMap.has(key) && act.actividad_id) {
+                actividadesCandidatasALimpiar.add(act.actividad_id);
+            }
+        });
+
+        // Actividades que fueron reemplazadas por otra actividad en el mismo curso/asignatura
+        entradas.forEach(ent => {
+            const key = `${ent.cursoId}_${ent.asignatura}`;
+            const actual = actualesMap.get(key);
+            if (actual?.actividad_id && actual.actividad_id !== ent.actividadId) {
+                actividadesCandidatasALimpiar.add(actual.actividad_id);
+            }
+        });
+
+        // Asegurarse de que ninguna de las nuevas actividades a vincular sea marcada para limpiar
+        entradas.forEach(ent => {
+            if (ent.actividadId) {
+                actividadesCandidatasALimpiar.delete(ent.actividadId);
+            }
+        });
 
         // 2. Eliminar las que ya no están
         const idsAEliminar: string[] = [];
-        actualesMap.forEach((id, key) => {
-            if (!entradasMap.has(key)) idsAEliminar.push(id);
+        actualesMap.forEach((act, key) => {
+            if (!entradasMap.has(key)) idsAEliminar.push(act.id);
         });
 
         if (idsAEliminar.length > 0) {
@@ -188,6 +215,28 @@ export const publicacionesApi = {
                     .from('actividades')
                     .update(patch)
                     .eq('id', ent.actividadId);
+            }
+        }
+
+        // 5. Limpiar exclusivamente enlaces huérfanos de actividades que quedaron obsoletas
+        if (actividadesCandidatasALimpiar.size > 0) {
+            const idsCandidatos = Array.from(actividadesCandidatasALimpiar);
+            // Comprobar que no pertenezcan a otra publicación válida
+            const { data: enUso } = await supabase
+                .from('ficha_publicaciones')
+                .select('actividad_id')
+                .in('actividad_id', idsCandidatos)
+                .neq('nota_id', notaId);
+
+            const idsEnUso = new Set((enUso || []).map(r => r.actividad_id));
+            const idsALimpiar = idsCandidatos.filter(id => !idsEnUso.has(id));
+
+            if (idsALimpiar.length > 0) {
+                await supabase
+                    .from('actividades')
+                    .update({ plan_ficha_id: null })
+                    .in('id', idsALimpiar)
+                    .eq('plan_ficha_id', notaId);
             }
         }
     },

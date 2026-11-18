@@ -315,7 +315,8 @@ export function EditorPasos({
             <select
               value={formulaId}
               onChange={(e) => handleCambiarFormula(e.target.value)}
-              className="bg-white border border-[#2E3330]/12 rounded-lg px-2.5 py-1 text-xs font-semibold text-[#2E3330] outline-none hover:border-[#2E3330]/30 focus:border-[#689C63] cursor-pointer max-w-[280px] sm:max-w-[340px] truncate transition-colors"
+              className="bg-white border border-[#2E3330]/12 rounded-lg px-2.5 py-1 text-xs font-semibold text-[#2E3330] outline-none hover:border-[#2E3330]/30 focus:border-[#689C63] cursor-pointer 
+               sm:max-w-[340px] truncate transition-colors"
             >
               {Array.from(new Set(CATALOGO_FORMULAS.map((f) => f.categoria))).map((cat) => (
                 <optgroup key={cat} label={cat}>
@@ -385,11 +386,10 @@ export function EditorPasos({
                     key={nivel}
                     type="button"
                     onClick={() => aplicarNivel(nivel)}
-                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                      activo
+                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${activo
                         ? 'bg-white text-[#2E3330] shadow-xs'
                         : 'text-[#2E3330]/55 hover:text-[#2E3330]'
-                    }`}
+                      }`}
                   >
                     {nivel === 'guiado' && 'Guiado'}
                     {nivel === 'medio' && 'Medio'}
@@ -461,11 +461,10 @@ export function EditorPasos({
                       type="button"
                       onClick={(e) => handleTokenClick(paso.id, token, e)}
                       title="Espacio marcado. Clic para editar clave o quitar"
-                      className={`min-w-[48px] h-[34px] px-2 rounded-lg text-sm font-mono font-bold inline-flex items-center justify-center transition-all cursor-pointer ${
-                        mostrarClaves
+                      className={`min-w-[48px] h-[34px] px-2 rounded-lg text-sm font-mono font-bold inline-flex items-center justify-center transition-all cursor-pointer ${mostrarClaves
                           ? 'border-2 border-[#689C63] bg-[#689C63]/12 text-[#2b5926] shadow-xs'
                           : 'border-2 border-dashed border-[#689C63] bg-[#689C63]/5 text-[#689C63]'
-                      } ${esActivo ? 'ring-2 ring-[#689C63] ring-offset-1' : ''}`}
+                        } ${esActivo ? 'ring-2 ring-[#689C63] ring-offset-1' : ''}`}
                     >
                       {mostrarClaves ? token.clave : '[ ? ]'}
                     </button>
@@ -515,22 +514,20 @@ export function EditorPasos({
                               <button
                                 type="button"
                                 onClick={() => actualizarTokenActivo({ tipoEntrada: 'numerico' })}
-                                className={`px-2 py-1 rounded text-[11px] font-semibold border ${
-                                  token.tipoEntrada === 'numerico'
+                                className={`px-2 py-1 rounded text-[11px] font-semibold border ${token.tipoEntrada === 'numerico'
                                     ? 'bg-[#689C63] text-white border-[#689C63]'
                                     : 'bg-white text-[#5F665E] border-[#E2E5E0]'
-                                }`}
+                                  }`}
                               >
                                 Numérico
                               </button>
                               <button
                                 type="button"
                                 onClick={() => actualizarTokenActivo({ tipoEntrada: 'alfanumerico' })}
-                                className={`px-2 py-1 rounded text-[11px] font-semibold border ${
-                                  token.tipoEntrada === 'alfanumerico'
+                                className={`px-2 py-1 rounded text-[11px] font-semibold border ${token.tipoEntrada === 'alfanumerico'
                                     ? 'bg-[#689C63] text-white border-[#689C63]'
                                     : 'bg-white text-[#5F665E] border-[#E2E5E0]'
-                                }`}
+                                  }`}
                               >
                                 Letras
                               </button>

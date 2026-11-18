@@ -10,12 +10,13 @@ interface FichaCompartida {
   fecha: string;
   curso_id: number;
   asignatura?: string;
+  periodo?: string | null;
   tiene_producto?: boolean;
   tiene_ruta?: boolean;
 }
 
 export default function PortalFichas() {
-  const { sessionToken, asignaturas, selectedPeriodo, token, selectedAsignatura } = usePortal();
+  const { sessionToken, asignaturas, token, selectedAsignatura } = usePortal();
 
   const navigate = useNavigate();
 
@@ -53,7 +54,7 @@ export default function PortalFichas() {
     };
 
     fetchAllData();
-  }, [sessionToken, selectedPeriodo, asignaturas, selectedAsignatura]);
+  }, [sessionToken, asignaturas, selectedAsignatura]);
 
 
 

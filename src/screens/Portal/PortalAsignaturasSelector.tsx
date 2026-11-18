@@ -9,6 +9,7 @@ import {
 } from '../../constants/asignaturas';
 import type { AsignaturaPublicada, EstudianteContextInfo, Periodo } from './portalContext';
 import { supabase } from '../../lib/supabase';
+import { fetchPortalFichasCompartidasCached } from '../../cache/portalCache';
 import { 
   ArrowLeft, 
   ChevronLeft, 
@@ -37,6 +38,7 @@ interface AsignaturaStats {
 interface PortalFichaItem {
   id: string;
   asignatura?: string | null;
+  periodo?: string | null;
 }
 
 interface PortalEvidenciaItem {
@@ -273,11 +275,11 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
 
     const loadRealData = async () => {
       try {
-        // 1. Obtener fichas compartidas reales
-        const { data: fichasData } = await supabase.rpc('portal_get_fichas_compartidas', {
-          p_session_token: sessionToken,
-        });
-        const fichas: PortalFichaItem[] = Array.isArray(fichasData) ? (fichasData as PortalFichaItem[]) : [];
+        // 1. Obtener fichas compartidas reales desde caché compartida
+        const fichasData = await fetchPortalFichasCompartidasCached<PortalFichaItem>(
+          sessionToken
+        );
+        const fichas: PortalFichaItem[] = Array.isArray(fichasData) ? fichasData : [];
 
         // 2. Para cada asignatura con docente, consultar evidencias (para EXP) e incidencias (para Alertas)
         const newStats: Record<string, AsignaturaStats> = {};
@@ -293,7 +295,7 @@ export const PortalAsignaturasSelector: React.FC<PortalAsignaturasSelectorProps>
             continue;
           }
 
-          // Filtrar fichas correspondientes con aislamiento estricto
+          // Filtrar fichas correspondientes con aislamiento estricto por asignatura (sin filtro de período)
           const fichasDeMateria = fichas.filter((f) => 
             Boolean(f.asignatura && sonMismaAsignatura(f.asignatura, item.nombre))
           );

@@ -393,13 +393,15 @@ export async function fetchPortalAsignaturasCached<T = any>(
 
 export async function fetchPortalFichasCompartidasCached<T = any>(
   sessionToken: string,
-  asignatura?: string
+  asignatura?: string,
+  _periodo?: string
 ): Promise<T[]> {
   const canon = asignatura ? canonicalAsignaturaKey(asignatura) : 'all';
   return fetchWithPortalCache<T[]>(sessionToken, 'fichas_compartidas', canon, async () => {
     const { data, error } = await supabase.rpc('portal_get_fichas_compartidas', {
       p_session_token: sessionToken,
       p_asignatura: asignatura || null,
+      p_periodo: null,
     });
     const res = assertRpcData<T[]>(data, error, 'Error al cargar las fichas');
     return Array.isArray(res) ? res : [];
