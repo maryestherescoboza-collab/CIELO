@@ -862,9 +862,9 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                             </div>
 
                             {etapaAbierta === etapa.id && (
-                                <div className="border-t border-[#2E3330]/8 bg-[#FAF9F7] p-3 space-y-2">
+                                <div className="border-t border-[#2E3330]/8 bg-white px-6 py-6 space-y-6">
                                     {etapa.actividades.length > 0 && (
-                                        <div className="flex items-center gap-2 px-1">
+                                        <div className="flex items-center gap-2">
                                             <ResumenSuma
                                                 pesos={etapa.actividades.map((a) => a.peso)}
                                                 cantidad={etapa.actividades.length}
@@ -872,7 +872,7 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                                             <div className="flex-1" />
                                             <button
                                                 onClick={() => repartirEtapa(etapa.id!)}
-                                                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2E3330]/40 hover:text-[#4a7a46] transition-colors"
+                                                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2E3330]/40 hover:text-[#689C63] transition-colors"
                                                 title="Repartir 100% en partes iguales entre los items de esta etapa"
                                             >
                                                 <Scale size={11} /> Repartir
@@ -886,87 +886,92 @@ export default function ConstructorRuta({ notaId, onCerrar }: ConstructorRutaPro
                                         </p>
                                     )}
 
-                                    {etapa.actividades.map((actividad) => (
-                                        <div
-                                            key={actividad.id}
-                                            className="bg-white rounded-xl border border-[#2E3330]/10 overflow-hidden"
-                                        >
-                                            <div className="flex items-center gap-2 px-3 py-2">
-                                                <span className="px-2 py-0.5 rounded-md bg-[#3e6088]/10 text-[#3e6088] text-[10px] font-bold uppercase tracking-wide">
-                                                    {ETIQUETA_TIPO_ACTIVIDAD[actividad.tipo]}
-                                                </span>
-                                                {actividad.actividad_origen_id && (
-                                                    <span
-                                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#689C63]/15 text-[#4a7a46] text-[10px] font-bold uppercase tracking-wide"
-                                                        title="Este item viene de CIELO. Al completarse, su puntaje pasa a calificaciones."
-                                                    >
-                                                        <Link2 size={9} /> CIELO
+                                    {etapa.actividades.map((actividad) => {
+                                        const abierta = actividadAbierta === actividad.id;
+                                        return (
+                                            <div
+                                                key={actividad.id}
+                                                className="border-b border-[#2E3330]/8 pb-6 last:border-b-0 last:pb-0 space-y-3"
+                                            >
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className="px-2 py-0.5 rounded-full bg-[#2E3330]/6 text-[#2E3330] text-[10px] font-bold uppercase tracking-wider shrink-0">
+                                                        {ETIQUETA_TIPO_ACTIVIDAD[actividad.tipo]}
                                                     </span>
-                                                )}
-                                                <input
-                                                    value={actividad.titulo ?? ''}
-                                                    onChange={(e) =>
-                                                        actualizarActividadLocal(etapa.id!, actividad.id!, {
-                                                            titulo: e.target.value,
-                                                        })
-                                                    }
-                                                    placeholder="Título del item (opcional)"
-                                                    className="flex-1 text-[13px] font-semibold text-[#2E3330] bg-transparent outline-none placeholder:text-[#2E3330]/30 min-w-0"
-                                                />
-                                                <span className="text-[10px] text-[#2E3330]/40 shrink-0">
-                                                    {actividad.preguntas.length} preg.
-                                                </span>
-                                                <CampoPeso
-                                                    valor={actividad.peso}
-                                                    etiqueta={`Peso del item dentro de ${etapa.titulo || 'la etapa'}, en porcentaje`}
-                                                    onCommit={(peso) =>
-                                                        peso !== null &&
-                                                        actualizarActividadLocal(etapa.id!, actividad.id!, {
-                                                            peso,
-                                                        })
-                                                    }
-                                                />
-                                                <button
-                                                    onClick={() =>
-                                                        setActividadAbierta(
-                                                            actividadAbierta === actividad.id ? null : actividad.id!,
-                                                        )
-                                                    }
-                                                    className="p-1.5 rounded-lg text-[#2E3330]/40 hover:text-[#3e6088] transition-colors"
-                                                    aria-label="Editar item"
-                                                >
-                                                    {actividadAbierta === actividad.id ? (
-                                                        <ChevronUp size={14} />
-                                                    ) : (
-                                                        <ChevronDown size={14} />
+                                                    {actividad.actividad_origen_id && (
+                                                        <span
+                                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#689C63]/12 text-[#4a7a46] text-[10px] font-bold uppercase tracking-wider shrink-0"
+                                                            title="Este item viene de CIELO. Al completarse, su puntaje pasa a calificaciones."
+                                                        >
+                                                            <Link2 size={9} /> CIELO
+                                                        </span>
                                                     )}
-                                                </button>
-                                                <button
-                                                    onClick={() => eliminarActividad(etapa.id!, actividad.id!)}
-                                                    className="p-1.5 rounded-lg text-[#2E3330]/35 hover:text-red-600 transition-colors"
-                                                    aria-label="Eliminar item"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
+                                                    <input
+                                                        value={actividad.titulo ?? ''}
+                                                        onChange={(e) =>
+                                                            actualizarActividadLocal(etapa.id!, actividad.id!, {
+                                                                titulo: e.target.value,
+                                                            })
+                                                        }
+                                                        placeholder="Título del item (opcional)"
+                                                        className="flex-1 text-[13px] font-semibold text-[#2E3330] bg-transparent border-b border-transparent hover:border-[#2E3330]/20 focus:border-[#689C63] outline-none placeholder:text-[#2E3330]/30 min-w-0 py-0.5 transition-colors"
+                                                    />
+                                                    {actividad.preguntas.length > 1 && (
+                                                        <span className="text-[11px] text-[#2E3330]/40 shrink-0 font-medium">
+                                                            {actividad.preguntas.length} preg.
+                                                        </span>
+                                                    )}
+                                                    <CampoPeso
+                                                        valor={actividad.peso}
+                                                        etiqueta={`Peso del item dentro de ${etapa.titulo || 'la etapa'}, en porcentaje`}
+                                                        onCommit={(peso) =>
+                                                            peso !== null &&
+                                                            actualizarActividadLocal(etapa.id!, actividad.id!, {
+                                                                peso,
+                                                            })
+                                                        }
+                                                    />
+                                                    <button
+                                                        onClick={() =>
+                                                            setActividadAbierta(
+                                                                abierta ? null : actividad.id!,
+                                                            )
+                                                        }
+                                                        className="p-1 text-[#2E3330]/40 hover:text-[#2E3330] transition-colors"
+                                                        aria-label="Editar item"
+                                                    >
+                                                        {abierta ? (
+                                                            <ChevronUp size={15} />
+                                                        ) : (
+                                                            <ChevronDown size={15} />
+                                                        )}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => eliminarActividad(etapa.id!, actividad.id!)}
+                                                        className="p-1 text-[#2E3330]/30 hover:text-red-600 transition-colors"
+                                                        aria-label="Eliminar item"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
 
-                                            {actividadAbierta === actividad.id && (
-                                                <FormularioActividad
-                                                    actividad={actividad}
-                                                    onChange={(cambios) =>
-                                                        actualizarActividadLocal(etapa.id!, actividad.id!, cambios)
-                                                    }
-                                                    onGuardar={() => {
-                                                        const actual = etapas
-                                                            .find((e) => e.id === etapa.id)
-                                                            ?.actividades.find((a) => a.id === actividad.id);
-                                                        if (actual) void guardarActividad(actual);
-                                                    }}
-                                                    guardando={guardando}
-                                                />
-                                            )}
-                                        </div>
-                                    ))}
+                                                {abierta && (
+                                                    <FormularioActividad
+                                                        actividad={actividad}
+                                                        onChange={(cambios) =>
+                                                            actualizarActividadLocal(etapa.id!, actividad.id!, cambios)
+                                                        }
+                                                        onGuardar={() => {
+                                                            const actual = etapas
+                                                                .find((e) => e.id === etapa.id)
+                                                                ?.actividades.find((a) => a.id === actividad.id);
+                                                            if (actual) void guardarActividad(actual);
+                                                        }}
+                                                        guardando={guardando}
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
 
                                     <SelectorTipoActividad
                                         onElegir={(tipo) => agregarActividad(etapa.id!, tipo)}
@@ -1187,7 +1192,7 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
     };
 
     return (
-        <div className="border-t border-[#2E3330]/8 p-3.5 space-y-4">
+        <div className="pt-2 space-y-6">
 
             {actividad.preguntas.map((pregunta, indice) => {
                 const pasos = pregunta.config.pasos ?? [];
@@ -1203,10 +1208,10 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                 return (
                     <div
                         key={indice}
-                        className="rounded-xl border border-[#2E3330]/10 bg-[#FAF9F7] p-3 space-y-3"
+                        className="space-y-4 pt-3 first:pt-0 border-t border-[#2E3330]/6 first:border-t-0"
                     >
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/45">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#2E3330]/40">
                                 Pregunta {indice + 1}
                             </span>
                             <div className="flex-1" />
@@ -1219,7 +1224,7 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                                             tipo_respuesta: e.target.value as TipoRespuesta,
                                         })
                                     }
-                                    className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none"
+                                    className="text-[11px] font-semibold px-2 py-0.5 rounded-md border border-[#2E3330]/12 bg-white focus:outline-none focus:border-[#689C63]"
                                 >
                                     {tipos.map((t) => (
                                         <option key={t} value={t}>
@@ -1232,7 +1237,7 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                             {actividad.preguntas.length > 1 && (
                                 <button
                                     onClick={() => eliminarPregunta(indice)}
-                                    className="p-1.5 rounded-lg text-[#2E3330]/35 hover:text-red-600 transition-colors"
+                                    className="p-1 text-[#2E3330]/35 hover:text-red-600 transition-colors"
                                     aria-label="Eliminar pregunta"
                                 >
                                     <Trash2 size={13} />
@@ -1240,17 +1245,15 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                             )}
                         </div>
 
-                        <textarea
-                            value={pregunta.enunciado}
-                            onChange={(e) => actualizarPregunta(indice, { enunciado: e.target.value })}
-                            rows={2}
-                            placeholder={
-                                esProcedimiento
-                                    ? 'Dados b = 2 y c = 3, encuentra a usando el teorema de Pitágoras.'
-                                    : 'Escribe el enunciado de la pregunta.'
-                            }
-                            className="w-full px-3 py-2 text-[13px] font-semibold rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63] resize-y leading-relaxed"
-                        />
+                        {!esProcedimiento && (
+                            <textarea
+                                value={pregunta.enunciado}
+                                onChange={(e) => actualizarPregunta(indice, { enunciado: e.target.value })}
+                                rows={2}
+                                placeholder="Escribe el enunciado de la pregunta..."
+                                className="w-full py-1.5 px-0 text-[13px] font-semibold bg-transparent border-b border-transparent hover:border-[#2E3330]/20 focus:border-[#689C63] outline-none resize-y leading-relaxed transition-colors placeholder:text-[#2E3330]/30"
+                            />
+                        )}
 
                         {/* ── Procedimiento matemático ── */}
                         {esProcedimiento && (
@@ -1265,6 +1268,9 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                                 config={pregunta.config}
                                 datos={actividad.config.datos ?? []}
                                 onDatosChange={(datos) => onChange({ config: { ...actividad.config, datos } })}
+                                enunciado={pregunta.enunciado}
+                                onEnunciadoChange={(nuevoEnunciado) => actualizarPregunta(indice, { enunciado: nuevoEnunciado })}
+                                onGuardar={onGuardar}
                             />
                         )}
 
@@ -1296,7 +1302,7 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                                     value={pregunta.pista ?? ''}
                                     onChange={(e) => actualizarPregunta(indice, { pista: e.target.value })}
                                     placeholder="Pista que se muestra si el estudiante falla."
-                                    className="w-full px-3 py-2 text-[12px] rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
+                                    className="w-full py-1 px-0 text-[12px] bg-transparent border-b border-transparent hover:border-[#2E3330]/20 focus:border-[#689C63] outline-none transition-colors"
                                 />
                                 <input
                                     value={pregunta.retroalimentacion_ok ?? ''}
@@ -1304,7 +1310,7 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                                         actualizarPregunta(indice, { retroalimentacion_ok: e.target.value })
                                     }
                                     placeholder="Explicación cuando acierta."
-                                    className="w-full px-3 py-2 text-[12px] rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
+                                    className="w-full py-1 px-0 text-[12px] bg-transparent border-b border-transparent hover:border-[#2E3330]/20 focus:border-[#689C63] outline-none transition-colors"
                                 />
                                 <input
                                     value={pregunta.retroalimentacion_error ?? ''}
@@ -1312,7 +1318,7 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                                         actualizarPregunta(indice, { retroalimentacion_error: e.target.value })
                                     }
                                     placeholder="Explicación cuando se equivoca."
-                                    className="w-full px-3 py-2 text-[12px] rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
+                                    className="w-full py-1 px-0 text-[12px] bg-transparent border-b border-transparent hover:border-[#2E3330]/20 focus:border-[#689C63] outline-none transition-colors"
                                 />
                             </div>
                         </details>
@@ -1336,18 +1342,17 @@ function FormularioActividad({ actividad, onChange, onGuardar, guardando }: Form
                 );
             })}
 
-            <div className="flex items-center gap-2">
+            <div className="border-t border-[#2E3330]/8 pt-4 flex items-center justify-between">
                 <button
                     onClick={agregarPregunta}
-                    className="inline-flex items-center gap-1 text-[12px] font-bold text-[#3e6088] hover:underline"
+                    className="inline-flex items-center gap-1 text-[12px] font-bold text-[#689C63] hover:underline"
                 >
                     <Plus size={12} /> Agregar pregunta
                 </button>
-                <div className="flex-1" />
                 <button
                     onClick={onGuardar}
                     disabled={guardando}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#2E3330] px-3.5 py-1.5 text-white text-[12px] font-bold hover:bg-[#3e463f] disabled:opacity-50 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#689C63] px-4 py-2 text-white text-[12px] font-bold hover:bg-[#5a8a55] disabled:opacity-50 transition-colors shadow-xs"
                 >
                     {guardando ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                     Guardar item
@@ -1374,18 +1379,18 @@ function EditorOpciones({
     // puede elegir libremente cuál es la correcta.
     if (fija) {
         return (
-            <div className="rounded-lg border border-[#2E3330]/10 bg-[#FAF9F7] px-3 py-2.5">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-2">
+            <div className="space-y-2 py-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#2E3330]/40">
                     Selecciona la respuesta correcta
                 </p>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
                     {opciones.map((opcion, i) => (
                         <label
                             key={i}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${
                                 opcion.es_correcta
-                                    ? 'border-[#689C63] bg-[#689C63]/12 text-[#4a7a46] font-bold'
-                                    : 'border-[#2E3330]/10 bg-white text-[#2E3330]/70 hover:border-[#2E3330]/25'
+                                    ? 'border-[#689C63] bg-[#689C63]/10 text-[#4a7a46] font-bold'
+                                    : 'border-[#2E3330]/12 bg-white text-[#2E3330]/70 hover:border-[#2E3330]/30'
                             }`}
                         >
                             <input
@@ -1401,7 +1406,7 @@ function EditorOpciones({
                         </label>
                     ))}
                 </div>
-                <p className="text-[11px] text-[#2E3330]/45 mt-2">
+                <p className="text-[11px] text-[#2E3330]/45">
                     El estudiante verá ambas opciones en el portal; sumará puntaje al marcar la opción que definas como correcta.
                 </p>
             </div>
@@ -1409,7 +1414,7 @@ function EditorOpciones({
     }
 
     return (
-        <div className="space-y-1.5">
+        <div className="space-y-2 py-1">
             {opciones.map((opcion, i) => (
                 <div key={i} className="flex items-center gap-2">
                     <input
@@ -1418,20 +1423,21 @@ function EditorOpciones({
                         onChange={() =>
                             onChange(opciones.map((o, j) => ({ ...o, es_correcta: j === i })))
                         }
-                        className="accent-[#689C63] shrink-0"
+                        className="accent-[#689C63] shrink-0 cursor-pointer"
                         title={opcion.es_correcta ? 'Respuesta correcta' : 'Marcar como correcta'}
                     />
                     <input
                         value={opcion.texto}
+                        placeholder={`Opción ${i + 1}`}
                         onChange={(e) =>
                             onChange(opciones.map((o, j) => (j === i ? { ...o, texto: e.target.value } : o)))
                         }
-                        className="flex-1 px-3 py-1.5 text-[13px] rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
+                        className="flex-1 py-1 px-0 text-[13px] bg-transparent border-b border-transparent hover:border-[#2E3330]/20 focus:border-[#689C63] outline-none transition-colors"
                     />
                     {opciones.length > 2 && (
                         <button
                             onClick={() => onChange(opciones.filter((_, j) => j !== i))}
-                            className="p-1.5 rounded-lg text-[#2E3330]/35 hover:text-red-600 transition-colors"
+                            className="p-1 text-[#2E3330]/30 hover:text-red-600 transition-colors"
                             aria-label="Eliminar opción"
                         >
                             <Trash2 size={12} />
@@ -1446,7 +1452,7 @@ function EditorOpciones({
                         { texto: '', orden: opciones.length, es_correcta: false },
                     ])
                 }
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#3e6088] hover:underline"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#689C63] hover:underline"
             >
                 <Plus size={11} /> Agregar opción
             </button>
@@ -1466,21 +1472,21 @@ function EditorRespuestaEsperada({
     const alternas = config.respuestasAceptadas ?? [];
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-3 py-1">
             <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#2E3330]/40 mb-1">
                     Respuesta correcta
                 </label>
                 <input
                     value={config.respuestaEsperada ?? ''}
                     onChange={(e) => onChange({ ...config, respuestaEsperada: e.target.value })}
-                    placeholder={tipoRespuesta === 'numerica' ? '5' : 'la respuesta'}
-                    className="w-full px-3 py-2 text-[13px] font-mono rounded-lg border border-[#689C63]/40 bg-[#689C63]/5 focus:outline-none focus:border-[#689C63] focus:bg-white transition-colors"
+                    placeholder={tipoRespuesta === 'numerica' ? '5' : 'Escribe la respuesta esperada...'}
+                    className="w-full py-1 px-0 text-[13px] font-mono bg-transparent border-b border-[#2E3330]/15 hover:border-[#2E3330]/30 focus:border-[#689C63] outline-none transition-colors"
                 />
             </div>
 
             {tipoRespuesta === 'numerica' && (
-                <div className="flex gap-2">
+                <div className="flex gap-4">
                     <label className="flex-1">
                         <span className="block text-[10px] text-[#2E3330]/50 mb-0.5">
                             Tolerancia absoluta
@@ -1492,7 +1498,7 @@ function EditorRespuestaEsperada({
                             onChange={(e) =>
                                 onChange({ ...config, toleranciaAbs: Number(e.target.value) })
                             }
-                            className="w-full px-2.5 py-1.5 text-[12px] font-mono rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none"
+                            className="w-full py-0.5 text-[12px] font-mono bg-transparent border-b border-[#2E3330]/15 hover:border-[#2E3330]/30 focus:border-[#689C63] outline-none"
                         />
                     </label>
                     <label className="flex-1">
@@ -1506,30 +1512,28 @@ function EditorRespuestaEsperada({
                             onChange={(e) =>
                                 onChange({ ...config, toleranciaRel: Number(e.target.value) })
                             }
-                            className="w-full px-2.5 py-1.5 text-[12px] font-mono rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none"
+                            className="w-full py-0.5 text-[12px] font-mono bg-transparent border-b border-[#2E3330]/15 hover:border-[#2E3330]/30 focus:border-[#689C63] outline-none"
                         />
                     </label>
                 </div>
             )}
 
             <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/50 mb-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#2E3330]/40 mb-1">
                     También se acepta
                 </label>
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                     {alternas.map((alt, i) => (
                         <div key={i} className="flex items-center gap-2">
                             <input
                                 value={alt}
-                                onChange={(e) =>
-                                    onChange({
-                                        ...config,
-                                        respuestasAceptadas: alternas.map((a, j) =>
-                                            j === i ? e.target.value : a,
-                                        ),
-                                    })
-                                }
-                                className="flex-1 px-2.5 py-1.5 text-[12px] font-mono rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none"
+                                onChange={(e) => {
+                                    const sig = [...alternas];
+                                    sig[i] = e.target.value;
+                                    onChange({ ...config, respuestasAceptadas: sig });
+                                }}
+                                placeholder="Otra variante aceptable"
+                                className="flex-1 py-0.5 text-[12px] font-mono bg-transparent border-b border-transparent hover:border-[#2E3330]/20 focus:border-[#689C63] outline-none transition-colors"
                             />
                             <button
                                 onClick={() =>
@@ -1538,7 +1542,7 @@ function EditorRespuestaEsperada({
                                         respuestasAceptadas: alternas.filter((_, j) => j !== i),
                                     })
                                 }
-                                className="p-1.5 rounded-lg text-[#2E3330]/35 hover:text-red-600 transition-colors"
+                                className="p-1 text-[#2E3330]/30 hover:text-red-600 transition-colors"
                                 aria-label="Eliminar alternativa"
                             >
                                 <Trash2 size={12} />
@@ -1549,7 +1553,7 @@ function EditorRespuestaEsperada({
                         onClick={() =>
                             onChange({ ...config, respuestasAceptadas: [...alternas, ''] })
                         }
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-[#3e6088] hover:underline"
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-[#689C63] hover:underline"
                     >
                         <Plus size={11} /> Agregar alternativa
                     </button>

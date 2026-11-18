@@ -1,584 +1,833 @@
-/**
- * Editor de pasos y espacios — Procedimiento matematico (lado docente).
- *
- * Es la pieza que hace posible evaluar el PROCEDIMIENTO y no solo el resultado.
- * Cada espacio es una unidad independiente con su respuesta esperada, y su
- * posicion (paso, espacio) es la que la base de datos usa para resolverla.
- *
- * Que la verdad viva en `config.pasos` y no en el DOM significa que:
- *   - el estudiante no puede descubrir la clave mirando la pagina;
- *   - guardar, recargar y volver a editar no pierde la estructura.
- *
- * DECISION DE DISEÑO: el texto del paso y la lista de espacios se editan por
- * separado, pero se sincronizan. Un parser que reindexara los espacios al
- * cambiar el texto moveria las respuestas ya escritas cuando el docente
- * corrige una falta. Aqui agregar o quitar un espacio ajusta el texto, y una
- * vista previa muestra el paso tal como lo vera el estudiante.
- */
-
-import { useMemo, useState } from 'react';
-import { Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, AlertTriangle, Sparkles } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import {
+  Sparkles,
+  SlidersHorizontal,
+  Eye,
+  EyeOff,
+  Dices,
+  X,
+  Trash2,
+  Code2,
+} from 'lucide-react';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 import type { PasoProcedimiento, PreguntaConfig, TipoRespuesta } from '../../../types/rutas';
-import { comparar, parsearNumero } from '../../../lib/rutaValidacion';
 import {
-    contarHuecos,
-    partirPaso,
-    resolverTextoPaso,
-    sincronizarHuecos,
-    totalEspacios,
-} from '../../../lib/rutaPasos';
-import {
-    FORMULAS_MATEMATICAS,
-    PIEZAS_EXPRESION,
-    buscarFormula,
-    generarPasosDesdeFormula,
-} from '../../../lib/formulasMatematicas';
-
-const PIEZAS_NUMERICAS = PIEZAS_EXPRESION.filter((p) => p.tipo === 'numero');
-
-/** Como el estudiantes responde los huecos de un paso. */
-type ModoHueco = 'libre' | 'numerica' | 'expresion';
-
-const piezasPorModo = (modo: ModoHueco) => {
-    if (modo === 'numerica') return PIEZAS_NUMERICAS;
-    if (modo === 'expresion') return PIEZAS_EXPRESION;
-    return undefined;
-};
-
-const modoDePaso = (paso: PasoProcedimiento): ModoHueco => {
-    const piezas = paso.piezas ?? paso.espacios[0]?.piezas;
-    if (!piezas || piezas.length === 0) return 'libre';
-    const soloDigitos = piezas.every((p) => p.tipo === 'numero');
-    return soloDigitos && piezas.length <= 10 ? 'numerica' : 'expresion';
-};
+  CATALOGO_FORMULAS,
+  buscarDefinicionFormula,
+  generarVariantesAleatorias,
+  exportarAPasosCanónicos,
+  type DefinicionFormula,
+  type PasoMatematicoGenerado,
+  type TokenPasoMatematico,
+  type TipoEntradaEspacio,
+  type NivelAyuda,
+} from '../../../lib/motorProcedimientoMatematico';
 
 export interface EditorPasosProps {
-    pasos: PasoProcedimiento[];
-    onChange: (pasos: PasoProcedimiento[]) => void;
-    tipoRespuesta: TipoRespuesta;
-    config: PreguntaConfig;
-    datos: string[];
-    onDatosChange: (datos: string[]) => void;
+  pasos: PasoProcedimiento[];
+  onChange: (pasos: PasoProcedimiento[]) => void;
+  tipoRespuesta?: TipoRespuesta;
+  config?: PreguntaConfig;
+  datos?: string[];
+  onDatosChange?: (datos: string[]) => void;
+  enunciado?: string;
+  onEnunciadoChange?: (enunciado: string) => void;
+  puntaje?: number;
+  onPuntajeChange?: (puntaje: number) => void;
+  onGuardar?: () => void;
 }
 
-interface Prueba {
-    entrada: string;
-    resultado?: 'ok' | 'ko';
+/** Renderiza una cadena matemática en modo KaTeX o tipografía serif limpia (sin errores rojos) */
+function RenderKaTeX({ latex, className = '' }: { latex: string; className?: string }) {
+  const html = useMemo(() => {
+    if (!latex) return null;
+    try {
+      const res = katex.renderToString(latex, { displayMode: false, throwOnError: false });
+      if (res.includes('katex-error') || res.includes('ParseError')) {
+        return null;
+      }
+      return res;
+    } catch {
+      return null;
+    }
+  }, [latex]);
+
+  if (!html) {
+    return <span className={`${className} font-serif tracking-normal text-[#2E3330]`}>{latex}</span>;
+  }
+
+  return <span className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 export function EditorPasos({
-    pasos,
-    onChange,
-    tipoRespuesta,
-    config,
-    datos,
-    onDatosChange,
+  pasos: _pasosProp,
+  onChange,
+  config: _config,
+  datos: _datosProp,
+  onDatosChange,
+  enunciado: enunciadoProp,
+  onEnunciadoChange,
+  puntaje: _puntajeProp = 100,
+  onPuntajeChange: _onPuntajeChange,
+  onGuardar: _onGuardar,
 }: EditorPasosProps) {
-    const [verRespuestas, setVerRespuestas] = useState(true);
-    const [pruebas, setPruebas] = useState<Record<string, Prueba>>({});
-    const [plantilla, setPlantilla] = useState('');
+  // ── 1. Estado de la Fórmula y Datos ───────────────────────────────────────
+  const [formulaId, setFormulaId] = useState<string>('pitagoras');
+  const formulaActual: DefinicionFormula = useMemo(
+    () => buscarDefinicionFormula(formulaId),
+    [formulaId]
+  );
 
-    const total = useMemo(() => totalEspacios(pasos), [pasos]);
-    const formula = buscarFormula(plantilla);
+  // Valores de los datos numéricos de la fórmula actual
+  const [valoresDatos, setValoresDatos] = useState<Record<string, number>>(() => {
+    const iniciales: Record<string, number> = {};
+    formulaActual.datosDefecto.forEach((d) => {
+      iniciales[d.clave] = d.valor;
+    });
+    return iniciales;
+  });
 
-    /**
-     * Cambia como se responden los huecos de un paso. Es lo unico que el
-     * docente elige del rompecabezas: la lista de piezas viene de la biblioteca
-     * de formulas, no se escribe a mano.
-     */
-    const cambiarModo = (indicePaso: number, modo: ModoHueco) => {
-        const paso = pasos[indicePaso];
-        const piezas = piezasPorModo(modo);
-        actualizarPaso(indicePaso, {
-            piezas,
-            espacios: paso.espacios.map((e) => ({ ...e, piezas })),
-        });
-    };
+  // Enunciado local o controlado
+  const [enunciado, setEnunciado] = useState<string>(() =>
+    enunciadoProp || formulaActual.enunciadoPlantilla(valoresDatos)
+  );
 
-    /** Estructura de la formula elegida, sin respuestas: la pone el docente. */
-    const generarDesdePlantilla = () => {
-        if (!formula) return;
-        const conRespuestas = pasos.some((p) => p.espacios.some((e) => e.respuesta.trim() !== ''));
-        if (
-            conRespuestas &&
-            !window.confirm(
-                'Generar la estructura reemplaza los pasos actuales y borra las claves que ya escribiste. ¿Continuar?',
-            )
-        ) {
-            return;
-        }
-        onChange(generarPasosDesdeFormula(formula));
-    };
+  // Puntaje
+  const [puntaje, setPuntaje] = useState<number>(_puntajeProp);
 
-    /**
-     * El paso completo que el estudiante va a ver, con las claves ya puestas.
-     *
-     * Es una VISTA, no una comparacion: el texto del paso lo escribio el
-     * docente y es el mismo para todos los estudiantes, asi que la correccion
-     * mathematical va hueco por hueco (abajo, "probar"). Se muestra para que el
-     * docente lea la ecuacion completa y note si el andamiaje esta bien
-     *plantado: un "a² = ( 3 ) + ( 4 )" se ve raro antes de publicarlo.
-     */
-    const pasoArmado = (indicePaso: number): string | null => {
-        const paso = pasos[indicePaso];
-        return resolverTextoPaso(
-            paso.texto,
-            paso.espacios.map((e) => e.respuesta),
-        );
-    };
+  // Entrada por defecto global
+  const [entradaGlobal, setEntradaGlobal] = useState<TipoEntradaEspacio>('numerico');
 
-    const actualizarPaso = (indice: number, cambios: Partial<PasoProcedimiento>) => {
-        onChange(pasos.map((p, i) => (i === indice ? { ...p, ...cambios } : p)));
-    };
+  // Nivel de ayuda activo
+  const [nivelAyuda, setNivelAyuda] = useState<NivelAyuda>('medio');
 
-    /**
-     * Agregar o quitar un espacio reescribe el texto con el mismo numero de
-     * huecos. Es la operacion que mantiene alineados `texto` y `espacios[]`.
-     */
-    const redimensionarPaso = (indicePaso: number, espacios: PasoProcedimiento['espacios']) => {
-        const paso = pasos[indicePaso];
-        actualizarPaso(indicePaso, {
-            espacios,
-            texto: sincronizarHuecos(paso.texto, espacios.length),
-        });
-    };
+  // Mostrar u ocultar claves en la hoja
+  const [mostrarClaves, setMostrarClaves] = useState<boolean>(true);
 
-    const agregarEspacio = (indicePaso: number) => {
-        const paso = pasos[indicePaso];
-        redimensionarPaso(indicePaso, [...paso.espacios, { respuesta: '' }]);
-    };
+  // Pasos generados con tokens interactivos
+  const [pasosGenerados, setPasosGenerados] = useState<PasoMatematicoGenerado[]>(() => {
+    const generados = formulaActual.generarPasos(valoresDatos, entradaGlobal);
+    // Aplicar preset inicial
+    const todosTokens = generados.flatMap((p) => p.tokens);
+    formulaActual.presetsAyuda[nivelAyuda](todosTokens);
+    return generados;
+  });
 
-    const eliminarEspacio = (indicePaso: number, indiceEspacio: number) => {
-        const paso = pasos[indicePaso];
-        redimensionarPaso(
-            indicePaso,
-            paso.espacios.filter((_, j) => j !== indiceEspacio),
-        );
-    };
+  // Popover de Espacio seleccionado: { pasoId, tokenId }
+  const [espacioActivo, setEspacioActivo] = useState<{
+    pasoId: string;
+    tokenId: string;
+  } | null>(null);
 
-    const actualizarRespuesta = (indicePaso: number, indiceEspacio: number, valor: string) => {
-        const paso = pasos[indicePaso];
-        actualizarPaso(indicePaso, {
-            espacios: paso.espacios.map((e, j) => (j === indiceEspacio ? { ...e, respuesta: valor } : e)),
-        });
-    };
+  // Cajón de Ajustes y Modal de Variantes
+  const [cajonAjustesAbierto, setCajonAjustesAbierto] = useState<boolean>(false);
+  const [modalVariantesAbierto, setModalVariantesAbierto] = useState<boolean>(false);
 
-    /**
-     * Si el docente escribe mas marcadores que espacios, se absorbsen: el texto
-     * manda sobre la lista, y los sobrantes se ignoran al evaluar. Es la
-     * alternativa a "el texto es invalido", que bloquearia la escritura.
-     */
-    const ajustarEspaciosAlTexto = (indicePaso: number, texto: string) => {
-        const paso = pasos[indicePaso];
-        const marcados = contarHuecos(texto);
-        const espacios =
-            marcados === paso.espacios.length
-                ? paso.espacios
-                : Array.from({ length: marcados }, (_, j) => paso.espacios[j] ?? { respuesta: '' });
+  // Variantes calculadas
+  const [variantesEjemplo, setVariantesEjemplo] = useState<
+    { datos: Record<string, number>; resultadoFinal: string }[]
+  >([]);
 
-        onChange(
-            pasos.map((p, i) => (i === indicePaso ? { texto, espacios } : p)),
-        );
-    };
+  // Sincronizar enunciado si cambia la propiedad externa
+  useEffect(() => {
+    if (enunciadoProp !== undefined && enunciadoProp !== enunciado) {
+      setEnunciado(enunciadoProp);
+    }
+  }, [enunciadoProp]);
 
-    const agregarPaso = () => {
-        onChange([...pasos, { texto: '', espacios: [{ respuesta: '' }] }]);
-    };
+  // Si no se proporcionó enunciado inicial desde el padre, sincronizar la plantilla de la fórmula de inmediato
+  useEffect(() => {
+    if (!enunciadoProp && onEnunciadoChange) {
+      onEnunciadoChange(enunciado);
+    }
+  }, []);
 
-    const eliminarPaso = (indice: number) => {
-        onChange(pasos.filter((_, i) => i !== indice));
-    };
+  // Sincronizar hacia el exterior cuando cambian los pasos generados
+  const sincronizarHaciaExterior = (pasosActuales: PasoMatematicoGenerado[]) => {
+    const canonicos = exportarAPasosCanónicos(pasosActuales);
+    onChange(canonicos);
 
-    const moverPaso = (indice: number, delta: number) => {
-        const destino = indice + delta;
-        if (destino < 0 || destino >= pasos.length) return;
-        const nuevos = [...pasos];
-        [nuevos[indice], nuevos[destino]] = [nuevos[destino], nuevos[indice]];
-        onChange(nuevos);
-    };
+    if (onDatosChange) {
+      const datosStr = Object.entries(valoresDatos).map(([k, v]) => `${k} = ${v}`);
+      onDatosChange(datosStr);
+    }
+  };
 
-    const probar = (indicePaso: number, indiceEspacio: number) => {
-        const clave = `${indicePaso}-${indiceEspacio}`;
-        const esperado = pasos[indicePaso]?.espacios[indiceEspacio]?.respuesta;
-        const entrada = pruebas[clave]?.entrada ?? '';
-        if (!esperado?.trim() || !entrada.trim()) return;
-        const ok = comparar(esperado, entrada, tipoRespuesta, config);
-        setPruebas((p) => ({ ...p, [clave]: { entrada, resultado: ok ? 'ok' : 'ko' } }));
-    };
+  // ── 2. Cambiar de fórmula ────────────────────────────────────────────────
+  const handleCambiarFormula = (nuevaId: string) => {
+    setFormulaId(nuevaId);
+    const nuevaDef = buscarDefinicionFormula(nuevaId);
+    const nuevosDatos: Record<string, number> = {};
+    nuevaDef.datosDefecto.forEach((d) => {
+      nuevosDatos[d.clave] = d.valor;
+    });
+    setValoresDatos(nuevosDatos);
 
-    return (
-        <div className="space-y-4">
-            {/* ── Datos del problema ── */}
-            <div className="rounded-xl border border-[#2E3330]/10 bg-[#689C63]/5 p-3">
-                <div className="flex items-center justify-between mb-2">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-[#2E3330]/60">
-                        Datos del problema
-                    </p>
-                    <span className="text-[10px] text-[#2E3330]/45">uno por linea</span>
-                </div>
-                {datos.map((dato, i) => (
-                    <div key={i} className="flex items-center gap-2 mb-1.5">
-                        <input
-                            value={dato}
-                            onChange={(e) => {
-                                const nuevos = [...datos];
-                                nuevos[i] = e.target.value;
-                                onDatosChange(nuevos);
-                            }}
-                            placeholder="b = 2"
-                            className="flex-1 px-2.5 py-1.5 text-[13px] font-mono rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63] transition-colors"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => onDatosChange(datos.filter((_, j) => j !== i))}
-                            className="p-1.5 rounded-lg text-[#2E3330]/40 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            aria-label="Eliminar dato"
-                        >
-                            <Trash2 size={13} />
-                        </button>
-                    </div>
-                ))}
-                <button
-                    type="button"
-                    onClick={() => onDatosChange([...datos, ''])}
-                    className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#3e6088] hover:underline"
-                >
-                    <Plus size={12} /> Agregar dato
-                </button>
-            </div>
+    const nuevoEnunciado = nuevaDef.enunciadoPlantilla(nuevosDatos);
+    setEnunciado(nuevoEnunciado);
+    if (onEnunciadoChange) onEnunciadoChange(nuevoEnunciado);
 
-            {/* ── Pasos ── */}
-            <div className="flex items-center justify-between">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-[#2E3330]/60">
-                    Procedimiento por pasos
-                </p>
-                <button
-                    type="button"
-                    onClick={() => setVerRespuestas((v) => !v)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2E3330]/50 hover:text-[#2E3330] transition-colors"
-                >
-                    {verRespuestas ? <EyeOff size={12} /> : <Eye size={12} />}
-                    {verRespuestas ? 'Ocultar claves' : 'Mostrar claves'}
-                </button>
-            </div>
+    const nuevosPasos = nuevaDef.generarPasos(nuevosDatos, entradaGlobal);
+    const todosTokens = nuevosPasos.flatMap((p) => p.tokens);
+    nuevaDef.presetsAyuda[nivelAyuda](todosTokens);
 
-            <p className="text-[11px] text-[#2E3330]/50 leading-relaxed">
-                Escribe el paso y usa{' '}
-                <code className="px-1 py-0.5 bg-[#2E3330]/5 rounded font-mono">[ ]</code> donde el
-                estudiante deba completar. CIELO guarda y evalua cada espacio por separado.
-            </p>
+    setPasosGenerados(nuevosPasos);
+    setEspacioActivo(null);
+    sincronizarHaciaExterior(nuevosPasos);
+  };
 
-            {/* ── Plantillas de CIELO: la estructura, no la solución ── */}
-            <div className="rounded-xl border border-[#689C63]/25 bg-[#689C63]/5 p-3 space-y-2.5">
-                <div className="flex items-center gap-1.5">
-                    <Sparkles size={13} className="text-[#4a7a46]" />
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-[#2E3330]/60">
-                        Plantilla de fórmula
-                    </p>
-                </div>
-                <p className="text-[11px] text-[#2E3330]/55 leading-relaxed">
-                    CIELO arma la estructura del procedimiento y el teclado de cada paso. No
-                    resuelve el ejercicio: los datos y las claves de los huecos los pones tu.
-                </p>
-                <div className="flex flex-wrap items-center gap-2">
-                    <select
-                        value={plantilla}
-                        onChange={(e) => setPlantilla(e.target.value)}
-                        className="flex-1 min-w-40 px-2.5 py-1.5 text-[12px] font-semibold rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
-                    >
-                        <option value="">Elige una fórmula…</option>
-                        {FORMULAS_MATEMATICAS.map((f) => (
-                            <option key={f.id} value={f.id}>
-                                {f.nombre}
-                            </option>
-                        ))}
-                    </select>
-                    <button
-                        type="button"
-                        onClick={generarDesdePlantilla}
-                        disabled={!formula}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#689C63] text-white text-[12px] font-bold hover:bg-[#5a8a55] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <Sparkles size={12} /> Generar estructura
-                    </button>
-                </div>
-                {formula?.referencia && (
-                    <p className="text-[11px] font-mono text-[#2E3330]/55">
-                        {formula.referencia} · {formula.pasos.length} pasos, sin respuestas
-                    </p>
-                )}
-            </div>
-
-            {pasos.length === 0 && (
-                <div className="rounded-xl border border-dashed border-[#2E3330]/20 py-8 text-center">
-                    <p className="text-[12px] text-[#2E3330]/50 mb-3">Todavia no hay pasos.</p>
-                    <button
-                        type="button"
-                        onClick={agregarPaso}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#689C63] text-white text-[12px] font-bold hover:bg-[#5a8a55] transition-colors"
-                    >
-                        <Plus size={13} /> Agregar el primer paso
-                    </button>
-                </div>
-            )}
-
-            <div className="space-y-3">
-                {pasos.map((paso, indicePaso) => {
-                    const huecos = contarHuecos(paso.texto);
-                    const desalineado = huecos !== paso.espacios.length;
-
-                    return (
-                        <div
-                            key={indicePaso}
-                            className="rounded-xl border border-[#2E3330]/10 bg-white overflow-hidden"
-                        >
-                            <div className="flex items-center gap-2 px-3 py-2 border-b border-[#2E3330]/8 bg-[#2E3330]/[0.02]">
-                                <span className="text-[11px] font-bold text-[#2E3330]/60">
-                                    Paso {indicePaso + 1}
-                                </span>
-                                <div className="flex-1" />
-                                <button
-                                    type="button"
-                                    onClick={() => moverPaso(indicePaso, -1)}
-                                    disabled={indicePaso === 0}
-                                    className="p-1 rounded text-[#2E3330]/40 hover:text-[#2E3330] disabled:opacity-25 transition-colors"
-                                    aria-label="Subir paso"
-                                >
-                                    <ChevronUp size={13} />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => moverPaso(indicePaso, 1)}
-                                    disabled={indicePaso === pasos.length - 1}
-                                    className="p-1 rounded text-[#2E3330]/40 hover:text-[#2E3330] disabled:opacity-25 transition-colors"
-                                    aria-label="Bajar paso"
-                                >
-                                    <ChevronDown size={13} />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => eliminarPaso(indicePaso)}
-                                    className="p-1 rounded text-[#2E3330]/40 hover:text-red-600 transition-colors"
-                                    aria-label="Eliminar paso"
-                                >
-                                    <Trash2 size={13} />
-                                </button>
-                            </div>
-
-                            <div className="p-3 space-y-2.5">
-                                <textarea
-                                    value={paso.texto}
-                                    onChange={(e) => ajustarEspaciosAlTexto(indicePaso, e.target.value)}
-                                    rows={2}
-                                    placeholder="a^2 = [ ]^2 - [ ]^2"
-                                    className="w-full px-3 py-2 text-[14px] font-mono rounded-lg border border-[#2E3330]/10 focus:outline-none focus:border-[#689C63] resize-y leading-relaxed"
-                                />
-
-                                {desalineado && (
-                                    <p className="flex items-start gap-1.5 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 leading-relaxed">
-                                        <AlertTriangle size={12} className="mt-0.5 shrink-0" />
-                                        Se esta ajustando el texto: {huecos} marcador
-                                        {huecos === 1 ? '' : 'es'} para {paso.espacios.length} espacio
-                                        {paso.espacios.length === 1 ? '' : 's'}.
-                                    </p>
-                                )}
-
-                                {/* ── Vista previa del paso como lo vera el estudiante ── */}
-                                {paso.texto.trim() !== '' && (
-                                    <div className="rounded-lg bg-[#2E3330]/[0.03] px-3 py-2">
-                                        <p className="text-[10px] font-bold uppercase tracking-wide text-[#2E3330]/40 mb-1">
-                                            Como lo vera el estudiante
-                                        </p>
-                                        <p className="text-[13px] font-mono text-[#2E3330]/75 leading-relaxed">
-                                            {partirPaso(paso.texto).map((parte, i) =>
-                                                parte.tipo === 'texto' ? (
-                                                    <span key={i}>{parte.valor}</span>
-                                                ) : (
-                                                    <span
-                                                        key={i}
-                                                        className="inline-block min-w-14 px-1.5 py-0.5 mx-0.5 text-center rounded border border-dashed border-[#2E3330]/30 bg-white text-[#2E3330]/35"
-                                                    >
-                                                        {i + 1}
-                                                    </span>
-                                                ),
-                                            )}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {paso.espacios.length > 0 && (
-                                    <div className="pt-1 space-y-2">
-                                        {/* ── Teclado del paso ── */}
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-[11px] font-semibold text-[#2E3330]/50 w-14 shrink-0">
-                                                Teclado
-                                            </span>
-                                            <select
-                                                value={modoDePaso(paso)}
-                                                onChange={(e) =>
-                                                    cambiarModo(indicePaso, e.target.value as ModoHueco)
-                                                }
-                                                className="text-[12px] font-semibold px-2 py-1 rounded-lg border border-[#2E3330]/10 bg-white focus:outline-none focus:border-[#689C63]"
-                                            >
-                                                <option value="libre">Texto libre</option>
-                                                <option value="numerica">Solo números (0-9)</option>
-                                                <option value="expresion">Expresión completa</option>
-                                            </select>
-                                            <span className="text-[10px] text-[#2E3330]/45">
-                                                {modoDePaso(paso) === 'libre'
-                                                    ? 'El estudiante escribe con teclado'
-                                                    : 'El estudiante arma la respuesta con piezas, sin teclado libre'}
-                                            </span>
-                                        </div>
-
-                                        {/* ── Vista del paso ya armado ──
-                                            Lo que el estudiante leera con sus
-                                            numeros puestos. */}
-                                        {(() => {
-                                            const armado = pasoArmado(indicePaso);
-                                            if (!armado) return null;
-                                            return (
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="text-[11px] font-semibold text-[#2E3330]/50 w-14 shrink-0">
-                                                        Se vera
-                                                    </span>
-                                                    <code className="flex-1 min-w-40 px-2.5 py-1.5 text-[12px] font-mono rounded-lg bg-[#2E3330]/[0.04] text-[#2E3330]/75">
-                                                        {armado}
-                                                    </code>
-                                                    <span className="text-[10px] text-[#2E3330]/45">
-                                                        la clave se compara hueco por hueco
-                                                    </span>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {paso.espacios.map((espacio, indiceEspacio) => {
-                                            const clave = `${indicePaso}-${indiceEspacio}`;
-                                            const prueba = pruebas[clave];
-                                            const noNumerico =
-                                                tipoRespuesta === 'numerica' &&
-                                                espacio.respuesta.trim() !== '' &&
-                                                parsearNumero(espacio.respuesta) === null;
-
-                                            return (
-                                                <div key={indiceEspacio} className="space-y-1.5">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <span className="text-[11px] font-semibold text-[#2E3330]/50 w-14 shrink-0">
-                                                            Espacio {indiceEspacio + 1}
-                                                        </span>
-
-                                                        {verRespuestas && (
-                                                            <div className="flex items-center gap-1">
-                                                                <input
-                                                                    value={espacio.respuesta}
-                                                                    onChange={(e) =>
-                                                                        actualizarRespuesta(
-                                                                            indicePaso,
-                                                                            indiceEspacio,
-                                                                            e.target.value,
-                                                                        )
-                                                                    }
-                                                                    placeholder="clave"
-                                                                    className="w-24 px-2.5 py-1.5 text-[13px] font-mono rounded-lg border border-[#689C63]/40 bg-[#689C63]/5 focus:outline-none focus:border-[#689C63] focus:bg-white transition-colors"
-                                                                />
-                                                                {noNumerico && (
-                                                                    <span
-                                                                        className="text-[10px] font-bold text-amber-700"
-                                                                        title="No es numerico: se comparara como texto"
-                                                                    >
-                                                                        texto
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="flex items-center gap-1">
-                                                            <input
-                                                                value={prueba?.entrada ?? ''}
-                                                                onChange={(e) =>
-                                                                    setPruebas((p) => ({
-                                                                        ...p,
-                                                                        [clave]: {
-                                                                            entrada: e.target.value,
-                                                                        },
-                                                                    }))
-                                                                }
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter') {
-                                                                        e.preventDefault();
-                                                                        probar(indicePaso, indiceEspacio);
-                                                                    }
-                                                                }}
-                                                                onBlur={() => probar(indicePaso, indiceEspacio)}
-                                                                placeholder="probar..."
-                                                                className={`w-20 px-2 py-1.5 text-[12px] font-mono rounded-lg border transition-colors focus:outline-none ${
-                                                                    prueba?.resultado === 'ok'
-                                                                        ? 'border-[#689C63] bg-[#689C63]/10 text-[#4a7a46]'
-                                                                        : prueba?.resultado === 'ko'
-                                                                          ? 'border-red-300 bg-red-50 text-red-700'
-                                                                          : 'border-[#2E3330]/10 focus:border-[#2E3330]/30'
-                                                                }`}
-                                                            />
-                                                            {prueba?.resultado && (
-                                                                <span
-                                                                    className={`text-[11px] font-bold ${
-                                                                        prueba.resultado === 'ok'
-                                                                            ? 'text-[#4a7a46]'
-                                                                            : 'text-red-600'
-                                                                    }`}
-                                                                >
-                                                                    {prueba.resultado === 'ok' ? 'OK' : 'X'}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="flex-1" />
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                eliminarEspacio(indicePaso, indiceEspacio)
-                                                            }
-                                                            className="p-1 rounded text-[#2E3330]/30 hover:text-red-600 transition-colors"
-                                                            aria-label={`Eliminar espacio ${indiceEspacio + 1}`}
-                                                        >
-                                                            <Trash2 size={12} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-
-                                <button
-                                    type="button"
-                                    onClick={() => agregarEspacio(indicePaso)}
-                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#3e6088] hover:underline"
-                                >
-                                    <Plus size={11} /> Agregar espacio
-                                </button>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {pasos.length > 0 && (
-                <button
-                    type="button"
-                    onClick={agregarPaso}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#2E3330]/10 text-[12px] font-bold text-[#3e6088] hover:bg-[#3e6088]/5 transition-colors"
-                >
-                    <Plus size={13} /> Agregar paso
-                </button>
-            )}
-
-            <p className="text-[11px] text-[#2E3330]/50 pt-1">
-                {total} espacio{total === 1 ? '' : 's'} en total. CIELO podra indicar cual de
-                ellos fallo.
-            </p>
-        </div>
+  // ── 3. Generar Procedimiento Resuelto ─────────────────────────────────────
+  const generarProcedimiento = () => {
+    // Mapear qué tokens ya estaban marcados como espacios (por posición id)
+    const espaciosPrevios = new Set(
+      pasosGenerados.flatMap((p) => p.tokens.filter((t) => t.esEspacio).map((t) => t.id))
     );
+
+    const nuevosPasos = formulaActual.generarPasos(valoresDatos, entradaGlobal);
+
+    if (espaciosPrevios.size > 0) {
+      // Conservar los espacios existentes
+      nuevosPasos.forEach((p) => {
+        p.tokens.forEach((t) => {
+          if (!t.esEstatico && espaciosPrevios.has(t.id)) {
+            t.esEspacio = true;
+          }
+        });
+      });
+    } else {
+      // Aplicar el nivel de andamiaje actual
+      const todosTokens = nuevosPasos.flatMap((p) => p.tokens);
+      formulaActual.presetsAyuda[nivelAyuda](todosTokens);
+    }
+
+    setPasosGenerados(nuevosPasos);
+    setEspacioActivo(null);
+    sincronizarHaciaExterior(nuevosPasos);
+  };
+
+  // ── 4. Cambiar nivel de ayuda ─────────────────────────────────────────────
+  const aplicarNivel = (nuevoNivel: NivelAyuda) => {
+    setNivelAyuda(nuevoNivel);
+    const nuevosPasos = formulaActual.generarPasos(valoresDatos, entradaGlobal);
+    const todosTokens = nuevosPasos.flatMap((p) => p.tokens);
+
+    // Resetear
+    todosTokens.forEach((t) => {
+      t.esEspacio = false;
+    });
+
+    formulaActual.presetsAyuda[nuevoNivel](todosTokens);
+    setPasosGenerados(nuevosPasos);
+    setEspacioActivo(null);
+    sincronizarHaciaExterior(nuevosPasos);
+  };
+
+  // ── 5. Toque sobre un token en la hoja del procedimiento ─────────────────
+  const handleTokenClick = (pasoId: string, token: TokenPasoMatematico, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (token.esEstatico) return;
+
+    if (!token.esEspacio) {
+      // Un toque convierte el término en un espacio
+      const actualizados = pasosGenerados.map((p) => {
+        if (p.id !== pasoId) return p;
+        return {
+          ...p,
+          tokens: p.tokens.map((t) =>
+            t.id === token.id ? { ...t, esEspacio: true, tipoEntrada: entradaGlobal } : t
+          ),
+        };
+      });
+      setPasosGenerados(actualizados);
+      sincronizarHaciaExterior(actualizados);
+    } else {
+      // Si ya es un espacio, abrir el popover para editar o quitar
+      if (espacioActivo?.pasoId === pasoId && espacioActivo?.tokenId === token.id) {
+        setEspacioActivo(null);
+      } else {
+        setEspacioActivo({ pasoId, tokenId: token.id });
+      }
+    }
+  };
+
+  // ── 6. Modificar o Quitar Espacio desde el Popover ─────────────────────────
+  const actualizarTokenActivo = (cambios: Partial<TokenPasoMatematico>) => {
+    if (!espacioActivo) return;
+    const actualizados = pasosGenerados.map((p) => {
+      if (p.id !== espacioActivo.pasoId) return p;
+      return {
+        ...p,
+        tokens: p.tokens.map((t) =>
+          t.id === espacioActivo.tokenId ? { ...t, ...cambios } : t
+        ),
+      };
+    });
+    setPasosGenerados(actualizados);
+    sincronizarHaciaExterior(actualizados);
+  };
+
+  const quitarEspacioActivo = () => {
+    actualizarTokenActivo({ esEspacio: false });
+    setEspacioActivo(null);
+  };
+
+  // ── 7. Contador de espacios ───────────────────────────────────────────────
+  const totalEspaciosMarcados = useMemo(() => {
+    return pasosGenerados.reduce(
+      (acc, p) => acc + p.tokens.filter((t) => t.esEspacio).length,
+      0
+    );
+  }, [pasosGenerados]);
+
+  // ── 8. Abrir modal de variantes ───────────────────────────────────────────
+  const abrirVariantes = () => {
+    const vars = generarVariantesAleatorias(formulaActual, 3);
+    setVariantesEjemplo(vars);
+    setModalVariantesAbierto(true);
+  };
+
+  return (
+    <div className="w-full bg-white flex flex-col font-['Inter',sans-serif] select-none space-y-4">
+      {/* ══════════════════════════════════════════════════════════════════════
+          BANDA 1: BARRA SUPERIOR COMPACTA (ENUNCIADO Y CONFIGURACIÓN)
+          ══════════════════════════════════════════════════════════════════════ */}
+      <div className="space-y-3 shrink-0">
+        {/* Fila 1: Enunciado */}
+        <div>
+          <input
+            type="text"
+            value={enunciado}
+            onChange={(e) => {
+              setEnunciado(e.target.value);
+              if (onEnunciadoChange) onEnunciadoChange(e.target.value);
+            }}
+            placeholder="Enunciado del problema..."
+            className="w-full bg-transparent border-b border-transparent hover:border-[#2E3330]/20 focus:border-[#689C63] py-1 text-[13px] text-[#2E3330] font-semibold outline-none transition-colors placeholder:text-[#2E3330]/30"
+          />
+        </div>
+
+        {/* Fila 2: Fórmula, Datos en línea, Variantes y Generar Procedimiento */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Selector de Fórmula organizado por categorías */}
+            <select
+              value={formulaId}
+              onChange={(e) => handleCambiarFormula(e.target.value)}
+              className="bg-white border border-[#2E3330]/12 rounded-lg px-2.5 py-1 text-xs font-semibold text-[#2E3330] outline-none hover:border-[#2E3330]/30 focus:border-[#689C63] cursor-pointer max-w-[280px] sm:max-w-[340px] truncate transition-colors"
+            >
+              {Array.from(new Set(CATALOGO_FORMULAS.map((f) => f.categoria))).map((cat) => (
+                <optgroup key={cat} label={cat}>
+                  {CATALOGO_FORMULAS.filter((f) => f.categoria === cat).map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.nombre} — {f.latexReferencia}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+
+            {/* Datos en línea */}
+            <div className="flex items-center gap-1.5">
+              {formulaActual.datosDefecto.map((d) => (
+                <div
+                  key={d.clave}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5"
+                  title={d.nombre}
+                >
+                  <span className="text-[11px] font-bold text-[#2E3330]/60 font-mono">{d.clave} =</span>
+                  <input
+                    type="number"
+                    value={valoresDatos[d.clave] ?? d.valor}
+                    onChange={(e) => {
+                      const num = parseFloat(e.target.value) || 0;
+                      setValoresDatos((prev) => ({ ...prev, [d.clave]: num }));
+                    }}
+                    className="w-10 bg-transparent border-b border-transparent hover:border-[#2E3330]/20 focus:border-[#689C63] text-xs font-bold text-[#2E3330] outline-none text-center font-mono transition-colors"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Botón Variantes como control secundario */}
+            <button
+              type="button"
+              onClick={abrirVariantes}
+              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[#2E3330]/60 hover:text-[#689C63] transition-colors cursor-pointer"
+              title="Generar 3 variantes aleatorias para verificar"
+            >
+              <Dices size={12} className="text-[#689C63]" />
+              Variantes
+            </button>
+          </div>
+
+          {/* Botón Generar procedimiento */}
+          <button
+            type="button"
+            onClick={generarProcedimiento}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#689C63] hover:bg-[#5a8a55] text-white text-xs font-bold transition-all cursor-pointer active:scale-98"
+          >
+            <Sparkles size={13} />
+            Generar procedimiento
+          </button>
+        </div>
+
+        {/* Fila 3: Nivel de ayuda y Ajustes */}
+        <div className="flex items-center justify-between pt-0.5 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-[#2E3330]/50">Andamiaje:</span>
+            <div className="inline-flex items-center gap-1 bg-[#2E3330]/5 p-0.5 rounded-lg">
+              {(['guiado', 'medio', 'final'] as NivelAyuda[]).map((nivel) => {
+                const activo = nivelAyuda === nivel;
+                return (
+                  <button
+                    key={nivel}
+                    type="button"
+                    onClick={() => aplicarNivel(nivel)}
+                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                      activo
+                        ? 'bg-white text-[#2E3330] shadow-xs'
+                        : 'text-[#2E3330]/55 hover:text-[#2E3330]'
+                    }`}
+                  >
+                    {nivel === 'guiado' && 'Guiado'}
+                    {nivel === 'medio' && 'Medio'}
+                    {nivel === 'final' && 'Solo respuesta final'}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Botón Ajustes como enlace secundario */}
+          <button
+            type="button"
+            onClick={() => setCajonAjustesAbierto(true)}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2E3330]/60 hover:text-[#2E3330] transition-colors cursor-pointer"
+          >
+            <SlidersHorizontal size={12} />
+            Ajustes
+          </button>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          BANDA 2: CENTRO — LA HOJA DEL PROCEDIMIENTO
+          (Tinte suave del 3% de marca, sin bordes ni sombras)
+          ══════════════════════════════════════════════════════════════════════ */}
+      <div
+        className="w-full bg-[#689C63]/[0.03] rounded-2xl py-8 px-6 flex flex-col items-center justify-center min-h-[220px] relative transition-colors"
+        onClick={() => setEspacioActivo(null)}
+      >
+        <div className="w-full max-w-2xl mx-auto flex flex-col items-center gap-2.5">
+          {pasosGenerados.map((paso) => (
+            <div
+              key={paso.id}
+              className="w-full min-h-[38px] py-1 flex flex-wrap items-center justify-center gap-1 select-none text-[20px] sm:text-[22px] tracking-wide"
+            >
+              {paso.tokens.map((token) => {
+                if (token.esEstatico) {
+                  return (
+                    <span key={token.id} className="text-[#2E3330] inline-flex items-center font-serif leading-none">
+                      <RenderKaTeX latex={token.texto} />
+                    </span>
+                  );
+                }
+
+                // Término interactivo (convertible o espacio)
+                if (!token.esEspacio) {
+                  // Término resuelto: hover punteado, un clic lo hace espacio
+                  return (
+                    <button
+                      key={token.id}
+                      type="button"
+                      onClick={(e) => handleTokenClick(paso.id, token, e)}
+                      title="Haz clic para convertir en espacio [ ? ]"
+                      className="px-1.5 py-0.5 rounded-md border border-transparent hover:border-[#689C63]/50 hover:bg-[#689C63]/10 text-[#2E3330] transition-all cursor-pointer font-serif text-[20px] sm:text-[22px] leading-none inline-flex items-center"
+                    >
+                      <RenderKaTeX latex={token.texto} />
+                    </button>
+                  );
+                }
+
+                // Espacio marcado como hueco
+                const esActivo =
+                  espacioActivo?.pasoId === paso.id && espacioActivo?.tokenId === token.id;
+
+                return (
+                  <div key={token.id} className="relative inline-flex items-center">
+                    <button
+                      type="button"
+                      onClick={(e) => handleTokenClick(paso.id, token, e)}
+                      title="Espacio marcado. Clic para editar clave o quitar"
+                      className={`min-w-[48px] h-[34px] px-2 rounded-lg text-sm font-mono font-bold inline-flex items-center justify-center transition-all cursor-pointer ${
+                        mostrarClaves
+                          ? 'border-2 border-[#689C63] bg-[#689C63]/12 text-[#2b5926] shadow-xs'
+                          : 'border-2 border-dashed border-[#689C63] bg-[#689C63]/5 text-[#689C63]'
+                      } ${esActivo ? 'ring-2 ring-[#689C63] ring-offset-1' : ''}`}
+                    >
+                      {mostrarClaves ? token.clave : '[ ? ]'}
+                    </button>
+
+                    {/* ── Popover de Espacio Flotante ── */}
+                    {esActivo && (
+                      <div
+                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-white rounded-xl border border-[#2E3330]/15 shadow-xl p-3 z-50 text-left font-sans animate-in fade-in zoom-in-95 duration-150"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#E2E5E0]">
+                          <span className="text-[11px] font-bold text-[#2E3330] uppercase tracking-wider">
+                            Espacio de respuesta
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setEspacioActivo(null)}
+                            className="p-0.5 text-[#5F665E] hover:text-[#2E3330]"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+
+                        <div className="space-y-2 text-xs">
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase text-[#5F665E] mb-1">
+                              Clave correcta
+                            </label>
+                            <input
+                              type="text"
+                              value={token.clave}
+                              onChange={(e) =>
+                                actualizarTokenActivo({
+                                  clave: e.target.value,
+                                  longitud: e.target.value.length,
+                                })
+                              }
+                              className="w-full bg-[#F7F7F4] border border-[#E2E5E0] rounded-md px-2 py-1 text-xs font-mono font-bold text-[#2E3330] outline-none focus:border-[#689C63]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase text-[#5F665E] mb-1">
+                              Tipo de teclado
+                            </label>
+                            <div className="grid grid-cols-2 gap-1">
+                              <button
+                                type="button"
+                                onClick={() => actualizarTokenActivo({ tipoEntrada: 'numerico' })}
+                                className={`px-2 py-1 rounded text-[11px] font-semibold border ${
+                                  token.tipoEntrada === 'numerico'
+                                    ? 'bg-[#689C63] text-white border-[#689C63]'
+                                    : 'bg-white text-[#5F665E] border-[#E2E5E0]'
+                                }`}
+                              >
+                                Numérico
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => actualizarTokenActivo({ tipoEntrada: 'alfanumerico' })}
+                                className={`px-2 py-1 rounded text-[11px] font-semibold border ${
+                                  token.tipoEntrada === 'alfanumerico'
+                                    ? 'bg-[#689C63] text-white border-[#689C63]'
+                                    : 'bg-white text-[#5F665E] border-[#E2E5E0]'
+                                }`}
+                              >
+                                Letras
+                              </button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase text-[#5F665E] mb-1">
+                              Respuestas equivalentes
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Ej: 13.0, 13"
+                              value={token.equivalentes.join(', ')}
+                              onChange={(e) => {
+                                const arr = e.target.value
+                                  .split(',')
+                                  .map((s) => s.trim())
+                                  .filter(Boolean);
+                                actualizarTokenActivo({ equivalentes: arr });
+                              }}
+                              className="w-full bg-[#F7F7F4] border border-[#E2E5E0] rounded-md px-2 py-1 text-[11px] text-[#2E3330] outline-none focus:border-[#689C63]"
+                            />
+                          </div>
+
+                          <div className="pt-2 flex items-center justify-between border-t border-[#E2E5E0]">
+                            <button
+                              type="button"
+                              onClick={quitarEspacioActivo}
+                              className="text-red-600 hover:text-red-700 font-semibold text-[11px] flex items-center gap-1 cursor-pointer"
+                            >
+                              <Trash2 size={12} /> Quitar espacio
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setEspacioActivo(null)}
+                              className="px-3 py-1 bg-[#2E3330] text-white rounded text-[11px] font-bold"
+                            >
+                              Listo
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          BANDA 3: BARRA INFERIOR (CONTADOR, ENTRADA Y MOSTRAR CLAVES)
+          ══════════════════════════════════════════════════════════════════════ */}
+      <div className="border-t border-[#2E3330]/8 pt-3 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+        {/* Contador de espacios */}
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-[#2E3330]">{totalEspaciosMarcados} espacios marcados</span>
+          <span className="text-[#2E3330]/30">·</span>
+          <span className="text-[#2E3330]/50 text-[11px]">
+            {totalEspaciosMarcados === 0
+              ? 'Toca un término resuelto para convertirlo en espacio'
+              : 'El estudiante completará estos campos'}
+          </span>
+        </div>
+
+        {/* Tipo de entrada por defecto y switch de claves */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-[#2E3330]/50">Entrada global:</span>
+            <select
+              value={entradaGlobal}
+              onChange={(e) => {
+                const tipo = e.target.value as TipoEntradaEspacio;
+                setEntradaGlobal(tipo);
+                // Actualizar tokens
+                const actualizados = pasosGenerados.map((p) => ({
+                  ...p,
+                  tokens: p.tokens.map((t) => ({ ...t, tipoEntrada: tipo })),
+                }));
+                setPasosGenerados(actualizados);
+                sincronizarHaciaExterior(actualizados);
+              }}
+              className="bg-transparent border-b border-transparent hover:border-[#2E3330]/20 focus:border-[#689C63] py-0.5 text-xs font-semibold text-[#2E3330] outline-none transition-colors cursor-pointer"
+            >
+              <option value="numerico">Numérico</option>
+              <option value="alfanumerico">Alfanumérico</option>
+            </select>
+          </div>
+
+          {/* Interruptor Mostrar Claves */}
+          <button
+            type="button"
+            onClick={() => setMostrarClaves((v) => !v)}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2E3330]/60 hover:text-[#2E3330] transition-colors cursor-pointer"
+          >
+            {mostrarClaves ? <Eye size={13} className="text-[#689C63]" /> : <EyeOff size={13} />}
+            {mostrarClaves ? 'Claves visibles' : 'Claves ocultas'}
+          </button>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          CAJÓN LATERAL DE "AJUSTES" (PLEGADO POR DEFECTO)
+          ══════════════════════════════════════════════════════════════════════ */}
+      {cajonAjustesAbierto && (
+        <div
+          className="fixed inset-0 z-150 flex justify-end bg-black/40 backdrop-blur-xs font-sans"
+          onClick={() => setCajonAjustesAbierto(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col p-5 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[#E2E5E0]">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={16} className="text-[#689C63]" />
+                <h3 className="text-sm font-bold text-[#2E3330]">Ajustes de Procedimiento</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCajonAjustesAbierto(false)}
+                className="p-1 rounded text-[#5F665E] hover:text-[#2E3330]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-[#5F665E] mb-1">
+                  Puntaje asignado
+                </label>
+                <input
+                  type="number"
+                  value={puntaje}
+                  onChange={(e) => setPuntaje(parseInt(e.target.value, 10) || 0)}
+                  className="w-full bg-[#F7F7F4] border border-[#E2E5E0] rounded-lg p-2 text-xs font-bold text-[#2E3330]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-[#5F665E] mb-1">
+                  Rangos para generación de variantes
+                </label>
+                <div className="space-y-2">
+                  {formulaActual.datosDefecto.map((d) => (
+                    <div key={d.clave} className="flex items-center justify-between bg-[#F7F7F4] p-2.5 rounded-lg border border-[#E2E5E0]">
+                      <span className="font-bold text-[#2E3330]">{d.nombre} ({d.clave})</span>
+                      <div className="flex items-center gap-1.5 text-[11px]">
+                        <span>min:</span>
+                        <input
+                          type="number"
+                          defaultValue={d.rango ? d.rango[0] : 2}
+                          className="w-12 bg-white border border-[#E2E5E0] rounded px-1.5 py-0.5 text-center font-bold"
+                        />
+                        <span>max:</span>
+                        <input
+                          type="number"
+                          defaultValue={d.rango ? d.rango[1] : 9}
+                          className="w-12 bg-white border border-[#E2E5E0] rounded px-1.5 py-0.5 text-center font-bold"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-bold uppercase text-[#5F665E] flex items-center gap-1">
+                    <Code2 size={13} /> Edición manual de pasos (LaTeX / Avanzado)
+                  </label>
+                </div>
+                <p className="text-[11px] text-[#5F665E] mb-2 leading-relaxed">
+                  Para fórmulas fuera del catálogo, puedes editar directamente el procedimiento en LaTeX:
+                </p>
+                <textarea
+                  rows={6}
+                  value={pasosGenerados.map((p) => p.latexCompleto).join('\n')}
+                  onChange={(e) => {
+                    const lineas = e.target.value.split('\n').filter((l) => l.trim().length > 0);
+                    const manuales: PasoMatematicoGenerado[] = lineas.map((linea, idx) => ({
+                      id: `p_manual_${idx}`,
+                      titulo: `Paso ${idx + 1}`,
+                      latexCompleto: linea,
+                      tokens: [
+                        {
+                          id: `p_manual_${idx}_t0`,
+                          texto: linea,
+                          esEstatico: false,
+                          esEspacio: false,
+                          clave: linea,
+                          tipoEntrada: entradaGlobal,
+                          equivalentes: [],
+                          longitud: linea.length,
+                        },
+                      ],
+                    }));
+                    setPasosGenerados(manuales);
+                    sincronizarHaciaExterior(manuales);
+                  }}
+                  className="w-full p-2.5 bg-[#F7F7F4] border border-[#E2E5E0] rounded-lg font-mono text-[11px] text-[#2E3330] focus:border-[#689C63]"
+                />
+              </div>
+            </div>
+
+            <div className="mt-auto pt-4 border-t border-[#E2E5E0]">
+              <button
+                type="button"
+                onClick={() => setCajonAjustesAbierto(false)}
+                className="w-full py-2 bg-[#2E3330] hover:bg-black text-white text-xs font-bold rounded-lg shadow-xs"
+              >
+                Cerrar y aplicar ajustes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL DE "VARIANTES ALEATORIAS"
+          ══════════════════════════════════════════════════════════════════════ */}
+      {modalVariantesAbierto && (
+        <div
+          className="fixed inset-0 z-150 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs font-sans"
+          onClick={() => setModalVariantesAbierto(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-[#2E3330]/15 p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-[#E2E5E0]">
+              <div className="flex items-center gap-2">
+                <Dices size={16} className="text-[#689C63]" />
+                <h3 className="text-sm font-bold text-[#2E3330]">
+                  Variantes Aleatorias por Estudiante
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalVariantesAbierto(false)}
+                className="p-1 rounded text-[#5F665E] hover:text-[#2E3330]"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#5F665E] leading-relaxed">
+              Cada estudiante recibirá datos distintos dentro de los rangos definidos. El sistema
+              recalculará automáticamente todas las sustituciones y claves:
+            </p>
+
+            <div className="space-y-2">
+              {variantesEjemplo.map((v, i) => (
+                <div
+                  key={i}
+                  className="p-3 bg-[#F7F7F4] rounded-xl border border-[#E2E5E0] flex items-center justify-between text-xs"
+                >
+                  <div>
+                    <span className="font-bold text-[#2E3330] block">
+                      Variante {i + 1}:
+                    </span>
+                    <span className="text-[#5F665E] font-mono">
+                      {Object.entries(v.datos)
+                        .map(([k, val]) => `${k} = ${val}`)
+                        .join(', ')}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-[#5F665E] uppercase block font-semibold">
+                      Clave final
+                    </span>
+                    <span className="font-mono font-bold text-[#689C63] text-sm">
+                      {v.resultadoFinal}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setModalVariantesAbierto(false)}
+                className="px-4 py-1.5 bg-[#2E3330] text-white rounded-lg text-xs font-bold"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
+
+export default EditorPasos;
