@@ -47,10 +47,9 @@ export function isAcademicSliceFreshInSession(
     asignatura?: string | null | undefined,
 ): boolean {
     if (!userId || !cursoId) return false;
-    const norm = normalizeArea(asignatura);
+    const norm = normalizeArea(asignatura) || 'general';
     const p = periodo || 'sin-periodo';
-    const last = sessionAcademicVerifiedAt.get(`${userId}:${cursoId}:${norm || 'all'}:${p}`)
-        ?? (norm ? sessionAcademicVerifiedAt.get(`${userId}:${cursoId}:all:${p}`) : undefined);
+    const last = sessionAcademicVerifiedAt.get(`${userId}:${cursoId}:${norm}:${p}`);
     if (!last) return false;
     return Date.now() - last < ACADEMIC_SWR_FRESH_MS;
 }
@@ -62,13 +61,10 @@ export function markAcademicSliceVerifiedInSession(
     asignatura?: string | null | undefined,
 ): void {
     if (!userId || !cursoId) return;
-    const norm = normalizeArea(asignatura);
+    const norm = normalizeArea(asignatura) || 'general';
     const p = periodo || 'sin-periodo';
     const now = Date.now();
-    sessionAcademicVerifiedAt.set(`${userId}:${cursoId}:${norm || 'all'}:${p}`, now);
-    if (norm) {
-        sessionAcademicVerifiedAt.set(`${userId}:${cursoId}:all:${p}`, now);
-    }
+    sessionAcademicVerifiedAt.set(`${userId}:${cursoId}:${norm}:${p}`, now);
 }
 
 export function invalidateAcademicCourseSession(cursoId: number): void {

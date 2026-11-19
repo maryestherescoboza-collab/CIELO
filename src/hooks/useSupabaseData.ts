@@ -18,6 +18,7 @@ import {
     markAcademicSliceVerifiedInSession,
     invalidateAcademicCourseSession
 } from '../cache/academicCache';
+import { normalizeArea } from '../utils/academic';
 import { getAllIdbAcademicSlicesForCourse } from '../cache/academicIdb';
 import { saveSecuencias } from '../cache/secuenciaCache';
 import {
@@ -1634,8 +1635,8 @@ export function useSupabaseData(skipInit = false) {
                             });
                             continue;
                         }
-                        const actividadesSlice = mappedAct.filter(a => a.periodo === p);
-                        const calificacionesSlice = faltantesCal.includes(p)
+                        const actividadesDelPeriodo = mappedAct.filter(a => a.periodo === p);
+                        const calificacionesDelPeriodo = faltantesCal.includes(p)
                             ? mappedCal.filter(c => c.periodo === p)
                             : (getValidAcademicSlice(userId, centroId, cursoId, targetAsig, p)?.calificaciones ?? []);
                         const recuperacionesSlice = mappedRec !== null
@@ -1648,14 +1649,32 @@ export function useSupabaseData(skipInit = false) {
                             ? (mappedRecCotejo.filter((r: RecuperacionCotejo) => r.periodo === p))
                             : (getValidAcademicSlice(userId, centroId, cursoId, targetAsig, p)?.recuperacionesCotejo ?? []);
 
+                        // Guardar la slice de la asignatura consultada
                         saveAcademicSlice(userId, centroId, cursoId, targetAsig, p, {
-                            actividades: actividadesSlice,
-                            calificaciones: calificacionesSlice,
-                            recuperaciones: recuperacionesSlice,
+                            actividades: actividadesDelPeriodo.filter(a => !a.asignatura || normalizeArea(a.asignatura) === normalizeArea(targetAsig)),
+                            calificaciones: calificacionesDelPeriodo.filter(c => !c.asignatura || normalizeArea(c.asignatura) === normalizeArea(targetAsig)),
+                            recuperaciones: recuperacionesSlice.filter((r: RecuperacionBC) => !r.asignatura || normalizeArea(r.asignatura) === normalizeArea(targetAsig)),
                             cursoDetalle: cursoDetalleSlice,
                             recuperacionesCotejo: recuperacionesCotejoSlice,
                         });
                         markAcademicSliceVerifiedInSession(userId, cursoId, p, targetAsig);
+
+                        // Si la consulta trajo actividades de otras materias del mismo curso, persistirlas en su propia slice
+                        const otrasAsignaturas = Array.from(new Set(
+                            actividadesDelPeriodo
+                                .map(a => a.asignatura)
+                                .filter(asig => asig && normalizeArea(asig) !== normalizeArea(targetAsig))
+                        ));
+                        for (const otraAsig of otrasAsignaturas) {
+                            saveAcademicSlice(userId, centroId, cursoId, otraAsig, p, {
+                                actividades: actividadesDelPeriodo.filter(a => normalizeArea(a.asignatura) === normalizeArea(otraAsig)),
+                                calificaciones: calificacionesDelPeriodo.filter(c => normalizeArea(c.asignatura) === normalizeArea(otraAsig)),
+                                recuperaciones: recuperacionesSlice.filter((r: RecuperacionBC) => normalizeArea(r.asignatura) === normalizeArea(otraAsig)),
+                                cursoDetalle: cursoDetalleSlice,
+                                recuperacionesCotejo: recuperacionesCotejoSlice,
+                            });
+                            markAcademicSliceVerifiedInSession(userId, cursoId, p, otraAsig);
+                        }
                     }
                 }
 
@@ -1998,12 +2017,12 @@ export function useSupabaseData(skipInit = false) {
 
             setState(prev => {
                 const mappedAct = (actividades || []).map((a: Record<string, unknown>) => mapActividad(a, prev.cursos));
-                const consultadosCursoIds = new Set(cursosParticipaIds);
-                const otrasActividades = prev.actividades.filter(a => !consultadosCursoIds.has(a.cursoId));
+                const existingActMap = new Map<number, Actividad>(prev.actividades.map(a => [a.id, a]));
+                mappedAct.forEach((a: Actividad) => existingActMap.set(a.id, a));
 
                 return {
                     ...prev,
-                    actividades: [...otrasActividades, ...mappedAct]
+                    actividades: Array.from(existingActMap.values())
                 };
             });
             addLoadedModule('actividades');
