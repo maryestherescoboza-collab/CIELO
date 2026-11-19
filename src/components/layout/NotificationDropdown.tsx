@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo, useCallback } from 'react';
-import { Bell, Link, SquareCheck, X, CheckCheck } from 'lucide-react';
+import { Bell, Link, SquareCheck, X, CheckCheck, MessageSquareText } from 'lucide-react';
 import type { Notification } from '../../types';
 
 interface NotificationDropdownProps {
@@ -129,6 +129,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                             {notificacionesGenerales.slice(0, 10).map((n) => {
                                 const isVinculacion = n.tipo === 'solicitud_vinculacion';
                                 const isTarea = n.tipo === 'tarea' && Boolean(n.tareaId);
+                                const isDuda = n.tipo === 'ficha_duda';
 
                                 return (
                                     <div
@@ -140,6 +141,8 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                                                     ? 'bg-(--tag-amber-bg) border-(--border-soft) shadow-2xs'
                                                     : isTarea
                                                     ? 'bg-(--tag-indigo-bg) border-(--border-soft) shadow-2xs'
+                                                    : isDuda
+                                                    ? 'bg-blue-50/70 border-blue-200/80 shadow-2xs'
                                                     : 'bg-(--tag-emerald-bg) border-(--border-soft)'
                                                 : 'bg-(--linen)/20 border-transparent text-(--ink-soft)'
                                         }`}
@@ -151,10 +154,12 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                                                         ? 'bg-(--tag-amber-bg) text-(--tag-amber-text)'
                                                         : isTarea
                                                         ? 'bg-(--tag-indigo-bg) text-(--tag-indigo-text)'
+                                                        : isDuda
+                                                        ? 'bg-blue-100 text-blue-700'
                                                         : 'bg-(--tag-emerald-bg) text-(--tag-emerald-text)'
                                                 }`}
                                             >
-                                                {isVinculacion ? <Link size={14} /> : isTarea ? <SquareCheck size={14} /> : <Bell size={14} />}
+                                                {isVinculacion ? <Link size={14} /> : isTarea ? <SquareCheck size={14} /> : isDuda ? <MessageSquareText size={14} /> : <Bell size={14} />}
                                             </div>
 
                                             <div className="min-w-0 flex-1">

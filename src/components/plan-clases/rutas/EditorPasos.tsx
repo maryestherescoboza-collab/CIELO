@@ -316,7 +316,7 @@ export function EditorPasos({
               value={formulaId}
               onChange={(e) => handleCambiarFormula(e.target.value)}
               className="bg-white border border-[#2E3330]/12 rounded-lg px-2.5 py-1 text-xs font-semibold text-[#2E3330] outline-none hover:border-[#2E3330]/30 focus:border-[#689C63] cursor-pointer 
-               sm:max-w-[340px] truncate transition-colors"
+               sm:max-w-85 truncate transition-colors"
             >
               {Array.from(new Set(CATALOGO_FORMULAS.map((f) => f.categoria))).map((cat) => (
                 <optgroup key={cat} label={cat}>
@@ -417,14 +417,14 @@ export function EditorPasos({
           (Tinte suave del 3% de marca, sin bordes ni sombras)
           ══════════════════════════════════════════════════════════════════════ */}
       <div
-        className="w-full bg-[#689C63]/[0.03] rounded-2xl py-8 px-6 flex flex-col items-center justify-center min-h-[220px] relative transition-colors"
+        className="w-full bg-[#689C63]/3 rounded-2xl py-8 px-6 flex flex-col items-center justify-center min-h-55 relative transition-colors"
         onClick={() => setEspacioActivo(null)}
       >
         <div className="w-full max-w-2xl mx-auto flex flex-col items-center gap-2.5">
           {pasosGenerados.map((paso) => (
             <div
               key={paso.id}
-              className="w-full min-h-[38px] py-1 flex flex-wrap items-center justify-center gap-1 select-none text-[20px] sm:text-[22px] tracking-wide"
+              className="w-full min-h-9.5 py-1 flex flex-wrap items-center justify-center gap-1 select-none text-[20px] sm:text-[22px] tracking-wide"
             >
               {paso.tokens.map((token) => {
                 if (token.esEstatico) {
@@ -461,7 +461,7 @@ export function EditorPasos({
                       type="button"
                       onClick={(e) => handleTokenClick(paso.id, token, e)}
                       title="Espacio marcado. Clic para editar clave o quitar"
-                      className={`min-w-[48px] h-[34px] px-2 rounded-lg text-sm font-mono font-bold inline-flex items-center justify-center transition-all cursor-pointer ${mostrarClaves
+                      className={`min-w-12 h-8.5 px-2 rounded-lg text-sm font-mono font-bold inline-flex items-center justify-center transition-all cursor-pointer ${mostrarClaves
                           ? 'border-2 border-[#689C63] bg-[#689C63]/12 text-[#2b5926] shadow-xs'
                           : 'border-2 border-dashed border-[#689C63] bg-[#689C63]/5 text-[#689C63]'
                         } ${esActivo ? 'ring-2 ring-[#689C63] ring-offset-1' : ''}`}

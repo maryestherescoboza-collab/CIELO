@@ -8,7 +8,7 @@ export default function ActividadesIndex() {
 
     useEffect(() => {
         if (contextReady) {
-            loadActividadesData();
+            loadActividadesData(true);
         }
     }, [contextReady, loadActividadesData]);
 

@@ -11,12 +11,12 @@ import { getValidPlantillaCache, savePlantillaCache } from '../cache/plantillaCa
 import {
     PERIODOS_ACADEMICOS,
     NULL_PERIODO_TOKEN,
-    hasValidAcademicSlice,
     getValidAcademicSlice,
     saveAcademicSlice,
     upsertAcademicRow,
     isAcademicSliceFreshInSession,
-    markAcademicSliceVerifiedInSession
+    markAcademicSliceVerifiedInSession,
+    invalidateAcademicCourseSession
 } from '../cache/academicCache';
 import { getAllIdbAcademicSlicesForCourse } from '../cache/academicIdb';
 import { saveSecuencias } from '../cache/secuenciaCache';
@@ -114,17 +114,17 @@ const mapActividad = (a: any, cursos?: any[]): Actividad => ({
 });
 
 const mapCalificacion = (c: any, cursos?: any[]): CalificacionActividad => ({
-    id: c.id as number,
-    cursoId: c.curso_id as number,
-    estudianteId: c.estudiante_id as number,
-    actividadId: c.actividad_id as number,
+    id: Number(c.id),
+    cursoId: Number(c.curso_id),
+    estudianteId: Number(c.estudiante_id),
+    actividadId: Number(c.actividad_id),
     userId: c.user_id as string || '',
     asignatura: c.asignatura as string || '',
     periodo: c.periodo as string,
     competencias: c.competencias as BCKey[] || [],
     descriptores: c.descriptores as string[] || [],
-    puntaje: c.puntaje as number,
-    recuperacion: c.recuperacion as number,
+    puntaje: c.puntaje !== null && c.puntaje !== undefined && c.puntaje !== '' ? Number(c.puntaje) : null as any,
+    recuperacion: c.recuperacion !== null && c.recuperacion !== undefined && c.recuperacion !== '' ? Number(c.recuperacion) : null as any,
     sharedCourseId: (c.shared_course_id as string) || (cursos?.find(cur => cur.id === c.curso_id)?.grupo_id ? `group_${cursos.find(cur => cur.id === c.curso_id)?.grupo_id}` : String(c.curso_id))
 });
 
@@ -1071,12 +1071,30 @@ export function useSupabaseData(skipInit = false) {
         const handleOnline = () => {
             console.log('[RED] Conexión recuperada: sincronizando datos académicos en segundo plano');
             if (selectedCursoId) {
-                void loadCursoData(selectedCursoId, undefined, true);
+                invalidateAcademicCourseSession(selectedCursoId);
+                void loadCursoData(selectedCursoId, undefined, true, undefined, true);
             }
         };
         window.addEventListener('online', handleOnline);
         return () => window.removeEventListener('online', handleOnline);
     }, [selectedCursoId]);
+
+    // Reconciliación al volver a la pestaña en tabletas, móviles o tras desbloqueo de pantalla
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && selectedCursoId) {
+                const targetPeriodo = useAppStore.getState().selectedPeriodo || 'P2';
+                const targetAsig = useAppStore.getState().selectedAsignatura || '';
+                const uid = session?.user?.id;
+                if (!isAcademicSliceFreshInSession(uid, selectedCursoId, targetPeriodo, targetAsig)) {
+                    console.log(`[VISIBILITY] Revalidando curso ${selectedCursoId} [${targetAsig}] período ${targetPeriodo} tras reactivación de pestaña`);
+                    void loadCursoData(selectedCursoId, targetPeriodo, true, targetAsig);
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [selectedCursoId, session?.user?.id]);
 
     const loadDashboardData = useCallback(async () => {
         if (!session?.user?.id) { diagLog(`[DIAG][DASH] guard sin-sesion ts=${new Date().toISOString()}`); return; }
@@ -1355,7 +1373,7 @@ export function useSupabaseData(skipInit = false) {
         }
     }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
 
-    const loadCursoData = useCallback(async (cursoId: number, periodo?: string, skipInit = false, asignatura?: string) => {
+    const loadCursoData = useCallback(async (cursoId: number, periodo?: string, skipInit = false, asignatura?: string, forceRefresh = false) => {
         if (!session?.user?.id || !cursoId) {
             diagLog(`[DIAG][CURSO] guard sin-sesion-o-curso cursoId=${cursoId ?? 'sin-curso'} ts=${new Date().toISOString()}`);
             return;
@@ -1429,8 +1447,8 @@ export function useSupabaseData(skipInit = false) {
                 });
                 addLoadedCurso(cursoId);
 
-                // Si ya fue verificado recientemente en esta sesión, omitir consulta de red
-                if (isAcademicSliceFreshInSession(userId, cursoId, targetPeriodo, targetAsig)) {
+                // Si ya fue verificado recientemente en esta sesión y no es forzado, omitir consulta de red
+                if (!forceRefresh && isAcademicSliceFreshInSession(userId, cursoId, targetPeriodo, targetAsig)) {
                     console.log(`[PLANIFICACION] Curso ${cursoId} [${targetAsig}] período ${targetPeriodo} fresco en sesión (SWR skip)`);
                     return;
                 }
@@ -1449,11 +1467,7 @@ export function useSupabaseData(skipInit = false) {
         if (cursoPromises[cursoId] !== undefined) {
             console.log(`[PLANIFICACION] Reutilizando promesa en vuelo para Curso ${cursoId}`);
             await cursoPromises[cursoId];
-            if (periodo) {
-                if (hasValidAcademicSlice(userId, centroId, cursoId, targetAsig, periodo)) return;
-            } else if (loadedCursos.includes(cursoId)) {
-                return;
-            }
+            if (!forceRefresh && isAcademicSliceFreshInSession(userId, cursoId, targetPeriodo, targetAsig)) return;
         }
 
         const fetchPromise = (async () => {
@@ -1481,30 +1495,27 @@ export function useSupabaseData(skipInit = false) {
                 await estudiantesSWRPromise;
             }
 
-            // Caché académico en memoria L1 y en IndexedDB L2 (actividades + calificaciones) por curso + período
-            const faltantesCal: string[] = periodo
-                ? (hasValidAcademicSlice(userId, centroId, cursoId, targetAsig, periodo) ? [] : [periodo])
-                : PERIODOS_ACADEMICOS.filter(p => !hasValidAcademicSlice(userId, centroId, cursoId, targetAsig, p));
-            const faltaNullActividades = !hasValidAcademicSlice(userId, centroId, cursoId, targetAsig, NULL_PERIODO_TOKEN);
-            const faltantesAct: string[] = periodo
-                ? faltantesCal
-                : (faltaNullActividades ? [...faltantesCal, NULL_PERIODO_TOKEN] : faltantesCal);
+            // SWR: Determinar qué períodos deben revalidarse contra Supabase (fuente central de verdad).
+            // Si la slice ya fue revalidada en esta sesión y no es forceRefresh, no se vuelve a consultar.
+            // Si no ha sido verificada en la sesión actual, se consulta a Supabase.
+            const periodosARevalidar: string[] = periodo
+                ? (forceRefresh || !isAcademicSliceFreshInSession(userId, cursoId, periodo, targetAsig) ? [periodo] : [])
+                : PERIODOS_ACADEMICOS.filter(p => forceRefresh || !isAcademicSliceFreshInSession(userId, cursoId, p, targetAsig));
+            
+            const faltaNullActividades = !periodo && (forceRefresh || !isAcademicSliceFreshInSession(userId, cursoId, NULL_PERIODO_TOKEN, targetAsig));
+            const faltantesAct: string[] = faltaNullActividades ? [...periodosARevalidar, NULL_PERIODO_TOKEN] : periodosARevalidar;
+            const faltantesCal: string[] = periodosARevalidar;
 
-            if (loadedCursos.includes(cursoId)) {
-                if (faltantesAct.length === 0 && faltantesCal.length === 0) {
-                    if (!tieneCacheEstudiantes) {
-                        await estudiantesSWRPromise;
-                    }
-                    console.log(`[PLANIFICACION] Curso ${cursoId} completo en caché académico por período (sin consultas de actividades/calificaciones)`);
-                    diagLog(`[DIAG][CURSO] skip-cache-completo cursoId=${cursoId} sin-consultas ts=${new Date().toISOString()}`);
-                    markAcademicSliceVerifiedInSession(userId, cursoId, targetPeriodo, targetAsig);
-                    return;
+            if (faltantesAct.length === 0 && faltantesCal.length === 0) {
+                if (!tieneCacheEstudiantes) {
+                    await estudiantesSWRPromise;
                 }
-                console.log(`[PLANIFICACION] Reconciliación académica del curso ${cursoId} (períodos faltantes: ${faltantesCal.join(',')}${faltaNullActividades ? ' + sin-período' : ''})`);
-                diagLog(`[DIAG][CURSO] reconciliacion cursoId=${cursoId} faltantesCal=[${faltantesCal.join(',')}] faltaNullActividades=${faltaNullActividades} ts=${new Date().toISOString()}`);
-            } else {
-                console.log(`[PLANIFICACION] lazy loading Curso data for course ${cursoId}`);
+                console.log(`[PLANIFICACION] Curso ${cursoId} [${targetAsig}] período ${targetPeriodo} verificado en sesión (SWR skip)`);
+                return;
             }
+
+            console.log(`[PLANIFICACION] SWR Revalidando con Supabase curso ${cursoId} (períodos: ${faltantesAct.join(',')})`);
+            diagLog(`[DIAG][CURSO] swr-revalidacion cursoId=${cursoId} faltantesAct=[${faltantesAct.join(',')}] faltantesCal=[${faltantesCal.join(',')}] ts=${new Date().toISOString()}`);
 
             // Si ya teníamos datos de IndexedDB, evitamos bloquear la pantalla con spinner
             if (!skipInit && idbSlicesCount === 0) setLoading(true);
@@ -1940,9 +1951,9 @@ export function useSupabaseData(skipInit = false) {
         }
     }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
 
-    const loadActividadesData = useCallback(async () => {
+    const loadActividadesData = useCallback(async (force = false) => {
         if (!session?.user?.id) return;
-        if (loadedModules.includes('actividades')) return;
+        if (!force && loadedModules.includes('actividades')) return;
         if (!loadedModules.includes('core')) {
             diagLog('[DIAG][ACTIVIDADES] omitiendo porque core no está cargado');
             return;
@@ -1979,16 +1990,20 @@ export function useSupabaseData(skipInit = false) {
                 actQuery = actQuery.eq('user_id', session.user.id);
             }
 
-            const { data: actividades } = await actQuery;
+            const { data: actividades, error: actError } = await actQuery;
+            if (actError) {
+                console.error('Error loading Actividades data:', actError);
+                return;
+            }
 
             setState(prev => {
                 const mappedAct = (actividades || []).map((a: Record<string, unknown>) => mapActividad(a, prev.cursos));
-                const existingActMap = new Map(prev.actividades.map(a => [a.id, a]));
-                mappedAct.forEach(a => existingActMap.set(a.id, a));
+                const consultadosCursoIds = new Set(cursosParticipaIds);
+                const otrasActividades = prev.actividades.filter(a => !consultadosCursoIds.has(a.cursoId));
 
                 return {
                     ...prev,
-                    actividades: Array.from(existingActMap.values())
+                    actividades: [...otrasActividades, ...mappedAct]
                 };
             });
             addLoadedModule('actividades');

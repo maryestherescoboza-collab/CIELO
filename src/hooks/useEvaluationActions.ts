@@ -8,7 +8,7 @@ import type {
 } from '../types';
 import { calcularResultadoRecuperacion, puntajeActualBC, actividadesParaRecuperacion, totalEvidenciasPorBC } from '../utils/recuperacion';
 import { clearPlantillaCache } from '../cache/plantillaCache';
-import { upsertAcademicRow } from '../cache/academicCache';
+import { upsertAcademicRow, invalidateAcademicCourseSession } from '../cache/academicCache';
 
 export function useEvaluationActions() {
     const state = useAppStore(s => s.state);
@@ -89,6 +89,7 @@ export function useEvaluationActions() {
                             : [...s.actividades, existingAct]
                     }));
                     upsertAcademicRow('actividades', existingAct, existingAct.cursoId, existingAct.periodo ?? null, false);
+                    invalidateAcademicCourseSession(existingAct.cursoId);
                     return existingAct;
                 }
                 return null;
@@ -122,6 +123,7 @@ export function useEvaluationActions() {
             };
             setState(s => ({ ...s, actividades: [...s.actividades, newAct] }));
             upsertAcademicRow('actividades', newAct, newAct.cursoId, newAct.periodo ?? null, false);
+            invalidateAcademicCourseSession(newAct.cursoId);
             return newAct;
         }
         return null;
@@ -1013,8 +1015,8 @@ export function useEvaluationActions() {
     const updateActividad = useCallback(async (
         actOrId: Actividad | number,
         maybePartial?: Partial<Actividad>
-    ) => {
-        if (!session?.user?.id) return;
+    ): Promise<boolean> => {
+        if (!session?.user?.id) return false;
 
         let id: number;
         let updateData: Partial<Actividad>;
@@ -1030,30 +1032,54 @@ export function useEvaluationActions() {
         const existing = state.actividades.find(a => a.id === id);
         const merged = { ...existing, ...updateData, id } as Actividad;
 
-        const { error } = await supabase.from('actividades').upsert({
-            id: merged.id,
-            nombre: merged.nombre,
-            fecha: merged.fecha,
-            periodo: merged.periodo,
-            curso_id: merged.cursoId,
-            bc_asignados: merged.bcAsignados,
-            secuencia_id: merged.secuenciaId,
-            plan_ficha_id: merged.planFichaId ?? null,
-            is_rec: merged.isRec,
-            user_id: session.user.id,
-            asignatura: merged.asignatura,
-            shared_course_id: merged.sharedCourseId,
-            indicador: merged.indicador,
-            indicadores_json: merged.indicadores_json ?? merged.indicadoresJson ?? undefined,
-            producto: merged.producto,
-            descripcion: merged.descripcion ?? null
-        });
-
-        if (!error) {
-            setState(s => ({ ...s, actividades: s.actividades.map(a => a.id === merged.id ? merged : a) }));
-            upsertAcademicRow('actividades', merged, merged.cursoId, merged.periodo ?? null, false);
+        const payload: Record<string, any> = {};
+        if (updateData.nombre !== undefined) payload.nombre = updateData.nombre;
+        if (updateData.fecha !== undefined) payload.fecha = updateData.fecha;
+        if (updateData.periodo !== undefined) payload.periodo = updateData.periodo;
+        if (updateData.cursoId !== undefined) payload.curso_id = updateData.cursoId;
+        if (updateData.bcAsignados !== undefined) payload.bc_asignados = updateData.bcAsignados;
+        if (updateData.secuenciaId !== undefined) payload.secuencia_id = updateData.secuenciaId;
+        if (updateData.planFichaId !== undefined) payload.plan_ficha_id = updateData.planFichaId;
+        if (updateData.isRec !== undefined) payload.is_rec = updateData.isRec;
+        if (updateData.asignatura !== undefined) payload.asignatura = updateData.asignatura;
+        if (updateData.sharedCourseId !== undefined) payload.shared_course_id = updateData.sharedCourseId;
+        if (updateData.indicador !== undefined) payload.indicador = updateData.indicador;
+        if (updateData.indicadores_json !== undefined || updateData.indicadoresJson !== undefined) {
+            payload.indicadores_json = updateData.indicadores_json ?? updateData.indicadoresJson;
         }
-    }, [session, state.actividades, setState]);
+        if (updateData.producto !== undefined) payload.producto = updateData.producto;
+        if (updateData.descripcion !== undefined) payload.descripcion = updateData.descripcion;
+        if (updateData.requiereProducto !== undefined) payload.requiere_producto = updateData.requiereProducto;
+        if (updateData.hora_inicio !== undefined) payload.hora_inicio = updateData.hora_inicio;
+        if (updateData.duracion_minutos !== undefined) payload.duracion_minutos = updateData.duracion_minutos;
+        if (updateData.tipo_calendario !== undefined) payload.tipo_calendario = updateData.tipo_calendario;
+        if (updateData.color_calendario !== undefined) payload.color_calendario = updateData.color_calendario;
+
+        if (Object.keys(payload).length === 0) return true;
+
+        const { data, error } = await supabase
+            .from('actividades')
+            .update(payload)
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error('[ACTIVIDADES] Error al actualizar actividad en Supabase:', error);
+            setGenericToast({ message: `Error al actualizar la actividad: ${error.message}`, type: 'error' });
+            return false;
+        }
+
+        if (!data || data.length === 0) {
+            console.warn('[ACTIVIDADES] UPDATE rechazado por RLS o actividad no encontrada:', id);
+            setGenericToast({ message: 'No se pudo actualizar la actividad (sin permisos o no encontrada)', type: 'error' });
+            return false;
+        }
+
+        setState(s => ({ ...s, actividades: s.actividades.map(a => a.id === merged.id ? merged : a) }));
+        upsertAcademicRow('actividades', merged, merged.cursoId, merged.periodo ?? null, false);
+        invalidateAcademicCourseSession(merged.cursoId);
+        return true;
+    }, [session, state.actividades, setState, setGenericToast]);
 
     const deleteActividad = useCallback(async (id: number) => {
         // Real physical delete
@@ -1075,6 +1101,7 @@ export function useEvaluationActions() {
         setState(s => ({ ...s, actividades: s.actividades.filter(a => a.id !== id) }));
         if (targetAct) {
             upsertAcademicRow('actividades', targetAct, targetAct.cursoId, targetAct.periodo ?? null, true);
+            invalidateAcademicCourseSession(targetAct.cursoId);
         }
         setGenericToast({ message: 'Actividad eliminada permanentemente', type: 'success' });
     }, [state.actividades, setState, setGenericToast]);

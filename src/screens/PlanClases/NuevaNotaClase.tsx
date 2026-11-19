@@ -26,6 +26,7 @@ import { PortalComentariosDocentePanel } from '../../components/plan-clases/Port
 import { ComentariosPanel } from '../../components/plan-clases/ComentariosPanel';
 import ConstructorRuta from '../../components/plan-clases/rutas/ConstructorRuta';
 import { usePlanClasesStore } from '../../store/planClasesStore';
+import { supabase } from '../../lib/supabase';
 import { uid } from '../../utils/uid';
 import '../../components/plan-clases/cielo-editor.css';
 
@@ -70,8 +71,29 @@ export default function NuevaNotaClase({
 
   const [comentarios, setComentarios] = useState<NotaComentario[]>([]);
   const [compartidaCon, setCompartidaCon] = useState<NotaCompartida[]>([]);
+  const [totalDudasPortal, setTotalDudasPortal] = useState(0);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!notaId) return;
+
+    let isMounted = true;
+    supabase
+      .from('ficha_comentarios')
+      .select('id', { count: 'exact', head: true })
+      .eq('nota_id', notaId)
+      .is('user_id', null)
+      .then(({ count, error }) => {
+        if (!error && count !== null && isMounted) {
+          setTotalDudasPortal(count);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [notaId, comentariosPortalAbierto]);
 
   useEffect(() => {
     async function loadTitulo() {
@@ -253,6 +275,11 @@ export default function NuevaNotaClase({
             >
               <Users size={15} />
               <span className="hidden 2xl:inline">Dudas Estudiantes</span>
+              {totalDudasPortal > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
+                  {totalDudasPortal}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setMenuAbierto(v => !v)}

@@ -441,7 +441,20 @@ export const evidenciasApiDocente = {
         sello: number,
         comentario: string | null,
         sobrescribirManual = false
-    ): Promise<{ ok?: boolean; requiere_confirmacion?: boolean; nota_actual?: number; nuevo_sello?: number; mensaje?: string; calificacion_id?: number }> {
+    ): Promise<{ 
+        ok?: boolean; 
+        requiere_confirmacion?: boolean; 
+        nota_actual?: number; 
+        nuevo_sello?: number; 
+        mensaje?: string; 
+        calificacion_id?: number;
+        estudiante_id?: number;
+        actividad_id?: number;
+        curso_id?: number;
+        periodo?: string;
+        asignatura?: string;
+        shared_course_id?: string;
+    }> {
         const { data, error } = await supabase.rpc('docente_revisar_y_calificar_v2', {
             p_evidencia_id: evidenciaId,
             p_sello: sello,

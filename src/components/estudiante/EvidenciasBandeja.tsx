@@ -11,6 +11,8 @@ import { evidenciasApiDocente, resolverUrls, mensajeDeExcepcion, type BandejaDoc
 import { getAsignaturaNombre } from '../../constants/asignaturas';
 import EvidenciaThumbnail from '../evidencias/EvidenciaThumbnail';
 import type { CursoConEvidencias, EvidenciaDocente, FiltroBandeja, GrupoBandeja } from '../../types/evidencias';
+import type { CalificacionActividad } from '../../types';
+import { upsertAcademicRow, invalidateAcademicCourseSession } from '../../cache/academicCache';
 
 const PERIODOS = ['P1', 'P2', 'P3', 'P4'] as const;
 const RUTA_FICHAS = '/plan-de-clases/mis-notas';
@@ -123,17 +125,6 @@ export const EvidenciasBandeja: React.FC<EvidenciasBandejaProps> = ({ onCambiarS
     // Entrega seleccionada para calificar mediante el selector sticky de la derecha
     const [seleccionadaId, setSeleccionadaId] = useState<number | null>(null);
     const [guardandoSello, setGuardandoSello] = useState(false);
-    const [confirmacionSobrescritura, setConfirmacionSobrescritura] = useState<{
-        evidenciaId: number;
-        actividadId: number;
-        valorSello: number;
-        comentario: string | null;
-        prevSello: number | null;
-        prevEstado: any;
-        notaActual: number;
-        nuevoSello: number;
-        mensaje: string;
-    } | null>(null);
 
     /* ── Carga inicial de cursos ────────────────────────────────────────── */
     useEffect(() => {
@@ -206,16 +197,19 @@ export const EvidenciasBandeja: React.FC<EvidenciasBandejaProps> = ({ onCambiarS
     );
 
     /* ── Aplicar sello a la entrega seleccionada ────────────────────────── */
-    const aplicarSello = async (valorSello: number, sobrescribir = false) => {
+    const aplicarSello = async (valorSello: number) => {
         if (!entregaSeleccionada || guardandoSello) return;
 
         const evidenciaId = entregaSeleccionada.id;
         const actividadId = entregaSeleccionada.actividad_id;
+        const estudianteId = entregaSeleccionada.estudiante_id;
         const comentario = entregaSeleccionada.comentario;
         const prevSello = entregaSeleccionada.sello;
         const prevEstado = entregaSeleccionada.estado;
+        const targetCursoId = cursoId || 0;
+        const targetAsignatura = asignatura || '';
 
-        // 1. Actualización optimista inmediata (0ms de latencia): el nivel se ve seleccionado al instante
+        // 1. Actualización optimista inmediata (0ms de latencia) en la bandeja de evidencias
         setBandeja(prev => {
             if (!prev) return prev;
             return {
@@ -244,42 +238,70 @@ export const EvidenciasBandeja: React.FC<EvidenciasBandejaProps> = ({ onCambiarS
 
         setGuardandoSello(true);
         try {
-            const res = await evidenciasApiDocente.revisarV2(evidenciaId, valorSello, comentario, sobrescribir);
-            
-            // Si la RPC detecta una calificación manual previa diferente del sello
-            if (res.requiere_confirmacion) {
-                // Revertir optimismo momentáneamente hasta confirmación
-                setBandeja(prev => {
-                    if (!prev) return prev;
-                    return {
-                        ...prev,
-                        grupos: prev.grupos.map(g =>
-                            g.actividad_id === actividadId
-                                ? {
-                                    ...g,
-                                    evidencias: g.evidencias.map(e =>
-                                        e.id === evidenciaId
-                                            ? { ...e, estado: prevEstado, sello: prevSello }
-                                            : e
-                                    ),
-                                }
-                                : g
-                        ),
-                    };
-                });
+            // 2. Persistir en Supabase vía RPC docente_revisar_y_calificar_v2 con sobrescritura autorizada
+            const res = await evidenciasApiDocente.revisarV2(evidenciaId, valorSello, comentario, true);
 
-                setConfirmacionSobrescritura({
-                    evidenciaId,
-                    actividadId,
-                    valorSello,
-                    comentario,
-                    prevSello,
-                    prevEstado,
-                    notaActual: res.nota_actual ?? 0,
-                    nuevoSello: res.nuevo_sello ?? valorSello,
-                    mensaje: res.mensaje || 'Existe una calificación manual previa en esta actividad.',
-                });
-            }
+            // 3. Preparar registro canónico de calificación para el Registro Académico (CursoDetalle)
+            const appStore = useAppStore.getState();
+            const sessionUser = appStore.session?.user;
+            const grupoActividad = bandeja?.grupos.find(g => g.actividad_id === actividadId);
+            const act = appStore.state.actividades.find(a => a.id === actividadId);
+            const est = appStore.state.estudiantes.find(e => e.id === estudianteId);
+            const cur = appStore.state.cursos.find(c => c.id === targetCursoId);
+            const califPrevia = appStore.state.calificaciones.find(c => c.estudianteId === estudianteId && c.actividadId === actividadId);
+
+            const finalCursoId = Number(res.curso_id || targetCursoId);
+            const finalPeriodo = String(res.periodo || grupoActividad?.periodo || act?.periodo || periodo || califPrevia?.periodo || 'P2');
+            const finalAsignatura = String(res.asignatura || grupoActividad?.asignatura || targetAsignatura || act?.asignatura || cur?.asignatura || '');
+            const finalSharedCourseId = String(res.shared_course_id || est?.sharedCourseId || cur?.sharedCourseId || califPrevia?.sharedCourseId || finalCursoId);
+
+            const calificacionActualizada: CalificacionActividad = {
+                id: Number(res.calificacion_id || califPrevia?.id || Date.now()),
+                cursoId: finalCursoId,
+                estudianteId: Number(estudianteId),
+                actividadId: Number(actividadId),
+                userId: sessionUser?.id || califPrevia?.userId || '',
+                asignatura: finalAsignatura,
+                periodo: finalPeriodo,
+                competencias: califPrevia?.competencias?.length 
+                    ? califPrevia.competencias 
+                    : ((act?.bcAsignados && act.bcAsignados.length > 0) ? act.bcAsignados : ['BC1']),
+                descriptores: califPrevia?.descriptores?.length 
+                    ? califPrevia.descriptores 
+                    : (act?.indicador ? [act.indicador] : []),
+                puntaje: Number(valorSello),
+                recuperacion: califPrevia?.recuperacion != null ? Number(califPrevia.recuperacion) : null,
+                sharedCourseId: finalSharedCourseId
+            };
+
+            // 4. Actualizar Estado Global de Zustand (para que Registro Académico lo refleje inmediatamente)
+            appStore.setAppState(prev => {
+                const currentCalifs = prev.calificaciones || [];
+                const nextCalifs = [...currentCalifs];
+                const idx = nextCalifs.findIndex(c => c.estudianteId === Number(estudianteId) && c.actividadId === Number(actividadId));
+                if (idx !== -1) {
+                    nextCalifs[idx] = calificacionActualizada;
+                } else {
+                    nextCalifs.push(calificacionActualizada);
+                }
+                return {
+                    ...prev,
+                    calificaciones: nextCalifs
+                };
+            });
+
+            // 5. Write-through al caché académico L1 (memoria) y L2 (IndexedDB de 90 días)
+            upsertAcademicRow('calificaciones', calificacionActualizada, finalCursoId, finalPeriodo, false, finalAsignatura);
+
+            // 6. Invalidar frescura de sesión para que el SWR de useSupabaseData no bloquee actualizaciones
+            invalidateAcademicCourseSession(finalCursoId);
+
+            // 7. Confirmación clara al usuario
+            const selloObj = SELLOS_NIVEL.find(s => s.valor === valorSello);
+            appStore.setGenericToast({
+                message: `Calificación guardada: ${valorSello} pts (${selloObj?.etiqueta || 'Nivel'}) para ${entregaSeleccionada.estudiante}`,
+                type: 'success'
+            });
         } catch (e) {
             // Revertir si falló la persistencia
             setBandeja(prev => {
@@ -652,7 +674,7 @@ export const EvidenciasBandeja: React.FC<EvidenciasBandejaProps> = ({ onCambiarS
                     )}
                 </main>
 
-                {/* ── SELECTOR VERTICAL DE SELLOS "NIVEL" (Diseño minimalista) ── */}
+                {/* ── SELECTOR VERTICAL DE SELLOS "NIVEL" (Diseño original minimalista) ── */}
                 <aside 
                     aria-label="Selector de nivel de sellos"
                     className="sticky top-3 self-start shrink-0 flex flex-col items-center bg-white rounded-[20px] border border-[#CBD5E1]/80 shadow-xs py-3 px-1.5 sm:px-2 min-w-24 sm:min-w-26 select-none z-30"
@@ -696,7 +718,7 @@ export const EvidenciasBandeja: React.FC<EvidenciasBandejaProps> = ({ onCambiarS
                                         />
                                     </div>
 
-                                    {/* Botón Minimalista: Al seleccionar, la imagen PNG se agrande el doble */}
+                                    {/* Botón Minimalista: Al seleccionar, la imagen PNG se agranda el doble */}
                                     <button
                                         type="button"
                                         onClick={() => aplicarSello(s.valor)}
@@ -736,47 +758,6 @@ export const EvidenciasBandeja: React.FC<EvidenciasBandejaProps> = ({ onCambiarS
                     </div>
                 </aside>
             </div>
-
-            {/* Modal de confirmación ante calificación manual previa */}
-            {confirmacionSobrescritura && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-[fadeIn_0.15s_ease-out]">
-                    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-[#CBD5E1] p-5 space-y-4">
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                                <AlertCircle size={22} />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-[15px] font-black text-[#353A36]">Calificación previa detectada</h3>
-                                <p className="text-xs text-[#686D68] mt-1 leading-relaxed">
-                                    Esta actividad ya tiene una calificación de <strong className="text-[#353A36]">{confirmacionSobrescritura.notaActual} pts</strong> en la libreta oficial.
-                                    ¿Deseas reemplazarla por el sello pedagógico de <strong className="text-[#353A36]">{confirmacionSobrescritura.nuevoSello} pts</strong>?
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#CBD5E1]/40">
-                            <button
-                                type="button"
-                                onClick={() => setConfirmacionSobrescritura(null)}
-                                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-[#686D68] hover:bg-neutral-100 transition-colors"
-                            >
-                                Mantener nota actual
-                            </button>
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    const target = confirmacionSobrescritura;
-                                    setConfirmacionSobrescritura(null);
-                                    await aplicarSello(target.valorSello, true);
-                                }}
-                                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#353A36] text-white hover:bg-black transition-colors shadow-xs"
-                            >
-                                Actualizar con sello ({confirmacionSobrescritura.nuevoSello})
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

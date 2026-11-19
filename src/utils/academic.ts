@@ -303,9 +303,11 @@ export function getProductoFinalMaxPoints(
  * Formatea una calificación numérica mostrando hasta dos decimales solo cuando sea necesario.
  * Ejemplos: 96.66667 -> "96.67", 50 -> "50", 100 -> "100", 0 -> "0", 96.5 -> "96.5"
  */
-export function formatGradeScore(score: number | null | undefined): string {
-    if (score === null || score === undefined || isNaN(score)) return '';
-    const rounded = Number(score.toFixed(2));
+export function formatGradeScore(score: number | string | null | undefined): string {
+    if (score === null || score === undefined || score === '') return '';
+    const num = typeof score === 'number' ? score : Number(score);
+    if (isNaN(num)) return '';
+    const rounded = Number(num.toFixed(2));
     return String(rounded);
 }
 

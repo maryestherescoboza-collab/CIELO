@@ -47,8 +47,10 @@ export function isAcademicSliceFreshInSession(
     asignatura?: string | null | undefined,
 ): boolean {
     if (!userId || !cursoId) return false;
-    const key = `${userId}:${cursoId}:${normalizeArea(asignatura) || 'all'}:${periodo || 'sin-periodo'}`;
-    const last = sessionAcademicVerifiedAt.get(key);
+    const norm = normalizeArea(asignatura);
+    const p = periodo || 'sin-periodo';
+    const last = sessionAcademicVerifiedAt.get(`${userId}:${cursoId}:${norm || 'all'}:${p}`)
+        ?? (norm ? sessionAcademicVerifiedAt.get(`${userId}:${cursoId}:all:${p}`) : undefined);
     if (!last) return false;
     return Date.now() - last < ACADEMIC_SWR_FRESH_MS;
 }
@@ -60,8 +62,21 @@ export function markAcademicSliceVerifiedInSession(
     asignatura?: string | null | undefined,
 ): void {
     if (!userId || !cursoId) return;
-    const key = `${userId}:${cursoId}:${normalizeArea(asignatura) || 'all'}:${periodo || 'sin-periodo'}`;
-    sessionAcademicVerifiedAt.set(key, Date.now());
+    const norm = normalizeArea(asignatura);
+    const p = periodo || 'sin-periodo';
+    const now = Date.now();
+    sessionAcademicVerifiedAt.set(`${userId}:${cursoId}:${norm || 'all'}:${p}`, now);
+    if (norm) {
+        sessionAcademicVerifiedAt.set(`${userId}:${cursoId}:all:${p}`, now);
+    }
+}
+
+export function invalidateAcademicCourseSession(cursoId: number): void {
+    for (const key of Array.from(sessionAcademicVerifiedAt.keys())) {
+        if (key.includes(`:${cursoId}:`)) {
+            sessionAcademicVerifiedAt.delete(key);
+        }
+    }
 }
 
 /**
@@ -315,6 +330,15 @@ export function upsertAcademicRow(
                     else data.calificaciones.push(cal);
                 }
                 next[targetKey] = { ...cur, data };
+                changed = true;
+            } else {
+                next[targetKey] = makeEntry(uid, centroId, cursoId, normAsig, normPeriodo, {
+                    actividades: tipo === 'actividades' ? [row as Actividad] : [],
+                    calificaciones: tipo === 'calificaciones' ? [row as CalificacionActividad] : [],
+                    recuperaciones: tipo === 'recuperaciones' ? [row as RecuperacionBC] : [],
+                    cursoDetalle: tipo === 'cursoDetalle' ? [row as CursoDetalleEvaluacion] : [],
+                    recuperacionesCotejo: tipo === 'recuperacionesCotejo' ? [row as RecuperacionCotejo] : [],
+                });
                 changed = true;
             }
         }
