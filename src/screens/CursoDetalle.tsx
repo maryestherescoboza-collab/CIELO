@@ -388,24 +388,71 @@ export default function CursoDetalle(props: Props) {
                 return (
                     <div 
                         data-guide="banner-indicador-activo"
-                        className="w-full bg-linear-to-r from-purple-50 via-purple-50/90 to-indigo-50 border-b-2 border-purple-300 px-3 sm:px-6 py-2.5 shadow-sm relative z-30 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3 animate-fadeIn"
+                        className="w-full bg-linear-to-r from-purple-50 via-purple-50/90 to-indigo-50 border-b-2 border-purple-300 px-3 sm:px-5 py-2.5 shadow-sm relative z-30 shrink-0 flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 xl:gap-4 animate-fadeIn"
                     >
-                        <div className="flex items-start md:items-center gap-3 min-w-0 flex-1">
-                            <div className="flex items-center gap-2 shrink-0">
-                                <span className="bg-[#6D28D9] text-white text-[11px] font-black tracking-wider uppercase px-2.5 py-1 rounded-full shadow-xs">
+                        {/* Para móviles y tabletas (< xl): Fila superior con Identificación, Badges y Botón Cerrar */}
+                        <div className="flex xl:hidden items-center justify-between gap-2 w-full">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+                                <span className="bg-[#6D28D9] text-white text-[11px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full shadow-xs shrink-0">
                                     {selectedAct.nombre}
                                 </span>
-                                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#7C3AED] bg-purple-100/90 px-2 py-0.5 rounded-md hidden sm:inline">
+                                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#7C3AED] bg-purple-100/90 px-2 py-0.5 rounded-md shrink-0">
                                     Indicador de logro
                                 </span>
+                                {/* Badges de competencias asociadas */}
+                                <div className="flex items-center gap-1 shrink-0">
+                                    {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
+                                        const isSel = (bcSel[selectedAct.id] ?? new Set(selectedAct.bcAsignados)).has(bc);
+                                        if (!isSel) return null;
+                                        return (
+                                            <span 
+                                                key={bc} 
+                                                className={`px-1.5 py-0.5 rounded-full text-[9px] font-black text-white shadow-2xs ${BC_COLOR_THEMES[bc].active}`}
+                                                title={`Competencia ${bc}`}
+                                            >
+                                                {bc}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                            
-                            <p className="text-xs sm:text-sm font-semibold text-[#3B0764] leading-relaxed flex-1 select-text">
+
+                            {/* Botón cerrar para volver al estado anterior sin perder posición ni datos */}
+                            <button
+                                type="button"
+                                onClick={() => setVisibleActivityId(null)}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-purple-200 text-purple-900 hover:bg-purple-100 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+                                title="Cerrar indicador"
+                            >
+                                <X size={13} />
+                                <span className="text-[10px] uppercase tracking-wider font-black">Cerrar</span>
+                            </button>
+                        </div>
+
+                        {/* Texto del indicador en móvil y tableta: Ocupa todo el ancho disponible (w-full), eliminando cuadros pequeños o espacios vacíos */}
+                        <div className="block xl:hidden w-full bg-white/70 p-2.5 sm:p-3 rounded-lg border border-purple-200/70 shadow-2xs">
+                            <p className="text-xs sm:text-sm font-semibold text-[#2E3330] leading-relaxed select-text w-full break-words">
                                 {indicadorTexto}
                             </p>
                         </div>
 
-                        <div className="flex items-center justify-between md:justify-end gap-3 shrink-0">
+                        {/* Para escritorio (xl:): Disposición horizontal fluida */}
+                        <div className="hidden xl:flex items-center gap-3 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 shrink-0">
+                                <span className="bg-[#6D28D9] text-white text-[11px] font-black tracking-wider uppercase px-2.5 py-1 rounded-full shadow-xs">
+                                    {selectedAct.nombre}
+                                </span>
+                                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#7C3AED] bg-purple-100/90 px-2 py-0.5 rounded-md">
+                                    Indicador de logro
+                                </span>
+                            </div>
+                            
+                            <p className="text-xs lg:text-sm font-semibold text-[#3B0764] leading-relaxed flex-1 select-text">
+                                {indicadorTexto}
+                            </p>
+                        </div>
+
+                        <div className="hidden xl:flex items-center justify-end gap-3 shrink-0">
                             {/* Badges de competencias asociadas */}
                             <div className="flex items-center gap-1.5">
                                 {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
