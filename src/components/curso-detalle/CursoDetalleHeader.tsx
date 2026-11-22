@@ -617,160 +617,205 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     </div>
                 </div>
 
-                {/* Fila 2: + Agregar Actividad, Filtro Riesgo, Sellos rápidos, Modos de evaluación y Niveles de dominio */}
-                <div className="flex items-center justify-between gap-3 pt-1 border-t border-[rgba(46,51,48,0.06)]">
-                    <div className="flex items-center gap-2 shrink-0">
-                        <CieloPill
-                            as="button"
-                            data-guide="btn-agregar-actividad"
-                            variant="ghost"
-                            onClick={onAddActividad}
-                            className="gap-1.5 px-3 min-h-7 bg-white text-[#2E3330] border border-(--border-soft) hover:bg-(--background) text-xs font-black shadow-2xs cursor-pointer active:scale-95"
+                {/* Fila 2 Desktop: Diseño idéntico a referencia visual */}
+                <div className="flex items-center gap-5 sm:gap-6 pt-1.5 pb-0.5 border-t border-[rgba(46,51,48,0.06)] overflow-x-auto scrollbar-hide">
+                    {/* 1. + AGREGAR ACTIVIDAD */}
+                    <button
+                        type="button"
+                        data-guide="btn-agregar-actividad"
+                        onClick={onAddActividad}
+                        className="flex items-center gap-1.5 text-xs font-black tracking-wider text-[#2E3330] hover:text-black transition-colors cursor-pointer select-none shrink-0"
+                    >
+                        <span className="text-sm font-black leading-none">+</span>
+                        <span>AGREGAR ACTIVIDAD</span>
+                    </button>
+
+                    {/* 2. VER RIESGO */}
+                    <button
+                        type="button"
+                        onClick={() => setShowRecoveryOnly(!showRecoveryOnly)}
+                        className={`text-xs font-black tracking-wider transition-colors cursor-pointer select-none shrink-0 ${
+                            showRecoveryOnly
+                                ? 'text-attention hover:text-attention/80'
+                                : 'text-[#5F665E] hover:text-[#2E3330]'
+                        }`}
+                    >
+                        {showRecoveryOnly ? 'VER TODOS' : 'VER RIESGO'}
+                    </button>
+
+                    {/* 3. Selector de modo (Pincel, Numérico, Libre) con pista de 3 nodos conectados */}
+                    <div className="flex flex-col items-center shrink-0">
+                        <span className="text-[10px] font-bold text-[#2E3330] tracking-tight leading-none mb-1 text-center select-none">
+                            {evalMode === 'pincel' ? 'Modo pincel' : evalMode === 'numerico' ? 'Modo numérico' : 'Modo libre'}
+                        </span>
+                        <div
+                            role="radiogroup"
+                            aria-label="Modo de evaluación"
+                            className="relative flex items-center justify-between rounded-full border border-neutral-200/90 bg-white px-1.5 py-1 w-[72px] h-6 shadow-2xs"
                         >
-                            <Plus size={13} strokeWidth={2.8} />
-                            AGREGAR ACTIVIDAD
-                        </CieloPill>
+                            {/* Línea horizontal que conecta los 3 nodos */}
+                            <div className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-[1.5px] bg-neutral-200 z-0 pointer-events-none" />
 
-                        <CieloPill
-                            as="button"
-                            variant={showRecoveryOnly ? 'danger' : 'ghost'}
-                            onClick={() => setShowRecoveryOnly(!showRecoveryOnly)}
-                            className={`px-2.5 min-h-7 transition-all border text-xs font-bold cursor-pointer ${
-                                showRecoveryOnly
-                                    ? 'bg-attention/10 text-attention border-attention/30 hover:bg-attention/20'
-                                    : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'
-                            }`}
-                        >
-                            {showRecoveryOnly ? 'TODOS' : 'RIESGO'}
-                        </CieloPill>
-
-                        <div className="h-4 w-px bg-[rgba(46,51,48,0.12)] mx-0.5" />
-
-                        {/* Sellos rápidos de inasistencia / no trabajó */}
-                        <div className="flex items-center gap-1">
-                            <button
-                                type="button"
-                                onClick={() => { setActivePaintColor(0); if (evalMode === 'libre') setEvalMode('numerico'); }}
-                                title="Inasistencia — aplica 0 pts a la celda"
-                                className={`min-h-6.5 px-2 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${activePaintColor === 0 ? 'bg-[#2E3330] border-transparent text-white shadow-2xs' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
-                            >
-                                Inasistencia
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { setActivePaintColor(1); if (evalMode === 'libre') setEvalMode('numerico'); }}
-                                title="Se negó a realizar — aplica 1 pt a la celda"
-                                className={`min-h-6.5 px-2 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${activePaintColor === 1 ? 'bg-attention border-transparent text-white shadow-2xs' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
-                            >
-                                Se negó
-                            </button>
-                        </div>
-
-                        {isTutor && onShowVincular && (
-                            <>
-                                <div className="h-4 w-px bg-[rgba(46,51,48,0.12)] mx-0.5" />
-                                <div className="flex items-center gap-1">
-                                    <CieloPill as="button" variant="ghost" onClick={onShowVincular} className="px-2 min-h-6.5 bg-white border border-(--border-soft) text-[10px] font-bold text-[#5F665E] hover:text-[#2E3330]">
-                                        CARGA
-                                    </CieloPill>
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Right: Modos de evaluación y Niveles de dominio con leyenda explicativa */}
-                    <div className="flex items-center gap-2 shrink-0">
-                        {/* Selector de modo: Pincel, Numérico, Libre */}
-                        <div className="flex items-center bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)]" role="radiogroup" aria-label="Modo de evaluación">
+                            {/* Nodo 1: Pincel */}
                             <button
                                 type="button"
                                 role="radio"
                                 data-guide="modo-eval-pincel"
                                 aria-checked={evalMode === 'pincel'}
                                 onClick={() => setEvalMode('pincel')}
-                                className={`px-2.5 py-0.5 text-xs font-black rounded-full transition-all cursor-pointer ${
-                                    evalMode === 'pincel'
-                                        ? 'bg-white text-[#2E3330] shadow-xs'
-                                        : 'text-[#5F665E]/70 hover:text-[#2E3330]'
-                                }`}
                                 title="Modo Pincel (un clic asigna el nivel seleccionado)"
+                                className="relative z-10 w-4 h-4 rounded-full flex items-center justify-center transition-all cursor-pointer"
                             >
-                                PINCEL
+                                {evalMode === 'pincel' ? (
+                                    <span className="w-4 h-4 rounded-full bg-[#2E3330] flex items-center justify-center shadow-xs">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                    </span>
+                                ) : (
+                                    <span className="w-3.5 h-3.5 rounded-full bg-white border border-neutral-300 hover:border-neutral-400" />
+                                )}
                             </button>
+
+                            {/* Nodo 2: Numérico */}
                             <button
                                 type="button"
                                 role="radio"
                                 data-guide="modo-eval-numerico"
                                 aria-checked={evalMode === 'numerico'}
                                 onClick={() => setEvalMode('numerico')}
-                                className={`px-2.5 py-0.5 text-xs font-black rounded-full transition-all cursor-pointer ${
-                                    evalMode === 'numerico'
-                                        ? 'bg-white text-[#2E3330] shadow-xs'
-                                        : 'text-[#5F665E]/70 hover:text-[#2E3330]'
-                                }`}
                                 title="Modo Numérico"
+                                className="relative z-10 w-4 h-4 rounded-full flex items-center justify-center transition-all cursor-pointer"
                             >
-                                NUMÉRICO
+                                {evalMode === 'numerico' ? (
+                                    <span className="w-4 h-4 rounded-full bg-[#2E3330] flex items-center justify-center shadow-xs">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                    </span>
+                                ) : (
+                                    <span className="w-3.5 h-3.5 rounded-full bg-white border border-neutral-300 hover:border-neutral-400" />
+                                )}
                             </button>
+
+                            {/* Nodo 3: Libre */}
                             <button
                                 type="button"
                                 role="radio"
                                 data-guide="modo-eval-libre"
                                 aria-checked={evalMode === 'libre'}
                                 onClick={() => setEvalMode('libre')}
-                                className={`px-2.5 py-0.5 text-xs font-black rounded-full transition-all cursor-pointer ${
-                                    evalMode === 'libre'
-                                        ? 'bg-white text-[#2E3330] shadow-xs'
-                                        : 'text-[#5F665E]/70 hover:text-[#2E3330]'
-                                }`}
                                 title="Modo Valor Libre"
+                                className="relative z-10 w-4 h-4 rounded-full flex items-center justify-center transition-all cursor-pointer"
                             >
-                                LIBRE
+                                {evalMode === 'libre' ? (
+                                    <span className="w-4 h-4 rounded-full bg-[#2E3330] flex items-center justify-center shadow-xs">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                    </span>
+                                ) : (
+                                    <span className="w-3.5 h-3.5 rounded-full bg-white border border-neutral-300 hover:border-neutral-400" />
+                                )}
                             </button>
                         </div>
-
-                        {/* Círculos de color/niveles [100, 85, 70, 55] con leyenda explicativa integrada */}
-                        {(evalMode === 'pincel' || evalMode === 'numerico') && (
-                            <div data-guide="barra-niveles-dominio" className="flex items-center gap-1 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)]">
-                                {[
-                                    { val: 100 as const, label: 'Logro destacado', activeColor: 'bg-primary text-white shadow-xs', inactText: 'text-primary' },
-                                    { val: 85 as const, label: 'Logro esperado', activeColor: 'bg-attention text-white shadow-xs', inactText: 'text-attention' },
-                                    { val: 70 as const, label: 'En proceso', activeColor: 'bg-danger text-white shadow-xs', inactText: 'text-danger' },
-                                    { val: 55 as const, label: 'Inicio', activeColor: 'bg-[#2E3330] text-white shadow-xs', inactText: 'text-[#2E3330]' },
-                                ].map(({ val, label, activeColor, inactText }) => {
-                                    const isActive = activePaintColor === val;
-                                    const desc = NIVELES_DOMINIO[val]?.descriptor || label;
-                                    return (
-                                        <button
-                                            key={val}
-                                            type="button"
-                                            data-guide={evalMode === 'pincel' ? `nivel-pincel nivel-pincel-${val}` : `nivel-num nivel-num-${val}`}
-                                            onClick={() => setActivePaintColor(val)}
-                                            title={`${val} — ${label}: ${desc}`}
-                                            className={`flex items-center gap-1.5 pl-1 pr-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                                                isActive ? 'bg-white shadow-xs ring-1 ring-[rgba(46,51,48,0.12)]' : 'hover:bg-white/70'
-                                            }`}
-                                        >
-                                            <span
-                                                className={`w-5.5 h-5.5 rounded-full text-[10.5px] font-black flex items-center justify-center shrink-0 ${
-                                                    isActive ? activeColor : `bg-white ${inactText} border border-[rgba(46,51,48,0.12)]`
-                                                }`}
-                                            >
-                                                {val}
-                                            </span>
-                                            <span
-                                                className={`text-[10px] font-bold tracking-tight whitespace-nowrap ${
-                                                    isActive ? 'text-[#2E3330]' : 'text-[#5F665E]'
-                                                }`}
-                                            >
-                                                {label}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
                     </div>
+
+                    {/* 4. Divisor vertical sutil */}
+                    <div className="h-6 w-px bg-neutral-200/80 mx-0.5 shrink-0" />
+
+                    {/* 5. Círculos de niveles [100, 85, 70, 55] dentro de cápsula elegante con tonos pastel */}
+                    <div
+                        data-guide="barra-niveles-dominio"
+                        className="flex items-center gap-1.5 rounded-full border border-neutral-200/90 bg-white p-1 shadow-2xs shrink-0"
+                    >
+                        {[
+                            {
+                                val: 100 as const,
+                                label: 'Logro destacado',
+                                bg: 'bg-[#BDCFB6]',
+                                text: 'text-[#1E2421]',
+                                ring: 'ring-2 ring-[#689C63]'
+                            },
+                            {
+                                val: 85 as const,
+                                label: 'Logro esperado',
+                                bg: 'bg-[#FCEAD8]',
+                                text: 'text-[#D96B27]',
+                                ring: 'ring-2 ring-[#EB8847]'
+                            },
+                            {
+                                val: 70 as const,
+                                label: 'En proceso',
+                                bg: 'bg-[#FCE3DF]',
+                                text: 'text-[#D9534F]',
+                                ring: 'ring-2 ring-[#D9534F]'
+                            },
+                            {
+                                val: 55 as const,
+                                label: 'Inicio',
+                                bg: 'bg-[#F3F4F3]',
+                                text: 'text-[#4A504B]',
+                                ring: 'ring-2 ring-black/25'
+                            },
+                        ].map(({ val, label, bg, text, ring }) => {
+                            const isActive = activePaintColor === val;
+                            const desc = NIVELES_DOMINIO[val]?.descriptor || label;
+                            return (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    data-guide={evalMode === 'pincel' ? `nivel-pincel nivel-pincel-${val}` : `nivel-num nivel-num-${val}`}
+                                    onClick={() => setActivePaintColor(val)}
+                                    title={`${val} — ${label}: ${desc}`}
+                                    className={`w-7 h-7 rounded-full text-xs font-black transition-all flex items-center justify-center cursor-pointer select-none ${bg} ${text} ${
+                                        isActive ? `${ring} shadow-xs scale-105` : 'hover:opacity-90'
+                                    }`}
+                                >
+                                    {val}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* 6. Actividad pendiente por: INASISTENCIA, SE NEGÓ A REALIZAR */}
+                    <div className="flex flex-col items-start shrink-0">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-[#8A9089] text-left leading-none mb-1 select-none">
+                            ACTIVIDAD PENDIENTE POR:
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => { setActivePaintColor(activePaintColor === 0 ? -1 : 0); if (evalMode === 'libre') setEvalMode('numerico'); }}
+                                title="Inasistencia — aplica 0 pts"
+                                className={`rounded-full border px-3.5 py-1 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+                                    activePaintColor === 0
+                                        ? 'bg-[#2E3330] text-white border-transparent shadow-xs'
+                                        : 'bg-white text-[#5F665E] border-neutral-200/90 hover:bg-neutral-50 hover:text-[#2E3330]'
+                                }`}
+                            >
+                                INASISTENCIA
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setActivePaintColor(activePaintColor === 1 ? -1 : 1); if (evalMode === 'libre') setEvalMode('numerico'); }}
+                                title="Se negó a realizar — aplica 1 pt"
+                                className={`rounded-full border px-3.5 py-1 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+                                    activePaintColor === 1
+                                        ? 'bg-[#EB8847] text-white border-transparent shadow-xs'
+                                        : 'bg-white text-[#5F665E] border-neutral-200/90 hover:bg-neutral-50 hover:text-[#2E3330]'
+                                }`}
+                            >
+                                SE NEGÓ A REALIZAR
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 7. CARGA (Tutor tools) */}
+                    {isTutor && onShowVincular && (
+                        <button
+                            type="button"
+                            onClick={onShowVincular}
+                            className="text-xs font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] transition-colors cursor-pointer select-none shrink-0 px-2 py-1"
+                            title="Carga de estudiantes / Vincular"
+                        >
+                            CARGA
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
