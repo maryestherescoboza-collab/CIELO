@@ -515,14 +515,14 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                             <div className="flex items-center gap-1 w-full justify-center px-1">
                                                 {!isProductoFinal && (
                                                     <button
-                                                        onClick={() => setActividadAEliminar(act.id)} 
-                                                        title="Eliminar actividad" 
+                                                        onClick={() => setActividadAEliminar(act.id)}
+                                                        title="Eliminar actividad"
                                                         className="opacity-0 group-hover:opacity-100 w-4 h-4 md:w-5 md:h-5 flex items-center justify-center hover:bg-danger rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"
                                                     >
                                                         <Trash2 size={11} />
                                                     </button>
                                                 )}
-                                                <input 
+                                                <input
                                                     data-guide="celda-actividad"
                                                     defaultValue={act.nombre.replace(/^Actividad\s+/i, 'Actividad ')}
                                                     onFocus={(e) => { e.target.value = act.nombre; }}
@@ -546,23 +546,23 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                 />
                                             </div>
 
-                                            {/* Puntos de competencias: ● ● ● ● */}
-                                            <div className="flex items-center justify-center gap-1.5 py-0.5">
+                                            {/* Botones circulares de competencias con iconos oficiales CIELO */}
+                                            <div className="flex items-center gap-0.5 md:gap-1 bg-base-creme p-0.5 md:p-1 rounded-full border border-(--border-soft)">
                                                 {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
                                                     const isSel = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
                                                     return (
                                                         <button
                                                             key={bc}
                                                             type="button"
-                                                            data-guide="bloque-competencia-dot"
+                                                            data-guide="bloque-competencia"
                                                             onClick={() => onToggleBc(act.id, bc)}
-                                                            title={`${bc}: ${isSel ? 'Asignada (clic para quitar)' : 'No asignada (clic para asignar)'}`}
-                                                            className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-transform active:scale-75 cursor-pointer ${
-                                                                isSel
-                                                                    ? 'bg-[#EA580C] shadow-2xs'
-                                                                    : 'bg-slate-300/60 hover:bg-slate-400'
+                                                            title={`${bc}: ${isSel ? 'Asignada (clic para alternar)' : 'No asignada (clic para alternar)'}`}
+                                                            className={`w-5.5 h-5.5 md:w-6 md:h-6 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-90 ${
+                                                                isSel ? BC_COLOR_THEMES[bc].active : 'text-[#5F665E]/40 hover:text-[#5F665E]'
                                                             }`}
-                                                        />
+                                                        >
+                                                            {BC_ICONS[bc]}
+                                                        </button>
                                                     );
                                                 })}
                                             </div>
@@ -581,7 +581,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                             <div className="flex flex-col items-center gap-3 w-full">
                                                 <div className="flex items-center gap-1.5 w-full justify-center px-1">
                                                     {!isProductoFinal && (
-                                                        <button 
+                                                        <button
                                                             onClick={() => setActividadAEliminar(act.id)}
                                                             title="Eliminar actividad"
                                                             className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center hover:bg-danger rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"
@@ -618,7 +618,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                     {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
                                                         const isSel = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
                                                         return (
-                                                            <button 
+                                                            <button
                                                                 key={bc}
                                                                 data-guide="bloque-competencia"
                                                                 onClick={() => onToggleBc(act.id, bc)}
@@ -736,9 +736,8 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                             className="flex-1 min-w-0 text-left py-0.5 px-1 rounded-md active:bg-black/5 hover:bg-black/5 transition-colors cursor-pointer flex items-center justify-between gap-1"
                                                             title="Toca para ver opciones"
                                                         >
-                                                            <span className={`text-[11px] md:text-xs font-black uppercase tracking-tight truncate ${
-                                                                est.isPlaceholder ? 'text-[#5F665E]/40 italic' : 'text-[#2E3330]'
-                                                            }`}>
+                                                            <span className={`text-[11px] md:text-xs font-black uppercase tracking-tight truncate ${est.isPlaceholder ? 'text-[#5F665E]/40 italic' : 'text-[#2E3330]'
+                                                                }`}>
                                                                 {est.isPlaceholder ? `N.º ${est.numeroLista} · Vacío` : est.displayName}
                                                             </span>
                                                             {est.observacion && (
