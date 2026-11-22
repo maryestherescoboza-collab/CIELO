@@ -82,7 +82,7 @@ export const CATALOGO_GUIAS: Guide[] = [
 
       // ETAPA 3: CREAR UNA ACTIVIDAD
       {
-        selector: '[data-guide="btn-agregar-actividad"]',
+        selector: '[data-guide="btn-agregar-actividad"], [data-guide="btn-agregar-actividad-mobile"]',
         texto: 'Ahora vamos a crear tu primera actividad. Pulsa en «+ AGREGAR ACTIVIDAD».',
         voz: 'Ahora vamos a crear tu primera actividad. Pulsa en Agregar actividad.',
         etapa: 3,
@@ -296,7 +296,7 @@ export const CATALOGO_GUIAS: Guide[] = [
         evento: 'change'
       },
       {
-        selector: '[data-guide="btn-agregar-actividad"]',
+        selector: '[data-guide="btn-agregar-actividad"], [data-guide="btn-agregar-actividad-mobile"]',
         texto: 'Ahora, pulsa en «Agregar actividad» para planificar una nueva evaluación.',
         voz: 'Ahora, pulsa en Agregar actividad para planificar una nueva evaluación.',
         evento: 'click'
@@ -879,7 +879,7 @@ export const CATALOGO_GUIAS: Guide[] = [
         tituloEtapa: 'Asignaturas: 04 Agregar asignaturas'
       },
       {
-        selector: '[data-guide="btn-agregar-actividad"]',
+        selector: '[data-guide="btn-agregar-actividad"], [data-guide="btn-agregar-actividad-mobile"]',
         texto: 'Selecciona la materia correspondiente para vincular sus competencias específicas.',
         voz: 'Selecciona la materia correspondiente para vincular sus competencias específicas.',
         evento: 'click',

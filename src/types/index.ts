@@ -331,6 +331,7 @@ export interface UserProfile {
     centro_id?: string;
     centro?: Centro;
     rol?: 'docente' | RolAdministrativoRaw;
+    vinculo_confirmado?: boolean;
 }
 
 export interface Notification {

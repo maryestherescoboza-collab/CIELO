@@ -431,11 +431,12 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         return;
       }
 
-      const redirectUrl = window.location.hostname === "localhost"
-        ? "http://localhost:5173"
-        : "https://evaluacielo.com";
+      const redirectUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? `${window.location.origin}/login`
+        : "https://evaluacielo.com/login";
 
       let pendingVinculo: any = null;
+      let targetCentroId: string | null = null;
       if (modo === 'director') {
         pendingVinculo = {
           tipo: 'crear_centro',
@@ -461,11 +462,13 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           setLoading(false);
           return;
         }
+        targetCentroId = centroId;
         pendingVinculo = {
           tipo: 'asignar_admin_centro_existente',
           centro_id: centroId
         };
       } else if (modo === 'propia' || modo === 'codigo' || modo === 'institucional_id') {
+        targetCentroId = centroSel;
         pendingVinculo = {
           tipo: 'unirse',
           centro_id: centroSel,
@@ -483,6 +486,8 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           data: {
             nombre_docente: nombreCompleto,
             telefono: telefono.replace(/\D/g, ''),
+            rol: modo === 'director' || modo === 'centro_existente' ? 'administrador' : 'docente',
+            ...(targetCentroId ? { centro_id: targetCentroId, vinculo_confirmado: false } : {}),
             ...(pendingVinculo ? { pending_vinculo: pendingVinculo } : {})
           }
         }
@@ -641,9 +646,9 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setResendSuccess(null);
 
     try {
-      const redirectUrl = window.location.hostname === "localhost"
-        ? "http://localhost:5173"
-        : "https://evaluacielo.com";
+      const redirectUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? `${window.location.origin}/login`
+        : "https://evaluacielo.com/login";
 
       const { error: resendErr } = await supabase.auth.resend({
         type: 'signup',

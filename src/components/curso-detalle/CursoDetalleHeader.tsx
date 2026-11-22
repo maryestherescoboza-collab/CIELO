@@ -246,7 +246,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             })}
                         </div>
 
-                        {/* Botón + Agregar Actividad */}
+                        {/* Botón Agregar Actividad */}
                         <button
                             type="button"
                             onClick={onAddActividad}
@@ -254,7 +254,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-white border border-(--border-soft) hover:bg-(--background) text-[#2E3330] text-[10px] font-black uppercase tracking-wider shadow-xs transition-all active:scale-95"
                         >
                             <Plus size={11} strokeWidth={2.8} />
-                            <span>+ Agregar Actividad</span>
+                            <span>Agregar Actividad</span>
                         </button>
                     </div>
                 </div>
@@ -448,7 +448,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             className="gap-1.5 px-3 min-h-7 bg-white text-[#2E3330] border border-(--border-soft) hover:bg-(--background) text-xs font-black"
                         >
                             <Plus size={13} strokeWidth={2.6} />
-                            + ACTIVIDAD
+                            ACTIVIDAD
                         </CieloPill>
 
                         <CieloPill

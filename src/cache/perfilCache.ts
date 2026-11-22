@@ -116,6 +116,7 @@ export function buildUserProfileFromCache(
         centro_id: cached.centro_id || undefined,
         centro: resolvedCentro,
         rol: (cached.rol as UserProfile['rol']) || undefined,
+        vinculo_confirmado: cached.vinculo_confirmado ?? true,
         lastSeen: '',
         publicacionesRealizadas: 0,
     };
@@ -132,6 +133,7 @@ export interface PerfilCacheData {
     nombre_docente?: string;
     centro_id?: string | null;
     rol?: string;
+    vinculo_confirmado?: boolean;
 }
 
 function makeEntry(userId: string, data: PerfilCacheData): PerfilCacheEntry {
@@ -178,6 +180,7 @@ function toCacheData(perfil: Partial<UserProfile> | undefined | null): PerfilCac
         nombre_docente: perfil?.nombreDocente ?? undefined,
         centro_id: perfil?.centro_id ?? undefined,
         rol: perfil?.rol ?? undefined,
+        vinculo_confirmado: perfil?.vinculo_confirmado ?? true,
     };
 }
 
@@ -204,6 +207,7 @@ export function savePerfilCacheFromRow(userId: string | null | undefined, row: R
         nombre_docente: row.nombre_docente as string | undefined,
         centro_id: row.centro_id as string | null | undefined,
         rol: row.rol as string | undefined,
+        vinculo_confirmado: (row.vinculo_confirmado as boolean) ?? true,
     };
     useAppStore.getState().setPerfilCache(makeEntry(userId, data));
 }

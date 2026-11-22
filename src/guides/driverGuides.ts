@@ -22,6 +22,7 @@ let activeMutationObserver: MutationObserver | null = null;
 let activeTargetWaitCleanup: (() => void) | null = null;
 let activeResizeListener: (() => void) | null = null;
 let activeResizeTimeout: any = null;
+let activeModalSyncCleanup: (() => void) | null = null;
 let isAdvancingStep = false;
 let currentStepToken = 0;
 
@@ -73,6 +74,11 @@ export function stopActiveGuide() {
     if (activeResizeTimeout) {
       clearTimeout(activeResizeTimeout);
       activeResizeTimeout = null;
+    }
+
+    if (activeModalSyncCleanup) {
+      activeModalSyncCleanup();
+      activeModalSyncCleanup = null;
     }
 
     hideDriverOverlay();
@@ -146,7 +152,8 @@ export function startGuide(guideId: string, initialStep?: number, userId?: strin
 
 /**
  * Oculta de inmediato el popover y el overlay de Driver.js mientras se espera el renderizado
- * de la siguiente pantalla, evitando resaltar (0,0) o dejar cajas provisionales en las esquinas.
+ * de la siguiente pantalla o la finalización de animaciones de modales, evitando resaltar (0,0)
+ * o dejar cajas provisionales en las esquinas.
  */
 function hideDriverOverlay() {
   const popover = document.querySelector('.driver-popover') as HTMLElement | null;
@@ -169,6 +176,123 @@ export function isElementTrulyVisible(el: Element | null): el is HTMLElement {
 }
 
 /**
+ * Detecta si un elemento reside dentro de un modal, diálogo o contenedor emergente de CIELO.
+ */
+export function getModalContainer(el: HTMLElement | null): HTMLElement | null {
+  if (!el) return null;
+  return el.closest('.cielo-modal-card, [role="dialog"], [data-modal="true"], .fixed.inset-0') as HTMLElement | null;
+}
+
+/**
+ * Utiliza la API de Animaciones Web del navegador para comprobar si el elemento,
+ * su contenedor modal o sus ancestros están actualmente en medio de una animación o transición CSS.
+ * Cero temporizadores fijos: consulta directamente el motor de renderizado del navegador
+ * garantizando que transiciones como zoom-in-95 y fade-in hayan concluido por completo.
+ */
+export function isElementOrContainerAnimating(el: HTMLElement | null): boolean {
+  if (!el || !el.isConnected) return false;
+
+  const modal = getModalContainer(el);
+  const targetRoot = modal || el;
+
+  // 1. Verificar animaciones en el árbol del elemento o modal
+  if (typeof targetRoot.getAnimations === 'function') {
+    const runningAnimations = targetRoot.getAnimations({ subtree: true });
+    if (runningAnimations.some(a => a.playState === 'running')) {
+      return true;
+    }
+  }
+
+  // 2. Verificar ancestros hacia arriba hasta el body (ej. backdrop, wrappers de portal)
+  let curr: HTMLElement | null = targetRoot.parentElement;
+  while (curr && curr !== document.body) {
+    if (typeof curr.getAnimations === 'function') {
+      const runningAnims = curr.getAnimations();
+      if (runningAnims.some(a => a.playState === 'running')) {
+        return true;
+      }
+    }
+    curr = curr.parentElement;
+  }
+
+  return false;
+}
+
+/**
+ * Detecta si el modal o contenedor está todavía cargando contenido asíncrono
+ * (por ejemplo peticiones de contenidos/indicadores curriculares o estados de carga con spinners).
+ */
+export function isModalOrContainerLoading(el: HTMLElement | null): boolean {
+  if (!el || !el.isConnected) return false;
+
+  const modal = getModalContainer(el);
+  const searchRoot = modal || el;
+
+  // Detectar spinners de Lucide (Loader2 animate-spin) o indicadores de carga activos
+  const spinner = searchRoot.querySelector('.animate-spin, [role="status"], [data-loading="true"]');
+  if (spinner && isElementTrulyVisible(spinner)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Mantiene la sincronización reactiva del popover y el foco de Driver.js
+ * cuando el usuario se desplaza (scroll) dentro de modales o áreas con scroll interno,
+ * o cuando cambian las dimensiones del modal o del elemento.
+ */
+export function attachDynamicTargetSync(targetElement: HTMLElement): () => void {
+  if (activeModalSyncCleanup) {
+    activeModalSyncCleanup();
+    activeModalSyncCleanup = null;
+  }
+
+  let rafSyncId: number | null = null;
+
+  const triggerRefresh = () => {
+    if (rafSyncId !== null) return;
+    rafSyncId = requestAnimationFrame(() => {
+      rafSyncId = null;
+      if (isGuideActive() && driverObj && typeof driverObj.refresh === 'function') {
+        driverObj.refresh();
+      }
+    });
+  };
+
+  // Capturar scroll en cualquier contenedor interno (modales con overflow-y-auto, tablas, etc.)
+  window.addEventListener('scroll', triggerRefresh, { capture: true, passive: true });
+
+  // Observar redimensionamiento del elemento y su modal
+  let resizeObserver: ResizeObserver | null = null;
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      triggerRefresh();
+    });
+    resizeObserver.observe(targetElement);
+    const modal = getModalContainer(targetElement);
+    if (modal && modal !== targetElement) {
+      resizeObserver.observe(modal);
+    }
+  }
+
+  const cleanup = () => {
+    if (rafSyncId !== null) {
+      cancelAnimationFrame(rafSyncId);
+      rafSyncId = null;
+    }
+    window.removeEventListener('scroll', triggerRefresh, { capture: true } as any);
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+  };
+
+  activeModalSyncCleanup = cleanup;
+  return cleanup;
+}
+
+/**
  * Localiza el elemento objetivo visible que debe recibir el foco de la guía.
  * Maneja selectores alternativos responsivos (ej. desktop vs tablet/móvil para agregar estudiante)
  * y descarta nodos que estén ocultos por CSS (ej. hidden xl:flex).
@@ -177,6 +301,9 @@ export function findVisibleTargetElement(selector: string): HTMLElement | null {
   let effectiveSelector = selector;
   if (selector.includes('btn-agregar-estudiante') && !selector.includes('btn-agregar-estudiante-compact')) {
     effectiveSelector = `${selector}, [data-guide="btn-agregar-estudiante-compact"]`;
+  }
+  if (selector.includes('btn-agregar-actividad') && !selector.includes('btn-agregar-actividad-mobile')) {
+    effectiveSelector = `${selector}, [data-guide="btn-agregar-actividad-mobile"]`;
   }
 
   const parts = effectiveSelector.split(',').map(s => s.trim());
@@ -204,6 +331,11 @@ export function findVisibleTargetElement(selector: string): HTMLElement | null {
     const matches = Array.from(document.querySelectorAll<HTMLElement>(part));
     for (const match of matches) {
       if (isElementTrulyVisible(match)) {
+        // Si el elemento pertenece a un modal que aún está cargando datos curriculares,
+        // descartarlo temporalmente para no devolver una opción preliminar que saltará de posición
+        if (isModalOrContainerLoading(match)) {
+          continue;
+        }
         return match;
       }
     }
@@ -427,8 +559,10 @@ function bindPopoverControls() {
  * Espera de forma determinista y sin timers ciegos a que el elemento objetivo:
  * 1. Esté presente en el DOM y conectado.
  * 2. Sea verdaderamente visible (display != none, visibility != hidden, width > 0, height > 0).
- * 3. Haya completado su renderizado y layout (posición estable durante 2 frames consecutivos).
- * Reintenta limpiamente mientras la pantalla esté cargando sin emitir ningún resaltado provisional.
+ * 3. Haya terminado cualquier animación o transición CSS (detectada vía Web Animations API).
+ * 4. Haya terminado cualquier carga asíncrona dentro del modal o pantalla (sin spinners activos).
+ * 5. Haya completado su renderizado y layout (posición estable durante 3 frames consecutivos).
+ * Reintenta limpiamente mientras la pantalla o modal esté cargando sin emitir ningún resaltado provisional.
  */
 function waitForElementReady(
   selector: string,
@@ -469,17 +603,33 @@ function waitForElementReady(
       return;
     }
 
+    // 1. Si el elemento o su contenedor modal están en animación o transición CSS, esperar
+    if (isElementOrContainerAnimating(el)) {
+      stableFrames = 0;
+      lastRect = null;
+      rafId = requestAnimationFrame(checkStability);
+      return;
+    }
+
+    // 2. Si el contenedor modal está cargando datos asíncronos (spinner activo), esperar
+    if (isModalOrContainerLoading(el)) {
+      stableFrames = 0;
+      lastRect = null;
+      rafId = requestAnimationFrame(checkStability);
+      return;
+    }
+
     const rect = el.getBoundingClientRect();
     if (rect.width > 0 && rect.height > 0) {
       if (
         lastRect &&
-        Math.abs(lastRect.top - rect.top) < 0.5 &&
-        Math.abs(lastRect.left - rect.left) < 0.5 &&
-        Math.abs(lastRect.width - rect.width) < 0.5 &&
-        Math.abs(lastRect.height - rect.height) < 0.5
+        Math.abs(lastRect.top - rect.top) < 0.2 &&
+        Math.abs(lastRect.left - rect.left) < 0.2 &&
+        Math.abs(lastRect.width - rect.width) < 0.2 &&
+        Math.abs(lastRect.height - rect.height) < 0.2
       ) {
         stableFrames++;
-        if (stableFrames >= 2) {
+        if (stableFrames >= 3) {
           cleanup();
           activeTargetWaitCleanup = null;
           onReady(el);
@@ -607,35 +757,45 @@ function highlightElement(step: GuideStep, targetElement: HTMLElement, guide: Gu
     const isBottomNav = step.selector.includes('nav-');
     if (targetElement && typeof (targetElement as any).scrollIntoView === 'function') {
       try {
-        (targetElement as any).scrollIntoView({ behavior: 'auto', block: 'nearest' });
+        (targetElement as any).scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
       } catch {
         // Ignore scroll errors
       }
     }
 
-    driverObj.highlight({
-      element: targetElement,
-      popover: {
-        description: popoverHtml,
-        side: isBottomNav ? 'top' : 'bottom',
-        align: 'start'
+    // Permitir un frame para que scrollIntoView se complete antes de que Driver.js calcule el overlay
+    requestAnimationFrame(() => {
+      if (!driverObj || !isGuideActive()) return;
+
+      driverObj.highlight({
+        element: targetElement,
+        popover: {
+          description: popoverHtml,
+          side: isBottomNav ? 'top' : 'bottom',
+          align: 'start'
+        }
+      });
+
+      // Vincular sincronización dinámica en vivo para scrolls internos en modales o cambios de tamaño
+      attachDynamicTargetSync(targetElement);
+
+      // Reproducir narración neuronal de forma estrictamente idempotente (una sola vez por paso)
+      const stepText = step.voz || step.texto;
+      const stepKey = `${currentGuideId}:${currentStepIndex}:${stepText}`;
+      const audioUrl = resolveAudioUrl(currentGuideId || undefined, currentStepIndex);
+      voiceNarrator.speak(stepText, audioUrl || undefined, { stepKey });
+
+      // Precargar de manera anticipada el audio del siguiente paso para latencia cero
+      if (guide.steps[currentStepIndex + 1]) {
+        const nextAudioUrl = resolveAudioUrl(currentGuideId || undefined, currentStepIndex + 1);
+        if (nextAudioUrl) {
+          voiceNarrator.preload(nextAudioUrl);
+        }
       }
+
+      // Bind audio toolbar buttons inside popover
+      bindPopoverControls();
     });
-
-    // Reproducir narración neuronal de forma estrictamente idempotente (una sola vez por paso)
-    const stepText = step.voz || step.texto;
-    const stepKey = `${currentGuideId}:${currentStepIndex}:${stepText}`;
-    const audioUrl = resolveAudioUrl(currentGuideId, currentStepIndex);
-    voiceNarrator.speak(stepText, audioUrl, { stepKey });
-
-    // Precargar de manera anticipada el audio del siguiente paso para latencia cero
-    if (guide.steps[currentStepIndex + 1]) {
-      const nextAudioUrl = resolveAudioUrl(currentGuideId, currentStepIndex + 1);
-      voiceNarrator.preload(nextAudioUrl);
-    }
-
-    // Bind audio toolbar buttons inside popover
-    bindPopoverControls();
   } catch (e) {
     console.error('[driverGuides] Failed to highlight element:', targetElement, e);
   }
@@ -660,6 +820,10 @@ export function advanceStep() {
 
   try {
     voiceNarrator.stop();
+    if (activeModalSyncCleanup) {
+      activeModalSyncCleanup();
+      activeModalSyncCleanup = null;
+    }
     hideDriverOverlay();
     cleanupGuideEventListeners();
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Target, ClipboardList, BookOpen, UserPlus, AlertTriangle, ArrowUpDown, Eye } from 'lucide-react';
+import { Plus, Trash2, Target, ClipboardList, BookOpen, UserPlus, AlertTriangle, ArrowUpDown, Edit3 } from 'lucide-react';
 import PegarListadoModal from './PegarListadoModal';
 import StudentObservationModal from './StudentObservationModal';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -9,7 +9,7 @@ import MoverEstudianteModal from './MoverEstudianteModal';
 import ActivityViewTab from './workspace/ActivityViewTab';
 import type { BCKey, Actividad } from '../../types';
 import { getCompetenciaDisplay } from '../../types';
-import { getActivityBcPoints, getProductoFinalMaxPoints, hasProductoFinalCustomPoints, resolverIndicadorActividad } from '../../utils/academic';
+import { getActivityBcPoints, getProductoFinalMaxPoints, hasProductoFinalCustomPoints } from '../../utils/academic';
 import { CieloModal } from '../ui/CieloModal';
 import { notifyGuideOperationSuccess } from '../../guides/guideConfirmation';
 interface GradeTableProps {
@@ -91,6 +91,25 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
     // Estado para confirmación de eliminación de estudiante
     const [estudianteAEliminar, setEstudianteAEliminar] = React.useState<{ id: number, displayName: string } | null>(null);
+
+    // Estado para menú táctil compacto de estudiante (móvil y tablet)
+    const [menuEstudiante, setMenuEstudiante] = React.useState<{
+        id: number;
+        displayName: string;
+        nombre: string;
+        apellido: string;
+        numeroLista?: number;
+        isPlaceholder?: boolean;
+    } | null>(null);
+
+    // Estado para edición directa de nombre de estudiante (móvil y tablet)
+    const [editingEstudiante, setEditingEstudiante] = React.useState<{
+        id: number;
+        nombre: string;
+        apellido: string;
+        numeroLista?: number;
+        isPlaceholder?: boolean;
+    } | null>(null);
 
     // Detección de categoría de dispositivo: móvil (< 768px), tablet (768px - 1199px) y desktop (>= 1200px)
     const [device, setDevice] = React.useState<'mobile' | 'tablet' | 'desktop'>(() => {
@@ -423,7 +442,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
         const isMob = device === 'mobile';
         const isTab = device === 'tablet';
 
-        const studentWidth = isMob ? 135 : isTab ? 200 : 320;
+        const studentWidth = isMob ? 175 : isTab ? 225 : 320;
         const actWidth = isMob ? 130 : isTab ? 138 : 140;
         const destacaWidth = isMob ? 50 : isTab ? 60 : 80;
         const bcAvgWidth = isMob ? 90 : isTab ? 110 : 180;
@@ -447,7 +466,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     }, [actividades, device]);
 
     return (
-        <div ref={parentRef} className="flex-1 overflow-auto bg-transparent touch-pan-x">
+        <div ref={parentRef} className="flex-1 overflow-auto bg-transparent touch-auto overscroll-contain">
             <div className="min-w-max p-0 md:p-2 xl:p-6">
                 <div className="bg-white rounded-none md:rounded-2xl xl:rounded-4xl shadow-none md:shadow-xs xl:shadow-sm border-0 md:border md:border-(--border-soft) min-w-max w-max">
                     {/* Header */}
@@ -480,171 +499,154 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             if (col.type === 'actividad') {
                                 const act = col.act;
                                 const isProductoFinal = !!act.isProductoFinal;
-                                const isExpanded = openActivityId === act.id;
-                                const indTexto = resolverIndicadorActividad(act);
 
                                 return (
                                     <div key={col.id} className="px-1.5 md:px-2 py-1.5 md:py-3 xl:py-4 border-r border-[#2E3330]/15 xl:border-(--border-soft) relative group flex flex-col items-center justify-between box-border bg-[#FAF8F5]/80 xl:bg-transparent" style={style}>
-                                        {device === 'mobile' ? (
-                                            <div className="flex flex-col items-center w-full gap-1.5">
-                                                {/* Tarjeta de Indicador de Logro estilo Mockup: morada, al hacer clic se agranda */}
-                                                <button
-                                                    type="button"
-                                                    data-guide={`indicador-logro-card-${act.id}`}
-                                                    onClick={() => onOpenActivityView?.(act.id)}
-                                                    className={`w-full rounded-xl p-2 text-left transition-all cursor-pointer relative shadow-xs ${
-                                                        isExpanded
-                                                            ? 'bg-[#7C3AED] text-white ring-2 ring-purple-300'
-                                                            : 'bg-[#A78BFA] hover:bg-[#8B5CF6] text-white'
-                                                    }`}
-                                                    title={isExpanded ? 'Contraer indicador' : 'Agrandar indicador'}
-                                                >
-                                                    <p className={`text-[9.5px] font-semibold leading-snug select-none ${isExpanded ? '' : 'line-clamp-3'}`}>
-                                                        {indTexto || 'Aquí debe ir el indicador de logro. Al hacer clic se agranda.'}
-                                                    </p>
-                                                    <div className="flex items-center justify-between mt-1 pt-1 border-t border-white/20 text-[8px] font-black uppercase tracking-wider text-white/90">
-                                                        <span>{isExpanded ? 'Contraer' : 'Agrandar'}</span>
-                                                        <Eye size={10} strokeWidth={2.5} />
-                                                    </div>
-                                                </button>
+                                        {/* Vista Móvil y Tablet: botón exclusivamente «VER» y controles compactos sin texto de indicador */}
+                                        <div className="flex xl:hidden flex-col items-center w-full gap-1.5">
+                                            {onOpenActivityView && (
+                                                <ActivityViewTab
+                                                    activityId={act.id}
+                                                    isOpen={openActivityId === act.id}
+                                                    onOpen={() => onOpenActivityView(openActivityId === act.id ? null : act.id)}
+                                                />
+                                            )}
 
-                                                {/* Título de la actividad */}
-                                                <div className="flex items-center gap-1 w-full justify-center px-1">
-                                                    {!isProductoFinal && (
+                                            <div className="flex items-center gap-1 w-full justify-center px-1">
+                                                {!isProductoFinal && (
+                                                    <button
+                                                        onClick={() => setActividadAEliminar(act.id)} 
+                                                        title="Eliminar actividad" 
+                                                        className="opacity-0 group-hover:opacity-100 w-4 h-4 md:w-5 md:h-5 flex items-center justify-center hover:bg-danger rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"
+                                                    >
+                                                        <Trash2 size={11} />
+                                                    </button>
+                                                )}
+                                                <input 
+                                                    data-guide="celda-actividad"
+                                                    defaultValue={act.nombre.replace(/^Actividad\s+/i, 'Actividad ')}
+                                                    onFocus={(e) => { e.target.value = act.nombre; }}
+                                                    onBlur={(e) => {
+                                                        const val = e.target.value.trim();
+                                                        if (val && val !== act.nombre) {
+                                                            onUpdateActividad(act.id, { nombre: val });
+                                                        } else {
+                                                            e.target.value = act.nombre.replace(/^Actividad\s+/i, 'Actividad ');
+                                                        }
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') e.currentTarget.blur();
+                                                        if (e.key === 'Escape') {
+                                                            e.currentTarget.value = act.nombre.replace(/^Actividad\s+/i, 'Actividad ');
+                                                            e.currentTarget.blur();
+                                                        }
+                                                    }}
+                                                    className="text-[11px] md:text-xs font-black uppercase tracking-tight text-[#2E3330] bg-transparent outline-none text-center w-full truncate focus:border-b focus:border-primary/40"
+                                                    placeholder="Actividad"
+                                                />
+                                            </div>
+
+                                            {/* Puntos de competencias: ● ● ● ● */}
+                                            <div className="flex items-center justify-center gap-1.5 py-0.5">
+                                                {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
+                                                    const isSel = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
+                                                    return (
                                                         <button
-                                                            onClick={() => setActividadAEliminar(act.id)} 
-                                                            title="Eliminar actividad" 
-                                                            className="opacity-0 group-hover:opacity-100 w-4 h-4 flex items-center justify-center hover:bg-danger rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"
+                                                            key={bc}
+                                                            type="button"
+                                                            data-guide="bloque-competencia-dot"
+                                                            onClick={() => onToggleBc(act.id, bc)}
+                                                            title={`${bc}: ${isSel ? 'Asignada (clic para quitar)' : 'No asignada (clic para asignar)'}`}
+                                                            className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-transform active:scale-75 cursor-pointer ${
+                                                                isSel
+                                                                    ? 'bg-[#EA580C] shadow-2xs'
+                                                                    : 'bg-slate-300/60 hover:bg-slate-400'
+                                                            }`}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* Vista Escritorio (xl:): INTACTA */}
+                                        <div className="hidden xl:flex flex-col items-center justify-between w-full h-full">
+                                            {onOpenActivityView && (
+                                                <ActivityViewTab
+                                                    activityId={act.id}
+                                                    isOpen={openActivityId === act.id}
+                                                    onOpen={() => onOpenActivityView(openActivityId === act.id ? null : act.id)}
+                                                />
+                                            )}
+
+                                            <div className="flex flex-col items-center gap-3 w-full">
+                                                <div className="flex items-center gap-1.5 w-full justify-center px-1">
+                                                    {!isProductoFinal && (
+                                                        <button 
+                                                            onClick={() => setActividadAEliminar(act.id)}
+                                                            title="Eliminar actividad"
+                                                            className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center hover:bg-danger rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"
                                                         >
-                                                            <Trash2 size={10} />
+                                                            <Trash2 size={11} />
                                                         </button>
                                                     )}
-                                                    <input 
+                                                    <input
                                                         data-guide="celda-actividad"
-                                                        defaultValue={act.nombre.replace(/^Actividad\s+/i, 'Actividad ')}
+                                                        defaultValue={act.nombre.replace(/^Actividad\s+/i, 'ACT. ')}
                                                         onFocus={(e) => { e.target.value = act.nombre; }}
                                                         onBlur={(e) => {
                                                             const val = e.target.value.trim();
                                                             if (val && val !== act.nombre) {
                                                                 onUpdateActividad(act.id, { nombre: val });
                                                             } else {
-                                                                e.target.value = act.nombre.replace(/^Actividad\s+/i, 'Actividad ');
+                                                                e.target.value = act.nombre.replace(/^Actividad\s+/i, 'ACT. ');
                                                             }
                                                         }}
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Enter') e.currentTarget.blur();
                                                             if (e.key === 'Escape') {
-                                                                e.currentTarget.value = act.nombre.replace(/^Actividad\s+/i, 'Actividad ');
+                                                                e.currentTarget.value = act.nombre.replace(/^Actividad\s+/i, 'ACT. ');
                                                                 e.currentTarget.blur();
                                                             }
                                                         }}
-                                                        className="text-xs font-black uppercase tracking-tight text-[#2E3330] bg-transparent outline-none text-center w-full truncate focus:border-b focus:border-primary/40"
-                                                        placeholder="Actividad"
+                                                        className="text-xs md:text-sm font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] focus:text-[#2E3330] bg-transparent outline-none text-center w-full max-w-28 truncate focus:border-b focus:border-primary/30 transition-all placeholder:text-[#5F665E]/40"
+                                                        placeholder="NOMBRE"
                                                     />
                                                 </div>
 
-                                                {/* Puntos naranjas de competencias: ● ● ● ● según el diseño del mockup */}
-                                                <div className="flex items-center justify-center gap-1.5 py-0.5">
+                                                {/* Iconos de competencias con funcionalidad completa en todas las resoluciones */}
+                                                <div className="flex items-center gap-1 bg-base-creme p-0.5 md:p-1 rounded-full border border-(--border-soft)">
                                                     {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
                                                         const isSel = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
                                                         return (
-                                                            <button
+                                                            <button 
                                                                 key={bc}
-                                                                type="button"
-                                                                data-guide="bloque-competencia-dot"
+                                                                data-guide="bloque-competencia"
                                                                 onClick={() => onToggleBc(act.id, bc)}
-                                                                title={`${bc}: ${isSel ? 'Asignada (clic para quitar)' : 'No asignada (clic para asignar)'}`}
-                                                                className={`w-2.5 h-2.5 rounded-full transition-transform active:scale-75 cursor-pointer ${
-                                                                    isSel
-                                                                        ? 'bg-[#EA580C] shadow-2xs'
-                                                                        : 'bg-slate-300/60 hover:bg-slate-400'
-                                                                }`}
-                                                            />
+                                                                title={`${bc}: ${isSel ? 'Asignada (clic para alternar)' : 'No asignada (clic para alternar)'}`}
+                                                                className={`w-6 h-6 md:w-6.5 md:h-6.5 xl:w-7 xl:h-7 rounded-full flex items-center justify-center transition-all ${isSel ? BC_COLOR_THEMES[bc].active : 'text-[#5F665E]/40 hover:text-[#5F665E]'}`}
+                                                            >
+                                                                {BC_ICONS[bc]}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* Puntos de competencias calculados */}
+                                                <div className="flex justify-center gap-0.5 md:gap-1">
+                                                    {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
+                                                        const participa = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
+                                                        const aporte = getActivityBcPoints({ actividad: act, bc, actividades, bcSel });
+                                                        const txt = String(Math.round(aporte));
+                                                        return (
+                                                            <span key={bc} className="w-6 md:w-6.5 xl:w-7 flex items-baseline justify-center gap-0.5 leading-none">
+                                                                <span className={`text-[9.5px] md:text-[10px] xl:text-[11px] font-black ${participa ? 'text-[#2E3330]' : 'text-[#5F665E]/35'}`}>{txt}</span>
+                                                                <span className="text-[6.5px] md:text-[7px] font-semibold text-[#5F665E]/45">pts</span>
+                                                            </span>
                                                         );
                                                     })}
                                                 </div>
                                             </div>
-                                        ) : (
-                                            /* Vista Tablet y Desktop */
-                                            <>
-                                                {onOpenActivityView && (
-                                                    <ActivityViewTab
-                                                        activityId={act.id}
-                                                        isOpen={openActivityId === act.id}
-                                                        onOpen={() => onOpenActivityView(openActivityId === act.id ? null : act.id)}
-                                                    />
-                                                )}
-
-                                                <div className="flex flex-col items-center gap-1.5 md:gap-2 xl:gap-3 w-full">
-                                                    <div className="flex items-center gap-1.5 w-full justify-center px-1">
-                                                        {!isProductoFinal && (
-                                                            <button 
-                                                                onClick={() => setActividadAEliminar(act.id)} 
-                                                                title="Eliminar actividad" 
-                                                                className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center hover:bg-danger rounded-full transition-all text-[#5F665E] hover:text-white shrink-0"
-                                                            >
-                                                                <Trash2 size={11} />
-                                                            </button>
-                                                        )}
-                                                        <input 
-                                                            data-guide="celda-actividad"
-                                                            defaultValue={act.nombre.replace(/^Actividad\s+/i, 'ACT. ')}
-                                                            onFocus={(e) => { e.target.value = act.nombre; }}
-                                                            onBlur={(e) => {
-                                                                const val = e.target.value.trim();
-                                                                if (val && val !== act.nombre) {
-                                                                    onUpdateActividad(act.id, { nombre: val });
-                                                                } else {
-                                                                    e.target.value = act.nombre.replace(/^Actividad\s+/i, 'ACT. ');
-                                                                }
-                                                            }}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter') e.currentTarget.blur();
-                                                                if (e.key === 'Escape') {
-                                                                    e.currentTarget.value = act.nombre.replace(/^Actividad\s+/i, 'ACT. ');
-                                                                    e.currentTarget.blur();
-                                                                }
-                                                            }}
-                                                            className="text-xs md:text-sm font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] focus:text-[#2E3330] bg-transparent outline-none text-center w-full max-w-28 truncate focus:border-b focus:border-primary/30 transition-all placeholder:text-[#5F665E]/40"
-                                                            placeholder="NOMBRE"
-                                                        />
-                                                    </div>
-
-                                                    {/* Iconos de competencias con funcionalidad completa en todas las resoluciones */}
-                                                    <div className="flex items-center gap-1 bg-base-creme p-0.5 md:p-1 rounded-full border border-(--border-soft)">
-                                                        {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
-                                                            const isSel = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
-                                                            return (
-                                                                <button 
-                                                                    key={bc}
-                                                                    data-guide="bloque-competencia"
-                                                                    onClick={() => onToggleBc(act.id, bc)}
-                                                                    title={`${bc}: ${isSel ? 'Asignada (clic para alternar)' : 'No asignada (clic para alternar)'}`}
-                                                                    className={`w-6 h-6 md:w-6.5 md:h-6.5 xl:w-7 xl:h-7 rounded-full flex items-center justify-center transition-all ${isSel ? BC_COLOR_THEMES[bc].active : 'text-[#5F665E]/40 hover:text-[#5F665E]'}`}
-                                                                >
-                                                                    {BC_ICONS[bc]}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-
-                                                    {/* Puntos de competencias calculados */}
-                                                    <div className="flex justify-center gap-0.5 md:gap-1">
-                                                        {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
-                                                            const participa = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
-                                                            const aporte = getActivityBcPoints({ actividad: act, bc, actividades, bcSel });
-                                                            const txt = String(Math.round(aporte));
-                                                            return (
-                                                                <span key={bc} className="w-6 md:w-6.5 xl:w-7 flex items-baseline justify-center gap-0.5 leading-none">
-                                                                    <span className={`text-[9.5px] md:text-[10px] xl:text-[11px] font-black ${participa ? 'text-[#2E3330]' : 'text-[#5F665E]/35'}`}>{txt}</span>
-                                                                    <span className="text-[6.5px] md:text-[7px] font-semibold text-[#5F665E]/45">pts</span>
-                                                                </span>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
+                                        </div>
                                     </div>
                                 );
                             }
@@ -699,21 +701,67 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
                                         if (col.type === 'estudiantes') {
                                             return (
-                                                <div key={col.id} className="sticky left-0 z-20 bg-inherit px-2 md:px-6 py-1 md:py-3 border-r border-[#2E3330]/15 md:border-(--border-soft) font-semibold text-[#2E3330] flex items-center box-border shadow-[2px_0_4px_rgba(0,0,0,0.03)]" style={style}>
-                                                    <div className="flex items-center gap-1 md:gap-2 w-full">
+                                                <div key={col.id} className="sticky left-0 z-20 bg-inherit px-2 md:px-3 xl:px-6 py-1 md:py-2 xl:py-3 border-r border-[#2E3330]/15 md:border-(--border-soft) font-semibold text-[#2E3330] flex items-center box-border shadow-[2px_0_4px_rgba(0,0,0,0.03)]" style={style}>
+                                                    {/* VISTA MÓVIL Y TABLET (xl:hidden) - Prioridad absoluta al nombre */}
+                                                    <div className="flex xl:hidden items-center gap-1.5 w-full min-w-0">
+                                                        <span className="text-[10px] md:text-xs font-black text-[#5F665E]/40 w-4 shrink-0 text-left">
+                                                            {eIdx + 1}
+                                                        </span>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const parts = (est.displayName || '').split(' ');
+                                                                const nombre = est.nombre || parts[0] || '';
+                                                                const apellido = est.apellido || parts.slice(1).join(' ') || '';
+                                                                if (est.isPlaceholder) {
+                                                                    setEditingEstudiante({
+                                                                        id: 0,
+                                                                        nombre: '',
+                                                                        apellido: '',
+                                                                        numeroLista: est.numeroLista,
+                                                                        isPlaceholder: true,
+                                                                    });
+                                                                } else {
+                                                                    setMenuEstudiante({
+                                                                        id: est.id,
+                                                                        displayName: est.displayName,
+                                                                        nombre,
+                                                                        apellido,
+                                                                        numeroLista: est.numeroLista || (eIdx + 1),
+                                                                        isPlaceholder: false,
+                                                                    });
+                                                                }
+                                                            }}
+                                                            className="flex-1 min-w-0 text-left py-0.5 px-1 rounded-md active:bg-black/5 hover:bg-black/5 transition-colors cursor-pointer flex items-center justify-between gap-1"
+                                                            title="Toca para ver opciones"
+                                                        >
+                                                            <span className={`text-[11px] md:text-xs font-black uppercase tracking-tight truncate ${
+                                                                est.isPlaceholder ? 'text-[#5F665E]/40 italic' : 'text-[#2E3330]'
+                                                            }`}>
+                                                                {est.isPlaceholder ? `N.º ${est.numeroLista} · Vacío` : est.displayName}
+                                                            </span>
+                                                            {est.observacion && (
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="Tiene observación" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+
+                                                    {/* VISTA ESCRITORIO (hidden xl:flex) - INTACTA */}
+                                                    <div className="hidden xl:flex items-center gap-2 w-full">
                                                         {!est.isPlaceholder && onDeleteEstudiante && (
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     setEstudianteAEliminar({ id: est.id, displayName: est.displayName });
                                                                 }}
-                                                                className="w-4 h-4 md:w-5 md:h-5 flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-400 hover:text-danger hover:border-danger/40 hover:bg-danger/10 transition-all text-xs md:text-sm pb-0.5 shadow-xs shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                                className="w-5 h-5 flex items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-400 hover:text-danger hover:border-danger/40 hover:bg-danger/10 transition-all text-sm pb-0.5 shadow-xs shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
                                                                 title="Eliminar estudiante"
                                                             >
                                                                 ×
                                                             </button>
                                                         )}
-                                                        <span className={`text-[10px] md:text-xs font-black text-[#5F665E]/40 w-3.5 md:w-4 shrink-0 text-left md:text-right ${!(!est.isPlaceholder && onDeleteEstudiante) ? 'ml-0 md:ml-7' : ''}`}>{eIdx + 1}</span>
+                                                        <span className={`text-xs font-black text-[#5F665E]/40 w-4 shrink-0 text-right ${!(!est.isPlaceholder && onDeleteEstudiante) ? 'ml-7' : ''}`}>{eIdx + 1}</span>
                                                         <div className="flex flex-col overflow-hidden w-full">
                                                             <input
                                                                 key={`${est.id}-${est.displayName}`}
@@ -759,12 +807,12 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                                         e.currentTarget.blur();
                                                                     }
                                                                 }}
-                                                                className="text-[11px] md:text-sm font-black uppercase tracking-tight truncate bg-transparent outline-none w-full hover:bg-(--background) focus:bg-white focus:ring-1 focus:ring-[rgba(46,51,48,0.15)] rounded px-0.5 md:px-1 transition-all placeholder:text-[#5F665E]/40 placeholder:font-semibold"
+                                                                className="text-sm font-black uppercase tracking-tight truncate bg-transparent outline-none w-full hover:bg-(--background) focus:bg-white focus:ring-1 focus:ring-[rgba(46,51,48,0.15)] rounded px-1 transition-all placeholder:text-[#5F665E]/40 placeholder:font-semibold"
                                                             />
                                                             {est.isPlaceholder ? (
-                                                                <span className="hidden md:block text-xs font-bold text-[#5F665E]/50 uppercase tracking-widest truncate px-1">N.º {est.numeroLista} · libre</span>
+                                                                <span className="text-xs font-bold text-[#5F665E]/50 uppercase tracking-widest truncate px-1">N.º {est.numeroLista} · libre</span>
                                                             ) : (
-                                                                <span className="hidden md:block text-xs font-bold text-[#5F665E] uppercase tracking-widest truncate px-1">ID: {est.id.toString().slice(-6)}</span>
+                                                                <span className="text-xs font-bold text-[#5F665E] uppercase tracking-widest truncate px-1">ID: {est.id.toString().slice(-6)}</span>
                                                             )}
                                                         </div>
                                                         {/* Acciones del estudiante: Reordenar y Observaciones */}
@@ -780,18 +828,18 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                                                 numeroLista: est.numeroLista || (eIdx + 1)
                                                                             });
                                                                         }}
-                                                                        className="p-0.5 md:p-1 rounded-md text-[#5F665E]/30 hover:text-[#689C63] hover:bg-[#689C63]/10 transition-colors shrink-0"
+                                                                        className="p-1 rounded-md text-[#5F665E]/30 hover:text-[#689C63] hover:bg-[#689C63]/10 transition-colors shrink-0"
                                                                         title="Mover de posición en la lista"
                                                                     >
-                                                                        <ArrowUpDown size={13} className="md:w-3.5 md:h-3.5" />
+                                                                        <ArrowUpDown size={14} />
                                                                     </button>
                                                                 )}
                                                                 <button
                                                                     onClick={() => setObsModalEstudianteId(est.id)}
-                                                                    className={`p-0.5 md:p-1 rounded-md transition-colors shrink-0 ${est.observacion ? 'text-amber-500 hover:bg-amber-50' : 'text-[#5F665E]/30 hover:text-[#5F665E] hover:bg-gray-100'}`}
+                                                                    className={`p-1 rounded-md transition-colors shrink-0 ${est.observacion ? 'text-amber-500 hover:bg-amber-50' : 'text-[#5F665E]/30 hover:text-[#5F665E] hover:bg-gray-100'}`}
                                                                     title="Observaciones del estudiante"
                                                                 >
-                                                                    <BookOpen size={13} className="md:w-4 md:h-4" />
+                                                                    <BookOpen size={16} />
                                                                 </button>
                                                             </div>
                                                         )}
@@ -933,6 +981,132 @@ const GradeTable: React.FC<GradeTableProps> = ({
                     }
                 }}
             />
+
+            {/* Menú compacto al tocar el nombre del estudiante (móvil y tablet) */}
+            <CieloModal
+                isOpen={menuEstudiante !== null}
+                onClose={() => setMenuEstudiante(null)}
+                title={menuEstudiante?.displayName || 'Opciones del estudiante'}
+                subtitle={menuEstudiante?.numeroLista ? `Estudiante N.º ${menuEstudiante.numeroLista}` : undefined}
+                maxWidth="sm"
+            >
+                <div className="flex flex-col gap-2.5 py-2">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (menuEstudiante) {
+                                const target = menuEstudiante;
+                                setMenuEstudiante(null);
+                                setEditingEstudiante({
+                                    id: target.id,
+                                    nombre: target.nombre,
+                                    apellido: target.apellido,
+                                    numeroLista: target.numeroLista,
+                                    isPlaceholder: target.isPlaceholder,
+                                });
+                            }
+                        }}
+                        className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-50 active:bg-slate-100 border border-(--border-soft) text-left transition-colors cursor-pointer"
+                    >
+                        <div className="w-9 h-9 rounded-full bg-[#689C63]/10 text-[#689C63] flex items-center justify-center shrink-0">
+                            <Edit3 size={18} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-black text-[#2E3330]">Editar nombre</p>
+                            <p className="text-xs text-[#5F665E]">Modificar nombre y apellido</p>
+                        </div>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (menuEstudiante) {
+                                const targetId = menuEstudiante.id;
+                                setMenuEstudiante(null);
+                                setObsModalEstudianteId(targetId);
+                            }
+                        }}
+                        className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-50 active:bg-slate-100 border border-(--border-soft) text-left transition-colors cursor-pointer"
+                    >
+                        <div className="w-9 h-9 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                            <BookOpen size={18} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-black text-[#2E3330]">Escribir o editar observación</p>
+                            <p className="text-xs text-[#5F665E]">Registrar notas o comentarios pedagógicos</p>
+                        </div>
+                    </button>
+                </div>
+            </CieloModal>
+
+            {/* Modal para editar nombre de estudiante en móvil/tablet */}
+            <CieloModal
+                isOpen={editingEstudiante !== null}
+                onClose={() => setEditingEstudiante(null)}
+                title={editingEstudiante?.isPlaceholder ? 'Asignar estudiante' : 'Editar nombre'}
+                subtitle={editingEstudiante?.numeroLista ? `Posición N.º ${editingEstudiante.numeroLista}` : undefined}
+                maxWidth="sm"
+                footer={
+                    <div className="flex items-center justify-end gap-2 w-full">
+                        <button
+                            type="button"
+                            onClick={() => setEditingEstudiante(null)}
+                            className="px-4 py-2 rounded-full text-xs font-bold text-[#5F665E] hover:bg-slate-100 transition-colors uppercase tracking-wider"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (!editingEstudiante) return;
+                                const nom = editingEstudiante.nombre.trim();
+                                const ape = editingEstudiante.apellido.trim();
+                                if (!nom && !ape) return;
+
+                                if (editingEstudiante.isPlaceholder && typeof editingEstudiante.numeroLista === 'number') {
+                                    const real = realesPorNumeroRef.current.get(editingEstudiante.numeroLista);
+                                    if (real) {
+                                        onUpdateEstudianteRef.current(real.id, { nombre: nom, apellido: ape });
+                                    } else {
+                                        onAddEstudianteRef.current(nom, ape, editingEstudiante.numeroLista);
+                                    }
+                                } else if (!editingEstudiante.isPlaceholder) {
+                                    onUpdateEstudianteRef.current(editingEstudiante.id, { nombre: nom, apellido: ape });
+                                }
+                                notifyGuideOperationSuccess('estudiante_guardar', '¡Muy bien! Se guardó el estudiante.');
+                                setEditingEstudiante(null);
+                            }}
+                            className="px-5 py-2 rounded-full text-xs font-bold text-white bg-[#689C63] hover:bg-[#588554] transition-colors shadow-xs uppercase tracking-wider cursor-pointer"
+                        >
+                            Guardar nombre
+                        </button>
+                    </div>
+                }
+            >
+                <div className="flex flex-col gap-3 py-2">
+                    <div>
+                        <label className="block text-xs font-bold text-[#5F665E] uppercase tracking-wider mb-1">Nombre</label>
+                        <input
+                            type="text"
+                            autoFocus
+                            value={editingEstudiante?.nombre || ''}
+                            onChange={(e) => setEditingEstudiante(prev => prev ? { ...prev, nombre: e.target.value } : null)}
+                            placeholder="Nombre del estudiante"
+                            className="w-full px-3 py-2 rounded-xl border border-(--border-soft) bg-white text-sm font-semibold text-[#2E3330] focus:ring-2 focus:ring-[#689C63]/30 focus:outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-[#5F665E] uppercase tracking-wider mb-1">Apellido</label>
+                        <input
+                            type="text"
+                            value={editingEstudiante?.apellido || ''}
+                            onChange={(e) => setEditingEstudiante(prev => prev ? { ...prev, apellido: e.target.value } : null)}
+                            placeholder="Apellido del estudiante"
+                            className="w-full px-3 py-2 rounded-xl border border-(--border-soft) bg-white text-sm font-semibold text-[#2E3330] focus:ring-2 focus:ring-[#689C63]/30 focus:outline-none"
+                        />
+                    </div>
+                </div>
+            </CieloModal>
 
             <CieloModal
                 isOpen={actividadAEliminar !== null}
