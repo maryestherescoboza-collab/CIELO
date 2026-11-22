@@ -487,7 +487,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
             nombre_docente: nombreCompleto,
             telefono: telefono.replace(/\D/g, ''),
             rol: modo === 'director' || modo === 'centro_existente' ? 'administrador' : 'docente',
-            ...(targetCentroId ? { centro_id: targetCentroId, vinculo_confirmado: false } : {}),
+            ...(targetCentroId ? { centro_id: targetCentroId, vinculo_confirmado: true } : {}),
             ...(pendingVinculo ? { pending_vinculo: pendingVinculo } : {})
           }
         }

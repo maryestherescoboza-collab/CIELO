@@ -17,7 +17,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import NotificationsOverlay from './components/NotificationsOverlay';
 import InvitationModal from './components/courses/InvitationModal';
 import { VinculacionCentroModal } from './components/auth/VinculacionCentroModal';
-import { ConfirmarVinculacionScreen } from './components/auth/ConfirmarVinculacionScreen';
 import { FloatingRubricManager } from './components/FloatingRubricManager';
 import { PresentationProvider } from './contexts/PresentationContext';
 import LoadingMessage from './components/LoadingMessage';
@@ -234,11 +233,6 @@ export default function App() {
     return analizarRolAcceso({ perfil: currentUserProfile })?.rol === 'administrador';
   }, [currentUserProfile]);
 
-  const tieneVinculoPendienteConfirmar = useMemo(() => {
-    if (!session?.user?.id || !authInitialized || loading) return false;
-    if (!currentUserProfile) return false;
-    return Boolean(currentUserProfile.centro_id && currentUserProfile.vinculo_confirmado === false);
-  }, [session?.user?.id, authInitialized, loading, currentUserProfile]);
   const necesitaVinculacionCentro = useMemo(() => {
     if (!session?.user?.id || !authInitialized || loading) return false;
     if (isPerfilRecoveredFromCache(session.user.id)) return false;
@@ -373,26 +367,6 @@ export default function App() {
     pathname === '/suscripcion' ||
     pathname.startsWith('/suscripcion/');
 
-  if (tieneVinculoPendienteConfirmar && currentUserProfile && !isSuscripcionRoute) {
-    return (
-      <ErrorBoundary>
-        <ConfirmarVinculacionScreen
-          currentUserProfile={currentUserProfile}
-          onConfirmed={() => {
-            useAppStore.getState().setState(prev => ({
-              ...prev,
-              perfiles: prev.perfiles.map(p =>
-                p.userId === currentUserProfile.userId ? { ...p, vinculo_confirmado: true } : p
-              )
-            }));
-            actions.refresh();
-            navigate('/inicio', { replace: true });
-          }}
-          onLogout={() => supabase.auth.signOut()}
-        />
-      </ErrorBoundary>
-    );
-  }
   if (necesitaVinculacionCentro && session?.user?.id && !isSuscripcionRoute) {
     return (
       <ErrorBoundary>
