@@ -6,7 +6,6 @@ import {
     Minimize2,
     Search,
     UserMinus,
-    Layout,
     Loader2,
     Check,
     AlertCircle,
@@ -91,7 +90,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     const [showMobileSearch, setShowMobileSearch] = React.useState(false);
 
     return (
-        <div className="flex flex-col gap-2 md:gap-4 p-2.5 sm:p-3 md:p-6 bg-white border-b border-(--border-soft) shadow-sm relative z-20">
+        <div className="flex flex-col gap-1.5 md:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-2.5 xl:px-6 xl:py-2 bg-white border-b border-(--border-soft) shadow-2xs relative z-20">
             {/* VISTA MÓVIL (< md) */}
             <div className="flex md:hidden flex-col gap-2">
                 {/* Fila 1: Volver, Curso, Guardar, Selector de períodos, Búsqueda */}
@@ -112,6 +111,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <button
                             onClick={saveStatus === 'error' ? (onRetrySave || onSave) : onSave}
                             disabled={isSaving || saveStatus === 'saving' || saveStatus === 'verifying' || (saveStatus === 'saved' && !isDirty)}
+                            title={saveStatus === 'error' ? (saveError || 'Error al guardar. Toca para reintentar.') : undefined}
                             className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all shrink-0 ${
                                 saveStatus === 'error'
                                     ? 'bg-rose-600 border-rose-700 text-white cursor-pointer'
@@ -463,308 +463,198 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                 </div>
             </div>
 
-            {/* VISTA ESCRITORIO (xl: >= 1200px) - INTACTA */}
-            <div className="hidden xl:flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-6">
-                    <button
-                        onClick={onBack}
-                        className="p-3 hover:bg-(--background) text-[#5F665E] hover:text-[#2E3330] transition-all rounded-full border border-transparent hover:border-(--border-soft) group"
-                    >
-                        <ChevronLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
-                    </button>
-                    <div>
-                        <div className="flex items-center gap-3 mb-1">
-                            <CieloPill variant="primary" uppercase className="px-3.5 h-6">CURSO ACTIVO</CieloPill>
-                            <h1 className="text-2xl font-black text-[#2E3330] tracking-tighter uppercase italic">{curso?.grado} {curso?.seccion}</h1>
-                        </div>
-                        <p className="text-[#5F665E] font-semibold text-sm uppercase tracking-widest flex items-center gap-2">
-                            <Layout size={14} /> GESTION DEL PERIODO / {curso?.periodo}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5F665E] group-focus-within:text-[#2E3330] transition-colors" size={18} />
-                        <input
-                            type="text"
-                            placeholder="BUSCAR ESTUDIANTE..."
-                            className="pl-12 pr-6 py-2.5 min-h-10 bg-base-creme border border-(--border-soft) rounded-full text-xs font-semibold focus:outline-none focus:ring-4 focus:ring-primary/10 focus:bg-white focus:border-primary/30 transition-all w-64 uppercase tracking-[0.08em] text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-sm"
-                            value={buscar}
-                            onChange={(e) => setBuscar(e.target.value)}
-                        />
-                    </div>
-
-                    {onExportExcel && (
-                        <CieloPill
-                            as="button"
-                            variant="ghost"
-                            onClick={onExportExcel}
-                            disabled={periodLoading || isExporting}
-                            title={`Exportar Registro Académico (${selectedPeriodo}) a Excel`}
-                            className={`gap-2 px-3.5 min-h-10 transition-all border ${
-                                periodLoading || isExporting
-                                    ? 'bg-base-creme border-(--border-soft) text-[#5F665E]/40 cursor-not-allowed opacity-60'
-                                    : 'bg-white border-(--border-soft) text-emerald-800 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-900 shadow-sm cursor-pointer'
-                            }`}
+            {/* VISTA ESCRITORIO (xl: >= 1200px) - ULTRA COMPACTA, ALTA DENSIDAD Y ESPACIO MAXIMIZADO */}
+            <div className="hidden xl:flex flex-col gap-2">
+                {/* Fila 1: Navegación, Curso, Selector P1-P4, Búsqueda, Exportaciones, Guardar y Pantalla completa */}
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <button
+                            onClick={onBack}
+                            aria-label="Volver"
+                            title="Volver"
+                            className="p-1.5 hover:bg-(--background) text-[#5F665E] hover:text-[#2E3330] transition-all rounded-full border border-transparent hover:border-(--border-soft) group shrink-0 cursor-pointer"
                         >
-                            {isExporting ? (
-                                <Loader2 size={16} className="animate-spin text-emerald-700" />
-                            ) : (
-                                <FileSpreadsheet size={16} className="text-emerald-700" />
-                            )}
-                            <span className="font-bold text-xs tracking-wider">EXCEL</span>
-                        </CieloPill>
-                    )}
+                            <ChevronLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+                        </button>
 
-                    {onExportInstrumento && (
-                        <CieloPill
-                            as="button"
-                            variant="ghost"
-                            onClick={onExportInstrumento}
-                            disabled={periodLoading || isExportingInstrumento}
-                            title={`Descargar Instrumento de Evaluación (${selectedPeriodo}) en Word (.docx)`}
-                            className={`gap-2 px-3.5 min-h-10 transition-all border ${
-                                periodLoading || isExportingInstrumento
-                                    ? 'bg-base-creme border-(--border-soft) text-[#5F665E]/40 cursor-not-allowed opacity-60'
-                                    : 'bg-white border-(--border-soft) text-[#537BAC] hover:bg-[#537BAC]/10 hover:border-[#537BAC]/40 hover:text-[#476B96] shadow-sm cursor-pointer'
-                            }`}
-                        >
-                            {isExportingInstrumento ? (
-                                <Loader2 size={16} className="animate-spin text-[#537BAC]" />
-                            ) : (
-                                <FileText size={16} className="text-[#537BAC]" />
-                            )}
-                            <span className="font-bold text-xs tracking-wider">INSTRUMENTO</span>
-                        </CieloPill>
-                    )}
-
-                    <div className="flex flex-col items-end">
-                        <CieloPill
-                            as="button"
-                            onClick={saveStatus === 'error' ? (onRetrySave || onSave) : onSave}
-                            disabled={isSaving || saveStatus === 'saving' || saveStatus === 'verifying' || (saveStatus === 'saved' && !isDirty)}
-                            variant={saveStatus === 'error' ? 'danger' : isSaving || saveStatus === 'saving' || saveStatus === 'verifying' ? 'disabled' : isDirty ? 'primary' : 'disabled'}
-                            className={`gap-3 px-4.5 min-h-10 border transition-all ${
-                                saveStatus === 'error'
-                                    ? 'bg-rose-600 border-rose-700 text-white cursor-pointer hover:bg-rose-700 shadow-sm'
-                                    : (isSaving || saveStatus === 'saving' || saveStatus === 'verifying')
-                                    ? 'bg-attention border-attention text-white cursor-wait'
-                                    : isDirty
-                                    ? 'bg-primary border-primary text-white cursor-pointer hover:bg-primary/90'
-                                    : 'bg-white text-emerald-700 border-emerald-200 cursor-default'
-                            }`}
-                        >
-                            {isSaving || saveStatus === 'saving' || saveStatus === 'verifying' ? (
-                                <Loader2 size={16} className="animate-spin" />
-                            ) : saveStatus === 'error' ? (
-                                <AlertCircle size={16} />
-                            ) : isDirty ? (
-                                <Save size={16} />
-                            ) : (
-                                <Check size={16} className="text-emerald-600 font-bold" />
-                            )}
-                            {isSaving || saveStatus === 'saving' || saveStatus === 'verifying'
-                                ? 'GUARDANDO...'
-                                : saveStatus === 'error'
-                                ? 'ERROR AL GUARDAR (REINTENTAR)'
-                                : isDirty
-                                ? 'GUARDAR AHORA'
-                                : 'GUARDADO'}
-                        </CieloPill>
-                        {saveError && (
-                            <span className="text-[10px] text-rose-600 font-medium mt-1 truncate max-w-50" title={saveError}>
-                                {saveError}
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-base font-black text-[#2E3330] tracking-tight uppercase italic shrink-0">
+                                {curso?.grado} {curso?.seccion}
                             </span>
-                        )}
+
+                            {curso?.asignatura && (
+                                <span className="text-[11px] font-bold text-[#5F665E] bg-(--background) px-2.5 py-0.5 rounded-full border border-(--border-soft) truncate max-w-44 shrink-0" title={curso.asignatura}>
+                                    {curso.asignatura}
+                                </span>
+                            )}
+
+                            {/* Selector de periodo P1 - P4 */}
+                            <div className="flex items-center gap-0.5 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)] shrink-0">
+                                {['P1', 'P2', 'P3', 'P4'].map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => onPeriodoChange(p)}
+                                        disabled={periodLoading}
+                                        className={`px-3 py-1 text-xs font-black rounded-full transition-all cursor-pointer ${
+                                            selectedPeriodo === p
+                                                ? 'bg-white text-[#2E3330] shadow-xs'
+                                                : 'text-[#5F665E]/70 hover:text-[#2E3330]'
+                                        }`}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {periodLoading && (
+                                <span className="flex items-center gap-1.5 text-xs text-[#5F665E] font-medium animate-pulse shrink-0">
+                                    <Loader2 size={13} className="animate-spin text-primary" /> Cargando {selectedPeriodo}...
+                                </span>
+                            )}
+                            {periodError && (
+                                <span className="flex items-center gap-1 text-xs text-rose-600 font-medium shrink-0">
+                                    <AlertCircle size={13} /> {periodError}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
-                    <button
-                        onClick={onToggleFullScreen}
-                        className="w-10 h-10 flex items-center justify-center bg-white border border-(--border-soft) text-[#5F665E] hover:text-[#2E3330] hover:border-[rgba(46,51,48,0.15)] transition-all rounded-full shadow-sm active:scale-95"
-                    >
-                        {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-                    </button>
-                </div>
-            </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                        {/* Búsqueda compacta */}
+                        <div className="relative group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5F665E] group-focus-within:text-[#2E3330] transition-colors" size={13} />
+                            <input
+                                type="text"
+                                placeholder="BUSCAR ESTUDIANTE..."
+                                className="pl-8 pr-3 py-1 min-h-7.5 bg-base-creme border border-(--border-soft) rounded-full text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-primary/10 focus:bg-white focus:border-primary/30 transition-all w-48 uppercase tracking-wider text-[#2E3330] placeholder:text-[#5F665E]/60 shadow-2xs"
+                                value={buscar}
+                                onChange={(e) => setBuscar(e.target.value)}
+                            />
+                        </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-transparent">
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
-                        {['P1', 'P2', 'P3', 'P4'].map(p => (
+                        {onExportExcel && (
                             <CieloPill
                                 as="button"
-                                key={p}
-                                variant={selectedPeriodo === p ? 'neutral' : 'ghost'}
-                                onClick={() => onPeriodoChange(p)}
-                                disabled={periodLoading}
-                                className={`px-4.5 min-h-9 transition-all border ${selectedPeriodo === p ? 'bg-white text-[#2E3330] border-[rgba(46,51,48,0.04)]' : 'text-[#5F665E] hover:text-[#2E3330] border-transparent'}`}
+                                variant="ghost"
+                                onClick={onExportExcel}
+                                disabled={periodLoading || isExporting}
+                                title={`Exportar Registro Académico (${selectedPeriodo}) a Excel`}
+                                className={`gap-1.5 px-2.5 min-h-7.5 transition-all border text-xs font-bold ${
+                                    periodLoading || isExporting
+                                        ? 'bg-base-creme border-(--border-soft) text-[#5F665E]/40 cursor-not-allowed opacity-60'
+                                        : 'bg-white border-(--border-soft) text-emerald-800 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-900 shadow-2xs cursor-pointer'
+                                }`}
                             >
-                                {p}
+                                {isExporting ? <Loader2 size={13} className="animate-spin text-emerald-700" /> : <FileSpreadsheet size={13} className="text-emerald-700" />}
+                                <span>EXCEL</span>
                             </CieloPill>
-                        ))}
+                        )}
+
+                        {onExportInstrumento && (
+                            <CieloPill
+                                as="button"
+                                variant="ghost"
+                                onClick={onExportInstrumento}
+                                disabled={periodLoading || isExportingInstrumento}
+                                title={`Descargar Instrumento de Evaluación (${selectedPeriodo}) en Word (.docx)`}
+                                className={`gap-1.5 px-2.5 min-h-7.5 transition-all border text-xs font-bold ${
+                                    periodLoading || isExportingInstrumento
+                                        ? 'bg-base-creme border-(--border-soft) text-[#5F665E]/40 cursor-not-allowed opacity-60'
+                                        : 'bg-white border-(--border-soft) text-[#537BAC] hover:bg-[#537BAC]/10 hover:border-[#537BAC]/40 hover:text-[#476B96] shadow-2xs cursor-pointer'
+                                }`}
+                            >
+                                {isExportingInstrumento ? <Loader2 size={13} className="animate-spin text-[#537BAC]" /> : <FileText size={13} className="text-[#537BAC]" />}
+                                <span>INSTRUMENTO</span>
+                            </CieloPill>
+                        )}
+
+                        {/* Botón Guardar */}
+                        <div className="flex items-center">
+                            <CieloPill
+                                as="button"
+                                onClick={saveStatus === 'error' ? (onRetrySave || onSave) : onSave}
+                                disabled={isSaving || saveStatus === 'saving' || saveStatus === 'verifying' || (saveStatus === 'saved' && !isDirty)}
+                                title={saveStatus === 'error' ? (saveError || 'Error al guardar. Clic para reintentar.') : undefined}
+                                variant={saveStatus === 'error' ? 'danger' : isSaving || saveStatus === 'saving' || saveStatus === 'verifying' ? 'disabled' : isDirty ? 'primary' : 'disabled'}
+                                className={`gap-1.5 px-3 min-h-7.5 border transition-all text-xs font-black ${
+                                    saveStatus === 'error'
+                                        ? 'bg-rose-600 border-rose-700 text-white cursor-pointer hover:bg-rose-700 shadow-2xs'
+                                        : (isSaving || saveStatus === 'saving' || saveStatus === 'verifying')
+                                        ? 'bg-attention border-attention text-white cursor-wait'
+                                        : isDirty
+                                        ? 'bg-primary border-primary text-white cursor-pointer hover:bg-primary/90'
+                                        : 'bg-white text-emerald-700 border-emerald-200 cursor-default'
+                                }`}
+                            >
+                                {isSaving || saveStatus === 'saving' || saveStatus === 'verifying' ? (
+                                    <Loader2 size={13} className="animate-spin" />
+                                ) : saveStatus === 'error' ? (
+                                    <AlertCircle size={13} />
+                                ) : isDirty ? (
+                                    <Save size={13} />
+                                ) : (
+                                    <Check size={13} className="text-emerald-600 font-bold" />
+                                )}
+                                <span>
+                                    {isSaving || saveStatus === 'saving' || saveStatus === 'verifying'
+                                        ? 'GUARDANDO…'
+                                        : saveStatus === 'error'
+                                        ? 'REINTENTAR'
+                                        : isDirty
+                                        ? 'GUARDAR'
+                                        : 'GUARDADO'}
+                                </span>
+                            </CieloPill>
+                        </div>
+
+                        {/* Pantalla completa */}
+                        <button
+                            type="button"
+                            onClick={onToggleFullScreen}
+                            title={isFullScreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+                            className="w-7.5 h-7.5 flex items-center justify-center bg-white border border-(--border-soft) text-[#5F665E] hover:text-[#2E3330] hover:border-[rgba(46,51,48,0.15)] transition-all rounded-full shadow-2xs active:scale-95 cursor-pointer shrink-0"
+                        >
+                            {isFullScreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                        </button>
                     </div>
-                    {periodLoading && (
-                        <span className="flex items-center gap-1.5 text-xs text-[#5F665E] font-medium animate-pulse">
-                            <Loader2 size={14} className="animate-spin text-primary" /> Cargando {selectedPeriodo}...
-                        </span>
-                    )}
-                    {periodError && (
-                        <span className="flex items-center gap-1 text-xs text-rose-600 font-medium">
-                            <AlertCircle size={14} /> {periodError}
-                        </span>
-                    )}
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 border-r border-(--border-soft) pr-4 mr-2">
+                {/* Fila 2: + Agregar Actividad, Filtro Riesgo, Sellos rápidos, Modos de evaluación y Niveles de dominio */}
+                <div className="flex items-center justify-between gap-3 pt-1 border-t border-[rgba(46,51,48,0.06)]">
+                    <div className="flex items-center gap-2 shrink-0">
                         <CieloPill
                             as="button"
                             data-guide="btn-agregar-actividad"
                             variant="ghost"
                             onClick={onAddActividad}
-                            className="gap-2 px-4.5 min-h-9 bg-white text-[#5F665E] border border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]"
+                            className="gap-1.5 px-3 min-h-7 bg-white text-[#2E3330] border border-(--border-soft) hover:bg-(--background) text-xs font-black shadow-2xs cursor-pointer active:scale-95"
                         >
-                            + AGREGAR ACTIVIDAD
+                            <Plus size={13} strokeWidth={2.8} />
+                            AGREGAR ACTIVIDAD
                         </CieloPill>
+
                         <CieloPill
                             as="button"
                             variant={showRecoveryOnly ? 'danger' : 'ghost'}
                             onClick={() => setShowRecoveryOnly(!showRecoveryOnly)}
-                            className={`gap-2 px-4.5 min-h-9 transition-all border ${showRecoveryOnly ? 'bg-attention/10 text-attention border-attention/30 hover:bg-attention/20 hover:text-attention' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
+                            className={`px-2.5 min-h-7 transition-all border text-xs font-bold cursor-pointer ${
+                                showRecoveryOnly
+                                    ? 'bg-attention/10 text-attention border-attention/30 hover:bg-attention/20'
+                                    : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'
+                            }`}
                         >
-                            {showRecoveryOnly ? 'VER TODOS' : 'VER RIESGO'}
+                            {showRecoveryOnly ? 'TODOS' : 'RIESGO'}
                         </CieloPill>
-                        <div className="flex items-center bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]" role="radiogroup" aria-label="Modo de evaluación">
-                            <div className="relative flex items-center justify-center">
-                                {evalMode === 'pincel' && (
-                                    <span className="absolute -top-5 text-[9px] font-bold text-[#2E3330] whitespace-nowrap">Modo pincel</span>
-                                )}
-                                <button
-                                    type="button"
-                                    role="radio"
-                                    data-guide="modo-eval-pincel"
-                                    aria-checked={evalMode === 'pincel'}
-                                    aria-label="Modo Pincel"
-                                    title="Modo Pincel"
-                                    onClick={() => setEvalMode('pincel')}
-                                    className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'pincel' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
-                                >
-                                    <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'pincel' ? 'bg-white' : 'bg-transparent'}`} />
-                                </button>
-                            </div>
-                            <div className="w-4 h-px bg-[rgba(46,51,48,0.2)] shrink-0" />
-                            <div className="relative flex items-center justify-center">
-                                {evalMode === 'numerico' && (
-                                    <span className="absolute -top-5 text-[9px] font-bold text-[#2E3330] whitespace-nowrap">Numérico</span>
-                                )}
-                                <button
-                                    type="button"
-                                    role="radio"
-                                    data-guide="modo-eval-numerico"
-                                    aria-checked={evalMode === 'numerico'}
-                                    aria-label="Modo Numérico"
-                                    title="Modo Numérico"
-                                    onClick={() => setEvalMode('numerico')}
-                                    className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'numerico' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
-                                >
-                                    <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'numerico' ? 'bg-white' : 'bg-transparent'}`} />
-                                </button>
-                            </div>
-                            <div className="w-4 h-px bg-[rgba(46,51,48,0.2)] shrink-0" />
-                            <div className="relative flex items-center justify-center">
-                                {evalMode === 'libre' && (
-                                    <span className="absolute -top-5 text-[9px] font-bold text-[#2E3330] whitespace-nowrap">Valor libre</span>
-                                )}
-                                <button
-                                    type="button"
-                                    role="radio"
-                                    data-guide="modo-eval-libre"
-                                    aria-checked={evalMode === 'libre'}
-                                    aria-label="Valor libre"
-                                    title="Valor libre"
-                                    onClick={() => setEvalMode('libre')}
-                                    className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${evalMode === 'libre' ? 'bg-[#2E3330] shadow-sm' : 'bg-white border border-(--border-soft) hover:bg-(--background)'}`}
-                                >
-                                    <div className={`w-1.5 h-1.5 rounded-full transition-all ${evalMode === 'libre' ? 'bg-white' : 'bg-transparent'}`} />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
 
-                    {(evalMode === 'pincel' || evalMode === 'numerico') && (
-                    <div data-guide="barra-niveles-dominio" className="flex items-center gap-1.5 bg-(--background) p-1.5 rounded-full border border-[rgba(46,51,48,0.04)]">
-                        {[100, 85, 70, 55].map(val => {
-                            const isActive = activePaintColor === val;
-                            let colorClasses = '';
-                            if (evalMode === 'pincel') {
-                                if (val === 100) {
-                                    colorClasses = isActive
-                                        ? 'bg-primary text-white border-2 border-transparent'
-                                         : 'bg-primary/10 text-primary border border-transparent hover:bg-primary/20';
-                                } else if (val === 85) {
-                                    colorClasses = isActive
-                                        ? 'bg-attention text-white border-2 border-transparent'
-                                        : 'bg-attention/10 text-attention border border-transparent hover:bg-attention/20';
-                                } else if (val === 70) {
-                                    colorClasses = isActive
-                                        ? 'bg-danger text-white border-2 border-transparent'
-                                        : 'bg-danger/10 text-danger border border-transparent hover:bg-danger/20';
-                                } else {
-                                    colorClasses = isActive
-                                        ? 'bg-[#2E3330] text-white border-2 border-transparent'
-                                        : 'bg-white text-[#5F665E] border border-(--border-soft) hover:bg-base-creme hover:text-[#2E3330]';
-                                }
-                            } else {
-                                colorClasses = isActive
-                                    ? 'bg-[#2E3330] text-white border-2 border-transparent'
-                                    : 'bg-white text-[#5F665E] border border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]';
-                            }
+                        <div className="h-4 w-px bg-[rgba(46,51,48,0.12)] mx-0.5" />
 
-                            const tooltips: Record<number, { title: string; desc: string }> = {
-                                100: { title: `100 — ${NIVELES_DOMINIO[100].etiqueta}`, desc: NIVELES_DOMINIO[100].descriptor },
-                                85: { title: `85 — ${NIVELES_DOMINIO[85].etiqueta}`, desc: NIVELES_DOMINIO[85].descriptor },
-                                70: { title: `70 — ${NIVELES_DOMINIO[70].etiqueta}`, desc: NIVELES_DOMINIO[70].descriptor },
-                                55: { title: `55 — ${NIVELES_DOMINIO[55].etiqueta}`, desc: NIVELES_DOMINIO[55].descriptor },
-                            };
-                            const tt = tooltips[val];
-
-                            const guideAttr = evalMode === 'pincel'
-                                ? `nivel-pincel nivel-pincel-${val}`
-                                : `nivel-num nivel-num-${val}`;
-
-                            return (
-                                <div key={val} className="relative group flex items-center justify-center">
-                                    <button
-                                        data-guide={guideAttr}
-                                        onClick={() => setActivePaintColor(val)}
-                                        className={`w-9 h-9 rounded-full transition-all flex items-center justify-center font-bold text-xs ${isActive ? 'scale-105 shadow-sm ring-2 ring-white/50' : 'hover:scale-105'} ${colorClasses}`}
-                                    >
-                                        {val}
-                                    </button>
-                                    
-                                    <div className="pointer-events-none absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 flex flex-col items-center">
-                                        <div className="bg-[#2E3330] text-white text-[11px] leading-tight px-3 py-2 rounded-lg shadow-lg w-44 text-center">
-                                            <div className="font-bold mb-0.5">{tt.title}</div>
-                                            <div className="text-white/80">{tt.desc}</div>
-                                        </div>
-                                        <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-[#2E3330]"></div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    )}
-
-                    <div className="flex flex-col items-start gap-1">
-                        <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#5F665E]/55 whitespace-nowrap leading-none">Actividad pendiente por:</span>
-                        <div className="flex items-center gap-1.5">
+                        {/* Sellos rápidos de inasistencia / no trabajó */}
+                        <div className="flex items-center gap-1">
                             <button
                                 type="button"
                                 onClick={() => { setActivePaintColor(0); if (evalMode === 'libre') setEvalMode('numerico'); }}
                                 title="Inasistencia — aplica 0 pts a la celda"
-                                className={`min-h-7 px-2.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border ${activePaintColor === 0 ? 'bg-[#2E3330] border-transparent text-white shadow-sm' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
+                                className={`min-h-6.5 px-2 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${activePaintColor === 0 ? 'bg-[#2E3330] border-transparent text-white shadow-2xs' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
                             >
                                 Inasistencia
                             </button>
@@ -772,25 +662,123 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                                 type="button"
                                 onClick={() => { setActivePaintColor(1); if (evalMode === 'libre') setEvalMode('numerico'); }}
                                 title="Se negó a realizar — aplica 1 pt a la celda"
-                                className={`min-h-7 px-2.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border ${activePaintColor === 1 ? 'bg-attention border-transparent text-white shadow-sm' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
+                                className={`min-h-6.5 px-2 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${activePaintColor === 1 ? 'bg-attention border-transparent text-white shadow-2xs' : 'bg-white text-[#5F665E] border-(--border-soft) hover:bg-(--background) hover:text-[#2E3330]'}`}
                             >
-                                Se negó a realizar
+                                Se negó
                             </button>
                         </div>
+
+                        {isTutor && (
+                            <>
+                                <div className="h-4 w-px bg-[rgba(46,51,48,0.12)] mx-0.5" />
+                                <div className="flex items-center gap-1">
+                                    <CieloPill as="button" variant="ghost" onClick={onShowVincular} className="px-2 min-h-6.5 bg-white border border-(--border-soft) text-[10px] font-bold text-[#5F665E] hover:text-[#2E3330]">
+                                        CARGA
+                                    </CieloPill>
+                                    <CieloPill as="button" variant="danger" onClick={onShowEliminarEstudiantes} className="px-2 min-h-6.5 bg-white border border-(--border-soft) text-[10px] font-bold text-attention hover:bg-attention/10">
+                                        <UserMinus size={11} /> LIMPIAR
+                                    </CieloPill>
+                                </div>
+                            </>
+                        )}
                     </div>
 
-                    {isTutor && (
-                        <div className="flex items-center gap-3">
-                            <CieloPill as="button" variant="ghost" onClick={onShowVincular} className="gap-2 px-4.5 min-h-9 bg-white border border-(--border-soft) text-[#5F665E] hover:border-[rgba(46,51,48,0.15)] hover:text-[#2E3330]">
-                                CARGA
-                            </CieloPill>
-                            <CieloPill as="button" variant="danger" onClick={onShowEliminarEstudiantes} className="gap-2 px-4.5 min-h-9 bg-white border border-(--border-soft) text-attention hover:border-attention/30 hover:bg-attention/10">
-                                <UserMinus size={14} /> LIMPIAR
-                            </CieloPill>
+                    {/* Right: Modos de evaluación y Niveles de dominio */}
+                    <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Selector de modo: Pincel, Numérico, Libre */}
+                        <div className="flex items-center bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)]" role="radiogroup" aria-label="Modo de evaluación">
+                            <button
+                                type="button"
+                                role="radio"
+                                data-guide="modo-eval-pincel"
+                                aria-checked={evalMode === 'pincel'}
+                                onClick={() => setEvalMode('pincel')}
+                                className={`px-2.5 py-0.5 text-xs font-black rounded-full transition-all cursor-pointer ${
+                                    evalMode === 'pincel'
+                                        ? 'bg-white text-[#2E3330] shadow-xs'
+                                        : 'text-[#5F665E]/70 hover:text-[#2E3330]'
+                                }`}
+                                title="Modo Pincel (un clic asigna el nivel seleccionado)"
+                            >
+                                PINCEL
+                            </button>
+                            <button
+                                type="button"
+                                role="radio"
+                                data-guide="modo-eval-numerico"
+                                aria-checked={evalMode === 'numerico'}
+                                onClick={() => setEvalMode('numerico')}
+                                className={`px-2.5 py-0.5 text-xs font-black rounded-full transition-all cursor-pointer ${
+                                    evalMode === 'numerico'
+                                        ? 'bg-white text-[#2E3330] shadow-xs'
+                                        : 'text-[#5F665E]/70 hover:text-[#2E3330]'
+                                }`}
+                                title="Modo Numérico"
+                            >
+                                NUMÉRICO
+                            </button>
+                            <button
+                                type="button"
+                                role="radio"
+                                data-guide="modo-eval-libre"
+                                aria-checked={evalMode === 'libre'}
+                                onClick={() => setEvalMode('libre')}
+                                className={`px-2.5 py-0.5 text-xs font-black rounded-full transition-all cursor-pointer ${
+                                    evalMode === 'libre'
+                                        ? 'bg-white text-[#2E3330] shadow-xs'
+                                        : 'text-[#5F665E]/70 hover:text-[#2E3330]'
+                                }`}
+                                title="Modo Valor Libre"
+                            >
+                                LIBRE
+                            </button>
                         </div>
-                    )}
+
+                        {/* Círculos de color/niveles [100, 85, 70, 55] */}
+                        {(evalMode === 'pincel' || evalMode === 'numerico') && (
+                            <div data-guide="barra-niveles-dominio" className="flex items-center gap-1 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)]">
+                                {[100, 85, 70, 55].map(val => {
+                                    const isActive = activePaintColor === val;
+                                    const colors: Record<number, string> = {
+                                        100: 'bg-primary text-white',
+                                        85: 'bg-attention text-white',
+                                        70: 'bg-danger text-white',
+                                        55: 'bg-[#2E3330] text-white',
+                                    };
+                                    const inactiveColors: Record<number, string> = {
+                                        100: 'text-primary hover:bg-primary/10',
+                                        85: 'text-attention hover:bg-attention/10',
+                                        70: 'text-danger hover:bg-danger/10',
+                                        55: 'text-[#2E3330] hover:bg-black/10',
+                                    };
+
+                                    const tooltips: Record<number, { title: string; desc: string }> = {
+                                        100: { title: `100 — ${NIVELES_DOMINIO[100].etiqueta}`, desc: NIVELES_DOMINIO[100].descriptor },
+                                        85: { title: `85 — ${NIVELES_DOMINIO[85].etiqueta}`, desc: NIVELES_DOMINIO[85].descriptor },
+                                        70: { title: `70 — ${NIVELES_DOMINIO[70].etiqueta}`, desc: NIVELES_DOMINIO[70].descriptor },
+                                        55: { title: `55 — ${NIVELES_DOMINIO[55].etiqueta}`, desc: NIVELES_DOMINIO[55].descriptor },
+                                    };
+                                    const tt = tooltips[val];
+
+                                    return (
+                                        <button
+                                            key={val}
+                                            type="button"
+                                            data-guide={evalMode === 'pincel' ? `nivel-pincel nivel-pincel-${val}` : `nivel-num nivel-num-${val}`}
+                                            onClick={() => setActivePaintColor(val)}
+                                            title={`${tt.title}: ${tt.desc}`}
+                                            className={`w-7 h-7 rounded-full text-xs font-black transition-all flex items-center justify-center cursor-pointer ${
+                                                isActive ? `${colors[val]} shadow-xs scale-105 ring-2 ring-black/10` : `bg-white ${inactiveColors[val]}`
+                                            }`}
+                                        >
+                                            {val}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
             </div>
         </div>
     );

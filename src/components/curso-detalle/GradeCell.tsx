@@ -95,7 +95,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
                 notifyGuideOperationSuccess('evaluacion_guardar', '¡Evaluación registrada!');
             }}
         >
-            <div className="flex items-center justify-center min-h-9 md:min-h-10 xl:min-h-12 h-full relative overflow-visible">
+            <div className="flex items-center justify-center min-h-9 md:min-h-10 xl:min-h-10 h-full relative overflow-visible">
                 {animations.map(anim => (
                     <div key={anim.id} className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-visible z-30">
                         {anim.emojis.map((emoji, idx) => {
