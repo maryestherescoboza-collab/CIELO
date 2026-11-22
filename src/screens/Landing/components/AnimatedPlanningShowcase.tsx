@@ -89,17 +89,17 @@ export function AnimatedPlanningShowcase({ isActive = true }: AnimatedPlanningSh
       </div>
 
       {/* 2 DOCUMENTOS DIRECTOS LADO A LADO CON BORDES COMPLETAMENTE RECTOS (SIN TARJETAS DENTRO DE TARJETAS) */}
-      <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-4">
+      <div className="grid grid-cols-1 gap-1.5 sm:gap-2.5 md:grid-cols-2 md:gap-3.5">
         {/* ========================================================= */}
         {/* DOCUMENTO 1: PLAN DE CLASE DIARIO                         */}
         {/* ========================================================= */}
-        <div className="border border-[#2E3330]/20 bg-white p-1.5 sm:p-2 rounded-none flex flex-col justify-between shadow-xs">
+        <div className="border border-[#2E3330]/20 bg-white p-1 sm:p-1.5 md:p-2 rounded-none flex flex-col justify-between shadow-xs">
           <div>
-            <div className="mb-1 flex items-center justify-between border-b border-[#2E3330]/10 pb-1 px-0.5 sm:px-1">
-              <span className="text-[10px] sm:text-[11px] font-bold text-[#1E3A5F] uppercase tracking-wider">
+            <div className="mb-0.5 sm:mb-1 flex items-center justify-between border-b border-[#2E3330]/10 pb-0.5 sm:pb-1 px-0.5 sm:px-1">
+              <span className="landing-slide-micro sm:landing-slide-caption font-bold text-[#1E3A5F] uppercase tracking-wider">
                 Plan de Clase Diario
               </span>
-              <span className="text-[9px] sm:text-[10px] font-semibold text-[#5F665E]">
+              <span className="landing-slide-micro font-semibold text-[#5F665E]">
                 MINERD Oficial
               </span>
             </div>
@@ -110,7 +110,7 @@ export function AnimatedPlanningShowcase({ isActive = true }: AnimatedPlanningSh
               <img
                 src={planClaseImg}
                 alt="Plantilla base Plan de Clase"
-                className="w-full max-h-[26vh] sm:max-h-[44vh] md:max-h-[48vh] object-contain opacity-25 filter grayscale rounded-none mx-auto block"
+                className="w-full max-h-[16vh] sm:max-h-[24vh] md:max-h-[34vh] lg:max-h-[42vh] object-contain opacity-25 filter grayscale rounded-none mx-auto block"
               />
 
               {/* Imagen real revelándose gradualmente hacia abajo */}
@@ -123,7 +123,7 @@ export function AnimatedPlanningShowcase({ isActive = true }: AnimatedPlanningSh
                 <img
                   src={planClaseImg}
                   alt="Plan de Clase Diario de CIELO llenándose"
-                  className="w-full max-h-[26vh] sm:max-h-[44vh] md:max-h-[48vh] object-contain rounded-none mx-auto block"
+                  className="w-full max-h-[16vh] sm:max-h-[24vh] md:max-h-[34vh] lg:max-h-[42vh] object-contain rounded-none mx-auto block"
                 />
               </div>
 
@@ -142,7 +142,7 @@ export function AnimatedPlanningShowcase({ isActive = true }: AnimatedPlanningSh
             </div>
           </div>
 
-          <div className="mt-1.5 flex items-center justify-between px-0.5 sm:px-1 text-[9px] sm:text-[10px] text-[#5F665E] border-t border-[#2E3330]/10 pt-1">
+          <div className="mt-1 flex items-center justify-between px-0.5 sm:px-1 landing-slide-micro text-[#5F665E] border-t border-[#2E3330]/10 pt-0.5 sm:pt-1">
             <span className="flex items-center gap-1 font-semibold text-[#689C63]">
               <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
               {progress === 100 ? 'Secuencia completa' : `Completando (${progress}%)`}
@@ -154,13 +154,13 @@ export function AnimatedPlanningShowcase({ isActive = true }: AnimatedPlanningSh
         {/* ========================================================= */}
         {/* DOCUMENTO 2: PLAN DE RECUPERACIÓN PEDAGÓGICA              */}
         {/* ========================================================= */}
-        <div className="border border-[#2E3330]/20 bg-white p-1.5 sm:p-2 rounded-none flex flex-col justify-between shadow-xs">
+        <div className="border border-[#2E3330]/20 bg-white p-1 sm:p-1.5 md:p-2 rounded-none flex flex-col justify-between shadow-xs">
           <div>
-            <div className="mb-1 flex items-center justify-between border-b border-[#2E3330]/10 pb-1 px-0.5 sm:px-1">
-              <span className="text-[10px] sm:text-[11px] font-bold text-[#1E3A5F] uppercase tracking-wider">
+            <div className="mb-0.5 sm:mb-1 flex items-center justify-between border-b border-[#2E3330]/10 pb-0.5 sm:pb-1 px-0.5 sm:px-1">
+              <span className="landing-slide-micro sm:landing-slide-caption font-bold text-[#1E3A5F] uppercase tracking-wider">
                 Plan de Recuperación Pedagógica
               </span>
-              <span className="text-[9px] sm:text-[10px] font-semibold text-[#EB8847]">
+              <span className="landing-slide-micro font-semibold text-[#EB8847]">
                 Seguimiento Individual
               </span>
             </div>
@@ -171,7 +171,7 @@ export function AnimatedPlanningShowcase({ isActive = true }: AnimatedPlanningSh
               <img
                 src={planRecuperacionImg}
                 alt="Plantilla base Plan de Recuperación"
-                className="w-full max-h-[26vh] sm:max-h-[44vh] md:max-h-[48vh] object-contain opacity-25 filter grayscale rounded-none mx-auto block"
+                className="w-full max-h-[16vh] sm:max-h-[24vh] md:max-h-[34vh] lg:max-h-[42vh] object-contain opacity-25 filter grayscale rounded-none mx-auto block"
               />
 
               {/* Imagen real revelándose gradualmente hacia abajo */}
@@ -184,7 +184,7 @@ export function AnimatedPlanningShowcase({ isActive = true }: AnimatedPlanningSh
                 <img
                   src={planRecuperacionImg}
                   alt="Plan de Recuperación Pedagógica de CIELO llenándose"
-                  className="w-full max-h-[26vh] sm:max-h-[44vh] md:max-h-[48vh] object-contain rounded-none mx-auto block"
+                  className="w-full max-h-[16vh] sm:max-h-[24vh] md:max-h-[34vh] lg:max-h-[42vh] object-contain rounded-none mx-auto block"
                 />
               </div>
 
@@ -203,7 +203,7 @@ export function AnimatedPlanningShowcase({ isActive = true }: AnimatedPlanningSh
             </div>
           </div>
 
-          <div className="mt-1.5 flex items-center justify-between px-0.5 sm:px-1 text-[9px] sm:text-[10px] text-[#5F665E] border-t border-[#2E3330]/10 pt-1">
+          <div className="mt-1 flex items-center justify-between px-0.5 sm:px-1 landing-slide-micro text-[#5F665E] border-t border-[#2E3330]/10 pt-0.5 sm:pt-1">
             <span className="flex items-center gap-1 font-semibold text-[#689C63]">
               <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
               {progress === 100 ? 'Acta generada' : `Completando (${progress}%)`}

@@ -218,53 +218,53 @@ export function InteractiveGradebookDemo() {
       {/* ========================================================================= */}
       {/* GUÍA MINIMALISTA SIN CONTENEDORES NI TARJETAS                              */}
       {/* ========================================================================= */}
-      <div className="mb-2.5 sm:mb-4">
-        <div className="flex items-center justify-between mb-2 sm:mb-3 border-b border-[#2E3330]/10 pb-1.5 sm:pb-2">
-          <div className="flex items-center gap-2">
-            <span className="font-cagliostro text-base sm:text-2xl font-normal text-[#2E3330]">
+      <div className="mb-1.5 sm:mb-3">
+        <div className="flex items-center justify-between mb-1 sm:mb-2 border-b border-[#2E3330]/10 pb-1 sm:pb-1.5">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="font-cagliostro landing-slide-title font-normal text-[#2E3330]">
               Evaluación por Competencias
             </span>
-            <span className="hidden sm:inline-block text-[11px] font-bold uppercase tracking-[0.18em] text-[#537BAC]">
+            <span className="hidden sm:inline-block landing-slide-micro font-bold uppercase tracking-[0.18em] text-[#537BAC]">
               (Pruébalo en vivo)
             </span>
           </div>
           <button
             type="button"
             onClick={handleReset}
-            className="inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-semibold text-[#5F665E] hover:text-[#2E3330] transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 landing-slide-micro font-semibold text-[#5F665E] hover:text-[#2E3330] transition-colors cursor-pointer"
           >
-            <RotateCcw className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <RotateCcw className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             <span>Reiniciar</span>
           </button>
         </div>
 
         {/* 3 Pasos en tipografía editorial directa sin marcos ni cajas */}
-        <div className="grid grid-cols-1 gap-2 sm:gap-4 md:grid-cols-3 text-[#2E3330]">
-          <div className="flex items-start gap-2 sm:gap-2.5">
-            <span className="font-mono text-xs sm:text-sm font-black text-[#537BAC]">1.</span>
+        <div className="grid grid-cols-1 gap-1 sm:gap-2.5 md:grid-cols-3 text-[#2E3330]">
+          <div className="flex items-start gap-1.5 sm:gap-2">
+            <span className="font-mono landing-slide-micro sm:landing-slide-body font-black text-[#537BAC]">1.</span>
             <div>
-              <p className="text-[11px] sm:text-[13px] font-bold leading-tight">Haz clic en cualquier celda</p>
-              <p className="text-[9.5px] sm:text-xs text-[#5F665E] leading-normal mt-0.5">
+              <p className="landing-slide-body font-bold leading-tight">Haz clic en cualquier celda</p>
+              <p className="landing-slide-micro text-[#5F665E] leading-normal mt-0.5 hidden xs:block">
                 Toca cualquier número o celda vacía para cambiar la calificación.
               </p>
             </div>
           </div>
 
-          <div className="flex items-start gap-2 sm:gap-2.5">
-            <span className="font-mono text-xs sm:text-sm font-black text-[#DEAE4D]">2.</span>
+          <div className="flex items-start gap-1.5 sm:gap-2">
+            <span className="font-mono landing-slide-micro sm:landing-slide-body font-black text-[#DEAE4D]">2.</span>
             <div>
-              <p className="text-[11px] sm:text-[13px] font-bold leading-tight">Toca las píldoras de competencias</p>
-              <p className="text-[9.5px] sm:text-xs text-[#5F665E] leading-normal mt-0.5">
+              <p className="landing-slide-body font-bold leading-tight">Toca las píldoras de competencias</p>
+              <p className="landing-slide-micro text-[#5F665E] leading-normal mt-0.5 hidden xs:block">
                 Haz clic en las píldoras (BC1–BC4) arriba de cada actividad para vincularlas.
               </p>
             </div>
           </div>
 
-          <div className="flex items-start gap-2 sm:gap-2.5">
-            <span className="font-mono text-xs sm:text-sm font-black text-[#689C63]">3.</span>
+          <div className="flex items-start gap-1.5 sm:gap-2">
+            <span className="font-mono landing-slide-micro sm:landing-slide-body font-black text-[#689C63]">3.</span>
             <div>
-              <p className="text-[11px] sm:text-[13px] font-bold leading-tight">Cálculo automático</p>
-              <p className="text-[9.5px] sm:text-xs text-[#5F665E] leading-normal mt-0.5">
+              <p className="landing-slide-body font-bold leading-tight">Cálculo automático</p>
+              <p className="landing-slide-micro text-[#5F665E] leading-normal mt-0.5 hidden xs:block">
                 A la derecha, las columnas de competencias se recalculan al instante.
               </p>
             </div>
@@ -275,17 +275,17 @@ export function InteractiveGradebookDemo() {
       {/* ========================================================================= */}
       {/* TABLA FIEL A LA IMAGEN ORIGINAL (4 ACTIVIDADES, BORDES RECTOS)            */}
       {/* ========================================================================= */}
-      <div className="w-full overflow-x-auto border border-[#2E3330]/20 bg-white shadow-xs rounded-none">
-        <table className="w-full min-w-215 border-collapse text-center text-[10px]">
+      <div className="w-full overflow-x-auto border border-[#2E3330]/20 bg-white shadow-xs rounded-none max-h-[calc(100dvh-var(--landing-nav-h)-var(--landing-bottom-h)-7.5rem)] overflow-y-auto">
+        <table className="w-full min-w-215 border-collapse text-center landing-slide-micro">
           <thead>
             {/* Cabecera idéntica a la imagen */}
             <tr className="bg-[#FAF8F5] border-b border-[#2E3330]/10 text-[#2E3330]">
               {/* Columna Estudiantes */}
-              <th className="p-2.5 text-left border-r border-[#2E3330]/10 w-52 sm:w-56 align-top">
-                <span className="text-[11px] sm:text-xs font-black uppercase tracking-[0.2em] italic text-[#2E3330] block">
+              <th className="p-1.5 sm:p-2 text-left border-r border-[#2E3330]/10 w-44 sm:w-52 md:w-56 align-top">
+                <span className="landing-slide-micro sm:landing-slide-caption font-black uppercase tracking-[0.2em] italic text-[#2E3330] block">
                   Estudiantes
                 </span>
-                <div className="mt-1.5 flex flex-col gap-0.5 text-[8.5px] font-bold tracking-wider text-[#5F665E]/70 uppercase">
+                <div className="mt-1 flex flex-col gap-0.5 text-[8px] sm:text-[8.5px] font-bold tracking-wider text-[#5F665E]/70 uppercase">
                   <span className="hover:text-[#2E3330] cursor-pointer">+ Agregar estudiante</span>
                   <span className="hover:text-[#2E3330] cursor-pointer">⇅ Agregar en posición</span>
                   <span className="hover:text-[#2E3330] cursor-pointer">📋 Pegar listado</span>
@@ -296,21 +296,21 @@ export function InteractiveGradebookDemo() {
               {actividades.map((act) => (
                 <th
                   key={act.id}
-                  className="p-2 border-r border-[#2E3330]/10 min-w-26.25 align-top"
+                  className="p-1 sm:p-1.5 border-r border-[#2E3330]/10 min-w-22 sm:min-w-26 align-top"
                 >
-                  <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex flex-col items-center gap-1 sm:gap-1.5">
                     {/* Botón VER */}
-                    <span className="inline-flex items-center gap-1 rounded-full border border-[#2E3330]/15 bg-[#FCFAF6] px-2.5 py-0.5 text-[8.5px] font-bold text-[#5F665E] uppercase tracking-wider">
-                      <Eye size={10} /> Ver
+                    <span className="inline-flex items-center gap-0.5 rounded-full border border-[#2E3330]/15 bg-[#FCFAF6] px-2 py-0.5 text-[7.5px] sm:text-[8.5px] font-bold text-[#5F665E] uppercase tracking-wider">
+                      <Eye size={9} /> Ver
                     </span>
 
                     {/* Nombre de la actividad */}
-                    <span className="text-[10.5px] font-black uppercase tracking-wider text-[#2E3330] whitespace-nowrap">
+                    <span className="text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-wider text-[#2E3330] whitespace-nowrap">
                       {act.nombre}
                     </span>
 
                     {/* Píldora cápsula ovalada con los 4 iconos de competencias de CIELO */}
-                    <div className="flex items-center gap-1 rounded-full border border-[#2E3330]/15 bg-[#FCFAF6] p-0.5">
+                    <div className="flex items-center gap-0.5 rounded-full border border-[#2E3330]/15 bg-[#FCFAF6] p-0.5">
                       {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map((bc) => {
                         const isSel = act.bcs.includes(bc);
                         const meta = COMPETENCIAS_THEME[bc];
@@ -321,7 +321,7 @@ export function InteractiveGradebookDemo() {
                             type="button"
                             onClick={() => handleToggleBc(act.id, bc)}
                             title={`Alternar ${meta.label}`}
-                            className={`flex h-4.5 w-4.5 items-center justify-center rounded-full transition-transform hover:scale-115 cursor-pointer ${
+                            className={`flex h-4 w-4 sm:h-4.5 sm:w-4.5 items-center justify-center rounded-full transition-transform hover:scale-115 cursor-pointer ${
                               isSel ? meta.activeClass : 'text-[#5F665E]/30 hover:text-[#5F665E]'
                             }`}
                           >
@@ -332,7 +332,7 @@ export function InteractiveGradebookDemo() {
                     </div>
 
                     {/* Puntos por competencia debajo de la cápsula */}
-                    <div className="flex items-center justify-center gap-1.5 text-[7.5px] text-[#5F665E] font-mono">
+                    <div className="flex items-center justify-center gap-1 text-[7px] sm:text-[7.5px] text-[#5F665E] font-mono">
                       <span>{act.pts[0]} pts</span>
                       <span>{act.pts[1]} pts</span>
                       <span>{act.pts[2]} pts</span>
@@ -343,10 +343,10 @@ export function InteractiveGradebookDemo() {
               ))}
 
               {/* Destaca */}
-              <th className="p-2 border-r border-[#2E3330]/10 w-14 align-middle bg-[#FCFAF6]">
+              <th className="p-1 sm:p-1.5 border-r border-[#2E3330]/10 w-12 sm:w-14 align-middle bg-[#FCFAF6]">
                 <div className="flex flex-col items-center justify-center">
-                  <Compass size={15} className="text-[#DEAE4D]" />
-                  <span className="text-[8.5px] font-black uppercase tracking-widest text-[#DEAE4D] mt-0.5">
+                  <Compass size={13} className="text-[#DEAE4D]" />
+                  <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-widest text-[#DEAE4D] mt-0.5">
                     Destaca
                   </span>
                 </div>
@@ -357,13 +357,13 @@ export function InteractiveGradebookDemo() {
                 const meta = COMPETENCIAS_THEME[bc];
                 return (
                   <React.Fragment key={bc}>
-                    <th className="p-1.5 border-r border-[#2E3330]/10 min-w-27.5 align-middle bg-[#FAF8F5]">
-                      <span className="text-[8.5px] font-black uppercase tracking-wider text-[#5F665E] block leading-[1.15]">
+                    <th className="p-1 sm:p-1.5 border-r border-[#2E3330]/10 min-w-22 sm:min-w-27 align-middle bg-[#FAF8F5]">
+                      <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider text-[#5F665E] block leading-[1.15]">
                         {meta.fullName}
                       </span>
                     </th>
-                    <th className="p-1 border-r border-[#2E3330]/10 w-8 align-middle bg-[#FAF8F5]">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[#689C63]/80">
+                    <th className="p-0.5 sm:p-1 border-r border-[#2E3330]/10 w-7 sm:w-8 align-middle bg-[#FAF8F5]">
+                      <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest text-[#689C63]/80">
                         REC.
                       </span>
                     </th>

@@ -10,11 +10,11 @@ import AgregarActividadModal from '../components/curso-detalle/AgregarActividadM
 import ActivityWorkspace from '../components/curso-detalle/workspace/ActivityWorkspace';
 import { PersistenceBanner } from '../components/curso-detalle/PersistenceBanner';
 import { CieloModal } from '../components/ui/CieloModal';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 import type { BCKey, Curso, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, CursoDocente, Estudiante } from '../types';
 import { BC_ICONS, BC_COLOR_THEMES } from '../constants/competencias';
 import { PRODUCTO_FINAL_NAME } from '../constants/productoFinal';
-import { getGradeClass, normalizeArea } from '../utils/academic';
+import { getGradeClass, normalizeArea, resolverIndicadorActividad } from '../utils/academic';
 import { getAsignaturaNombre, sonMismaAsignatura } from '../constants/asignaturas';
 
 import { useSupabaseData } from '../hooks/useSupabaseData';
@@ -323,7 +323,7 @@ export default function CursoDetalle(props: Props) {
     if (!curso) return null;
 
     return (
-        <div className={`fixed inset-0 z-50 flex flex-col bg-(--background) transition-all duration-500 ${isFullScreen ? 'm-0' : 'm-4 rounded-(--radius-lg) overflow-hidden shadow-md border border-(--border-soft)'}`} onMouseDown={() => evalMode === 'pincel' && setIsDragging(true)}>
+        <div className={`fixed inset-0 z-50 flex flex-col bg-(--background) transition-all duration-500 ${isFullScreen ? 'm-0' : 'm-0 md:m-4 md:rounded-(--radius-lg) overflow-hidden shadow-none md:shadow-md border-0 md:border md:border-(--border-soft)'}`} onMouseDown={() => evalMode === 'pincel' && setIsDragging(true)}>
             <CursoDetalleHeader 
                 curso={curso}
                 buscar={buscar}
@@ -380,6 +380,64 @@ export default function CursoDetalle(props: Props) {
                 </div>
             )}
 
+            {/* Barra de Indicador Activo: ocupa todo el ancho horizontal, fija y visible durante la evaluación */}
+            {visibleActivityId !== null && (() => {
+                const selectedAct = actividades.find(a => a.id === visibleActivityId);
+                if (!selectedAct) return null;
+                const indicadorTexto = resolverIndicadorActividad(selectedAct);
+                return (
+                    <div 
+                        data-guide="banner-indicador-activo"
+                        className="w-full bg-linear-to-r from-purple-50 via-purple-50/90 to-indigo-50 border-b-2 border-purple-300 px-3 sm:px-6 py-2.5 shadow-sm relative z-30 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-3 animate-fadeIn"
+                    >
+                        <div className="flex items-start md:items-center gap-3 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 shrink-0">
+                                <span className="bg-[#6D28D9] text-white text-[11px] font-black tracking-wider uppercase px-2.5 py-1 rounded-full shadow-xs">
+                                    {selectedAct.nombre}
+                                </span>
+                                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#7C3AED] bg-purple-100/90 px-2 py-0.5 rounded-md hidden sm:inline">
+                                    Indicador de logro
+                                </span>
+                            </div>
+                            
+                            <p className="text-xs sm:text-sm font-semibold text-[#3B0764] leading-relaxed flex-1 select-text">
+                                {indicadorTexto}
+                            </p>
+                        </div>
+
+                        <div className="flex items-center justify-between md:justify-end gap-3 shrink-0">
+                            {/* Badges de competencias asociadas */}
+                            <div className="flex items-center gap-1.5">
+                                {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
+                                    const isSel = (bcSel[selectedAct.id] ?? new Set(selectedAct.bcAsignados)).has(bc);
+                                    if (!isSel) return null;
+                                    return (
+                                        <span 
+                                            key={bc} 
+                                            className={`px-2 py-0.5 rounded-full text-[10px] font-black text-white shadow-2xs ${BC_COLOR_THEMES[bc].active}`}
+                                            title={`Competencia ${bc}`}
+                                        >
+                                            {bc}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Botón cerrar para volver al estado anterior sin perder posición ni datos */}
+                            <button
+                                type="button"
+                                onClick={() => setVisibleActivityId(null)}
+                                className="flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-purple-200 text-purple-900 hover:bg-purple-100 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                                title="Cerrar indicador"
+                            >
+                                <X size={14} />
+                                <span className="text-[10px] uppercase tracking-wider">Cerrar</span>
+                            </button>
+                        </div>
+                    </div>
+                );
+            })()}
+
             <GradeTable 
                 actividades={actividades}
                 estudiantes={enhancedEstudiantes}
@@ -429,10 +487,10 @@ export default function CursoDetalle(props: Props) {
                 BC_COLOR_THEMES={BC_COLOR_THEMES}
                 BC_ICONS={BC_ICONS}
                 openActivityId={visibleActivityId}
-                onOpenActivityView={setVisibleActivityId}
+                onOpenActivityView={(id) => setVisibleActivityId(prev => prev === id ? null : id)}
             />
 
-            {visibleActivityId !== null && (() => {
+            {visibleActivityId !== null && typeof window !== 'undefined' && window.innerWidth >= 1200 && (() => {
                 const selectedAct = actividades.find(a => a.id === visibleActivityId);
                 if (!selectedAct) return null;
                 return (

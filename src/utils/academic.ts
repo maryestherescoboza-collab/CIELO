@@ -311,4 +311,39 @@ export function formatGradeScore(score: number | string | null | undefined): str
     return String(rounded);
 }
 
+/**
+ * Resuelve el texto del indicador de logro asociado a una actividad académica.
+ */
+export function resolverIndicadorActividad(act: Actividad): string {
+    if (act.indicador && act.indicador.trim().length > 0) {
+        return act.indicador.trim();
+    }
+    if (Array.isArray(act.indicadoresJson) && act.indicadoresJson.length > 0) {
+        const ind = act.indicadoresJson
+            .map((i: any) => i.indicador || i.texto || i.codigo)
+            .filter(Boolean)
+            .join('; ');
+        if (ind) return ind;
+    }
+    if (typeof act.indicadores_json === 'string' && act.indicadores_json.trim().length > 0) {
+        try {
+            const parsed = JSON.parse(act.indicadores_json);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                const ind = parsed
+                    .map((i: any) => i.indicador || i.texto || i.codigo)
+                    .filter(Boolean)
+                    .join('; ');
+                if (ind) return ind;
+            }
+        } catch {
+            // ignore
+        }
+    }
+    if (act.descripcion && act.descripcion.trim().length > 0) {
+        return act.descripcion.trim();
+    }
+    return act.nombre;
+}
+
+
 

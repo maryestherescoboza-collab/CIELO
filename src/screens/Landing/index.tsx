@@ -207,7 +207,7 @@ export default function Landing() {
 
   return (
     <div
-      className="relative flex h-screen w-screen flex-col overflow-hidden font-sans selection:bg-[#DEAE4D] selection:text-[#2E3330] transition-colors duration-700 ease-in-out"
+      className="cielo-landing relative flex h-dvh max-h-dvh w-screen flex-col overflow-hidden font-sans selection:bg-[#DEAE4D] selection:text-[#2E3330] transition-colors duration-700 ease-in-out"
       style={{ backgroundColor: currentData.bgFondo }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -217,7 +217,7 @@ export default function Landing() {
       <LandingNavbar />
 
       {/* 2. Contenedor interactivo con transiciones fluidas estilo diapositiva */}
-      <div className="relative flex-1 overflow-hidden pt-13 sm:pt-20 pb-9 sm:pb-14">
+      <div className="relative flex-1 overflow-hidden pt-(--landing-nav-h) pb-(--landing-bottom-h)">
         <div
           className="flex h-full w-full transition-transform duration-600 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{ transform: `translateX(-${currentSlide * 100}%)` }}
@@ -229,7 +229,7 @@ export default function Landing() {
               return (
                 <div
                   key={slide.id}
-                  className="flex h-full w-full shrink-0 flex-col justify-center overflow-y-auto px-2.5 pb-2 pt-1 sm:px-8 sm:pb-2 sm:pt-2 transition-colors duration-700"
+                  className="flex h-full w-full shrink-0 flex-col justify-center overflow-y-auto px-2 pb-1 pt-0.5 sm:px-6 sm:pb-2 sm:pt-1 lg:px-10 pr-9 sm:pr-14 md:pr-18 lg:pr-22 transition-colors duration-700"
                   style={{ backgroundColor: slide.bgFondo }}
                   aria-hidden={!isActive}
                 >
@@ -242,7 +242,7 @@ export default function Landing() {
               return (
                 <div
                   key={slide.id}
-                  className="flex h-full w-full shrink-0 flex-col justify-center overflow-y-auto px-2 pb-2 pt-1 sm:px-8 sm:pb-4 sm:pt-2 lg:px-14 transition-colors duration-700"
+                  className="flex h-full w-full shrink-0 flex-col justify-center overflow-y-auto px-2 pb-1 pt-0.5 sm:px-6 sm:pb-3 sm:pt-1 lg:px-10 pr-9 sm:pr-14 md:pr-18 lg:pr-22 transition-colors duration-700"
                   style={{ backgroundColor: slide.bgFondo }}
                   aria-hidden={!isActive}
                 >
@@ -257,44 +257,44 @@ export default function Landing() {
             return (
               <div
                 key={slide.id}
-                className="flex h-full w-full shrink-0 flex-col justify-center overflow-y-auto px-2 pb-2 pt-1 sm:px-8 sm:pb-4 sm:pt-2 lg:px-14 transition-colors duration-700"
+                className="flex h-full w-full shrink-0 flex-col justify-center overflow-y-auto px-2 pb-1 pt-0.5 sm:px-6 sm:pb-3 sm:pt-1 lg:px-10 pr-9 sm:pr-14 md:pr-18 lg:pr-22 transition-colors duration-700"
                 style={{ backgroundColor: slide.bgFondo }}
                 aria-hidden={!isActive}
               >
                 <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center">
-                  <div className="grid items-center gap-3 lg:grid-cols-12 lg:gap-8 xl:gap-12">
+                  <div className="grid items-center gap-2.5 sm:gap-4 lg:grid-cols-12 lg:gap-6 xl:gap-10">
                     {/* Columna editorial concisa */}
-                    <div className={`${slide.id === 'planificacion' || slide.id === 'gestion-curso' || slide.id === 'aligera-docente' ? 'lg:col-span-4' : 'lg:col-span-5'} landing-fade-up`}>
+                    <div className={`${slide.id === 'planificacion' || slide.id === 'aligera-docente' ? 'lg:col-span-4' : 'lg:col-span-5'} landing-fade-up`}>
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         <span
-                          className="inline-flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-none text-[10px] sm:text-xs font-black text-white shadow-xs"
+                          className="inline-flex h-4.5 w-4.5 sm:h-5.5 sm:w-5.5 md:h-6 md:w-6 items-center justify-center rounded-none text-[9px] sm:text-[10.5px] md:text-xs font-black text-white shadow-xs"
                           style={{ backgroundColor: slide.color }}
                         >
                           {slide.numero}
                         </span>
                         <span
-                          className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.16em]"
+                          className="landing-slide-micro font-bold uppercase tracking-[0.16em]"
                           style={{ color: slide.color }}
                         >
                           {slide.etiqueta}
                         </span>
                       </div>
 
-                      <h2 className="font-cagliostro mt-1.5 sm:mt-2 text-xl font-normal tracking-normal text-[#2E3330] sm:text-3xl lg:text-4xl">
+                      <h2 className="font-cagliostro landing-slide-title mt-1 sm:mt-1.5 font-normal tracking-normal text-[#2E3330]">
                         {slide.titulo}
                       </h2>
 
-                      <p className="mt-0.5 sm:mt-1 text-[11px] font-semibold text-[#537BAC] sm:text-sm">
+                      <p className="landing-slide-subtitle mt-0.5 sm:mt-1 font-semibold text-[#537BAC]">
                         {slide.subtitulo}
                       </p>
 
                       {/* Capacidades destacadas breves */}
-                      <div className="mt-2.5 sm:mt-3.5 border-t border-[#2E3330]/10 pt-2 sm:pt-3">
-                        <ul className="space-y-1 sm:space-y-1.5">
+                      <div className="mt-1.5 sm:mt-3 border-t border-[#2E3330]/10 pt-1.5 sm:pt-2.5">
+                        <ul className="space-y-0.5 sm:space-y-1 md:space-y-1.5">
                           {slide.puntosClave.map((punto, pIdx) => (
-                            <li key={pIdx} className="flex items-start gap-1.5 sm:gap-2 text-[11px] sm:text-[13px] text-[#2E3330]">
+                            <li key={pIdx} className="flex items-start gap-1.5 sm:gap-2 landing-slide-body text-[#2E3330]">
                               <span
-                                className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
+                                className="mt-1 h-1 w-1 sm:h-1.5 sm:w-1.5 shrink-0 rounded-full"
                                 style={{ backgroundColor: slide.color }}
                               />
                               <span className="leading-snug">{punto}</span>
@@ -303,21 +303,21 @@ export default function Landing() {
                         </ul>
                       </div>
 
-                      <div className="mt-3 sm:mt-5 flex items-center gap-2.5 sm:gap-3">
+                      <div className="mt-2 sm:mt-4 flex items-center gap-2 sm:gap-3">
                         <Link
                           to="/auth?plan=individual"
-                          className="inline-flex items-center justify-center rounded-full bg-[#DEAE4D] px-3 py-1 sm:px-4 sm:py-1.5 text-[11px] sm:text-xs font-bold text-[#2E3330] transition-colors hover:bg-[#D4A33F]"
+                          className="landing-btn-fluid inline-flex items-center justify-center rounded-full bg-[#DEAE4D] font-bold text-[#2E3330] transition-colors hover:bg-[#D4A33F]"
                         >
                           Probar este módulo
                         </Link>
-                        <span className="text-[10px] sm:text-[11px] text-[#5F665E]">
+                        <span className="landing-slide-micro text-[#5F665E]">
                           Diapositiva {slide.numero} / 0{totalSlides}
                         </span>
                       </div>
                     </div>
 
                     {/* Columna de Captura Real o Simulación Interactiva */}
-                    <div className={`${slide.id === 'planificacion' || slide.id === 'gestion-curso' || slide.id === 'aligera-docente' ? 'lg:col-span-8' : 'lg:col-span-7'} landing-fade-scale`}>
+                    <div className={`${slide.id === 'planificacion' || slide.id === 'aligera-docente' ? 'lg:col-span-8' : 'lg:col-span-7'} landing-fade-scale`}>
                       {slide.id === 'planificacion' ? (
                         <AnimatedPlanningShowcase isActive={isActive} />
                       ) : slide.id === 'gestion-curso' ? (
@@ -329,21 +329,21 @@ export default function Landing() {
                           {/* Acento geométrico sutil */}
                           <div className="absolute inset-0 translate-x-2 translate-y-2 border border-[#2E3330]/15 rounded-none" />
                           <div
-                            className="absolute -top-2 -right-2 h-6 w-6 shadow-xs rounded-none"
+                            className="absolute -top-2 -right-2 h-5 w-5 sm:h-6 sm:w-6 shadow-xs rounded-none"
                             style={{ backgroundColor: slide.color }}
                           />
 
-                          <div className="relative overflow-hidden border border-[#2E3330]/15 bg-white p-2 shadow-xs rounded-none">
+                          <div className="relative overflow-hidden border border-[#2E3330]/15 bg-white p-1.5 sm:p-2 shadow-xs rounded-none">
                             {slide.captura && (
                               <img
                                 src={slide.captura}
                                 alt={slide.capturaAlt}
-                                className="max-h-[46vh] w-full object-contain bg-slate-50 lg:max-h-[52vh] rounded-none"
+                                className="max-h-[38vh] sm:max-h-[46vh] lg:max-h-[50vh] w-full object-contain bg-slate-50 rounded-none"
                                 loading="lazy"
                               />
                             )}
                             {slide.capturaPie && (
-                              <p className="mt-1.5 text-center text-[10px] font-medium text-[#5F665E] sm:text-[11px]">
+                              <p className="mt-1 text-center landing-slide-micro font-medium text-[#5F665E]">
                                 {slide.capturaPie}
                               </p>
                             )}
@@ -359,8 +359,8 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* Controlador de navegación vertical grueso (estilo idéntico a la referencia) */}
-      <div className="fixed right-2 sm:right-6 top-1/2 z-40 -translate-y-1/2 flex flex-col items-center gap-2 sm:gap-4 select-none">
+      {/* Controlador de navegación vertical grueso (estilo idéntico a la referencia, fluido y adaptable) */}
+      <div className="fixed right-1 sm:right-2.5 md:right-4 lg:right-6 top-1/2 z-40 -translate-y-1/2 flex flex-col items-center gap-1 sm:gap-2.5 md:gap-3.5 select-none pointer-events-auto">
         {/* Botón arriba: anillo oscuro grueso con chevron blanco grueso */}
         <button
           type="button"
@@ -368,9 +368,13 @@ export default function Landing() {
           disabled={currentSlide === 0}
           aria-label="Diapositiva anterior"
           title="Diapositiva anterior"
-          className="group relative flex h-8.5 w-8.5 sm:h-13 sm:w-13 items-center justify-center rounded-full border-2 sm:border-4 border-[#38433C] bg-[#2E3330]/90 text-white shadow-[0_3px_10px_rgba(0,0,0,0.25)] transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
+          className="group relative flex items-center justify-center rounded-full border-2 sm:border-3 md:border-4 border-[#38433C] bg-[#2E3330]/90 text-white shadow-[0_3px_10px_rgba(0,0,0,0.25)] transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
+          style={{ width: 'var(--ctrl-btn-size)', height: 'var(--ctrl-btn-size)' }}
         >
-          <ChevronUp className="h-4 w-4 sm:h-6 sm:w-6 stroke-3 sm:stroke-4 text-white transition-transform group-hover:-translate-y-0.5" />
+          <ChevronUp
+            className="stroke-3 sm:stroke-4 text-white transition-transform group-hover:-translate-y-0.5"
+            style={{ width: 'var(--ctrl-icon-size)', height: 'var(--ctrl-icon-size)' }}
+          />
         </button>
 
         {/* Insignia central: disco blanco grueso estampado con texto en mayúsculas */}
@@ -379,12 +383,19 @@ export default function Landing() {
           onClick={currentSlide < totalSlides - 1 ? nextSlide : () => goToSlide(0)}
           aria-label={`Sección actual: ${currentData.etiqueta}. Clic para avanzar`}
           title={`Sección actual: ${currentData.etiqueta}. Clic para avanzar`}
-          className="group relative flex h-15 w-15 sm:h-24 sm:w-24 flex-col items-center justify-center rounded-full border-2 sm:border-4 border-[#2E3330] bg-white p-1 text-center shadow-[0_4px_16px_rgba(0,0,0,0.22)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+          className="group relative flex flex-col items-center justify-center rounded-full border-2 sm:border-3 md:border-4 border-[#2E3330] bg-white p-0.5 sm:p-1 text-center shadow-[0_4px_16px_rgba(0,0,0,0.22)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+          style={{ width: 'var(--ctrl-badge-size)', height: 'var(--ctrl-badge-size)' }}
         >
-          <span className="text-[7.5px] sm:text-[9.5px] font-mono font-bold tracking-wider text-[#5F665E]">
+          <span
+            className="font-mono font-bold tracking-wider text-[#5F665E]"
+            style={{ fontSize: 'var(--ctrl-badge-text-top)' }}
+          >
             0{currentSlide + 1} / 0{totalSlides}
           </span>
-          <span className="mt-0.5 text-[8.5px] sm:text-[11.5px] font-black uppercase tracking-tight text-[#2E3330] leading-none line-clamp-2 max-w-12 sm:max-w-18.5">
+          <span
+            className="mt-0.5 font-black uppercase tracking-tight text-[#2E3330] leading-none line-clamp-2 max-w-[85%]"
+            style={{ fontSize: 'var(--ctrl-badge-text-main)' }}
+          >
             {currentData.etiqueta}
           </span>
         </button>
@@ -396,31 +407,38 @@ export default function Landing() {
           disabled={currentSlide === totalSlides - 1}
           aria-label="Siguiente diapositiva"
           title="Siguiente diapositiva"
-          className="group relative flex h-8.5 w-8.5 sm:h-13 sm:w-13 items-center justify-center rounded-full border-2 sm:border-4 border-[#38433C] bg-[#2E3330]/90 text-white shadow-[0_3px_10px_rgba(0,0,0,0.25)] transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
+          className="group relative flex items-center justify-center rounded-full border-2 sm:border-3 md:border-4 border-[#38433C] bg-[#2E3330]/90 text-white shadow-[0_3px_10px_rgba(0,0,0,0.25)] transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
+          style={{ width: 'var(--ctrl-btn-size)', height: 'var(--ctrl-btn-size)' }}
         >
-          <ChevronDown className="h-4 w-4 sm:h-6 sm:w-6 stroke-3 sm:stroke-4 text-white transition-transform group-hover:translate-y-0.5" />
+          <ChevronDown
+            className="stroke-3 sm:stroke-4 text-white transition-transform group-hover:translate-y-0.5"
+            style={{ width: 'var(--ctrl-icon-size)', height: 'var(--ctrl-icon-size)' }}
+          />
         </button>
       </div>
 
       {/* Barra de control inferior fija y compacta */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#2E3330]/10 bg-white/80 px-2.5 py-1.5 backdrop-blur-md sm:px-8 sm:py-2 transition-colors duration-500">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-[#2E3330]/10 bg-white/85 px-2 sm:px-6 backdrop-blur-md transition-colors duration-500 flex items-center"
+        style={{ height: 'var(--landing-bottom-h)' }}
+      >
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-1.5 sm:gap-3">
           {/* Nombre de la diapositiva activa */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <span
-              className="inline-block h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full transition-colors duration-300"
+              className="inline-block h-1.5 w-1.5 sm:h-2 sm:w-2 shrink-0 rounded-full transition-colors duration-300"
               style={{ backgroundColor: currentData.color }}
             />
-            <span className="text-[11px] sm:text-xs font-bold text-[#2E3330]">
+            <span className="landing-slide-micro sm:landing-slide-caption font-bold text-[#2E3330] truncate">
               {currentData.numero}. {currentData.etiqueta}
             </span>
-            <span className="hidden text-xs text-[#5F665E] md:inline">
+            <span className="hidden text-xs text-[#5F665E] md:inline truncate">
               — {currentData.subtitulo}
             </span>
           </div>
 
           {/* Navegador de puntos / diapositivas */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-0.5 sm:gap-1.5">
             {DIAPOSITIVAS.map((slide, sIdx) => {
               const isSelected = sIdx === currentSlide;
               return (
@@ -429,13 +447,13 @@ export default function Landing() {
                   type="button"
                   onClick={() => goToSlide(sIdx)}
                   aria-label={`Ir a diapositiva ${slide.numero}: ${slide.etiqueta}`}
-                  className="group relative flex h-6 items-center justify-center px-1 transition-all cursor-pointer"
+                  className="group relative flex h-5 sm:h-6 items-center justify-center px-0.5 sm:px-1 transition-all cursor-pointer"
                 >
                   <span
-                    className={`h-2 rounded-full transition-all duration-300 ${
+                    className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
                       isSelected
-                        ? 'w-6 bg-[#2E3330]'
-                        : 'w-2 bg-[#2E3330]/25 group-hover:bg-[#2E3330]/50'
+                        ? 'w-4 sm:w-6 bg-[#2E3330]'
+                        : 'w-1.5 sm:w-2 bg-[#2E3330]/25 group-hover:bg-[#2E3330]/50'
                     }`}
                     style={isSelected ? { backgroundColor: slide.color } : {}}
                   />
@@ -445,28 +463,28 @@ export default function Landing() {
           </div>
 
           {/* Indicador numérico de diapositivas y controles compactos */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-[#2E3330]">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <span className="font-mono font-bold text-[#2E3330] landing-slide-micro sm:landing-slide-caption">
               {currentSlide + 1} / 0{totalSlides}
             </span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1">
               <button
                 type="button"
                 onClick={prevSlide}
                 disabled={currentSlide === 0}
                 aria-label="Anterior"
-                className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#2E3330] bg-white text-[#2E3330] disabled:opacity-20 disabled:pointer-events-none hover:bg-[#E9E9DB] cursor-pointer transition-colors"
+                className="flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full border-1.5 sm:border-2 border-[#2E3330] bg-white text-[#2E3330] disabled:opacity-20 disabled:pointer-events-none hover:bg-[#E9E9DB] cursor-pointer transition-colors"
               >
-                <ChevronLeft className="h-4 w-4 stroke-3" />
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 stroke-3" />
               </button>
               <button
                 type="button"
                 onClick={nextSlide}
                 disabled={currentSlide === totalSlides - 1}
                 aria-label="Siguiente"
-                className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#2E3330] bg-white text-[#2E3330] disabled:opacity-20 disabled:pointer-events-none hover:bg-[#E9E9DB] cursor-pointer transition-colors"
+                className="flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full border-1.5 sm:border-2 border-[#2E3330] bg-white text-[#2E3330] disabled:opacity-20 disabled:pointer-events-none hover:bg-[#E9E9DB] cursor-pointer transition-colors"
               >
-                <ChevronRight className="h-4 w-4 stroke-3" />
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 stroke-3" />
               </button>
             </div>
           </div>

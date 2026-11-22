@@ -49,12 +49,13 @@ const GradeCell: React.FC<GradeCellProps> = ({
     }, [score]);
 
     const isInasistencia = score === 0;
-    const selloLabel = isInasistencia ? 'Inasistencia' : score === 1 ? '⚠︎ Se negó a\nrealizar ⚠︎' : null;
+    const isNoTrabajo = score === 1;
+    const selloLabel = isInasistencia ? 'Inasistencia' : isNoTrabajo ? 'No trabajó' : null;
     const cicloRef = React.useRef<{ seleccion: number; vacio: boolean }>({ seleccion: activePaintColor, vacio: false });
 
     const indicadorSello = selloLabel !== null && evalMode !== 'libre' ? (
         <div
-            className="w-[75%] h-[75%] flex items-center justify-center rounded-xs"
+            className="w-[88%] md:w-[75%] h-[85%] md:h-[75%] flex items-center justify-center rounded-xs"
             style={{
                 border: `1px dashed ${isInasistencia ? '#537BAC' : '#EB8847'}`,
                 backgroundColor: isInasistencia ? 'rgba(83, 123, 172, 0.05)' : 'rgba(235, 136, 71, 0.05)',
@@ -62,8 +63,8 @@ const GradeCell: React.FC<GradeCellProps> = ({
             }}
         >
             <span
-                className="font-mono font-bold text-center leading-none whitespace-pre-line flex items-center justify-center h-full w-full"
-                style={{ fontSize: isInasistencia ? '12px' : '12px', letterSpacing: '-0.03em' }}
+                className="font-mono font-bold text-center leading-none whitespace-pre-line flex items-center justify-center h-full w-full text-[8.5px] sm:text-[9.5px] md:text-xs"
+                style={{ letterSpacing: '-0.03em' }}
             >
                 {selloLabel}
             </span>
@@ -94,7 +95,7 @@ const GradeCell: React.FC<GradeCellProps> = ({
                 notifyGuideOperationSuccess('evaluacion_guardar', '¡Evaluación registrada!');
             }}
         >
-            <div className="flex items-center justify-center min-h-12 h-full relative overflow-visible">
+            <div className="flex items-center justify-center min-h-9 md:min-h-10 xl:min-h-12 h-full relative overflow-visible">
                 {animations.map(anim => (
                     <div key={anim.id} className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-visible z-30">
                         {anim.emojis.map((emoji, idx) => {
@@ -211,16 +212,16 @@ const GradeCell: React.FC<GradeCellProps> = ({
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                         }}
-                        className={`w-full h-full text-center text-base font-semibold bg-transparent border-none outline-none rounded transition-all focus:ring-2 focus:ring-primary/30 ${getGradeClass(score)}`}
+                        className={`w-full h-full text-center text-xs sm:text-sm md:text-base font-semibold bg-transparent border-none outline-none rounded transition-all focus:ring-2 focus:ring-primary/30 ${getGradeClass(score)}`}
                         placeholder="-"
                     />
                 ) : evalMode === 'pincel' ? (
                     selloLabel !== null ? indicadorSello : (
-                        <div className={`rounded-full shadow-sm transition-transform hover:scale-110 ${score === null ? 'w-2 h-2 bg-[rgba(46,51,48,0.08)]' : score === 100 ? 'w-6 h-6 bg-primary' : score === 85 ? 'w-6 h-6 bg-attention' : score === 70 ? 'w-6 h-6 bg-danger' : score === 55 ? 'w-5 h-5 bg-[#2E3330]' : score >= 100 ? 'w-6 h-6 bg-primary' : score >= 85 ? 'w-6 h-6 bg-attention' : score >= 70 ? 'w-6 h-6 bg-danger' : 'w-5 h-5 bg-[#2E3330]'}`} />
+                        <div className={`rounded-full shadow-xs transition-transform hover:scale-110 ${score === null ? 'w-1.5 h-1.5 md:w-2 md:h-2 bg-[rgba(46,51,48,0.1)]' : score === 100 ? 'w-4 h-4 md:w-6 md:h-6 bg-primary' : score === 85 ? 'w-4 h-4 md:w-6 md:h-6 bg-attention' : score === 70 ? 'w-4 h-4 md:w-6 md:h-6 bg-danger' : score === 55 ? 'w-3.5 h-3.5 md:w-5 md:h-5 bg-[#2E3330]' : score >= 100 ? 'w-4 h-4 md:w-6 md:h-6 bg-primary' : score >= 85 ? 'w-4 h-4 md:w-6 md:h-6 bg-attention' : score >= 70 ? 'w-4 h-4 md:w-6 md:h-6 bg-danger' : 'w-3.5 h-3.5 md:w-5 md:h-5 bg-[#2E3330]'}`} />
                     )
                 ) : (
                     selloLabel !== null ? indicadorSello : (
-                        <span className={`text-base font-semibold px-3 py-1 rounded transition-all ${getGradeClass(score)} ${score === null ? 'opacity-0' : 'opacity-100'}`}>
+                        <span className={`text-xs sm:text-sm md:text-base font-semibold px-1 sm:px-2 md:px-3 py-0.5 sm:py-1 rounded transition-all ${getGradeClass(score)} ${score === null ? 'opacity-0' : 'opacity-100'}`}>
                             {formatGradeScore(score)}
                         </span>
                     )

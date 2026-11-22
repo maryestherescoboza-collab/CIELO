@@ -11,7 +11,9 @@ import {
     Check,
     AlertCircle,
     FileSpreadsheet,
-    FileText
+    FileText,
+    Plus,
+    X
 } from 'lucide-react';
 import type { Curso } from '../../types';
 import { CieloPill } from '../ui/CieloPill';
@@ -86,8 +88,383 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     onExportInstrumento,
     isExportingInstrumento = false
 }) => {
+    const [showMobileSearch, setShowMobileSearch] = React.useState(false);
+
     return (
-        <div className="flex flex-col gap-4 p-5 md:p-6 bg-white border-b border-(--border-soft) shadow-sm relative z-20">
+        <div className="flex flex-col gap-2 md:gap-4 p-2.5 sm:p-3 md:p-6 bg-white border-b border-(--border-soft) shadow-sm relative z-20">
+            {/* VISTA MÓVIL (< md) */}
+            <div className="flex md:hidden flex-col gap-2">
+                {/* Fila 1: Volver, Curso, Guardar, Selector de períodos, Búsqueda */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <button
+                            onClick={onBack}
+                            aria-label="Volver"
+                            className="p-1.5 hover:bg-(--background) text-[#5F665E] hover:text-[#2E3330] transition-all rounded-full border border-transparent hover:border-(--border-soft) shrink-0"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+                        <h1 className="text-sm sm:text-base font-black text-[#2E3330] tracking-tight uppercase italic truncate">
+                            {curso?.grado} {curso?.seccion}
+                        </h1>
+
+                        {/* Botón de guardado móvil */}
+                        <button
+                            onClick={saveStatus === 'error' ? (onRetrySave || onSave) : onSave}
+                            disabled={isSaving || saveStatus === 'saving' || saveStatus === 'verifying' || (saveStatus === 'saved' && !isDirty)}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all shrink-0 ${
+                                saveStatus === 'error'
+                                    ? 'bg-rose-600 border-rose-700 text-white cursor-pointer'
+                                    : (isSaving || saveStatus === 'saving' || saveStatus === 'verifying')
+                                    ? 'bg-attention border-attention text-white'
+                                    : isDirty
+                                    ? 'bg-primary border-primary text-white cursor-pointer active:scale-95'
+                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}
+                        >
+                            {isSaving || saveStatus === 'saving' || saveStatus === 'verifying' ? (
+                                <Loader2 size={12} className="animate-spin" />
+                            ) : saveStatus === 'error' ? (
+                                <AlertCircle size={12} />
+                            ) : isDirty ? (
+                                <Save size={12} />
+                            ) : (
+                                <Check size={12} className="text-emerald-600 font-bold" />
+                            )}
+                            <span>{isDirty ? 'GUARDAR' : 'OK'}</span>
+                        </button>
+                    </div>
+
+                    {/* Selector de Período y Botón de Búsqueda */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-0.5 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)]">
+                            {['P1', 'P2', 'P3', 'P4'].map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => onPeriodoChange(p)}
+                                    disabled={periodLoading}
+                                    className={`px-2 py-0.5 text-[11px] font-black rounded-full transition-all ${
+                                        selectedPeriodo === p
+                                            ? 'bg-white text-[#2E3330] shadow-xs'
+                                            : 'text-[#5F665E]/70 hover:text-[#2E3330]'
+                                    }`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setShowMobileSearch(!showMobileSearch)}
+                            className={`w-7 h-7 flex items-center justify-center rounded-full border transition-all ${
+                                showMobileSearch || buscar
+                                    ? 'bg-primary text-white border-primary'
+                                    : 'bg-white border-(--border-soft) text-[#5F665E] hover:text-[#2E3330]'
+                            }`}
+                            title="Buscar estudiante"
+                        >
+                            <Search size={13} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Campo de búsqueda expandible en móvil */}
+                {(showMobileSearch || buscar) && (
+                    <div className="relative w-full">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5F665E]" size={14} />
+                        <input
+                            type="text"
+                            placeholder="BUSCAR ESTUDIANTE..."
+                            className="w-full pl-9 pr-8 py-1.5 bg-base-creme border border-(--border-soft) rounded-full text-xs font-semibold focus:outline-none focus:bg-white focus:border-primary/40 uppercase tracking-wider text-[#2E3330]"
+                            value={buscar}
+                            onChange={(e) => setBuscar(e.target.value)}
+                            autoFocus
+                        />
+                        {buscar && (
+                            <button
+                                onClick={() => { setBuscar(''); setShowMobileSearch(false); }}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#5F665E] hover:text-[#2E3330] p-0.5"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Fila 2: Sellos rápidos a la izquierda (Inasistencia / No trabajó), 3 puntos y + Agregar Actividad a la derecha (según diseño mockup) */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-[rgba(46,51,48,0.06)]">
+                    {/* Sellos de evaluación rápida apilados verticalmente a la izquierda */}
+                    <div className="flex flex-col gap-1 items-start shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => { setActivePaintColor(activePaintColor === 0 ? -1 : 0); if (evalMode === 'libre') setEvalMode('numerico'); }}
+                            title="Inasistencia (0 pts)"
+                            className={`px-3 py-0.5 rounded-full text-[10px] font-bold transition-all border ${
+                                activePaintColor === 0
+                                    ? 'bg-[#537BAC] text-white border-[#537BAC] shadow-xs'
+                                    : 'bg-white text-[#537BAC] border-dashed border-[#537BAC]/60 hover:bg-[#537BAC]/5'
+                            }`}
+                        >
+                            Inasistencia
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setActivePaintColor(activePaintColor === 1 ? -1 : 1); if (evalMode === 'libre') setEvalMode('numerico'); }}
+                            title="No trabajó (1 pt)"
+                            className={`px-3 py-0.5 rounded-full text-[10px] font-bold transition-all border ${
+                                activePaintColor === 1
+                                    ? 'bg-[#EB8847] text-white border-[#EB8847] shadow-xs'
+                                    : 'bg-white text-[#EB8847] border-dashed border-[#EB8847]/60 hover:bg-[#EB8847]/5'
+                            }`}
+                        >
+                            No trabajó
+                        </button>
+                    </div>
+
+                    {/* Lado derecho: 3 círculos de color/nivel arriba y botón + Agregar Actividad abajo */}
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        {/* 3 puntos en tonos cálidos/naranjas según el mockup */}
+                        <div className="flex items-center gap-2">
+                            {[
+                                { val: 100, bg: 'bg-[#EA580C]', label: '100' },
+                                { val: 85, bg: 'bg-[#F97316]', label: '85' },
+                                { val: 70, bg: 'bg-[#FDBA74]', label: '70' }
+                            ].map(item => {
+                                const isActive = activePaintColor === item.val;
+                                return (
+                                    <button
+                                        key={item.val}
+                                        type="button"
+                                        onClick={() => setActivePaintColor(isActive ? -1 : item.val)}
+                                        title={`Nivel de logro ${item.val}`}
+                                        className={`w-5 h-5 rounded-full transition-transform active:scale-90 ${item.bg} ${
+                                            isActive ? 'ring-2 ring-offset-1 ring-[#EA580C] scale-110 shadow-xs' : 'opacity-90 hover:opacity-100'
+                                        }`}
+                                    />
+                                );
+                            })}
+                        </div>
+
+                        {/* Botón + Agregar Actividad */}
+                        <button
+                            type="button"
+                            onClick={onAddActividad}
+                            data-guide="btn-agregar-actividad-mobile"
+                            className="flex items-center gap-1 px-3 py-0.5 rounded-full bg-white border border-(--border-soft) hover:bg-(--background) text-[#2E3330] text-[10px] font-black uppercase tracking-wider shadow-xs transition-all active:scale-95"
+                        >
+                            <Plus size={11} strokeWidth={2.8} />
+                            <span>+ Agregar Actividad</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* VISTA TABLET (md: a xl: / 768px a 1199px) */}
+            <div className="hidden md:flex xl:hidden flex-col gap-2">
+                {/* Fila 1 Tablet: Volver, Curso, Periodos, Búsqueda compacta, Excel, Guardar, Fullscreen */}
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <button
+                            onClick={onBack}
+                            aria-label="Volver"
+                            className="p-2 hover:bg-(--background) text-[#5F665E] hover:text-[#2E3330] transition-all rounded-full border border-transparent hover:border-(--border-soft) shrink-0"
+                        >
+                            <ChevronLeft size={22} />
+                        </button>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-base lg:text-lg font-black text-[#2E3330] tracking-tight uppercase italic truncate">
+                                {curso?.grado} {curso?.seccion}
+                            </span>
+                            <div className="flex items-center gap-0.5 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)] shrink-0">
+                                {['P1', 'P2', 'P3', 'P4'].map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => onPeriodoChange(p)}
+                                        disabled={periodLoading}
+                                        className={`px-2.5 py-1 text-xs font-black rounded-full transition-all ${
+                                            selectedPeriodo === p
+                                                ? 'bg-white text-[#2E3330] shadow-xs'
+                                                : 'text-[#5F665E]/70 hover:text-[#2E3330]'
+                                        }`}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                        <div className="relative group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5F665E]" size={15} />
+                            <input
+                                type="text"
+                                placeholder="BUSCAR..."
+                                className="pl-8 pr-4 py-1.5 min-h-8 bg-base-creme border border-(--border-soft) rounded-full text-xs font-semibold focus:outline-none focus:bg-white focus:border-primary/40 w-36 lg:w-48 uppercase tracking-wider text-[#2E3330]"
+                                value={buscar}
+                                onChange={(e) => setBuscar(e.target.value)}
+                            />
+                        </div>
+
+                        {onExportExcel && (
+                            <CieloPill
+                                as="button"
+                                variant="ghost"
+                                onClick={onExportExcel}
+                                disabled={periodLoading || isExporting}
+                                title="Exportar a Excel"
+                                className="px-3 min-h-8 text-xs font-bold gap-1.5 bg-white border border-(--border-soft) text-emerald-800"
+                            >
+                                {isExporting ? <Loader2 size={14} className="animate-spin text-emerald-700" /> : <FileSpreadsheet size={14} className="text-emerald-700" />}
+                                <span className="hidden lg:inline">EXCEL</span>
+                            </CieloPill>
+                        )}
+
+                        <button
+                            onClick={saveStatus === 'error' ? (onRetrySave || onSave) : onSave}
+                            disabled={isSaving || saveStatus === 'saving' || saveStatus === 'verifying' || (saveStatus === 'saved' && !isDirty)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 min-h-8 rounded-full text-xs font-black uppercase tracking-wider border transition-all ${
+                                saveStatus === 'error'
+                                    ? 'bg-rose-600 border-rose-700 text-white cursor-pointer'
+                                    : (isSaving || saveStatus === 'saving' || saveStatus === 'verifying')
+                                    ? 'bg-attention border-attention text-white'
+                                    : isDirty
+                                    ? 'bg-primary border-primary text-white cursor-pointer active:scale-95'
+                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}
+                        >
+                            {isSaving || saveStatus === 'saving' || saveStatus === 'verifying' ? (
+                                <Loader2 size={13} className="animate-spin" />
+                            ) : saveStatus === 'error' ? (
+                                <AlertCircle size={13} />
+                            ) : isDirty ? (
+                                <Save size={13} />
+                            ) : (
+                                <Check size={13} className="text-emerald-600 font-bold" />
+                            )}
+                            <span>{isDirty ? 'GUARDAR' : 'GUARDADO'}</span>
+                        </button>
+
+                        <button
+                            onClick={onToggleFullScreen}
+                            className="w-8 h-8 flex items-center justify-center bg-white border border-(--border-soft) text-[#5F665E] hover:text-[#2E3330] rounded-full shadow-2xs active:scale-95"
+                            title="Pantalla completa"
+                        >
+                            {isFullScreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Fila 2 Tablet: Sellos, Modos, Niveles de dominio, + Actividad, Riesgo */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-[rgba(46,51,48,0.06)]">
+                    <div className="flex items-center gap-2">
+                        {/* Sellos de evaluación */}
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => { setActivePaintColor(0); if (evalMode === 'libre') setEvalMode('numerico'); }}
+                                title="Inasistencia (0 pts)"
+                                className={`min-h-7 px-2.5 rounded-full text-[11px] font-bold transition-all border ${
+                                    activePaintColor === 0
+                                        ? 'bg-[#537BAC] text-white border-[#537BAC] shadow-xs'
+                                        : 'bg-white text-[#537BAC] border-dashed border-[#537BAC]/60 hover:bg-[#537BAC]/5'
+                                }`}
+                            >
+                                Inasistencia
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setActivePaintColor(1); if (evalMode === 'libre') setEvalMode('numerico'); }}
+                                title="No trabajó / Se negó a realizar (1 pt)"
+                                className={`min-h-7 px-2.5 rounded-full text-[11px] font-bold transition-all border ${
+                                    activePaintColor === 1
+                                        ? 'bg-[#EB8847] text-white border-[#EB8847] shadow-xs'
+                                        : 'bg-white text-[#EB8847] border-dashed border-[#EB8847]/60 hover:bg-[#EB8847]/5'
+                                }`}
+                            >
+                                No trabajó
+                            </button>
+                        </div>
+
+                        {/* Modos de evaluación pincel/numérico/libre en tablet */}
+                        <div className="flex items-center bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)] ml-1">
+                            <button
+                                type="button"
+                                onClick={() => setEvalMode('pincel')}
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase transition-all ${evalMode === 'pincel' ? 'bg-[#2E3330] text-white' : 'text-[#5F665E]'}`}
+                            >
+                                Pincel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setEvalMode('numerico')}
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase transition-all ${evalMode === 'numerico' ? 'bg-[#2E3330] text-white' : 'text-[#5F665E]'}`}
+                            >
+                                Numérico
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setEvalMode('libre')}
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase transition-all ${evalMode === 'libre' ? 'bg-[#2E3330] text-white' : 'text-[#5F665E]'}`}
+                            >
+                                Libre
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {/* Niveles de dominio */}
+                        {(evalMode === 'pincel' || evalMode === 'numerico') && (
+                            <div className="flex items-center gap-1 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)]">
+                                {[100, 85, 70, 55].map(val => {
+                                    const isActive = activePaintColor === val;
+                                    const colors: Record<number, string> = {
+                                        100: 'bg-primary text-white',
+                                        85: 'bg-attention text-white',
+                                        70: 'bg-danger text-white',
+                                        55: 'bg-[#2E3330] text-white'
+                                    };
+                                    return (
+                                        <button
+                                            key={val}
+                                            type="button"
+                                            onClick={() => setActivePaintColor(val)}
+                                            className={`w-7 h-7 rounded-full text-xs font-black transition-all flex items-center justify-center ${
+                                                isActive ? `${colors[val]} ring-2 ring-black/15 shadow-xs scale-105` : 'bg-white text-[#5F665E] hover:text-[#2E3330]'
+                                            }`}
+                                        >
+                                            {val}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        <CieloPill
+                            as="button"
+                            variant="ghost"
+                            onClick={onAddActividad}
+                            className="gap-1.5 px-3 min-h-7 bg-white text-[#2E3330] border border-(--border-soft) hover:bg-(--background) text-xs font-black"
+                        >
+                            <Plus size={13} strokeWidth={2.6} />
+                            + ACTIVIDAD
+                        </CieloPill>
+
+                        <CieloPill
+                            as="button"
+                            variant={showRecoveryOnly ? 'danger' : 'ghost'}
+                            onClick={() => setShowRecoveryOnly(!showRecoveryOnly)}
+                            className={`px-2.5 min-h-7 text-xs font-bold transition-all border ${showRecoveryOnly ? 'bg-attention/10 text-attention border-attention/30' : 'bg-white text-[#5F665E] border-(--border-soft)'}`}
+                        >
+                            {showRecoveryOnly ? 'TODOS' : 'RIESGO'}
+                        </CieloPill>
+                    </div>
+                </div>
+            </div>
+
+            {/* VISTA ESCRITORIO (xl: >= 1200px) - INTACTA */}
+            <div className="hidden xl:flex flex-col gap-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-6">
                     <button
@@ -413,6 +790,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         </div>
                     )}
                 </div>
+            </div>
             </div>
         </div>
     );

@@ -281,7 +281,16 @@ export function EditorPasos({
     );
   }, [pasosGenerados]);
 
-  // ── 8. Abrir modal de variantes ───────────────────────────────────────────
+  // ── 8. Categorías de fórmulas memoizadas para el selector ─────────────────
+  const categoriasFormulas = useMemo(() => {
+    const cats = Array.from(new Set(CATALOGO_FORMULAS.map((f) => f.categoria)));
+    return cats.map((cat) => ({
+      categoria: cat,
+      formulas: CATALOGO_FORMULAS.filter((f) => f.categoria === cat),
+    }));
+  }, []);
+
+  // ── 9. Abrir modal de variantes ───────────────────────────────────────────
   const abrirVariantes = () => {
     const vars = generarVariantesAleatorias(formulaActual, 3);
     setVariantesEjemplo(vars);
@@ -318,9 +327,9 @@ export function EditorPasos({
               className="bg-white border border-[#2E3330]/12 rounded-lg px-2.5 py-1 text-xs font-semibold text-[#2E3330] outline-none hover:border-[#2E3330]/30 focus:border-[#689C63] cursor-pointer 
                sm:max-w-85 truncate transition-colors"
             >
-              {Array.from(new Set(CATALOGO_FORMULAS.map((f) => f.categoria))).map((cat) => (
-                <optgroup key={cat} label={cat}>
-                  {CATALOGO_FORMULAS.filter((f) => f.categoria === cat).map((f) => (
+              {categoriasFormulas.map((grupo) => (
+                <optgroup key={grupo.categoria} label={grupo.categoria}>
+                  {grupo.formulas.map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.nombre} — {f.latexReferencia}
                     </option>

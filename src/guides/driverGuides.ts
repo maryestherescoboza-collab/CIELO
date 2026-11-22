@@ -19,6 +19,9 @@ let currentGuideId: string | null = null;
 let currentStepIndex = 0;
 let activeUserId: string | null = null;
 let activeMutationObserver: MutationObserver | null = null;
+let activeTargetWaitCleanup: (() => void) | null = null;
+let activeResizeListener: (() => void) | null = null;
+let activeResizeTimeout: any = null;
 let isAdvancingStep = false;
 let currentStepToken = 0;
 
@@ -57,6 +60,22 @@ export function stopActiveGuide() {
       activeMutationObserver = null;
     }
 
+    if (activeTargetWaitCleanup) {
+      activeTargetWaitCleanup();
+      activeTargetWaitCleanup = null;
+    }
+
+    if (activeResizeListener) {
+      window.removeEventListener('resize', activeResizeListener);
+      activeResizeListener = null;
+    }
+
+    if (activeResizeTimeout) {
+      clearTimeout(activeResizeTimeout);
+      activeResizeTimeout = null;
+    }
+
+    hideDriverOverlay();
     cleanupGuideEventListeners();
 
     if (driverObj) {
@@ -117,47 +136,106 @@ export function startGuide(guideId: string, initialStep?: number, userId?: strin
     }
   });
 
+  if (!activeResizeListener) {
+    activeResizeListener = handleWindowResize;
+    window.addEventListener('resize', activeResizeListener);
+  }
+
   highlightStep();
 }
 
 /**
- * Dynamically resolves selectors to their parent container for group highlighting (e.g. students).
+ * Oculta de inmediato el popover y el overlay de Driver.js mientras se espera el renderizado
+ * de la siguiente pantalla, evitando resaltar (0,0) o dejar cajas provisionales en las esquinas.
  */
-function getResolvedSelector(selector: string): string {
-  // Support comma-separated selectors: pick first match in DOM
-  if (selector.includes(',')) {
-    const parts = selector.split(',').map(s => s.trim());
-    for (const part of parts) {
-      if (document.querySelector(part)) {
-        return part;
-      }
-    }
-    return parts[0];
+function hideDriverOverlay() {
+  const popover = document.querySelector('.driver-popover') as HTMLElement | null;
+  const overlay = document.querySelector('.driver-overlay') as HTMLElement | null;
+  if (popover) popover.style.display = 'none';
+  if (overlay) overlay.style.display = 'none';
+}
+
+/**
+ * Determina si un elemento está verdaderamente renderizado y visible en la pantalla (no oculto ni con dimensiones cero).
+ */
+export function isElementTrulyVisible(el: Element | null): el is HTMLElement {
+  if (!el || !el.isConnected) return false;
+  const style = window.getComputedStyle(el);
+  if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+    return false;
+  }
+  const rect = el.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
+/**
+ * Localiza el elemento objetivo visible que debe recibir el foco de la guía.
+ * Maneja selectores alternativos responsivos (ej. desktop vs tablet/móvil para agregar estudiante)
+ * y descarta nodos que estén ocultos por CSS (ej. hidden xl:flex).
+ */
+export function findVisibleTargetElement(selector: string): HTMLElement | null {
+  let effectiveSelector = selector;
+  if (selector.includes('btn-agregar-estudiante') && !selector.includes('btn-agregar-estudiante-compact')) {
+    effectiveSelector = `${selector}, [data-guide="btn-agregar-estudiante-compact"]`;
   }
 
-  if (selector === '[data-guide="seleccionar-estudiantes"]') {
-    const firstStudent = document.querySelector('[data-guide="seleccionar-estudiantes"]');
-    if (firstStudent && firstStudent.parentElement) {
-      const parent = firstStudent.parentElement;
-      if (!parent.id) {
-        parent.id = 'dynamic-students-container';
+  const parts = effectiveSelector.split(',').map(s => s.trim());
+  for (const part of parts) {
+    if (part === '[data-guide="seleccionar-estudiantes"]') {
+      const firstStudent = document.querySelector('[data-guide="seleccionar-estudiantes"]');
+      if (firstStudent && firstStudent.parentElement) {
+        const parent = firstStudent.parentElement;
+        if (!parent.id) parent.id = 'dynamic-students-container';
+        if (isElementTrulyVisible(parent)) return parent as HTMLElement;
       }
-      return '#' + parent.id;
+      continue;
+    }
+
+    if (part === '[data-guide="celda-cotejo"]') {
+      const firstCell = document.querySelector('[data-guide="celda-cotejo"]');
+      const table = firstCell?.closest('table');
+      if (table) {
+        if (!table.id) table.id = 'dynamic-cotejo-table';
+        if (isElementTrulyVisible(table)) return table as HTMLElement;
+      }
+      continue;
+    }
+
+    const matches = Array.from(document.querySelectorAll<HTMLElement>(part));
+    for (const match of matches) {
+      if (isElementTrulyVisible(match)) {
+        return match;
+      }
     }
   }
 
-  if (selector === '[data-guide="celda-cotejo"]') {
-    const firstCell = document.querySelector('[data-guide="celda-cotejo"]');
-    const table = firstCell?.closest('table');
-    if (table) {
-      if (!table.id) {
-        table.id = 'dynamic-cotejo-table';
-      }
-      return '#' + table.id;
-    }
-  }
+  return null;
+}
 
-  return selector;
+/**
+ * Mantiene la sincronización de la guía ante cambios de resolución de pantalla u orientación.
+ */
+function handleWindowResize() {
+  if (!isGuideActive() || !driverObj) return;
+  if (activeResizeTimeout) clearTimeout(activeResizeTimeout);
+
+  activeResizeTimeout = setTimeout(() => {
+    if (!isGuideActive() || !driverObj) return;
+    const guide = CATALOGO_GUIAS.find(g => g.id === currentGuideId);
+    if (!guide) return;
+    const step = guide.steps[currentStepIndex];
+    if (!step) return;
+
+    const visibleEl = findVisibleTargetElement(step.selector);
+    const activeEl = driverObj.getActiveElement ? driverObj.getActiveElement() : null;
+
+    if (visibleEl && activeEl !== visibleEl) {
+      // Cambio de breakpoint responsivo (ej. desktop <-> tablet/móvil)
+      highlightElement(step, visibleEl, guide);
+    } else if (driverObj && typeof driverObj.refresh === 'function') {
+      driverObj.refresh();
+    }
+  }, 100);
 }
 
 // ── CONSTANTES VISUALES: ICONOS LUCIDE PARA EL POPOVER DEL TOUR ──
@@ -346,6 +424,97 @@ function bindPopoverControls() {
 }
 
 /**
+ * Espera de forma determinista y sin timers ciegos a que el elemento objetivo:
+ * 1. Esté presente en el DOM y conectado.
+ * 2. Sea verdaderamente visible (display != none, visibility != hidden, width > 0, height > 0).
+ * 3. Haya completado su renderizado y layout (posición estable durante 2 frames consecutivos).
+ * Reintenta limpiamente mientras la pantalla esté cargando sin emitir ningún resaltado provisional.
+ */
+function waitForElementReady(
+  selector: string,
+  onReady: (targetEl: HTMLElement) => void
+) {
+  if (activeTargetWaitCleanup) {
+    activeTargetWaitCleanup();
+    activeTargetWaitCleanup = null;
+  }
+
+  let isCleanedUp = false;
+  let rafId: number | null = null;
+  let observer: MutationObserver | null = null;
+  let lastRect: { top: number; left: number; width: number; height: number } | null = null;
+  let stableFrames = 0;
+
+  const cleanup = () => {
+    isCleanedUp = true;
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+  };
+  activeTargetWaitCleanup = cleanup;
+
+  const checkStability = () => {
+    if (isCleanedUp) return;
+
+    const el = findVisibleTargetElement(selector);
+    if (!el) {
+      stableFrames = 0;
+      lastRect = null;
+      rafId = requestAnimationFrame(checkStability);
+      return;
+    }
+
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      if (
+        lastRect &&
+        Math.abs(lastRect.top - rect.top) < 0.5 &&
+        Math.abs(lastRect.left - rect.left) < 0.5 &&
+        Math.abs(lastRect.width - rect.width) < 0.5 &&
+        Math.abs(lastRect.height - rect.height) < 0.5
+      ) {
+        stableFrames++;
+        if (stableFrames >= 2) {
+          cleanup();
+          activeTargetWaitCleanup = null;
+          onReady(el);
+          return;
+        }
+      } else {
+        stableFrames = 1;
+        lastRect = { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
+      }
+    } else {
+      stableFrames = 0;
+      lastRect = null;
+    }
+
+    rafId = requestAnimationFrame(checkStability);
+  };
+
+  observer = new MutationObserver(() => {
+    if (isCleanedUp) return;
+    if (rafId === null) {
+      rafId = requestAnimationFrame(checkStability);
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'style', 'hidden']
+  });
+
+  rafId = requestAnimationFrame(checkStability);
+}
+
+/**
  * Highlights the current step of the active guide.
  */
 export function highlightStep() {
@@ -374,21 +543,23 @@ export function highlightStep() {
     }
   }
 
-  // Check if target element exists in DOM; if not, wait using MutationObserver
+  // Ocultar cualquier overlay o popover previo para no mostrar nada provisional ni en la esquina
+  hideDriverOverlay();
+
   const expectedGuideId = currentGuideId;
   const expectedStepIndex = currentStepIndex;
-  const resolvedSelector = getResolvedSelector(step.selector);
-  const element = document.querySelector(resolvedSelector);
-  if (!element) {
-    waitForElement(resolvedSelector, () => {
-      if (currentGuideId === expectedGuideId && currentStepIndex === expectedStepIndex) {
-        highlightElement(step, resolvedSelector, guide);
-      }
-    });
-    return;
-  }
+  const expectedStepToken = currentStepToken;
 
-  highlightElement(step, resolvedSelector, guide);
+  // Esperar a que el elemento objetivo exista en el DOM, sea visible y su posición esté estabilizada
+  waitForElementReady(step.selector, (targetElement) => {
+    if (
+      currentGuideId === expectedGuideId &&
+      currentStepIndex === expectedStepIndex &&
+      currentStepToken === expectedStepToken
+    ) {
+      highlightElement(step, targetElement, guide);
+    }
+  });
 }
 
 /**
@@ -427,24 +598,23 @@ function updatePopoverStatus(state: GuideExecutionState, message?: string) {
 /**
  * Displays the Driver.js popover on the target element and initializes interaction listeners.
  */
-function highlightElement(step: GuideStep, resolvedSelector: string, guide: Guide) {
+function highlightElement(step: GuideStep, targetElement: HTMLElement, guide: Guide) {
   if (!driverObj || !currentGuideId) return;
 
   try {
     const popoverHtml = buildPopoverHtml(step, currentStepIndex, guide.steps.length, guide);
 
-    const isBottomNav = resolvedSelector.includes('nav-');
-    const targetElement = document.querySelector(resolvedSelector);
+    const isBottomNav = step.selector.includes('nav-');
     if (targetElement && typeof (targetElement as any).scrollIntoView === 'function') {
       try {
-        (targetElement as any).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        (targetElement as any).scrollIntoView({ behavior: 'auto', block: 'nearest' });
       } catch {
         // Ignore scroll errors
       }
     }
 
     driverObj.highlight({
-      element: resolvedSelector,
+      element: targetElement,
       popover: {
         description: popoverHtml,
         side: isBottomNav ? 'top' : 'bottom',
@@ -467,7 +637,7 @@ function highlightElement(step: GuideStep, resolvedSelector: string, guide: Guid
     // Bind audio toolbar buttons inside popover
     bindPopoverControls();
   } catch (e) {
-    console.error('[driverGuides] Failed to highlight:', resolvedSelector, e);
+    console.error('[driverGuides] Failed to highlight element:', targetElement, e);
   }
 
   // Setup event listener that triggers advancing to next step when user interacts with target element
@@ -490,6 +660,7 @@ export function advanceStep() {
 
   try {
     voiceNarrator.stop();
+    hideDriverOverlay();
     cleanupGuideEventListeners();
 
     const guide = CATALOGO_GUIAS.find(g => g.id === currentGuideId);
@@ -540,33 +711,4 @@ export function moveNext() {
     }
   }
   advanceStep();
-}
-
-/**
- * Watches the DOM to wait for a target selector to become available without arbitrary timers.
- */
-function waitForElement(selector: string, callback: () => void) {
-  if (activeMutationObserver) {
-    activeMutationObserver.disconnect();
-  }
-
-  const checkExist = document.querySelector(selector);
-  if (checkExist) {
-    callback();
-    return;
-  }
-
-  activeMutationObserver = new MutationObserver((_mutations, obs) => {
-    const el = document.querySelector(selector);
-    if (el) {
-      obs.disconnect();
-      activeMutationObserver = null;
-      callback();
-    }
-  });
-
-  activeMutationObserver.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
 }

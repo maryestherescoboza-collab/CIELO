@@ -513,10 +513,15 @@ export function HeroCompetenciesArcade({
       if (!root || !cv) return;
       const av = root.clientWidth;
       if (!av) return;
-      const raw = av / LW;
+      const rawW = av / LW;
+      // Proporcionalidad considerando también la altura disponible de la ventana
+      const vh = window.innerHeight || 800;
+      const maxTargetH = vh < 600 ? 55 : vh < 720 ? 75 : 120;
+      const rawH = maxTargetH / LH;
+      const raw = Math.min(rawW, rawH * 2.2);
       const scale = raw >= 2 ? Math.floor(raw) : raw;
-      const maxScale = compact ? 2 : 3;
-      const clamped = Math.min(scale, maxScale);
+      const maxScale = compact ? (vh < 650 ? 1.4 : 1.85) : (vh < 650 ? 1.75 : 2.6);
+      const clamped = Math.max(0.72, Math.min(scale, maxScale));
       cv.style.width = `${Math.round(LW * clamped)}px`;
       cv.style.height = `${Math.round(LH * clamped)}px`;
     }

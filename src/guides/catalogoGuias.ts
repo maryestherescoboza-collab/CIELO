@@ -62,7 +62,7 @@ export const CATALOGO_GUIAS: Guide[] = [
         evento: 'click'
       },
       {
-        selector: '[data-guide="btn-agregar-estudiante"]',
+        selector: '[data-guide="btn-agregar-estudiante"], [data-guide="btn-agregar-estudiante-compact"]',
         texto: 'Aquí puedes incorporarlos a tu curso. Pulsa en «Agregar estudiante».',
         voz: 'Aquí puedes incorporarlos a tu curso. Pulsa en Agregar estudiante.',
         etapa: 2,
@@ -284,7 +284,7 @@ export const CATALOGO_GUIAS: Guide[] = [
         evento: 'click'
       },
       {
-        selector: '[data-guide="btn-agregar-estudiante"]',
+        selector: '[data-guide="btn-agregar-estudiante"], [data-guide="btn-agregar-estudiante-compact"]',
         texto: 'Para añadir un estudiante a tu lista, pulsa en el botón «+».',
         voz: 'Para añadir un estudiante a tu lista, pulsa en el botón más.',
         evento: 'click'
@@ -962,7 +962,7 @@ export const CATALOGO_GUIAS: Guide[] = [
         tituloEtapa: 'Estudiantes: 07 Inscribir estudiantes'
       },
       {
-        selector: '[data-guide="btn-agregar-estudiante"]',
+        selector: '[data-guide="btn-agregar-estudiante"], [data-guide="btn-agregar-estudiante-compact"]',
         texto: 'Pulsa en el botón «+» para inscribir un nuevo estudiante en tu lista.',
         voz: 'Pulsa en el botón más para inscribir un nuevo estudiante.',
         evento: 'click',
@@ -989,7 +989,7 @@ export const CATALOGO_GUIAS: Guide[] = [
         tituloEtapa: 'Estudiantes: 08 Importar desde Excel'
       },
       {
-        selector: '[data-guide="btn-agregar-estudiante"]',
+        selector: '[data-guide="btn-agregar-estudiante"], [data-guide="btn-agregar-estudiante-compact"]',
         texto: 'Usa la importación masiva para pegar listas de estudiantes desde Excel en un solo paso.',
         voz: 'Usa la importación masiva para pegar listas de estudiantes desde Excel en un solo paso.',
         evento: 'click',
