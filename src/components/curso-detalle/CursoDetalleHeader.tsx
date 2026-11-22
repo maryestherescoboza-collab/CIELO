@@ -5,7 +5,6 @@ import {
     Maximize2,
     Minimize2,
     Search,
-    UserMinus,
     Loader2,
     Check,
     AlertCircle,
@@ -73,7 +72,6 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     activePaintColor,
     setActivePaintColor,
     onShowVincular,
-    onShowEliminarEstudiantes,
     selectedPeriodo,
     onPeriodoChange,
     onAddActividad,
@@ -668,23 +666,20 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             </button>
                         </div>
 
-                        {isTutor && (
+                        {isTutor && onShowVincular && (
                             <>
                                 <div className="h-4 w-px bg-[rgba(46,51,48,0.12)] mx-0.5" />
                                 <div className="flex items-center gap-1">
                                     <CieloPill as="button" variant="ghost" onClick={onShowVincular} className="px-2 min-h-6.5 bg-white border border-(--border-soft) text-[10px] font-bold text-[#5F665E] hover:text-[#2E3330]">
                                         CARGA
                                     </CieloPill>
-                                    <CieloPill as="button" variant="danger" onClick={onShowEliminarEstudiantes} className="px-2 min-h-6.5 bg-white border border-(--border-soft) text-[10px] font-bold text-attention hover:bg-attention/10">
-                                        <UserMinus size={11} /> LIMPIAR
-                                    </CieloPill>
                                 </div>
                             </>
                         )}
                     </div>
 
-                    {/* Right: Modos de evaluación y Niveles de dominio */}
-                    <div className="flex items-center gap-2.5 shrink-0">
+                    {/* Right: Modos de evaluación y Niveles de dominio con leyenda explicativa */}
+                    <div className="flex items-center gap-2 shrink-0">
                         {/* Selector de modo: Pincel, Numérico, Libre */}
                         <div className="flex items-center bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)]" role="radiogroup" aria-label="Modo de evaluación">
                             <button
@@ -734,44 +729,42 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             </button>
                         </div>
 
-                        {/* Círculos de color/niveles [100, 85, 70, 55] */}
+                        {/* Círculos de color/niveles [100, 85, 70, 55] con leyenda explicativa integrada */}
                         {(evalMode === 'pincel' || evalMode === 'numerico') && (
                             <div data-guide="barra-niveles-dominio" className="flex items-center gap-1 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)]">
-                                {[100, 85, 70, 55].map(val => {
+                                {[
+                                    { val: 100 as const, label: 'Logro destacado', activeColor: 'bg-primary text-white shadow-xs', inactText: 'text-primary' },
+                                    { val: 85 as const, label: 'Logro esperado', activeColor: 'bg-attention text-white shadow-xs', inactText: 'text-attention' },
+                                    { val: 70 as const, label: 'En proceso', activeColor: 'bg-danger text-white shadow-xs', inactText: 'text-danger' },
+                                    { val: 55 as const, label: 'Inicio', activeColor: 'bg-[#2E3330] text-white shadow-xs', inactText: 'text-[#2E3330]' },
+                                ].map(({ val, label, activeColor, inactText }) => {
                                     const isActive = activePaintColor === val;
-                                    const colors: Record<number, string> = {
-                                        100: 'bg-primary text-white',
-                                        85: 'bg-attention text-white',
-                                        70: 'bg-danger text-white',
-                                        55: 'bg-[#2E3330] text-white',
-                                    };
-                                    const inactiveColors: Record<number, string> = {
-                                        100: 'text-primary hover:bg-primary/10',
-                                        85: 'text-attention hover:bg-attention/10',
-                                        70: 'text-danger hover:bg-danger/10',
-                                        55: 'text-[#2E3330] hover:bg-black/10',
-                                    };
-
-                                    const tooltips: Record<number, { title: string; desc: string }> = {
-                                        100: { title: `100 — ${NIVELES_DOMINIO[100].etiqueta}`, desc: NIVELES_DOMINIO[100].descriptor },
-                                        85: { title: `85 — ${NIVELES_DOMINIO[85].etiqueta}`, desc: NIVELES_DOMINIO[85].descriptor },
-                                        70: { title: `70 — ${NIVELES_DOMINIO[70].etiqueta}`, desc: NIVELES_DOMINIO[70].descriptor },
-                                        55: { title: `55 — ${NIVELES_DOMINIO[55].etiqueta}`, desc: NIVELES_DOMINIO[55].descriptor },
-                                    };
-                                    const tt = tooltips[val];
-
+                                    const desc = NIVELES_DOMINIO[val]?.descriptor || label;
                                     return (
                                         <button
                                             key={val}
                                             type="button"
                                             data-guide={evalMode === 'pincel' ? `nivel-pincel nivel-pincel-${val}` : `nivel-num nivel-num-${val}`}
                                             onClick={() => setActivePaintColor(val)}
-                                            title={`${tt.title}: ${tt.desc}`}
-                                            className={`w-7 h-7 rounded-full text-xs font-black transition-all flex items-center justify-center cursor-pointer ${
-                                                isActive ? `${colors[val]} shadow-xs scale-105 ring-2 ring-black/10` : `bg-white ${inactiveColors[val]}`
+                                            title={`${val} — ${label}: ${desc}`}
+                                            className={`flex items-center gap-1.5 pl-1 pr-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                                                isActive ? 'bg-white shadow-xs ring-1 ring-[rgba(46,51,48,0.12)]' : 'hover:bg-white/70'
                                             }`}
                                         >
-                                            {val}
+                                            <span
+                                                className={`w-5.5 h-5.5 rounded-full text-[10.5px] font-black flex items-center justify-center shrink-0 ${
+                                                    isActive ? activeColor : `bg-white ${inactText} border border-[rgba(46,51,48,0.12)]`
+                                                }`}
+                                            >
+                                                {val}
+                                            </span>
+                                            <span
+                                                className={`text-[10px] font-bold tracking-tight whitespace-nowrap ${
+                                                    isActive ? 'text-[#2E3330]' : 'text-[#5F665E]'
+                                                }`}
+                                            >
+                                                {label}
+                                            </span>
                                         </button>
                                     );
                                 })}

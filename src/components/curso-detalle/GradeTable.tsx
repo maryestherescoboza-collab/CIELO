@@ -8,7 +8,6 @@ import InsertarEstudianteModal from './InsertarEstudianteModal';
 import MoverEstudianteModal from './MoverEstudianteModal';
 import ActivityViewTab from './workspace/ActivityViewTab';
 import type { BCKey, Actividad } from '../../types';
-import { getCompetenciaDisplay } from '../../types';
 import { getActivityBcPoints, getProductoFinalMaxPoints, hasProductoFinalCustomPoints } from '../../utils/academic';
 import { CieloModal } from '../ui/CieloModal';
 import { notifyGuideOperationSuccess } from '../../guides/guideConfirmation';
@@ -41,6 +40,13 @@ interface GradeTableProps {
     openActivityId?: number | null;
     onOpenActivityView?: (actId: number) => void;
 }
+
+const COMPETENCIAS_OFICIALES: Record<BCKey, string> = {
+    BC1: 'Comunicativa',
+    BC2: 'Pensamiento Lógico, Creativo y Crítico; Resolución de Problemas',
+    BC3: 'Científica y Tecnológica; Ambiental y de la Salud',
+    BC4: 'Ética y Ciudadana; Desarrollo Personal y Espiritual',
+};
 
 const GradeTable: React.FC<GradeTableProps> = ({
     actividades,
@@ -442,10 +448,10 @@ const GradeTable: React.FC<GradeTableProps> = ({
         const isMob = device === 'mobile';
         const isTab = device === 'tablet';
 
-        const studentWidth = isMob ? 175 : isTab ? 210 : 250;
+        const studentWidth = isMob ? 175 : isTab ? 210 : 225;
         const actWidth = isMob ? 130 : isTab ? 132 : 136;
         const destacaWidth = isMob ? 46 : isTab ? 50 : 54;
-        const bcAvgWidth = isMob ? 90 : isTab ? 96 : 96;
+        const bcAvgWidth = isMob ? 90 : isTab ? 96 : 175;
         const bcRecWidth = isMob ? 44 : isTab ? 46 : 48;
 
         const cols: any[] = [];
@@ -476,7 +482,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
                             if (col.type === 'estudiantes') {
                                 return (
-                                    <div key={col.id} className="sticky left-0 z-50 bg-[#DDE3EA] md:bg-[#FAF8F5] xl:bg-(--background) rounded-tl-xl md:rounded-none px-2 md:px-3 xl:px-4 py-1.5 md:py-2 xl:py-2.5 text-left border-r border-[#2E3330]/20 xl:border-(--border-soft) flex flex-col items-start justify-between box-border shadow-[2px_0_4px_rgba(0,0,0,0.03)]" style={style}>
+                                    <div key={col.id} className="sticky left-0 z-50 bg-[#DDE3EA] md:bg-[#FAF8F5] xl:bg-(--background) rounded-tl-xl md:rounded-none px-2 md:px-3 xl:px-3 py-1.5 md:py-2 xl:py-2 text-left border-r border-[#2E3330]/20 xl:border-(--border-soft) flex flex-col items-start justify-between box-border shadow-[2px_0_4px_rgba(0,0,0,0.03)]" style={style}>
                                         <div className="flex items-center justify-between w-full">
                                             <span className="text-xs md:text-sm font-black uppercase tracking-wider italic text-[#2E3330]">Estudiantes</span>
                                             <button
@@ -488,10 +494,34 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                 <Plus size={13} strokeWidth={2.8} />
                                             </button>
                                         </div>
-                                        <div className="hidden xl:flex items-center gap-1 w-full pt-1">
-                                            <button data-guide="btn-agregar-estudiante" onClick={() => onAddEstudiante()} className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all cursor-pointer" title="Agregar estudiante"><Plus size={11} strokeWidth={2.6} />Agregar</button>
-                                            <button onClick={() => setShowInsertar(true)} className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all cursor-pointer" title="Agregar en posición"><UserPlus size={11} strokeWidth={2.6} />Posición</button>
-                                            <button data-guide="btn-pegar-listado" onClick={() => setShowPegarListado(true)} className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all cursor-pointer" title="Pegar listado"><ClipboardList size={11} strokeWidth={2.6} />Listado</button>
+                                        {/* Controles verticales en escritorio: uno debajo del otro sin ensanchar la tabla */}
+                                        <div className="hidden xl:flex flex-col gap-1 w-full pt-1.5">
+                                            <button
+                                                data-guide="btn-agregar-estudiante"
+                                                onClick={() => onAddEstudiante()}
+                                                className="flex items-center gap-1.5 w-full rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all cursor-pointer"
+                                                title="Agregar estudiante al final"
+                                            >
+                                                <Plus size={11} strokeWidth={2.6} className="text-primary shrink-0" />
+                                                <span className="truncate">Agregar estudiante</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setShowInsertar(true)}
+                                                className="flex items-center gap-1.5 w-full rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all cursor-pointer"
+                                                title="Agregar en posición específica"
+                                            >
+                                                <UserPlus size={11} strokeWidth={2.6} className="text-[#5F665E] shrink-0" />
+                                                <span className="truncate">Agregar en posición</span>
+                                            </button>
+                                            <button
+                                                data-guide="btn-pegar-listado"
+                                                onClick={() => setShowPegarListado(true)}
+                                                className="flex items-center gap-1.5 w-full rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#5F665E] hover:text-[#2E3330] hover:bg-base-creme border border-transparent hover:border-(--border-soft) transition-all cursor-pointer"
+                                                title="Pegar listado de estudiantes"
+                                            >
+                                                <ClipboardList size={11} strokeWidth={2.6} className="text-[#5F665E] shrink-0" />
+                                                <span className="truncate">Pegar listado</span>
+                                            </button>
                                         </div>
                                     </div>
                                 );
@@ -622,7 +652,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                                                 key={bc}
                                                                 data-guide="bloque-competencia"
                                                                 onClick={() => onToggleBc(act.id, bc)}
-                                                                title={`${bc}: ${isSel ? 'Asignada (clic para alternar)' : 'No asignada (clic para alternar)'}`}
+                                                                title={`${COMPETENCIAS_OFICIALES[bc]}: ${isSel ? 'Asignada (clic para alternar)' : 'No asignada (clic para alternar)'}`}
                                                                 className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${isSel ? BC_COLOR_THEMES[bc].active : 'text-[#5F665E]/40 hover:text-[#5F665E]'}`}
                                                             >
                                                                 {BC_ICONS[bc]}
@@ -659,22 +689,34 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                 );
                             }
                             if (col.type === 'bc-avg') {
-                                const fullName = getCompetenciaDisplay(col.bc);
                                 const bcKey = col.bc as BCKey;
+                                const nombreOficial = COMPETENCIAS_OFICIALES[bcKey];
                                 return (
                                     <div
                                         key={col.id}
-                                        title={fullName}
+                                        title={nombreOficial}
                                         className={`px-1 py-1.5 md:py-2 border-r border-[#2E3330]/15 md:border-(--border-soft) flex flex-col items-center justify-between box-border relative ${col.idx === 0 ? 'border-l-2 border-l-[rgba(46,51,48,0.08)]' : ''}`}
                                         style={style}
                                     >
-                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${BC_COLOR_THEMES[bcKey]?.active || ''}`}>
+                                        <div className={`w-5.5 h-5.5 rounded-full flex items-center justify-center shrink-0 ${BC_COLOR_THEMES[bcKey]?.active || ''}`}>
                                             {BC_ICONS[bcKey]}
                                         </div>
-                                        <div className="flex flex-col items-center text-center w-full">
+
+                                        {/* Móvil y Tablet (xl:hidden) */}
+                                        <div className="flex xl:hidden flex-col items-center text-center w-full">
                                             <span className="text-[11px] font-black uppercase text-[#2E3330] tracking-wider">{col.bc}</span>
                                             <span className="text-[8.5px] font-bold text-[#5F665E] uppercase truncate w-full px-0.5">
                                                 PROM.
+                                            </span>
+                                        </div>
+
+                                        {/* Escritorio (hidden xl:flex): Nombres oficiales completos */}
+                                        <div className="hidden xl:flex flex-col items-center text-center w-full px-1">
+                                            <span className="text-[10px] xl:text-[10.5px] font-bold text-[#2E3330] leading-[1.25] text-center line-clamp-3">
+                                                {nombreOficial}
+                                            </span>
+                                            <span className="text-[8px] font-bold text-[#5F665E]/70 uppercase tracking-wider mt-0.5">
+                                                PROMEDIO
                                             </span>
                                         </div>
                                     </div>
