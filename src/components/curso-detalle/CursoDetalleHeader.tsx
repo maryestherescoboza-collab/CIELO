@@ -718,58 +718,80 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     {/* 4. Divisor vertical sutil */}
                     <div className="h-6 w-px bg-neutral-200/80 mx-0.5 shrink-0" />
 
-                    {/* 5. Círculos de niveles [100, 85, 70, 55] dentro de cápsula elegante con tonos pastel */}
-                    <div
-                        data-guide="barra-niveles-dominio"
-                        className="flex items-center gap-1.5 rounded-full border border-neutral-200/90 bg-white p-1 shadow-2xs shrink-0"
-                    >
-                        {[
-                            {
-                                val: 100 as const,
-                                label: 'Logro destacado',
-                                bg: 'bg-[#BDCFB6]',
-                                text: 'text-[#1E2421]',
-                                ring: 'ring-2 ring-[#689C63]'
-                            },
-                            {
-                                val: 85 as const,
-                                label: 'Logro esperado',
-                                bg: 'bg-[#FCEAD8]',
-                                text: 'text-[#D96B27]',
-                                ring: 'ring-2 ring-[#EB8847]'
-                            },
-                            {
-                                val: 70 as const,
-                                label: 'En proceso',
-                                bg: 'bg-[#FCE3DF]',
-                                text: 'text-[#D9534F]',
-                                ring: 'ring-2 ring-[#D9534F]'
-                            },
-                            {
-                                val: 55 as const,
-                                label: 'Inicio',
-                                bg: 'bg-[#F3F4F3]',
-                                text: 'text-[#4A504B]',
-                                ring: 'ring-2 ring-black/25'
-                            },
-                        ].map(({ val, label, bg, text, ring }) => {
-                            const isActive = activePaintColor === val;
-                            const desc = NIVELES_DOMINIO[val]?.descriptor || label;
-                            return (
-                                <button
-                                    key={val}
-                                    type="button"
-                                    data-guide={evalMode === 'pincel' ? `nivel-pincel nivel-pincel-${val}` : `nivel-num nivel-num-${val}`}
-                                    onClick={() => setActivePaintColor(val)}
-                                    title={`${val} — ${label}: ${desc}`}
-                                    className={`w-7 h-7 rounded-full text-xs font-black transition-all flex items-center justify-center cursor-pointer select-none ${bg} ${text} ${
-                                        isActive ? `${ring} shadow-xs scale-105` : 'hover:opacity-90'
-                                    }`}
-                                >
-                                    {val}
-                                </button>
-                            );
-                        })}
+                    {/* 5. Círculos de niveles [100, 85, 70, 55] con "ESCALA ESTIMATIVA" arriba y nombre del nivel de logro a la derecha al pulsarlos */}
+                    <div className="flex flex-col items-start shrink-0">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-[#8A9089] text-left leading-none mb-1 select-none">
+                            ESCALA ESTIMATIVA
+                        </span>
+                        <div
+                            data-guide="barra-niveles-dominio"
+                            className="flex items-center gap-1.5 rounded-full border border-neutral-200/90 bg-white p-1 shadow-2xs shrink-0"
+                        >
+                            {[
+                                {
+                                    val: 100 as const,
+                                    label: 'Logro destacado',
+                                    bg: 'bg-[#BDCFB6]',
+                                    text: 'text-[#1E2421]',
+                                    textColor: 'text-[#2D4A2A]',
+                                    ring: 'ring-2 ring-[#689C63]'
+                                },
+                                {
+                                    val: 85 as const,
+                                    label: 'Logro esperado',
+                                    bg: 'bg-[#FCEAD8]',
+                                    text: 'text-[#D96B27]',
+                                    textColor: 'text-[#9C4410]',
+                                    ring: 'ring-2 ring-[#EB8847]'
+                                },
+                                {
+                                    val: 70 as const,
+                                    label: 'En proceso',
+                                    bg: 'bg-[#FCE3DF]',
+                                    text: 'text-[#D9534F]',
+                                    textColor: 'text-[#9E2825]',
+                                    ring: 'ring-2 ring-[#D9534F]'
+                                },
+                                {
+                                    val: 55 as const,
+                                    label: 'Inicio',
+                                    bg: 'bg-[#F3F4F3]',
+                                    text: 'text-[#4A504B]',
+                                    textColor: 'text-[#2E3330]',
+                                    ring: 'ring-2 ring-black/25'
+                                },
+                            ].map(({ val, label, bg, text, textColor, ring }) => {
+                                const isActive = activePaintColor === val;
+                                const desc = NIVELES_DOMINIO[val]?.descriptor || label;
+                                return (
+                                    <button
+                                        key={val}
+                                        type="button"
+                                        data-guide={evalMode === 'pincel' ? `nivel-pincel nivel-pincel-${val}` : `nivel-num nivel-num-${val}`}
+                                        onClick={() => setActivePaintColor(activePaintColor === val ? -1 : val)}
+                                        title={`${val} — ${label}: ${desc}`}
+                                        className={`rounded-full transition-all flex items-center cursor-pointer select-none ${
+                                            isActive
+                                                ? 'bg-neutral-100/80 pr-2.5 shadow-2xs'
+                                                : 'hover:opacity-90'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`w-7 h-7 rounded-full text-xs font-black transition-all flex items-center justify-center shrink-0 ${bg} ${text} ${
+                                                isActive ? `${ring} shadow-xs scale-105` : ''
+                                            }`}
+                                        >
+                                            {val}
+                                        </span>
+                                        {isActive && (
+                                            <span className={`text-[10px] font-black tracking-tight whitespace-nowrap pl-1.5 select-none animate-in fade-in zoom-in-95 duration-150 ${textColor}`}>
+                                                {label}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     {/* 6. Actividad pendiente por: INASISTENCIA, SE NEGÓ A REALIZAR */}
