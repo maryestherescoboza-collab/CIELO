@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { useSupabaseData } from '../hooks/useSupabaseData';
@@ -248,6 +248,8 @@ interface CalendarioProps {
 }
 
 export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
     const state = useAppStore(s => s.state);
     const { loadCalendarioData, contextReady } = useSupabaseData(true);
     const session = useAppStore(s => s.session);
@@ -265,6 +267,16 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAttendanceWizardOpen, setIsAttendanceWizardOpen] = useState(false);
     const [isAttendanceReportOpen, setIsAttendanceReportOpen] = useState(false);
+
+    // Auto-apertura directa de Pase de Lista al recibir el parámetro o evento global
+    useEffect(() => {
+        const handleAbrirPase = () => setIsAttendanceWizardOpen(true);
+        window.addEventListener('cielo:abrir-pase-de-lista', handleAbrirPase);
+        if (location.search.includes('asistencia=true') || location.search.includes('pase=true')) {
+            setIsAttendanceWizardOpen(true);
+        }
+        return () => window.removeEventListener('cielo:abrir-pase-de-lista', handleAbrirPase);
+    }, [location.search]);
     const [isHorarioModalOpen, setIsHorarioModalOpen] = useState(false);
     /** Columna sobre la que el arrastre de una clase es inválido (día fuera de dias_semana). */
     const [invalidDropDay, setInvalidDropDay] = useState<string | null>(null);
@@ -1114,8 +1126,6 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
         }
     };
 
-    const navigate = useNavigate();
-
     return (
         <div
             className="w-full min-h-screen text-[#263128] font-sans bg-[#f7edcf]"
@@ -1296,7 +1306,12 @@ export const Calendario: React.FC<CalendarioProps> = ({ onAddActividad }) => {
                     <AttendanceWizardModal
                         date={selectedDate}
                         isOpen={isAttendanceWizardOpen}
-                        onClose={() => setIsAttendanceWizardOpen(false)}
+                        onClose={() => {
+                            setIsAttendanceWizardOpen(false);
+                            if (location.search.includes('asistencia=true') || location.search.includes('pase=true')) {
+                                navigate('/calendario', { replace: true });
+                            }
+                        }}
                     />
                 )}
 

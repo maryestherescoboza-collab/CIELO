@@ -304,6 +304,8 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/print-boletines/:cursoId" element={<PrintBoletines state={state} docenteNombre={docenteNombre} />} />
       <Route path="/incidencias" element={<Incidencias state={state} onAddIncidencia={addIncidencia} onDeleteIncidencia={deleteIncidencia} onUpdateIncidencia={updateIncidencia} />} />
       <Route path="/calendario" element={<Calendario onAddActividad={addActividad} />} />
+      <Route path="/asistencia" element={<Navigate to="/calendario?asistencia=true" replace />} />
+      <Route path="/pase-de-lista" element={<Navigate to="/calendario?asistencia=true" replace />} />
       <Route element={<PlanClasesLayout />}>
         <Route path="/planificacion" element={<Planificacion state={state} docenteNombre={docenteNombre} currentUserProfile={currentUserProfile} session={session} onAddSecuencia={addSecuencia} onUpdateSecuencia={updateSecuencia} onDeleteSecuencia={deleteSecuencia} />} />
         <Route path="/planificacion-diaria/plantilla" element={<PlanificacionDiariaEditor state={state} docenteNombre={docenteNombre} currentUserProfile={currentUserProfile} session={session} onUpdateSecuencia={updateSecuencia} onAddSecuencia={addSecuencia} />} />

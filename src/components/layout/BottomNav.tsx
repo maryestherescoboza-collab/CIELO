@@ -15,7 +15,8 @@ import {
   X, 
   MoreHorizontal,
   FolderOpen,
-  QrCode
+  QrCode,
+  ClipboardCheck
 } from 'lucide-react';
 import { WhatsAppIcon } from '../icons/WhatsAppIcon';
 import type { Screen } from '../../types';
@@ -54,8 +55,12 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
 
     const isEvidenciasActive = location.pathname.startsWith('/estudiante') && (location.search.includes('tab=evidencias') || location.search.includes('subseccion=evidencias'));
     const isEstudiantesFichaActive = location.pathname.startsWith('/estudiante') && !isEvidenciasActive;
+    const isPaseDeListaActive = location.pathname.startsWith('/calendario') && (location.search.includes('asistencia=true') || location.search.includes('pase=true'));
+    const isInicioActive = currentScreen === 'inicio' && !isPaseDeListaActive;
 
     const [showMore, setShowMore] = useState(false);
+    const [showInicioMenu, setShowInicioMenu] = useState(false);
+    const [inicioMenuPosition, setInicioMenuPosition] = useState<{ bottom: number; left: number } | null>(null);
     const [showEstudiantesMenu, setShowEstudiantesMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState<{ bottom: number; left: number } | null>(null);
     const [showMobileEstudiantesSubmenu, setShowMobileEstudiantesSubmenu] = useState(false);
@@ -63,6 +68,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
     const moreMenuRef = useRef<HTMLDivElement>(null);
+    const inicioBtnRef = useRef<HTMLButtonElement>(null);
     const estudiantesBtnRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
@@ -74,6 +80,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
         };
         const handleResize = () => {
             setShowEstudiantesMenu(false);
+            setShowInicioMenu(false);
         };
 
         document.addEventListener('mousedown', handleClickOutside);
@@ -84,6 +91,45 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
             window.removeEventListener('resize', handleResize);
         };
     }, []);
+
+    const handleToggleInicioMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (inicioBtnRef.current) {
+            const rect = inicioBtnRef.current.getBoundingClientRect();
+            setInicioMenuPosition({
+                bottom: window.innerHeight - rect.top + 8,
+                left: Math.max(100, Math.min(window.innerWidth - 100, rect.left + rect.width / 2))
+            });
+        }
+        setShowEstudiantesMenu(false);
+        setShowMore(false);
+        setShowInicioMenu(prev => !prev);
+    };
+
+    const handleGoInicio = () => {
+        const { isLocked, reason } = usePersistenceStore.getState();
+        if (isLocked) {
+            alert(reason || 'Hay calificaciones que todavía se están guardando en el servidor. Espera un momento para navegar.');
+            return;
+        }
+        setShowInicioMenu(false);
+        setShowMore(false);
+        onNavigate('inicio');
+    };
+
+    const handleGoPaseDeLista = () => {
+        const { isLocked, reason } = usePersistenceStore.getState();
+        if (isLocked) {
+            alert(reason || 'Hay calificaciones que todavía se están guardando en el servidor. Espera un momento para navegar.');
+            return;
+        }
+        setShowInicioMenu(false);
+        setShowMore(false);
+        navigate('/calendario?asistencia=true');
+        window.dispatchEvent(new CustomEvent('cielo:abrir-pase-de-lista'));
+    };
 
     const handleToggleEstudiantesMenu = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -96,6 +142,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                 left: Math.max(100, Math.min(window.innerWidth - 100, rect.left + rect.width / 2))
             });
         }
+        setShowInicioMenu(false);
         setShowEstudiantesMenu(prev => !prev);
     };
 
@@ -165,12 +212,37 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                     const isActive = currentScreen === item.screen && !item.isClose;
                     const isPrimary = MOBILE_PRIMARY.includes(item.label);
                     const isEstudiantes = item.screen === 'estudiante';
+                    const isInicio = item.screen === 'inicio' && !item.isClose;
                     
                     let btnBg = 'bg-transparent text-(--ink)';
-                    if (isActive || (isEstudiantes && showEstudiantesMenu)) {
+                    if (isActive || (isEstudiantes && showEstudiantesMenu) || (isInicio && showInicioMenu)) {
                         btnBg = 'bg-(--primary) text-white shadow-sm';
                     } else if (item.label === 'Comunidad') {
                         btnBg = 'hover:bg-(--linen) text-(--ink)';
+                    }
+
+                    if (isInicio) {
+                        return (
+                            <button 
+                                key={item.label}
+                                id="nav-inicio"
+                                data-guide="nav-inicio"
+                                ref={inicioBtnRef}
+                                type="button"
+                                onClick={handleToggleInicioMenu} 
+                                aria-label="Menú Inicio"
+                                aria-expanded={showInicioMenu}
+                                title={item.label}
+                                className={`${isPrimary ? 'flex' : 'hidden lg:flex'} shrink-0 flex-col items-center justify-center gap-0.5 px-0 lg:px-3.5 py-1 rounded-full transition-all duration-200 ${btnBg} hover:bg-(--linen)/40 flex-1 lg:flex-none lg:min-w-18 h-10 cursor-pointer`}
+                            >
+                                <div className={isActive || showInicioMenu ? 'text-white' : 'text-(--ink)'}>
+                                    {item.icon}
+                                </div>
+                                <span className={`text-[10px] font-bold uppercase tracking-[0.05em] ${isActive || showInicioMenu ? 'text-white' : 'text-(--ink)'} hidden lg:block`}>
+                                    {item.label}
+                                </span>
+                            </button>
+                        );
                     }
 
                     if (isEstudiantes) {
@@ -354,6 +426,64 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
                     )}
                 </div>
             </nav>
+
+            {/* Menú flotante de Inicio (Portal en document.body para evitar cualquier recorte de overflow) */}
+            {showInicioMenu && inicioMenuPosition && createPortal(
+                <div className="fixed inset-0 z-9990 pointer-events-none">
+                    {/* Backdrop invisible para cerrar al hacer clic fuera */}
+                    <div 
+                        className="fixed inset-0 pointer-events-auto" 
+                        onClick={() => setShowInicioMenu(false)} 
+                    />
+                    
+                    {/* Tarjeta de opciones */}
+                    <div
+                        style={{
+                            position: 'fixed',
+                            bottom: `${inicioMenuPosition.bottom}px`,
+                            left: `${inicioMenuPosition.left}px`,
+                            transform: 'translateX(-50%)',
+                        }}
+                        className="pointer-events-auto bg-white border border-(--border-soft) rounded-2xl shadow-xl p-1.5 flex flex-col gap-0.5 min-w-44 z-9999 animate-in fade-in slide-in-from-bottom-2 duration-150"
+                    >
+                        <button
+                            type="button"
+                            onClick={handleGoInicio}
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer text-left w-full group ${
+                                isInicioActive 
+                                    ? 'bg-(--linen) text-(--ink)' 
+                                    : 'text-(--ink) hover:bg-(--linen)/40'
+                            }`}
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <Home size={15} className={isInicioActive ? 'text-(--primary)' : 'text-(--ink-soft) group-hover:text-(--ink)'} />
+                                <span>Inicio</span>
+                            </div>
+                            {isInicioActive && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-(--primary)" />
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleGoPaseDeLista}
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer text-left w-full group ${
+                                isPaseDeListaActive 
+                                    ? 'bg-(--linen) text-(--ink)' 
+                                    : 'text-(--ink) hover:bg-(--linen)/40'
+                            }`}
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <ClipboardCheck size={15} className={isPaseDeListaActive ? 'text-(--primary)' : 'text-[#537BAC]'} />
+                                <span>Pase de lista</span>
+                            </div>
+                            {isPaseDeListaActive && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-(--primary)" />
+                            )}
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {/* Menú flotante de Estudiantes (Portal en document.body para evitar cualquier recorte de overflow) */}
             {showEstudiantesMenu && menuPosition && createPortal(
