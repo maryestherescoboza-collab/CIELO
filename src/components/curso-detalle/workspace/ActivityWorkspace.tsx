@@ -7,7 +7,7 @@ import WorkspaceRecursos from './WorkspaceRecursos';
 import WorkspaceFicha from './WorkspaceFicha';
 import WorkspaceProductoFinal from './WorkspaceProductoFinal';
 import FolderSequenceLauncher from './FolderSequenceLauncher';
-import type { Actividad, BCKey, Secuencia } from '../../../types';
+import type { Actividad, BCKey, Secuencia, NivelEducativo } from '../../../types';
 import type { SeccionSecuencia } from '../../../lib/seccionesSecuencia';
 import { useAppStore } from '../../../store/appStore';
 import { getSecuenciasSeleccion } from './WorkspaceDatos';
@@ -24,6 +24,7 @@ export interface ActivityWorkspaceProps {
     onAddSecuencia?: (s: Omit<Secuencia, 'id'>) => Promise<Secuencia | null>;
     onUpdateSecuencia?: (s: Secuencia) => Promise<void>;
     onToggleBc: (actId: number, bc: BCKey) => void;
+    nivelEducativo?: NivelEducativo;
 }
 
 const WINDOW_WIDTHS: Record<ActivityWindowId, number> = {
@@ -48,6 +49,7 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
     onAddSecuencia,
     onUpdateSecuencia,
     onToggleBc,
+    nivelEducativo,
 }) => {
     const isProductoFinal = !!activity.isProductoFinal;
 
@@ -260,6 +262,7 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
                     activity={activity}
                     position={positions.competencias}
                     zIndex={zMap.competencias}
+                    nivelEducativo={nivelEducativo}
                     onStartDrag={startDrag}
                     onWindowFocus={(id) => bringToFront(id as ActivityWindowId)}
                     onClose={() => closeWindow('competencias')}
@@ -298,6 +301,7 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
                     activity={activity}
                     position={positions['producto-final']}
                     zIndex={zMap['producto-final']}
+                    nivelEducativo={nivelEducativo}
                     onStartDrag={startDrag}
                     onWindowFocus={(id) => bringToFront(id as ActivityWindowId)}
                     onClose={() => closeWindow('producto-final')}

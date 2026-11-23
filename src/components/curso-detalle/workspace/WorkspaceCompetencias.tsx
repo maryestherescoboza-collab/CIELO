@@ -1,7 +1,7 @@
 import React from 'react';
 import FloatingWorkWindow, { type WorkWindowPosition } from './FloatingWorkWindow';
-import type { Actividad, BCKey } from '../../../types';
-import { getCompetenciaDisplay } from '../../../types';
+import type { Actividad, BCKey, NivelEducativo } from '../../../types';
+import { getCompetenciaDisplay, getCompetenciasKeys } from '../../../types';
 import { BC_COLOR_THEMES, BC_ICONS } from '../../../constants/competencias';
 
 export interface WorkspaceCompetenciasProps {
@@ -12,9 +12,8 @@ export interface WorkspaceCompetenciasProps {
     onWindowFocus: (id: string) => void;
     onClose: () => void;
     onToggleBc: (actId: number, bc: BCKey) => void;
+    nivelEducativo?: NivelEducativo;
 }
-
-const ALL_BCS: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
 
 // Ventana "Competencias a evaluar" (referencia: sección de chips).
 // Lee las competencias REALES guardadas en la actividad (bcAsignados) y usa el
@@ -28,8 +27,10 @@ const WorkspaceCompetencias: React.FC<WorkspaceCompetenciasProps> = ({
     onWindowFocus,
     onClose,
     onToggleBc,
+    nivelEducativo,
 }) => {
     const assigned = new Set(activity.bcAsignados || []);
+    const activeBcs = getCompetenciasKeys(nivelEducativo);
 
     return (
         <FloatingWorkWindow
@@ -44,19 +45,19 @@ const WorkspaceCompetencias: React.FC<WorkspaceCompetenciasProps> = ({
             onClose={onClose}
         >
             <div className="ws-chip-wrap">
-                {ALL_BCS.map((bc) => {
+                {activeBcs.map((bc) => {
                     const on = assigned.has(bc);
                     const theme = BC_COLOR_THEMES[bc];
                     return (
                         <button
                             key={bc}
                             type="button"
-                            title={getCompetenciaDisplay(bc)}
+                            title={getCompetenciaDisplay(bc, nivelEducativo)}
                             onClick={() => onToggleBc(activity.id, bc)}
                             className={`ws-chip ${on ? `on ${theme.active}` : `${theme.bg} ${theme.text}`}`}
                         >
                             {BC_ICONS[bc]}
-                            {getCompetenciaDisplay(bc)}
+                            {getCompetenciaDisplay(bc, nivelEducativo)}
                         </button>
                     );
                 })}

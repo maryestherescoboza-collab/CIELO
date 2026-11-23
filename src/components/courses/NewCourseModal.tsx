@@ -37,8 +37,11 @@ export function NewCourseModal({
         const grado = String(form.grado || '').trim();
         const seccion = String(form.seccion || '').trim().toUpperCase();
         if (!grado || !seccion) return [];
+        const targetNivel = form.nivelEducativo || 'secundaria';
         const cursosSeccion = existingCursos.filter(
-            c => c.grado === grado && String(c.seccion || '').trim().toUpperCase() === seccion
+            c => c.grado === grado && 
+                 String(c.seccion || '').trim().toUpperCase() === seccion &&
+                 (c.nivelEducativo || 'secundaria') === targetNivel
         );
         const idsCursos = new Set(cursosSeccion.map(c => c.id));
         const lista = new Set<string>();
@@ -173,6 +176,41 @@ export function NewCourseModal({
             footer={modalFooter}
         >
             <div data-guide="modal-curso-formulario" className="space-y-6">
+                    {/* Selector de Nivel Educativo */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
+                            <GraduationCap size={12} /> ¿A qué nivel educativo pertenece este curso? *
+                        </label>
+                        <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-full border border-slate-200/80">
+                            <button
+                                type="button"
+                                data-guide="modal-curso-nivel-primaria"
+                                onClick={() => setForm((f: any) => ({ ...f, nivelEducativo: 'primaria' }))}
+                                className={`flex items-center justify-center gap-2 py-2 px-4 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                    form.nivelEducativo === 'primaria'
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                }`}
+                            >
+                                <span className={`w-2 h-2 rounded-full ${form.nivelEducativo === 'primaria' ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                                Primaria
+                            </button>
+                            <button
+                                type="button"
+                                data-guide="modal-curso-nivel-secundaria"
+                                onClick={() => setForm((f: any) => ({ ...f, nivelEducativo: 'secundaria' }))}
+                                className={`flex items-center justify-center gap-2 py-2 px-4 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                    form.nivelEducativo === 'secundaria' || !form.nivelEducativo
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                }`}
+                            >
+                                <span className={`w-2 h-2 rounded-full ${form.nivelEducativo === 'secundaria' || !form.nivelEducativo ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                                Secundaria
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-3">
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">

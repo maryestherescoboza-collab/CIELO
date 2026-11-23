@@ -31,7 +31,7 @@ import type {
     CalificacionActividad,
     CursoDocente,
 } from '../types';
-import { COMPETENCIAS_LABEL } from '../types';
+import { COMPETENCIAS_LABEL, getCompetenciaDisplay } from '../types';
 import { uploadDocxToDrive } from '../lib/googleDrive';
 
 // Paleta de colores sobria y profesional para documentos educativos Word
@@ -355,6 +355,7 @@ export async function crearDocxRubrica(options: ExportarRubricaOptions): Promise
         estudiantes = [],
         actividad,
         tituloPersonalizado,
+        curso,
     } = options;
 
     const tituloDoc = tituloPersonalizado || 'Rúbrica Socioformativa de Evaluación';
@@ -433,7 +434,7 @@ export async function crearDocxRubrica(options: ExportarRubricaOptions): Promise
 
     // Filas de contenido por cada descriptor
     descriptores.forEach((desc) => {
-        const nombreCompetencia = desc.bc ? (COMPETENCIAS_LABEL[desc.bc] || desc.bc) : (desc.indicador || 'Competencia');
+        const nombreCompetencia = desc.bc ? (getCompetenciaDisplay(desc.bc, curso?.nivelEducativo) || desc.bc) : (desc.indicador || 'Competencia');
         const parrafosComp: Paragraph[] = [
             new Paragraph({
                 spacing: { after: 40 },
@@ -1369,7 +1370,7 @@ export async function descargarEvaluacionesPeriodoRubricaDocx(
         const filasTabla: TableRow[] = [new TableRow({ children: celdasHeader })];
 
         descriptores.forEach((desc) => {
-            const nombreComp = desc.bc ? (COMPETENCIAS_LABEL[desc.bc] || desc.bc) : (desc.indicador || 'Competencia');
+            const nombreComp = desc.bc ? (getCompetenciaDisplay(desc.bc, curso?.nivelEducativo) || desc.bc) : (desc.indicador || 'Competencia');
             const parrafosComp: Paragraph[] = [
                 new Paragraph({
                     spacing: { after: 30 },

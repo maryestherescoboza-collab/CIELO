@@ -20,18 +20,40 @@ export interface PresenceUser {
     onlineSince: string;
 }
 
-export const COMPETENCIAS_LABEL = {
+export type NivelEducativo = 'primaria' | 'secundaria';
+
+export const COMPETENCIAS_SECUNDARIA_LABEL = {
   BC1: "Comunicativa",
   BC2: "Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas",
   BC3: "Científica y Tecnológica; y Ambiental y de la Salud",
   BC4: "Ética y Ciudadana; y Desarrollo Personal y Espiritual",
 } as const;
 
-export type Competencia = keyof typeof COMPETENCIAS_LABEL;
+export const COMPETENCIAS_PRIMARIA_LABEL = {
+  BC1: "Comunicativa",
+  BC2: "Pensamiento Lógico, Creativo y Crítico; Resolución de Problemas; Científica y Tecnológica",
+  BC3: "Ética y Ciudadana; Desarrollo Personal y Espiritual; Ambiental y de la Salud",
+} as const;
+
+export const COMPETENCIAS_LABEL = COMPETENCIAS_SECUNDARIA_LABEL;
+
+export type Competencia = 'BC1' | 'BC2' | 'BC3' | 'BC4';
 export type BCKey = Competencia;
 
-export function getCompetenciaDisplay(bc: string): string {
-  return COMPETENCIAS_LABEL[bc as Competencia] || bc;
+export function getCompetenciasKeys(nivel: NivelEducativo = 'secundaria'): BCKey[] {
+  return nivel === 'primaria' ? ['BC1', 'BC2', 'BC3'] : ['BC1', 'BC2', 'BC3', 'BC4'];
+}
+
+export function getCompetenciasLabels(nivel: NivelEducativo = 'secundaria'): Record<BCKey, string> {
+  if (nivel === 'primaria') {
+    return COMPETENCIAS_PRIMARIA_LABEL as unknown as Record<BCKey, string>;
+  }
+  return COMPETENCIAS_SECUNDARIA_LABEL;
+}
+
+export function getCompetenciaDisplay(bc: string, nivel: NivelEducativo = 'secundaria'): string {
+  const labels = getCompetenciasLabels(nivel);
+  return labels[bc as BCKey] || COMPETENCIAS_LABEL[bc as keyof typeof COMPETENCIAS_LABEL] || bc;
 }
 
 export interface BCScore { nivel: Nivel; puntaje: number; }
@@ -49,6 +71,7 @@ export interface Curso {
     id: number; nombre: string; asignatura: string;
     grado: string; seccion: string; periodo: string;
     diasSemana: string[]; color: string;
+    nivelEducativo?: NivelEducativo;
     isTutorOficial?: boolean;
     userId?: string;
     grupoId: number;

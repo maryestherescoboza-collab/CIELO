@@ -2,7 +2,7 @@ import React from 'react';
 import { getAsignaturaNombre, sonMismaAsignatura } from '../../constants/asignaturas';
 import { normalizeArea } from '../../utils/academic';
 import type { Skill, AppState, Competencia, DescriptorRubrica, CriterioCotejo } from '../../types';
-import { getCompetenciaDisplay } from '../../types';
+import { getCompetenciaDisplay, getCompetenciasKeys } from '../../types';
 import RecuperacionPerfil from './RecuperacionPerfil';
 import { QRCodeSVG } from 'qrcode.react';
 import { PORTAL_FAMILIA_ENABLED } from '../../config/features';
@@ -452,7 +452,7 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
             return isMatch && matchesRole && matchesUser;
         });
 
-        const bcs: ('BC1' | 'BC2' | 'BC3' | 'BC4')[] = ['BC1', 'BC2', 'BC3', 'BC4'];
+        const bcs = getCompetenciasKeys(curso?.nivelEducativo);
         const results: Record<'BC1' | 'BC2' | 'BC3' | 'BC4', number | null> = {
             BC1: null, BC2: null, BC3: null, BC4: null
         };
@@ -983,10 +983,10 @@ const PerfilTab: React.FC<PerfilTabProps> = ({
 
                         <div className="flex flex-col md:flex-row md:items-center gap-y-4">
                             {[
-                                { id: 'BC1', label: getCompetenciaDisplay('BC1'), score: computedBCs.BC1, bg: '#537BAC' },
-                                { id: 'BC2', label: getCompetenciaDisplay('BC2'), score: computedBCs.BC2, bg: '#689C63' },
-                                { id: 'BC3', label: getCompetenciaDisplay('BC3'), score: computedBCs.BC3, bg: '#EB8847' },
-                                { id: 'BC4', label: getCompetenciaDisplay('BC4'), score: computedBCs.BC4, bg: '#DB5B48' }
+                                { id: 'BC1', label: getCompetenciaDisplay('BC1', curso?.nivelEducativo), score: computedBCs.BC1, bg: '#537BAC' },
+                                { id: 'BC2', label: getCompetenciaDisplay('BC2', curso?.nivelEducativo), score: computedBCs.BC2, bg: '#689C63' },
+                                { id: 'BC3', label: getCompetenciaDisplay('BC3', curso?.nivelEducativo), score: computedBCs.BC3, bg: '#EB8847' },
+                                ...(curso?.nivelEducativo !== 'primaria' ? [{ id: 'BC4', label: getCompetenciaDisplay('BC4', curso?.nivelEducativo), score: computedBCs.BC4, bg: '#DB5B48' }] : [])
                             ].map((comp, idx, arr) => (
                                 <React.Fragment key={comp.id}>
                                     <div className="flex-1 flex items-center gap-3 px-0 md:px-4 first:pl-0 last:pr-0">

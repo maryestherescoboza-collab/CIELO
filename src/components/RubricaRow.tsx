@@ -1,8 +1,8 @@
 import React from 'react';
 import { CheckCircle, MessageSquareText, Brain, Puzzle, Microscope } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { DescriptorRubrica, Nivel, Estudiante, BCKey } from '../types';
-import { COMPETENCIAS_LABEL } from '../types';
+import type { DescriptorRubrica, Nivel, Estudiante, BCKey, NivelEducativo } from '../types';
+import { getCompetenciaDisplay } from '../types';
 
 export const COMPETENCIAS: Array<{ nombre: string; bc: BCKey; icon: LucideIcon }> = [
     { nombre: 'BC1', bc: 'BC1', icon: MessageSquareText },
@@ -104,6 +104,7 @@ interface RubricaRowProps {
     // Optional decouple/context-menu handlers
     onDecouple?: () => void;
     isFloatingMode?: boolean;
+    nivelEducativo?: NivelEducativo;
     onContextMenu?: (e: React.MouseEvent) => void;
     isAssociated?: boolean;
     hasSelectedActivity?: boolean;
@@ -126,6 +127,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
     applyInlineFormat,
     onDecouple,
     isFloatingMode = false,
+    nivelEducativo,
     onContextMenu,
     isAssociated = false,
     hasSelectedActivity = false,
@@ -176,7 +178,7 @@ export const RubricaRow: React.FC<RubricaRowProps> = ({
                         return <CompetenciaIcon size={16} className="text-(--ink)" />;
                     })()}
                     <span className="text-[12px] leading-tight text-(--ink) font-bold">
-                        {COMPETENCIAS_LABEL[COMPETENCIAS[index % COMPETENCIAS.length].bc]}
+                        {getCompetenciaDisplay(COMPETENCIAS[index % COMPETENCIAS.length].bc, nivelEducativo)}
                     </span>
 
                     {/* Decouple icon on hover */}

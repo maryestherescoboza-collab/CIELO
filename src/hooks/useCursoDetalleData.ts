@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { AppState, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, BCKey, CursoDocente } from '../types';
+import { getCompetenciasKeys } from '../types';
 import { calculateStudentPeriodBC, normalizeArea } from '../utils/academic';
 import { perteneceAlContextoDelCurso, esEstudianteDelCurso } from '../utils/aislamiento';
 import { sonMismaAsignatura } from '../constants/asignaturas';
@@ -437,7 +438,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
             .filter(e => curso ? esEstudianteDelCurso(state.cursos, curso, e, centroContexto) : e.cursoId === cursoId);
 
         return filtered.map(est => {
-            const bcs: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
+            const bcs: BCKey[] = getCompetenciasKeys(curso?.nivelEducativo);
             const bcValues = bcs.map((bc) => {
                 const { avg, rec, final } = calculateStudentPeriodBC({
                     estudianteId: est.id,
@@ -511,12 +512,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                         displayName: '',
                         numeroLista: i,
                         calificaciones: {},
-                        bcValues: [
-                            { bc: 'BC1', avg: null, rec: null, final: null },
-                            { bc: 'BC2', avg: null, rec: null, final: null },
-                            { bc: 'BC3', avg: null, rec: null, final: null },
-                            { bc: 'BC4', avg: null, rec: null, final: null }
-                        ],
+                        bcValues: getCompetenciasKeys(curso?.nivelEducativo).map(bc => ({ bc, avg: null, rec: null, final: null })),
                         promTotal: null,
                         destaca: null,
                         isPlaceholder: true

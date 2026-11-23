@@ -12,6 +12,7 @@ import { PersistenceBanner } from '../components/curso-detalle/PersistenceBanner
 import { CieloModal } from '../components/ui/CieloModal';
 import { AlertTriangle, X } from 'lucide-react';
 import type { BCKey, Curso, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, ContextoRecuperacion, CursoDocente, Estudiante } from '../types';
+import { getCompetenciasKeys } from '../types';
 import { BC_ICONS, BC_COLOR_THEMES } from '../constants/competencias';
 import { PRODUCTO_FINAL_NAME } from '../constants/productoFinal';
 import { getGradeClass, normalizeArea, resolverIndicadorActividad } from '../utils/academic';
@@ -402,7 +403,7 @@ export default function CursoDetalle(props: Props) {
                                 </span>
                                 {/* Badges de competencias asociadas */}
                                 <div className="flex items-center gap-1 shrink-0">
-                                    {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
+                                    {getCompetenciasKeys(curso?.nivelEducativo).map(bc => {
                                         const isSel = (bcSel[selectedAct.id] ?? new Set(selectedAct.bcAsignados)).has(bc);
                                         if (!isSel) return null;
                                         return (
@@ -456,7 +457,7 @@ export default function CursoDetalle(props: Props) {
                         <div className="hidden xl:flex items-center justify-end gap-3 shrink-0">
                             {/* Badges de competencias asociadas */}
                             <div className="flex items-center gap-1.5">
-                                {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
+                                {getCompetenciasKeys(curso?.nivelEducativo).map(bc => {
                                     const isSel = (bcSel[selectedAct.id] ?? new Set(selectedAct.bcAsignados)).has(bc);
                                     if (!isSel) return null;
                                     return (
@@ -496,6 +497,7 @@ export default function CursoDetalle(props: Props) {
                 activePaintColor={activePaintColor}
                 focusedCell={focusedCell}
                 gradeAnimations={gradeAnimations}
+                nivelEducativo={curso?.nivelEducativo}
                 onSetGrade={(estId, actId, val) => {
                     setCalif(estId, actId, val);
                     if (val !== null) triggerAnimation(estId, actId, val);
@@ -561,6 +563,7 @@ export default function CursoDetalle(props: Props) {
                         activity={selectedAct}
                         actividades={actividades}
                         bcSel={bcSel}
+                        nivelEducativo={curso?.nivelEducativo}
                         onClose={() => setVisibleWorkspaceActivityId(null)}
                         onUpdateActividad={(id, patch) => props.onUpdateActividad?.(id, patch)}
                         onAddSecuencia={props.onAddSecuencia}
@@ -573,6 +576,7 @@ export default function CursoDetalle(props: Props) {
             <RecuperacionCotejoModal 
                 targetEst={targetEst}
                 target={rubricTarget}
+                nivelEducativo={curso?.nivelEducativo}
                 onClose={() => {
                     discardCotejo();
                     setRubricTarget(null);

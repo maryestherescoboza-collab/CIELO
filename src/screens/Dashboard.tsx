@@ -113,7 +113,9 @@ export default function Dashboard({ docenteNombre }: Props) {
         : est.puntaje;
 
       // Best BC
-      const bcKeys: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
+      const curso = state.cursos.find(c => c.id === est.cursoId);
+      const isPrimaria = curso?.nivelEducativo === 'primaria';
+      const bcKeys: BCKey[] = isPrimaria ? ['BC1', 'BC2', 'BC3'] : ['BC1', 'BC2', 'BC3', 'BC4'];
       let bestBc: BCKey | null = null;
       let bestVal = 0;
       for (const bc of bcKeys) {
@@ -124,7 +126,6 @@ export default function Dashboard({ docenteNombre }: Props) {
         }
       }
 
-      const curso = state.cursos.find(c => c.id === est.cursoId);
       return {
         ...est,
         computedAvg: avg,
@@ -156,7 +157,8 @@ export default function Dashboard({ docenteNombre }: Props) {
         if (!subjectsGrades) return;
         
         // Extraemos los PC1, PC2, PC3, PC4 de todos los períodos para todas las asignaturas
-        const bcs: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
+        const isPrimaria = curso?.nivelEducativo === 'primaria';
+        const bcs: BCKey[] = isPrimaria ? ['BC1', 'BC2', 'BC3'] : ['BC1', 'BC2', 'BC3', 'BC4'];
         const bcValues: Record<BCKey, number[]> = { BC1: [], BC2: [], BC3: [], BC4: [] };
 
         Object.values(subjectsGrades).forEach(asigGrades => {

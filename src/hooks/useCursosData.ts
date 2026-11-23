@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { ASIGNATURAS_CATALOGO } from '../constants/asignaturas';
-import type { AppState } from '../types';
+import type { AppState, NivelEducativo } from '../types';
 import { esEstudianteDelCurso } from '../utils/aislamiento';
 
 export function useCursosData(state: AppState) {
@@ -10,7 +10,17 @@ export function useCursosData(state: AppState) {
     const [teacherSearch, setTeacherSearch] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
-    const [form, setForm] = useState({
+    const [form, setForm] = useState<{
+        nivelEducativo: NivelEducativo;
+        asignatura: string;
+        esOptativa: boolean;
+        asignaturaOptativaNombre: string;
+        grado: string;
+        seccion: string;
+        diasSemana: string[];
+        isTutorOficial: boolean;
+    }>({
+        nivelEducativo: 'secundaria',
         asignatura: ASIGNATURAS_CATALOGO[0].id,
         esOptativa: false,
         asignaturaOptativaNombre: '',
@@ -22,6 +32,7 @@ export function useCursosData(state: AppState) {
 
     const resetForm = useCallback(() => {
         setForm({
+            nivelEducativo: 'secundaria',
             asignatura: ASIGNATURAS_CATALOGO[0].id,
             esOptativa: false,
             asignaturaOptativaNombre: '',

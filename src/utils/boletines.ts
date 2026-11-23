@@ -74,7 +74,8 @@ export function computeStudentGrades(
 
         asignaturasEvaluar.forEach(asig => {
             const periods: ('P1' | 'P2' | 'P3' | 'P4')[] = ['P1', 'P2', 'P3', 'P4'];
-            const bcs: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
+            const isPrimaria = curso?.nivelEducativo === 'primaria';
+            const bcs: BCKey[] = isPrimaria ? ['BC1', 'BC2', 'BC3'] : ['BC1', 'BC2', 'BC3', 'BC4'];
 
             const pGrades: Record<string, Record<BCKey, number | null>> = {
                 P1: { BC1: null, BC2: null, BC3: null, BC4: null },

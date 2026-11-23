@@ -5,7 +5,7 @@ import { clearCursoCache } from '../cache/cursoCache';
 import { clearAcademicCacheByUser } from '../cache/academicCache';
 import { invalidateCursoEstudianteCache, ensureCourseStudentsSWR } from '../cache/estudianteCache';
 import { getAsignaturaNombre, sonMismaAsignatura } from '../constants/asignaturas';
-import type { Curso } from '../types';
+import type { Curso, NivelEducativo } from '../types';
 
 export function useCourseActions() {
     const state = useAppStore(s => s.state);
@@ -37,6 +37,7 @@ export function useCourseActions() {
             .eq('periodo', c.periodo)
             .eq('grado', c.grado)
             .eq('seccion', c.seccion)
+            .eq('nivel_educativo', c.nivelEducativo || 'secundaria')
             .maybeSingle();
 
         if (findError) {
@@ -147,6 +148,7 @@ export function useCourseActions() {
                         existing.centroId === centro_id &&
                         existing.grado === c.grado &&
                         String(existing.seccion || '').trim().toUpperCase() === String(c.seccion || '').trim().toUpperCase() &&
+                        (existing.nivelEducativo || 'secundaria') === (c.nivelEducativo || 'secundaria') &&
                         Boolean(existing.sharedCourseId)
                 );
                 shared_course_id = existingSibling?.sharedCourseId || crypto.randomUUID();
@@ -159,6 +161,7 @@ export function useCourseActions() {
                 seccion: c.seccion,
                 periodo: c.periodo,
                 color: c.color,
+                nivel_educativo: c.nivelEducativo || 'secundaria',
                 is_tutor_oficial: c.isTutorOficial,
                 configuracion_evaluacion: c.configuracionEvaluacion || {},
                 user_id: session.user.id,
@@ -217,6 +220,7 @@ export function useCourseActions() {
                 periodo: finalCurso.periodo,
                 diasSemana: c.diasSemana,
                 color: finalCurso.color,
+                nivelEducativo: (finalCurso.nivel_educativo || 'secundaria') as NivelEducativo,
                 isTutorOficial: finalCurso.is_tutor_oficial,
                 userId: finalCurso.user_id,
                 grupoId: finalCurso.grupo_id,

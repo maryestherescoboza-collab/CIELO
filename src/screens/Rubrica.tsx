@@ -124,6 +124,7 @@ export default function Rubrica({
 
     const [selectedCursoId, setSelectedCursoId] = useState(initialCurso?.id ?? 0);
     const [selectedAsignatura, setSelectedAsignatura] = useState(initialCurso?.asignatura ?? '');
+    const curso = useMemo(() => cursosStore.find(c => c.id === selectedCursoId), [cursosStore, selectedCursoId]);
 
     useEffect(() => {
         if (!selectedCursoId && cursosStore.length > 0) {
@@ -1383,11 +1384,12 @@ export default function Rubrica({
                                 </thead>
 
                                 <tbody className="divide-y divide-slate-100">
-                                    {localDescriptors.slice(0, 4).map((desc, index) => (
+                                    {localDescriptors.slice(0, curso?.nivelEducativo === 'primaria' ? 3 : 4).map((desc, index) => (
                                         <RubricaRow
                                             key={desc.id}
                                             desc={desc}
                                             index={index}
+                                            nivelEducativo={curso?.nivelEducativo}
                                             selection={selection}
                                             activeCell={activeCell}
                                             activeFormatCell={activeFormatCell}

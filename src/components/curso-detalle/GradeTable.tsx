@@ -7,7 +7,8 @@ import GradeCell from './GradeCell';
 import InsertarEstudianteModal from './InsertarEstudianteModal';
 import MoverEstudianteModal from './MoverEstudianteModal';
 import ActivityViewTab from './workspace/ActivityViewTab';
-import type { BCKey, Actividad } from '../../types';
+import type { BCKey, Actividad, NivelEducativo } from '../../types';
+import { getCompetenciasKeys, getCompetenciasLabels } from '../../types';
 import { getActivityBcPoints, getProductoFinalMaxPoints, hasProductoFinalCustomPoints } from '../../utils/academic';
 import { CieloModal } from '../ui/CieloModal';
 import { notifyGuideOperationSuccess } from '../../guides/guideConfirmation';
@@ -39,6 +40,7 @@ interface GradeTableProps {
     BC_ICONS: Record<BCKey, React.ReactNode>;
     openActivityId?: number | null;
     onOpenActivityView?: (actId: number) => void;
+    nivelEducativo?: NivelEducativo;
 }
 
 const COMPETENCIAS_OFICIALES: Record<BCKey, string> = {
@@ -58,6 +60,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
     activePaintColor,
     focusedCell,
     gradeAnimations,
+    nivelEducativo,
     onSetGrade,
     onSetGradesBatch,
     onSetFocusedCell,
@@ -464,13 +467,14 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
         cols.push({ id: 'destaca', type: 'destaca', width: destacaWidth });
 
-        (['BC1', 'BC2', 'BC3', 'BC4'] as const).forEach((bc, idx) => {
+        const activeBcs = getCompetenciasKeys(nivelEducativo);
+        activeBcs.forEach((bc, idx) => {
             cols.push({ id: `bc-${bc}-avg`, type: 'bc-avg', width: bcAvgWidth, bc, idx });
             cols.push({ id: `bc-${bc}-rec`, type: 'bc-rec', width: bcRecWidth, bc, idx });
         });
 
         return cols;
-    }, [actividades, device]);
+    }, [actividades, device, nivelEducativo]);
 
     return (
         <div 
@@ -583,7 +587,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
                                             {/* Botones circulares de competencias con iconos oficiales CIELO */}
                                             <div className="flex items-center gap-0.5 md:gap-1 bg-base-creme p-0.5 md:p-1 rounded-full border border-(--border-soft)">
-                                                {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
+                                                {getCompetenciasKeys(nivelEducativo).map(bc => {
                                                     const isSel = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
                                                     return (
                                                         <button
@@ -650,7 +654,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
                                                 {/* Iconos de competencias con funcionalidad completa en todas las resoluciones */}
                                                 <div className="flex items-center gap-0.5 bg-base-creme p-0.5 rounded-full border border-(--border-soft)">
-                                                    {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
+                                                    {getCompetenciasKeys(nivelEducativo).map(bc => {
                                                         const isSel = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
                                                         return (
                                                             <button
@@ -668,7 +672,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
                                                 {/* Puntos de competencias calculados */}
                                                 <div className="flex justify-center gap-0.5">
-                                                    {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map(bc => {
+                                                    {getCompetenciasKeys(nivelEducativo).map(bc => {
                                                         const participa = (bcSel[act.id] ?? new Set(act.bcAsignados)).has(bc);
                                                         const aporte = getActivityBcPoints({ actividad: act, bc, actividades, bcSel });
                                                         const txt = String(Math.round(aporte));
@@ -695,7 +699,8 @@ const GradeTable: React.FC<GradeTableProps> = ({
                             }
                             if (col.type === 'bc-avg') {
                                 const bcKey = col.bc as BCKey;
-                                const nombreOficial = COMPETENCIAS_OFICIALES[bcKey];
+                                const labels = getCompetenciasLabels(nivelEducativo);
+                                const nombreOficial = (labels as Record<string, string>)[bcKey] || COMPETENCIAS_OFICIALES[bcKey] || col.bc;
                                 return (
                                     <div
                                         key={col.id}

@@ -13,8 +13,10 @@ export interface EstudianteExportItem {
     }>;
 }
 
+import type { BCKey, NivelEducativo } from '../types';
+
 export interface ExportRegistroOptions {
-    curso: { grado?: string; seccion?: string; nombre?: string } | undefined | null;
+    curso: { grado?: string; seccion?: string; nombre?: string; nivelEducativo?: NivelEducativo } | undefined | null;
     periodo: string;
     estudiantes: EstudianteExportItem[];
 }
@@ -75,8 +77,10 @@ export async function exportarRegistroAcademicoExcel(options: ExportRegistroOpti
         })
         .sort((a, b) => (a.numeroLista || 0) - (b.numeroLista || 0));
 
-    // 2. Construir la matriz de datos respetando encabezados legibles y tipos exactos
-    const headers = ['N.º', 'Estudiante', 'BC1', 'BC2', 'BC3', 'BC4'];
+    // 2. Construir la matriz de datos respetando encabezados legibles y tipos exactos según nivel
+    const isPrimaria = curso?.nivelEducativo === 'primaria';
+    const bcs: BCKey[] = isPrimaria ? ['BC1', 'BC2', 'BC3'] : ['BC1', 'BC2', 'BC3', 'BC4'];
+    const headers = ['N.º', 'Estudiante', ...bcs];
     const rows: (string | number | null)[][] = [headers];
 
     realStudents.forEach((est, idx) => {
@@ -93,12 +97,8 @@ export async function exportarRegistroAcademicoExcel(options: ExportRegistroOpti
             return Math.round(score);
         };
 
-        const bc1 = getBcValue('BC1');
-        const bc2 = getBcValue('BC2');
-        const bc3 = getBcValue('BC3');
-        const bc4 = getBcValue('BC4');
-
-        rows.push([num, name, bc1, bc2, bc3, bc4]);
+        const bcVals = bcs.map(bc => getBcValue(bc));
+        rows.push([num, name, ...bcVals]);
     });
 
     // 3. Carga diferida de SheetJS (xlsx) para optimizar el bundle global
@@ -111,10 +111,7 @@ export async function exportarRegistroAcademicoExcel(options: ExportRegistroOpti
     ws['!cols'] = [
         { wch: 8 },  // N.º
         { wch: 38 }, // Estudiante
-        { wch: 10 }, // BC1
-        { wch: 10 }, // BC2
-        { wch: 10 }, // BC3
-        { wch: 10 }  // BC4
+        ...bcs.map(() => ({ wch: 10 }))
     ];
 
     const wb = XLSX.utils.book_new();

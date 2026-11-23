@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import type { AppState, Plantilla, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, Secuencia, EventoCalendario, Docente, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, TareaInstitucional, TareaDocente, Centro } from '../types';
+import type { AppState, Plantilla, NivelEducativo, Post, UserProfile, Curso, Estudiante, Actividad, CalificacionActividad, RecuperacionBC, RecuperacionCotejo, Secuencia, EventoCalendario, Docente, NivelPuntaje, CursoDetalleEvaluacion, Notification, BCScore, BCKey, CursoDocente, Grupo, Incidencia, RegistroAnecdotico, RegistroImagen, TareaInstitucional, TareaDocente, Centro } from '../types';
 import { useAppStore } from '../store/appStore';
 import { esRolAdministrador } from '../utils/autorizacion';
 import { normalizarHora } from '../utils/diasSemana';
@@ -671,6 +671,7 @@ export function useSupabaseData(skipInit = false) {
                                 seccion: c.seccion as string,
                                 periodo: c.periodo as string,
                                 color: c.color as string,
+                                nivelEducativo: (c.nivel_educativo || 'secundaria') as NivelEducativo,
                                 isTutorOficial: c.is_tutor_oficial as boolean,
                                 userId: c.user_id as string,
                                 grupoId: c.grupo_id as number,

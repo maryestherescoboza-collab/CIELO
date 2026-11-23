@@ -1,6 +1,7 @@
 import React from 'react';
 import type { AppState, BCKey, Estudiante, Curso, RecuperacionBC } from '../../types';
-import { INDICADORES_RECUPERACION, TITULOS_RECUPERACION } from '../../constants/recuperacionCotejo';
+import { getCompetenciaDisplay } from '../../types';
+import { INDICADORES_RECUPERACION } from '../../constants/recuperacionCotejo';
 import { actividadesParaRecuperacion } from '../../utils/recuperacion';
 
 interface RecuperacionPerfilProps {
@@ -65,7 +66,9 @@ const RecuperacionPerfil: React.FC<RecuperacionPerfilProps> = ({
     const asignatura = isTutor ? undefined : currentAsignatura;
     const cursoId = curso.id;
 
-    const bloques = BCS.map(({ num, key }) => {
+    const isPrimaria = curso.nivelEducativo === 'primaria';
+    const activeBCS = isPrimaria ? BCS.filter(b => b.num <= 3) : BCS;
+    const bloques = activeBCS.map(({ num, key }) => {
         const recuperacion = state.recuperaciones.find((r: RecuperacionBC) =>
             r.estudianteId === est.id &&
             r.cursoId === cursoId &&
@@ -98,7 +101,7 @@ const RecuperacionPerfil: React.FC<RecuperacionPerfilProps> = ({
         return {
             key,
             num,
-            nombre: TITULOS_RECUPERACION[key],
+            nombre: getCompetenciaDisplay(key, curso.nivelEducativo),
             indicadores: definitivos,
             logradas: logradasPorIndicador,
             totalActividades: aplicables.length,

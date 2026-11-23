@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import FloatingWorkWindow, { type WorkWindowPosition } from './FloatingWorkWindow';
-import type { Actividad, BCKey } from '../../../types';
-import { getCompetenciaDisplay } from '../../../types';
+import type { Actividad, BCKey, NivelEducativo } from '../../../types';
+import { getCompetenciaDisplay, getCompetenciasKeys } from '../../../types';
 import { SUGERENCIAS_POR_COMPETENCIA } from '../../../constants/productoFinal';
 import { parsePuntosCompetencias } from '../../../utils/academic';
 
@@ -15,9 +15,8 @@ export interface WorkspaceProductoFinalProps {
     onUpdateActividad: (id: number, patch: Partial<Actividad>) => void;
     bcSel?: Record<number, Set<BCKey>>;
     actividades?: Actividad[];
+    nivelEducativo?: NivelEducativo;
 }
-
-const ALL_BCS: BCKey[] = ['BC1', 'BC2', 'BC3', 'BC4'];
 
 function serializePuntosCompetencias(descripcion: string | null | undefined, bc: BCKey, valor: number | null): string {
     let existing: Record<string, any> = {};
@@ -61,11 +60,13 @@ const WorkspaceProductoFinal: React.FC<WorkspaceProductoFinalProps> = ({
     onUpdateActividad,
     bcSel,
     actividades,
+    nivelEducativo,
 }) => {
     const [openSugerencias, setOpenSugerencias] = useState<BCKey | null>(null);
 
     const assigned = useMemo(() => bcSel?.[activity.id] ?? new Set(activity.bcAsignados || []), [bcSel, activity.id, activity.bcAsignados]);
-    const activeBcs = useMemo(() => ALL_BCS.filter(bc => assigned.has(bc)), [assigned]);
+    const bcsKeys = useMemo(() => getCompetenciasKeys(nivelEducativo), [nivelEducativo]);
+    const activeBcs = useMemo(() => bcsKeys.filter(bc => assigned.has(bc)), [assigned, bcsKeys]);
 
     const puntosGuardados = useMemo(() => parsePuntosCompetencias(activity.descripcion), [activity.descripcion]);
     const [localPuntos, setLocalPuntos] = useState<Record<string, string>>({});
@@ -132,7 +133,7 @@ const WorkspaceProductoFinal: React.FC<WorkspaceProductoFinalProps> = ({
                         return (
                             <div key={bc} className="ws-pf-row">
                                 <div className="ws-pf-col ws-pf-col-competencia">
-                                    <span className="ws-pf-bc-name">{getCompetenciaDisplay(bc)}</span>
+                                    <span className="ws-pf-bc-name">{getCompetenciaDisplay(bc, nivelEducativo)}</span>
                                     <button
                                         type="button"
                                         className="ws-pf-sug-toggle"
@@ -143,7 +144,7 @@ const WorkspaceProductoFinal: React.FC<WorkspaceProductoFinalProps> = ({
                                     </button>
                                     {openSugerencias === bc && (
                                         <div className="ws-pf-sugerencias">
-                                            {SUGERENCIAS_POR_COMPETENCIA[bc].map(sug => (
+                                            {(SUGERENCIAS_POR_COMPETENCIA[bc] || []).map(sug => (
                                                 <button
                                                     key={sug.id}
                                                     type="button"

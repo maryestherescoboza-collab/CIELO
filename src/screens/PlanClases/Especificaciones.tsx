@@ -62,6 +62,7 @@ const estiloBotonSecundario =
 export default function EspecificacionesCurriculares() {
   const session = useAppStore((s) => s.session);
   const setGenericToast = useAppStore((s) => s.setGenericToast);
+  const cursos = useAppStore((s) => s.state.cursos);
   const combinaciones = useCombinacionesCurriculares();
 
   const {
@@ -201,9 +202,11 @@ export default function EspecificacionesCurriculares() {
           // ni crear registros artificiales en curr_*. Se proveen las 7 Competencias
           // Fundamentales base para que el docente pueda planificar sin bloqueos.
           const nombreOptativa = getAsignaturaNombre(combo.asignatura);
+          const cursoActual = cursos.find(c => c.id === combo.cursoId);
+          const nivelStr = cursoActual?.nivelEducativo === 'primaria' ? 'Primaria' : 'Secundaria';
           const cesOptativas: FilaCompetenciaEspecifica[] = CF_BASE.map((cf, idx) => ({
             id: `optativa-ce-${idx + 1}`,
-            nivel: 'Secundaria',
+            nivel: nivelStr,
             grado: gradoCanonico,
             asignatura: combo.asignatura,
             bloque: cf.bloque,

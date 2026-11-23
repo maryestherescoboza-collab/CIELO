@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { Check, FileText } from 'lucide-react';
-import type { BCKey, RecuperacionCotejo, Estudiante, Actividad, CalificacionActividad, ContextoRecuperacion } from '../../types';
-import { INDICADORES_RECUPERACION, TITULOS_RECUPERACION } from '../../constants/recuperacionCotejo';
+import type { BCKey, RecuperacionCotejo, Estudiante, Actividad, CalificacionActividad, ContextoRecuperacion, NivelEducativo } from '../../types';
+import { getCompetenciaDisplay } from '../../types';
+import { INDICADORES_RECUPERACION } from '../../constants/recuperacionCotejo';
 import { actividadesParaRecuperacion, calcularResultadoRecuperacion, puntajeActualBC } from '../../utils/recuperacion';
 import { CieloModal } from '../ui/CieloModal';
 
@@ -19,6 +20,7 @@ interface RecuperacionCotejoModalProps {
     celdas: RecuperacionCotejo[];
     actividades: Actividad[];
     calificaciones: CalificacionActividad[];
+    nivelEducativo?: NivelEducativo;
 }
 
 const RecuperacionCotejoModal: React.FC<RecuperacionCotejoModalProps> = ({
@@ -34,6 +36,7 @@ const RecuperacionCotejoModal: React.FC<RecuperacionCotejoModalProps> = ({
     celdas,
     actividades,
     calificaciones,
+    nivelEducativo,
 }) => {
     const bcNum = (target?.bc ?? 1) as 1 | 2 | 3 | 4;
     const bcKey = (target?.bcName || (`BC${target?.bc ?? 1}`)) as BCKey;
@@ -128,7 +131,7 @@ const modalFooter = (
                     <div className={`w-8 h-8 rounded shrink-0 flex items-center justify-center ${BC_COLOR_THEMES[bcKey].bg} ${BC_COLOR_THEMES[bcKey].text}`}>
                         {BC_ICONS[bcKey]}
                     </div>
-                    <span className="block text-sm font-black uppercase tracking-widest text-slate-800">{bcKey} — {TITULOS_RECUPERACION[bcKey]}</span>
+                    <span className="block text-sm font-black uppercase tracking-widest text-slate-800">{bcKey} — {getCompetenciaDisplay(bcKey, nivelEducativo)}</span>
                 </div>
             </div>
 
@@ -136,7 +139,7 @@ const modalFooter = (
                 <div className="py-12 text-center">
                     <span className="text-slate-300 block mb-2"><FileText size={40} className="mx-auto" /></span>
                     <p className="text-sm font-black text-slate-500 uppercase tracking-widest">Sin actividades para evaluar</p>
-                    <p className="text-xs font-bold text-slate-400 mt-1 max-w-md mx-auto">No hay actividades de {TITULOS_RECUPERACION[bcKey]} con puntaje menor a 70 en {selectedPeriodo}. Esta competencia no tiene evidencias de recuperación.</p>
+                    <p className="text-xs font-bold text-slate-400 mt-1 max-w-md mx-auto">No hay actividades de {getCompetenciaDisplay(bcKey, nivelEducativo)} con puntaje menor a 70 en {selectedPeriodo}. Esta competencia no tiene evidencias de recuperación.</p>
                 </div>
             ) : (
                 <div className="overflow-x-auto">

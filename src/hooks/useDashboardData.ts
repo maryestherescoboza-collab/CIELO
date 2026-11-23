@@ -75,7 +75,11 @@ export function useDashboardData(state: AppState, selectedCourseId: number | 'al
     const avgBC2 = avgBC('BC2');
     const avgBC3 = avgBC('BC3');
     const avgBC4 = avgBC('BC4');
-    const avgGeneral = Math.round((avgBC1 + avgBC2 + avgBC3 + avgBC4) / 4);
+    const selectedCurso = selectedCourseId !== 'all' ? state.cursos.find(c => c.id === selectedCourseId) : null;
+    const isPrimaria = selectedCurso?.nivelEducativo === 'primaria';
+    const avgGeneral = isPrimaria
+        ? Math.round((avgBC1 + avgBC2 + avgBC3) / 3)
+        : Math.round((avgBC1 + avgBC2 + avgBC3 + avgBC4) / 4);
 
     const estudiantesRiesgoUnicos = new Set(
         filteredCalificaciones

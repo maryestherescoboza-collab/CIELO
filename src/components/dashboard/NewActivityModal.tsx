@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MessageSquareText, Brain, Puzzle, Microscope, Sparkles, BookOpen, AlertCircle, Check, Loader2 } from 'lucide-react';
 import type { AppState, Actividad, BCKey } from '../../types';
-import { COMPETENCIAS_LABEL } from '../../types';
+import { COMPETENCIAS_LABEL, getCompetenciasKeys, getCompetenciasLabels, getCompetenciaDisplay } from '../../types';
 import { TC_Flux, TC_Genesis, TC_Archive, TC_Echo } from '../icons/TerraCognitaIcons';
 import { CieloModal } from '../ui/CieloModal';
 import { useAppStore } from '../../store/appStore';
@@ -63,6 +63,17 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     });
 
     const [indicadoresJson, setIndicadoresJson] = useState<any[]>([]);
+
+    const selectedCurso = cursos.find(c => c.id === Number(form.cursoId));
+    const nivelEducativo = selectedCurso?.nivelEducativo || 'secundaria';
+    const activeBcs = getCompetenciasKeys(nivelEducativo);
+    const bcLabels = getCompetenciasLabels(nivelEducativo);
+
+    useEffect(() => {
+        if (nivelEducativo === 'primaria' && form.bcs.includes('BC4')) {
+            setForm(p => ({ ...p, bcs: p.bcs.filter(b => b !== 'BC4') }));
+        }
+    }, [nivelEducativo]);
 
     // IA flow (texto pegado) states
     const [pastedText, setPastedText] = useState('');
@@ -407,9 +418,14 @@ Estructura obligatoria:
                         if (!nombre) return null;
                         const norm = nombre.trim().toLowerCase();
                         if (norm.includes('comunicativa')) return 'BC1';
-                        if (norm.includes('lógico') || norm.includes('resolución')) return 'BC2';
-                        if (norm.includes('científica') || norm.includes('tecnológica') || norm.includes('salud')) return 'BC3';
-                        if (norm.includes('ética') || norm.includes('ciudadana') || norm.includes('espiritual') || norm.includes('personal')) return 'BC4';
+                        if (nivelEducativo === 'primaria') {
+                            if (norm.includes('lógico') || norm.includes('resolución') || norm.includes('científica') || norm.includes('tecnológica')) return 'BC2';
+                            if (norm.includes('ética') || norm.includes('ciudadana') || norm.includes('espiritual') || norm.includes('personal') || norm.includes('ambiental') || norm.includes('salud')) return 'BC3';
+                        } else {
+                            if (norm.includes('lógico') || norm.includes('resolución')) return 'BC2';
+                            if (norm.includes('científica') || norm.includes('tecnológica') || norm.includes('salud') || norm.includes('ambiental')) return 'BC3';
+                            if (norm.includes('ética') || norm.includes('ciudadana') || norm.includes('espiritual') || norm.includes('personal')) return 'BC4';
+                        }
                         return null;
                     };
 
@@ -1020,8 +1036,9 @@ ${pastedText}`;
                                             </div>
 
                                             <div className="grid grid-cols-1 gap-2.5">
-                                                {BC_CIRCLE_CONFIG.map(({ id, label, icon: Icon, bg, selectedBg, selectedText }) => {
+                                                {BC_CIRCLE_CONFIG.filter(c => activeBcs.includes(c.id)).map(({ id, icon: Icon, bg, selectedBg, selectedText }) => {
                                                     const isSelected = form.bcs.includes(id);
+                                                    const label = bcLabels[id] || id;
                                                     return (
                                                         <button
                                                             key={id}
@@ -1336,18 +1353,12 @@ ${pastedText}`;
                                                     <div className="flex flex-col gap-1.5">
                                                         {act.competencias.length > 0 ? (
                                                             act.competencias.map(bc => {
-                                                                const bcNames: Record<string, string> = {
-                                                                    'BC1': 'Comunicativa',
-                                                                    'BC2': 'Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas',
-                                                                    'BC3': 'Científica y Tecnológica; y Ambiental y de la Salud',
-                                                                    'BC4': 'Ética y Ciudadana; y Desarrollo Personal y Espiritual'
-                                                                };
                                                                 return (
                                                                     <span
                                                                         key={bc}
                                                                         className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border bg-white border-slate-300 text-slate-800"
                                                                     >
-                                                                        {bcNames[bc] || bc}
+                                                                        {getCompetenciaDisplay(bc, nivelEducativo)}
                                                                     </span>
                                                                 );
                                                             })

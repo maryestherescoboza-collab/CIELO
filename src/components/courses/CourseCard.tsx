@@ -71,7 +71,7 @@ export function CourseCard({
                                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-[0.08em] bg-(--linen)/80 text-(--ink) border border-(--border-soft)">{curso.grado}</span>
                                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-[0.08em] bg-(--linen)/80 text-(--ink) border border-(--border-soft)">Sección {curso.seccion}</span>
                             </div>
-                            <span className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest">Nivel {curso.grado[0]}° Secundaria</span>
+                            <span className="text-xs font-bold text-(--ink-soft) uppercase tracking-widest">Nivel {curso.grado[0]}° {curso.nivelEducativo === 'primaria' ? 'Primaria' : 'Secundaria'}</span>
                         </div>
                     </div>
                     <button

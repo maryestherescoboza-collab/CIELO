@@ -31,3 +31,17 @@ export const BC_COLOR_THEMES: Record<BCKey, { bg: string; text: string; active: 
         active: 'bg-cielo-green text-white border-cielo-green'
     }
 };
+
+export const COMPETENCIAS_ESPECIFICAS_POR_NIVEL = {
+    secundaria: {
+        BC1: ['Comunicativa'],
+        BC2: ['Pensamiento Lógico, Creativo y Crítico', 'Resolución de Problemas'],
+        BC3: ['Científica y Tecnológica', 'Ambiental y de la Salud'],
+        BC4: ['Ética y Ciudadana', 'Desarrollo Personal y Espiritual']
+    },
+    primaria: {
+        BC1: ['Comunicativa'],
+        BC2: ['Pensamiento Lógico, Creativo y Crítico', 'Resolución de Problemas', 'Científica y Tecnológica'],
+        BC3: ['Ética y Ciudadana', 'Desarrollo Personal y Espiritual', 'Ambiental y de la Salud']
+    }
+} as const;

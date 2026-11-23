@@ -59,6 +59,8 @@ export const FloatingRubricManager: React.FC = () => {
 
     // Global application data state
     const cursos = useAppStore(useShallow((s) => s.state.cursos));
+    const selectedCursoId = useAppStore((s) => s.selectedCursoId);
+    const currentCurso = cursos.find(c => c.id === selectedCursoId);
     const stateEstudiantes = useAppStore(useShallow((s) => s.state.estudiantes));
     const selectedEstId = useAppStore((s) => s.selectedEstudianteId);
     const setSelectedEstId = useAppStore((s) => s.setSelectedEstudianteId);
@@ -305,6 +307,7 @@ export const FloatingRubricManager: React.FC = () => {
                                             readOnly={false}
                                             onSelect={handleSelect}
                                             isFloatingMode={true}
+                                            nivelEducativo={currentCurso?.nivelEducativo}
                                         />
                                     </tbody>
                                 </table>

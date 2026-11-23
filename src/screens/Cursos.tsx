@@ -70,7 +70,8 @@ export default function Cursos({
         setIsSaving(true);
         notifyGuideOperationStarted('curso_guardar');
         try {
-            const generatedNombre = `${form.grado} de Secundaria - Sección ${form.seccion}`;
+            const nivelLabel = form.nivelEducativo === 'primaria' ? 'Primaria' : 'Secundaria';
+            const generatedNombre = `${form.grado} de ${nivelLabel} - Sección ${form.seccion}`;
             const result = await onAddCurso({
                 nombre: generatedNombre,
                 grado: form.grado,
@@ -78,6 +79,7 @@ export default function Cursos({
                 asignatura: finalAsignatura,
                 diasSemana: form.diasSemana,
                 isTutorOficial: form.isTutorOficial,
+                nivelEducativo: form.nivelEducativo || 'secundaria',
                 periodo: 'P2',
                 color: 'var(--primary)',
                 configuracionEvaluacion: {}
