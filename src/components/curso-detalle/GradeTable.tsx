@@ -475,10 +475,10 @@ const GradeTable: React.FC<GradeTableProps> = ({
     return (
         <div 
             ref={parentRef} 
-            className="flex-1 overflow-auto bg-transparent touch-auto overscroll-contain scroll-smooth"
-            style={{ scrollPaddingBottom: '140px' }}
+            className="flex-1 min-h-0 overflow-auto bg-transparent touch-auto overscroll-contain scroll-smooth"
+            style={{ scrollPaddingBottom: '160px', WebkitOverflowScrolling: 'touch' }}
         >
-            <div className="min-w-max p-0 md:p-1.5 xl:p-2 pb-28 md:pb-32 xl:pb-40">
+            <div className="min-w-max px-0 md:px-1.5 xl:px-2 pt-0 md:pt-1.5 xl:pt-2 pb-36 md:pb-40 xl:pb-44">
                 <div className="bg-white rounded-none md:rounded-xl xl:rounded-xl shadow-none md:shadow-xs border-0 md:border md:border-(--border-soft) min-w-max w-max">
                     {/* Header */}
                     <div className="sticky top-0 z-40 bg-[#FAF8F5] xl:bg-(--background) text-[#2E3330] border-b border-[#2E3330]/15 md:border-(--border-soft) flex min-w-max w-max rounded-none md:rounded-t-xl xl:rounded-t-xl">
@@ -1028,6 +1028,9 @@ const GradeTable: React.FC<GradeTableProps> = ({
                         )}
                     </div>
                 </div>
+
+                {/* Espaciador físico de holgura para vista móvil y tablet: garantiza visibilidad total del último registro y evita solapamientos */}
+                <div className="h-32 sm:h-36 md:h-40 xl:h-28 w-full shrink-0 pointer-events-none" aria-hidden="true" />
             </div>
 
             <PegarListadoModal

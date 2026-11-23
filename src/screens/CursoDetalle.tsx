@@ -324,7 +324,7 @@ export default function CursoDetalle(props: Props) {
     if (!curso) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col bg-(--background) m-0 overflow-hidden shadow-none border-0" onMouseDown={() => evalMode === 'pincel' && setIsDragging(true)}>
+        <div className="fixed inset-0 z-50 flex flex-col bg-(--background) m-0 overflow-hidden shadow-none border-0 h-[100dvh] max-h-[100dvh] w-full" onMouseDown={() => evalMode === 'pincel' && setIsDragging(true)}>
             <CursoDetalleHeader 
                 curso={curso}
                 buscar={buscar}
