@@ -52,17 +52,65 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
     const isProductoFinal = !!activity.isProductoFinal;
 
     const initialPositions = useMemo<Record<ActivityWindowId, WorkWindowPosition>>(() => {
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const clamp = (x: number, w: number) => Math.max(6, Math.min(x, Math.max(6, vw - w - 6)));
-return {
-            datos: { x: clamp(Math.max(6, (vw - 344) / 2 - 26), WINDOW_WIDTHS.datos), y: 16 },
-            competencias: { x: clamp(Math.max(6, (vw - 344) / 2 + 6), WINDOW_WIDTHS.competencias), y: Math.max(185, Math.min(210, vh - 170)) },
-            recursos: { x: clamp(Math.max(6, (vw - 344) / 2 + 38), WINDOW_WIDTHS.recursos), y: Math.max(260, Math.min(290, vh - 210)) },
-            ficha: { x: clamp(Math.max(6, (vw - 300) / 2 + 210), WINDOW_WIDTHS.ficha), y: Math.max(185, Math.min(210, vh - 150)) },
-            'producto-final': { x: clamp(Math.max(6, (vw - 420) / 2), WINDOW_WIDTHS['producto-final']), y: Math.max(280, Math.min(310, vh - 260)) },
+        const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
+        const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+        const clamp = (x: number, w: number) => Math.max(8, Math.min(x, Math.max(8, vw - w - 8)));
+
+        // Altura bajo WorkspaceDatos (aprox. 150px) y margen superior
+        const topY = 180;
+        // Margen izquierdo que respeta el FolderSequenceLauncher (left: 18px, width: 60px)
+        const leftBase = 88;
+
+        if (isProductoFinal) {
+            // 4 ventanas flotantes: Competencias (344), Recursos (304), Ficha (300), Producto Final (420)
+            const totalWidthRow1 = 344 + 304 + 300; // 948px
+            const gap = Math.max(16, Math.min(28, Math.floor((vw - leftBase - totalWidthRow1 - 24) / 3)));
+            const startX = Math.max(leftBase, Math.floor((vw - (totalWidthRow1 + gap * 2)) / 2));
+
+            // Si la pantalla es amplia (>= 1600px), caben las 4 en una fila sin solapamiento
+            if (vw >= 1600) {
+                const total4 = totalWidthRow1 + 420; // 1368px
+                const gap4 = Math.max(16, Math.min(24, Math.floor((vw - leftBase - total4 - 24) / 4)));
+                const start4 = Math.max(leftBase, Math.floor((vw - (total4 + gap4 * 3)) / 2));
+                return {
+                    datos: { x: clamp((vw - 320) / 2, WINDOW_WIDTHS.datos), y: 16 },
+                    competencias: { x: clamp(start4, WINDOW_WIDTHS.competencias), y: topY },
+                    recursos: { x: clamp(start4 + 344 + gap4, WINDOW_WIDTHS.recursos), y: topY },
+                    ficha: { x: clamp(start4 + 344 + gap4 + 304 + gap4, WINDOW_WIDTHS.ficha), y: topY },
+                    'producto-final': { x: clamp(start4 + 344 + gap4 + 304 + gap4 + 300 + gap4, WINDOW_WIDTHS['producto-final']), y: topY },
+                };
+            }
+
+            // En pantallas estándar (1200px - 1599px):
+            // Fila 1: Competencias, Recursos, Ficha (ordenadas horizontalmente en topY)
+            // Fila 2: Producto Final centrado debajo, sin solapar con la fila 1
+            const yRow2 = Math.min(topY + 235, Math.max(topY + 180, vh - 340));
+            const xProdFinal = clamp(Math.floor((vw - WINDOW_WIDTHS['producto-final']) / 2), WINDOW_WIDTHS['producto-final']);
+
+            return {
+                datos: { x: clamp((vw - 320) / 2, WINDOW_WIDTHS.datos), y: 16 },
+                competencias: { x: clamp(startX, WINDOW_WIDTHS.competencias), y: topY },
+                recursos: { x: clamp(startX + 344 + gap, WINDOW_WIDTHS.recursos), y: topY },
+                ficha: { x: clamp(startX + 344 + gap + 304 + gap, WINDOW_WIDTHS.ficha), y: topY },
+                'producto-final': { x: xProdFinal, y: yRow2 },
+            };
+        }
+
+        // Caso estándar (3 ventanas flotantes: Competencias, Recursos, Ficha)
+        // Ancho total combinado: 344 + 304 + 300 = 948px distribuidas sin solapamiento
+        const totalW = 344 + 304 + 300;
+        const availableSpace = vw - leftBase - 24;
+        const gap = Math.max(16, Math.min(36, Math.floor((availableSpace - totalW) / 3)));
+        const startX = Math.max(leftBase, Math.floor((vw - (totalW + gap * 2)) / 2));
+
+        return {
+            datos: { x: clamp((vw - 320) / 2, WINDOW_WIDTHS.datos), y: 16 },
+            competencias: { x: clamp(startX, WINDOW_WIDTHS.competencias), y: topY },
+            recursos: { x: clamp(startX + 344 + gap, WINDOW_WIDTHS.recursos), y: topY },
+            ficha: { x: clamp(startX + 344 + gap + 304 + gap, WINDOW_WIDTHS.ficha), y: topY },
+            'producto-final': { x: clamp((vw - 420) / 2, WINDOW_WIDTHS['producto-final']), y: topY + 240 },
         };
-    }, []);
+    }, [isProductoFinal]);
 
     const positionsRef = useRef(initialPositions);
     const [positions, setPositions] = useState(initialPositions);
@@ -202,7 +250,7 @@ return {
                     zIndex={zMap.datos}
                     onStartDrag={startDrag}
                     onWindowFocus={(id) => bringToFront(id as ActivityWindowId)}
-                    onClose={onClose}
+                    onClose={() => closeWindow('datos')}
                     onUpdateActividad={onUpdateActividad}
                 />
             )}

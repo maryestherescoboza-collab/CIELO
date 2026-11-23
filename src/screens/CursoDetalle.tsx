@@ -124,7 +124,8 @@ export default function CursoDetalle(props: Props) {
         window.addEventListener('cielo:abrir-modal-actividad', handleOpenModal);
         return () => window.removeEventListener('cielo:abrir-modal-actividad', handleOpenModal);
     }, []);
-    const [visibleActivityId, setVisibleActivityId] = useState<number | null>(null);
+    const [visibleIndicadorActivityId, setVisibleIndicadorActivityId] = useState<number | null>(null);
+    const [visibleWorkspaceActivityId, setVisibleWorkspaceActivityId] = useState<number | null>(null);
     const [showWarningsModal, setShowWarningsModal] = useState(false);
     const [periodLoading, setPeriodLoading] = useState(false);
     const [periodError, setPeriodError] = useState<string | null>(null);
@@ -380,9 +381,9 @@ export default function CursoDetalle(props: Props) {
                 </div>
             )}
 
-            {/* Barra de Indicador Activo: ocupa todo el ancho horizontal, fija y visible durante la evaluación */}
-            {visibleActivityId !== null && (() => {
-                const selectedAct = actividades.find(a => a.id === visibleActivityId);
+            {/* Barra de Indicador Activo: ocupa todo el ancho horizontal, fija y visible durante la evaluación de manera independiente */}
+            {visibleIndicadorActivityId !== null && (() => {
+                const selectedAct = actividades.find(a => a.id === visibleIndicadorActivityId);
                 if (!selectedAct) return null;
                 const indicadorTexto = resolverIndicadorActividad(selectedAct);
                 return (
@@ -420,7 +421,7 @@ export default function CursoDetalle(props: Props) {
                             {/* Botón cerrar para volver al estado anterior sin perder posición ni datos */}
                             <button
                                 type="button"
-                                onClick={() => setVisibleActivityId(null)}
+                                onClick={() => setVisibleIndicadorActivityId(null)}
                                 className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-purple-200 text-purple-900 hover:bg-purple-100 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
                                 title="Cerrar indicador"
                             >
@@ -473,7 +474,7 @@ export default function CursoDetalle(props: Props) {
                             {/* Botón cerrar para volver al estado anterior sin perder posición ni datos */}
                             <button
                                 type="button"
-                                onClick={() => setVisibleActivityId(null)}
+                                onClick={() => setVisibleIndicadorActivityId(null)}
                                 className="flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-purple-200 text-purple-900 hover:bg-purple-100 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                                 title="Cerrar indicador"
                             >
@@ -533,12 +534,26 @@ export default function CursoDetalle(props: Props) {
                 getGradeClass={getGradeClass}
                 BC_COLOR_THEMES={BC_COLOR_THEMES}
                 BC_ICONS={BC_ICONS}
-                openActivityId={visibleActivityId}
-                onOpenActivityView={(id) => setVisibleActivityId(prev => prev === id ? null : id)}
+                openActivityId={visibleWorkspaceActivityId ?? visibleIndicadorActivityId}
+                onOpenActivityView={(id) => {
+                    if (id === null) {
+                        setVisibleWorkspaceActivityId(null);
+                        setVisibleIndicadorActivityId(null);
+                    } else if (visibleWorkspaceActivityId === id || visibleIndicadorActivityId === id) {
+                        if (visibleWorkspaceActivityId === id) {
+                            setVisibleWorkspaceActivityId(null);
+                        } else {
+                            setVisibleWorkspaceActivityId(id);
+                        }
+                    } else {
+                        setVisibleIndicadorActivityId(id);
+                        setVisibleWorkspaceActivityId(id);
+                    }
+                }}
             />
 
-            {visibleActivityId !== null && typeof window !== 'undefined' && window.innerWidth >= 1200 && (() => {
-                const selectedAct = actividades.find(a => a.id === visibleActivityId);
+            {visibleWorkspaceActivityId !== null && typeof window !== 'undefined' && window.innerWidth >= 1200 && (() => {
+                const selectedAct = actividades.find(a => a.id === visibleWorkspaceActivityId);
                 if (!selectedAct) return null;
                 return (
                     <ActivityWorkspace
@@ -546,7 +561,7 @@ export default function CursoDetalle(props: Props) {
                         activity={selectedAct}
                         actividades={actividades}
                         bcSel={bcSel}
-                        onClose={() => setVisibleActivityId(null)}
+                        onClose={() => setVisibleWorkspaceActivityId(null)}
                         onUpdateActividad={(id, patch) => props.onUpdateActividad?.(id, patch)}
                         onAddSecuencia={props.onAddSecuencia}
                         onUpdateSecuencia={props.onUpdateSecuencia}
