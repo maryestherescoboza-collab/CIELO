@@ -438,7 +438,8 @@ const GradeTable: React.FC<GradeTableProps> = ({
         count: estudiantes.length,
         getScrollElement: () => parentRef.current,
         estimateSize: () => device === 'mobile' ? 38 : device === 'tablet' ? 40 : 42,
-        overscan: 10,
+        overscan: 15,
+        paddingEnd: 24,
     });
 
     const totalHeight = rowVirtualizer.getTotalSize();
@@ -472,8 +473,12 @@ const GradeTable: React.FC<GradeTableProps> = ({
     }, [actividades, device]);
 
     return (
-        <div ref={parentRef} className="flex-1 overflow-auto bg-transparent touch-auto overscroll-contain">
-            <div className="min-w-max p-0 md:p-1.5 xl:p-2">
+        <div 
+            ref={parentRef} 
+            className="flex-1 overflow-auto bg-transparent touch-auto overscroll-contain scroll-smooth"
+            style={{ scrollPaddingBottom: '140px' }}
+        >
+            <div className="min-w-max p-0 md:p-1.5 xl:p-2 pb-28 md:pb-32 xl:pb-40">
                 <div className="bg-white rounded-none md:rounded-xl xl:rounded-xl shadow-none md:shadow-xs border-0 md:border md:border-(--border-soft) min-w-max w-max">
                     {/* Header */}
                     <div className="sticky top-0 z-40 bg-[#FAF8F5] xl:bg-(--background) text-[#2E3330] border-b border-[#2E3330]/15 md:border-(--border-soft) flex min-w-max w-max rounded-none md:rounded-t-xl xl:rounded-t-xl">
@@ -712,7 +717,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
                                         {/* Escritorio (hidden xl:flex): Nombres oficiales completos */}
                                         <div className="hidden xl:flex flex-col items-center text-center w-full px-1">
-                                            <span className="text-[10px] xl:text-[10.5px] font-bold text-[#2E3330] leading-[1.25] text-center line-clamp-3">
+                                            <span className="text-[10px] xl:text-[10.5px] font-bold text-[#2E3330] leading-tight text-center line-clamp-3">
                                                 {nombreOficial}
                                             </span>
                                             <span className="text-[8px] font-bold text-[#5F665E]/70 uppercase tracking-wider mt-0.5">
@@ -1003,6 +1008,24 @@ const GradeTable: React.FC<GradeTableProps> = ({
                                 </div>
                             );
                         })}
+                    </div>
+
+                    {/* Barra de cierre y pie de tabla para garantizar visibilidad del último estudiante */}
+                    <div className="sticky left-0 flex items-center justify-between px-3 md:px-4 py-2 bg-[#FAF8F5] xl:bg-(--background) border-t border-[#2E3330]/10 text-xs font-semibold text-[#5F665E] rounded-b-none md:rounded-b-xl xl:rounded-b-xl z-20 shadow-2xs">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="font-bold text-[#2E3330]">
+                                Total estudiantes: {estudiantes.filter(e => !e.isPlaceholder).length}
+                            </span>
+                            <span className="text-[11px] text-[#5F665E]/70 hidden sm:inline">
+                                · Lista completa visible
+                            </span>
+                        </div>
+                        {estudiantes.length > 0 && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#5F665E]/60">
+                                Fin del listado
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>

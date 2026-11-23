@@ -432,7 +432,7 @@ export default function CursoDetalle(props: Props) {
 
                         {/* Texto del indicador en móvil y tableta: Ocupa todo el ancho disponible (w-full), eliminando cuadros pequeños o espacios vacíos */}
                         <div className="block xl:hidden w-full bg-white/70 p-2.5 sm:p-3 rounded-lg border border-purple-200/70 shadow-2xs">
-                            <p className="text-xs sm:text-sm font-semibold text-[#2E3330] leading-relaxed select-text w-full break-words">
+                            <p className="text-xs sm:text-sm font-semibold text-[#2E3330] leading-relaxed select-text w-full wrap-break-word">
                                 {indicadorTexto}
                             </p>
                         </div>
