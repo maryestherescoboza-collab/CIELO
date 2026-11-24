@@ -30,6 +30,8 @@ import { CieloPill } from '../components/ui/CieloPill';
 import { useTemplateCapture } from '../hooks/useTemplateCapture';
 import { TemplateCaptureButton } from '../components/TemplateCaptureButton';
 import ExportarInstrumentoModal from '../components/evaluacion/ExportarInstrumentoModal';
+import { RubricaConfigModal } from '../components/rubrica/RubricaConfigModal';
+import { RubricaMobileView } from '../components/rubrica/RubricaMobileView';
 import {
     descargarRubricaDocx,
     guardarRubricaEnDrive,
@@ -184,6 +186,7 @@ export default function Rubrica({
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [showGenerarModal, setShowGenerarModal] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
+    const [showConfigModal, setShowConfigModal] = useState(false);
     const [isDownloadingEval, setIsDownloadingEval] = useState(false);
     const [isDownloadingPlantillas, setIsDownloadingPlantillas] = useState(false);
     const aiSkipNormalizeRef = useRef(false);
@@ -235,6 +238,13 @@ export default function Rubrica({
             rubricaPlantillas: plantillas
         };
     }, [cursosStore, estudiantesStore, actividadesStore, plantillasStore, selectedCursoId, selectedAsignatura, selectedPeriodo, session?.user?.id, currentCourseRole]);
+
+    // Auto-seleccionar primer estudiante si no hay ninguno seleccionado (vital para vista táctil)
+    useEffect(() => {
+        if (selectedEstId === null && sortedEsts.length > 0) {
+            setSelectedEstId(sortedEsts[0].id);
+        }
+    }, [sortedEsts, selectedEstId]);
 
     const currentCourse = selectedCurso;
     const asignaturaName = getAsignaturaNombre(selectedAsignatura || currentCourseRole?.asignatura) || currentCourse?.asignatura || 'Asignatura';
@@ -934,8 +944,37 @@ export default function Rubrica({
 
     return (
         <div className="flex flex-1 h-full overflow-hidden bg-base-creme">
+            {/* VISTA MÓVIL Y TABLETA (< lg) */}
+            <div className="lg:hidden flex-1 flex flex-col h-full overflow-hidden">
+                <RubricaMobileView
+                    curso={selectedCurso}
+                    selectedAsignatura={selectedAsignatura}
+                    selectedPeriodo={selectedPeriodo}
+                    selectedAct={selectedAct}
+                    sortedEsts={sortedEsts}
+                    selectedEstId={selectedEstId}
+                    activeCell={activeCell}
+                    onSelectCell={handleSelect}
+                    onAvatarClick={handleAvatarClick}
+                    onCancelActiveCell={() => setActiveCell(null)}
+                    localDescriptors={localDescriptors}
+                    localNiveles={localNiveles}
+                    selection={selection}
+                    multiEvaluations={multiEvaluations}
+                    onOpenConfigModal={() => setShowConfigModal(true)}
+                    onOpenExportModal={() => setShowExportModal(true)}
+                    onOpenGenerarIA={() => setShowGenerarModal(true)}
+                    onSave={Object.keys(multiEvaluations).length > 0 ? handleFinalizeGroupEvaluation : handleSave}
+                    isSaving={isSaving}
+                    savedFlash={savedFlash}
+                    calcPuntajeTotal={calcPuntajeTotal}
+                    readOnly={readOnly}
+                />
+            </div>
+
+            {/* VISTA DE ESCRITORIO (PC >= lg) - Inalterada */}
             {!readOnly && (
-                <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} min-h-screen border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
+                <aside className={`hidden lg:flex shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} min-h-screen border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex-col`}>
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                         className="absolute top-4 -right-1 z-50 p-1.5 bg-primary text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
@@ -1138,7 +1177,7 @@ export default function Rubrica({
                 </aside>
             )}
 
-            <main className="flex-1 overflow-y-auto px-3 py-3 md:px-5 scroll-smooth scrollbar-hide">
+            <main className="hidden lg:block flex-1 overflow-y-auto px-3 py-3 md:px-5 scroll-smooth scrollbar-hide">
                 <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both space-y-1.5">
                     <div className="flex flex-wrap items-center justify-between gap-5 pb-3">
                         <div>
@@ -1482,6 +1521,40 @@ export default function Rubrica({
                 estudiantes={sortedEsts}
                 onExportarWord={handleExportarWord}
                 onGuardarDrive={handleGuardarDrive}
+            />
+
+            <RubricaConfigModal
+                isOpen={showConfigModal}
+                onClose={() => setShowConfigModal(false)}
+                cursos={cursosStore}
+                selectedCursoId={selectedCursoId}
+                selectedAsignatura={selectedAsignatura}
+                onSelectCurso={(id, asig) => {
+                    setSelectedCursoId(id);
+                    setSelectedAsignatura(asig);
+                    setSelectedEstId(null);
+                    setSelectedActId(null);
+                }}
+                selectedPeriodo={selectedPeriodo}
+                onSelectPeriodo={(p) => {
+                    setSelectedPeriodo(p);
+                    setSelectedActId(null);
+                    setSelectedEstId(null);
+                }}
+                actividades={actividades}
+                selectedActId={selectedAct?.id ?? null}
+                onSelectActividad={(actId) => setSelectedActId(actId)}
+                plantillas={rubricaPlantillas}
+                selectedPlantillaId={selectedPlantillaId}
+                onSelectPlantilla={(plantillaId) => {
+                    if (plantillaId === null) {
+                        setSelectedPlantillaId(null);
+                        setLocalDescriptors(normalizeDescriptors(descriptoresRubricaStore.slice(0, 4)));
+                    } else {
+                        handleLoadTemplate(plantillaId);
+                    }
+                }}
+                onOpenGenerarIA={() => setShowGenerarModal(true)}
             />
             {captureOverlay}
         </div>
