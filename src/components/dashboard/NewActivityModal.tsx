@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MessageSquareText, Brain, Puzzle, Microscope, Sparkles, BookOpen, AlertCircle, Check, Loader2 } from 'lucide-react';
 import type { AppState, Actividad, BCKey } from '../../types';
-import { COMPETENCIAS_LABEL, getCompetenciasKeys, getCompetenciasLabels, getCompetenciaDisplay } from '../../types';
+import { COMPETENCIAS_LABEL } from '../../types';
 import { TC_Flux, TC_Genesis, TC_Archive, TC_Echo } from '../icons/TerraCognitaIcons';
 import { CieloModal } from '../ui/CieloModal';
 import { useAppStore } from '../../store/appStore';
@@ -13,10 +13,10 @@ import { SelectorIndicadorFragmento } from '../curriculo/SelectorIndicadorFragme
 import { esAsignaturaOptativa, getAsignaturaNombre, sonMismaAsignatura } from '../../constants/asignaturas';
 
 const BC_CIRCLE_CONFIG: Array<{ id: BCKey; label: string; icon: typeof MessageSquareText; bg: string; selectedBg: string; selectedText: string }> = [
-  { id: 'BC1', label: COMPETENCIAS_LABEL.BC1, icon: MessageSquareText, bg: 'bg-blue-50', selectedBg: 'bg-blue-600', selectedText: 'text-white' },
-  { id: 'BC2', label: COMPETENCIAS_LABEL.BC2, icon: Brain, bg: 'bg-violet-50', selectedBg: 'bg-violet-600', selectedText: 'text-white' },
-  { id: 'BC3', label: COMPETENCIAS_LABEL.BC3, icon: Puzzle, bg: 'bg-amber-50', selectedBg: 'bg-amber-600', selectedText: 'text-white' },
-  { id: 'BC4', label: COMPETENCIAS_LABEL.BC4, icon: Microscope, bg: 'bg-emerald-50', selectedBg: 'bg-emerald-600', selectedText: 'text-white' },
+    { id: 'BC1', label: COMPETENCIAS_LABEL.BC1, icon: MessageSquareText, bg: 'bg-blue-50', selectedBg: 'bg-blue-600', selectedText: 'text-white' },
+    { id: 'BC2', label: COMPETENCIAS_LABEL.BC2, icon: Brain, bg: 'bg-violet-50', selectedBg: 'bg-violet-600', selectedText: 'text-white' },
+    { id: 'BC3', label: COMPETENCIAS_LABEL.BC3, icon: Puzzle, bg: 'bg-amber-50', selectedBg: 'bg-amber-600', selectedText: 'text-white' },
+    { id: 'BC4', label: COMPETENCIAS_LABEL.BC4, icon: Microscope, bg: 'bg-emerald-50', selectedBg: 'bg-emerald-600', selectedText: 'text-white' },
 ];
 
 // Límite de entrada del analizador de actividades. CIELO valida el tamaño del texto
@@ -49,7 +49,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     const actividades = useAppStore(s => s.state.actividades);
     const today = new Date().toISOString().split('T')[0];
     const [flowMode, setFlowMode] = useState<'choice' | 'manual' | 'text' | 'preview'>('choice');
-    
+
     // Manual flow states
     const [isSaving, setIsSaving] = useState(false);
     const [form, setForm] = useState({
@@ -63,17 +63,6 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     });
 
     const [indicadoresJson, setIndicadoresJson] = useState<any[]>([]);
-
-    const selectedCurso = cursos.find(c => c.id === Number(form.cursoId));
-    const nivelEducativo = selectedCurso?.nivelEducativo || 'secundaria';
-    const activeBcs = getCompetenciasKeys(nivelEducativo);
-    const bcLabels = getCompetenciasLabels(nivelEducativo);
-
-    useEffect(() => {
-        if (nivelEducativo === 'primaria' && form.bcs.includes('BC4')) {
-            setForm(p => ({ ...p, bcs: p.bcs.filter(b => b !== 'BC4') }));
-        }
-    }, [nivelEducativo]);
 
     // IA flow (texto pegado) states
     const [pastedText, setPastedText] = useState('');
@@ -89,7 +78,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     // API Key flow states
     const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
     const [tempApiKey, setTempApiKey] = useState('');
-    
+
     // AI Usage state
     const [aiUsage, setAiUsage] = useState<AIUsageStats | null>(null);
     const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
@@ -141,7 +130,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     // Manual creation handler
     async function handleCreateManual() {
         if (!form.nombre.trim() || !form.cursoId || form.bcs.length === 0 || !form.indicador.trim() || isSaving) return;
-        
+
         const currentUserId = session?.user?.id;
         if (!currentUserId) {
             setErrorMsg('Sesión de usuario no válida.');
@@ -211,7 +200,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
             setErrorMsg("Debes pegar el texto de la secuencia o planificación antes de copiar el prompt.");
             return;
         }
-        
+
         const cleanedText = cleanTechnicalText(pastedText);
         const prompt = `Analiza el texto completo y determina todas las actividades presentes por comprensión semántica.
 
@@ -236,7 +225,7 @@ Estructura obligatoria:
   ]
 }`;
         const finalPrompt = `${prompt}\n\nTEXTO A ANALIZAR:\n${cleanedText}`;
-        
+
         try {
             await navigator.clipboard.writeText(finalPrompt);
             setIsPromptCopied(true);
@@ -252,7 +241,7 @@ Estructura obligatoria:
             let parsed;
             try {
                 parsed = JSON.parse(text);
-            } catch(e) {
+            } catch (e) {
                 const match = text.match(/```json\n([\s\S]*)\n```/) || text.match(/```\n([\s\S]*)\n```/);
                 if (match) {
                     parsed = JSON.parse(match[1]);
@@ -265,7 +254,7 @@ Estructura obligatoria:
             if (!Array.isArray(extracted) || extracted.length === 0) {
                 throw new Error('No se encontraron actividades en el JSON.');
             }
-            
+
             const mapCompetenciaToCode = (nombre: string) => {
                 if (!nombre) return null;
                 const norm = nombre.trim().toLowerCase();
@@ -275,7 +264,7 @@ Estructura obligatoria:
                 if (norm.includes('ética') || norm.includes('ciudadana') || norm.includes('espiritual') || norm.includes('personal')) return 'BC4';
                 return null;
             };
-            
+
             const formatted = extracted.map((act: any) => {
                 const mappedBcs = Array.isArray(act.competencias) ? act.competencias.map(mapCompetenciaToCode).filter((c: any) => c !== null) : [];
                 return {
@@ -287,7 +276,7 @@ Estructura obligatoria:
                     selected: true
                 };
             });
-            
+
             setExtractedActivities(formatted);
             setFlowMode('preview');
         } catch (error) {
@@ -340,7 +329,7 @@ Estructura obligatoria:
         const MAX_RETRIES = 1;
         let attempt = 0;
         let success = false;
-        
+
         while (attempt <= MAX_RETRIES && !success) {
             try {
                 const cleanedText = cleanTechnicalText(pastedText);
@@ -386,9 +375,9 @@ Estructura obligatoria:
                                         nombre: { type: 'STRING' },
                                         descripcion: { type: 'STRING' },
                                         indicador_logro: { type: 'STRING' },
-                                        competencias: { 
-                                            type: 'ARRAY', 
-                                            items: { type: 'STRING' } 
+                                        competencias: {
+                                            type: 'ARRAY',
+                                            items: { type: 'STRING' }
                                         },
                                         producto: { type: 'STRING' }
                                     },
@@ -418,14 +407,9 @@ Estructura obligatoria:
                         if (!nombre) return null;
                         const norm = nombre.trim().toLowerCase();
                         if (norm.includes('comunicativa')) return 'BC1';
-                        if (nivelEducativo === 'primaria') {
-                            if (norm.includes('lógico') || norm.includes('resolución') || norm.includes('científica') || norm.includes('tecnológica')) return 'BC2';
-                            if (norm.includes('ética') || norm.includes('ciudadana') || norm.includes('espiritual') || norm.includes('personal') || norm.includes('ambiental') || norm.includes('salud')) return 'BC3';
-                        } else {
-                            if (norm.includes('lógico') || norm.includes('resolución')) return 'BC2';
-                            if (norm.includes('científica') || norm.includes('tecnológica') || norm.includes('salud') || norm.includes('ambiental')) return 'BC3';
-                            if (norm.includes('ética') || norm.includes('ciudadana') || norm.includes('espiritual') || norm.includes('personal')) return 'BC4';
-                        }
+                        if (norm.includes('lógico') || norm.includes('resolución')) return 'BC2';
+                        if (norm.includes('científica') || norm.includes('tecnológica') || norm.includes('salud')) return 'BC3';
+                        if (norm.includes('ética') || norm.includes('ciudadana') || norm.includes('espiritual') || norm.includes('personal')) return 'BC4';
                         return null;
                     };
 
@@ -450,7 +434,7 @@ Estructura obligatoria:
             } catch (error: any) {
                 attempt++;
                 console.error(`Error analyzing text (Intento ${attempt}):`, error);
-                
+
                 if (attempt > MAX_RETRIES) {
                     const errMsg = error.message || '';
                     if (errMsg.includes('límite temporal') || errMsg.includes('429')) {
@@ -469,7 +453,7 @@ Estructura obligatoria:
     // @ts-expect-error unused temporalmente
     const handleAnalizarNavegador = async () => {
         if (!pastedText.trim()) return;
-        
+
         // Verificar si la extensión CIELO IA está instalada mediante la variable inyectada
         // @ts-ignore
         if (!window.__CIELO_IA_EXTENSION_INSTALLED__) {
@@ -517,13 +501,13 @@ ${pastedText}`;
 
         try {
             await navigator.clipboard.writeText(promptNavegador);
-            
+
             // Emitir evento a la extensión CIELO IA
             const event = new CustomEvent('CIELO_IA_ANALYZE', {
                 detail: { text: pastedText, prompt: promptNavegador }
             });
             window.dispatchEvent(event);
-            
+
         } catch (err) {
             console.error("Error al emitir evento a la extensión:", err);
             setErrorMsg("Ocurrió un error al intentar comunicarse con el panel lateral.");
@@ -533,7 +517,7 @@ ${pastedText}`;
     // Bulk save selected activities to Supabase
     const handleSaveExtracted = async () => {
         const selected = extractedActivities.filter(a => a.selected);
-        
+
         // FASE 8: Validación estricta antes de guardar
         if (selected.length === 0) {
             setErrorMsg('Selecciona al menos una actividad.');
@@ -584,12 +568,12 @@ ${pastedText}`;
             const curso = cursoSeleccionado;
             const toSave: ExtractedActivity[] = [];
             const seenBatch = new Set<string>();
-            
+
             for (const act of selected) {
                 const actKey = `${act.nombre.trim().toLowerCase()}__${targetFecha}`;
                 // Prevention of duplicates check (Fase 9)
-                const isDuplicate = actividades.some(existing => 
-                    existing.cursoId === targetCursoId && 
+                const isDuplicate = actividades.some(existing =>
+                    existing.cursoId === targetCursoId &&
                     existing.nombre.trim().toLowerCase() === act.nombre.trim().toLowerCase() &&
                     existing.fecha === targetFecha &&
                     existing.asignatura === docenteAsignatura
@@ -655,16 +639,16 @@ ${pastedText}`;
         if (showApiKeyPrompt) {
             return (
                 <div className="flex gap-3 w-full">
-                    <button 
+                    <button
                         type="button"
-                        className="h-11 px-6 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer" 
+                        className="h-11 px-6 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer"
                         onClick={() => { setShowApiKeyPrompt(false); setTempApiKey(''); }}
                     >
                         Cancelar
                     </button>
-                    <button 
+                    <button
                         type="button"
-                        className="flex-1 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer" 
+                        className="flex-1 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
                         onClick={() => {
                             if (session?.user?.id) saveAIAIProvider(session.user.id, 'deepseek');
                             setShowApiKeyPrompt(false);
@@ -673,9 +657,9 @@ ${pastedText}`;
                     >
                         Usar Asistente CIELO
                     </button>
-                    <button 
+                    <button
                         type="button"
-                        className={`flex-1 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${!tempApiKey.trim() ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                        className={`flex-1 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${!tempApiKey.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={handleSaveApiKey}
                         disabled={!tempApiKey.trim()}
                     >
@@ -687,9 +671,9 @@ ${pastedText}`;
 
         if (flowMode === 'choice') {
             return (
-                <button 
+                <button
                     type="button"
-                    className="w-full sm:w-auto px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer ml-auto" 
+                    className="w-full sm:w-auto px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer ml-auto"
                     onClick={handleClose}
                 >
                     Cerrar
@@ -701,19 +685,18 @@ ${pastedText}`;
             const isManualReady = form.nombre.trim() && form.cursoId && form.bcs.length > 0 && form.indicador.trim() && !isSaving;
             return (
                 <div className="flex items-center justify-between gap-4 w-full">
-                    <button 
+                    <button
                         type="button"
-                        className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer" 
+                        className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer"
                         onClick={() => setFlowMode('choice')}
                         disabled={isSaving}
                     >
                         Volver
                     </button>
-                    <button 
+                    <button
                         type="button"
-                        className={`px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer ${
-                            !isManualReady ? 'opacity-50 cursor-not-allowed' : ''
-                        }`} 
+                        className={`px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer ${!isManualReady ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
                         onClick={handleCreateManual}
                         disabled={!isManualReady}
                     >
@@ -737,23 +720,23 @@ ${pastedText}`;
             const isMissingContext = !pastedText.trim() || !targetCursoId || !targetPeriodo;
             return (
                 <div className="flex items-center justify-between gap-3 w-full flex-wrap sm:flex-nowrap">
-                    <button 
+                    <button
                         type="button"
-                        className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer" 
+                        className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer"
                         onClick={() => setFlowMode('choice')}
                         disabled={isProcessing}
                     >
                         Volver
                     </button>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <button 
+                        <button
                             type="button"
-                            className="flex-1 sm:flex-none px-5 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer" 
+                            className="flex-1 sm:flex-none px-5 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer"
                             onClick={handleCopyPrompt}
                         >
                             {isPromptCopied ? 'Prompt copiado' : 'Copiar prompt'}
                         </button>
-                        <button 
+                        <button
                             type="button"
                             className={`flex-1 sm:flex-none px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#FAF7F2] border border-slate-300 text-[#2E3330] hover:bg-[#EAE4DA] transition-all active:scale-95 cursor-pointer ${isMissingContext ? 'opacity-50 cursor-not-allowed' : ''}`}
                             onClick={handlePasteJson}
@@ -770,18 +753,18 @@ ${pastedText}`;
         const selectedCount = extractedActivities.filter(a => a.selected).length;
         return (
             <div className="flex items-center justify-between gap-4 w-full">
-                <button 
+                <button
                     type="button"
-                    className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer" 
+                    className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer"
                     onClick={() => setFlowMode('text')}
                     disabled={isSaving}
                 >
                     Volver
                 </button>
-                <button 
+                <button
                     type="button"
                     data-guide="btn-guardar-actividades-ia"
-                    className={`px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer ${selectedCount === 0 || isSaving || !targetCursoId || !targetPeriodo ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                    className={`px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer ${selectedCount === 0 || isSaving || !targetCursoId || !targetPeriodo ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={handleSaveExtracted}
                     disabled={selectedCount === 0 || isSaving || !targetCursoId || !targetPeriodo}
                 >
@@ -806,12 +789,12 @@ ${pastedText}`;
             isOpen={show}
             onClose={handleClose}
             title={
-                showApiKeyPrompt 
-                    ? 'Configurar API Key' 
-                    : flowMode === 'choice' 
-                        ? 'Nueva Actividad' 
-                        : flowMode === 'manual' 
-                            ? 'Programar Actividad' 
+                showApiKeyPrompt
+                    ? 'Configurar API Key'
+                    : flowMode === 'choice'
+                        ? 'Nueva Actividad'
+                        : flowMode === 'manual'
+                            ? 'Programar Actividad'
                             : flowMode === 'text'
                                 ? 'Importar desde Planificación'
                                 : 'Actividades Detectadas'
@@ -824,12 +807,12 @@ ${pastedText}`;
                         : undefined
             }
             maxWidth={
-                flowMode === 'preview' 
-                    ? '7xl' 
-                    : flowMode === 'manual' 
-                        ? '5xl' 
-                        : flowMode === 'text' 
-                            ? '3xl' 
+                flowMode === 'preview'
+                    ? '7xl'
+                    : flowMode === 'manual'
+                        ? '5xl'
+                        : flowMode === 'text'
+                            ? '3xl'
                             : '2xl'
             }
             icon={<TC_Flux size={20} className="text-[#689C63]" />}
@@ -845,7 +828,7 @@ ${pastedText}`;
                     </div>
 
                     <div className="flex justify-center">
-                        <a 
+                        <a
                             href={getAIAIProvider(session?.user?.id) === 'openai' ? 'https://platform.openai.com/api-keys' : 'https://aistudio.google.com/app/api-keys?project=gen-lang-client-0626735374'}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -858,12 +841,12 @@ ${pastedText}`;
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">API Key</label>
                         <div className="search-container h-12! rounded-xl!">
-                            <input 
+                            <input
                                 type="password"
-                                className="text-base font-medium w-full bg-transparent outline-none text-[#1E2421]" 
-                                placeholder={`Ingresa tu clave de ${providerDisplayName(getAIAIProvider(session?.user?.id))}...`} 
+                                className="text-base font-medium w-full bg-transparent outline-none text-[#1E2421]"
+                                placeholder={`Ingresa tu clave de ${providerDisplayName(getAIAIProvider(session?.user?.id))}...`}
                                 value={tempApiKey}
-                                onChange={e => setTempApiKey(e.target.value)} 
+                                onChange={e => setTempApiKey(e.target.value)}
                             />
                         </div>
                     </div>
@@ -964,9 +947,9 @@ ${pastedText}`;
                                                     Curso destino *
                                                 </label>
                                                 <div className="relative">
-                                                    <select 
+                                                    <select
                                                         className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold appearance-none transition-all cursor-pointer pr-9"
-                                                        value={selectedCourseComposite} 
+                                                        value={selectedCourseComposite}
                                                         onChange={e => {
                                                             const [idStr, ...asigParts] = e.target.value.split('::');
                                                             const nextId = Number(idStr);
@@ -996,12 +979,12 @@ ${pastedText}`;
                                                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                                                     Nombre de la actividad *
                                                 </label>
-                                                <input 
+                                                <input
                                                     type="text"
                                                     className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] placeholder:text-slate-500 outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-semibold transition-all"
-                                                    placeholder="Ej: Análisis Crítico de Textos" 
-                                                    value={form.nombre} 
-                                                    onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} 
+                                                    placeholder="Ej: Análisis Crítico de Textos"
+                                                    value={form.nombre}
+                                                    onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))}
                                                 />
                                             </div>
 
@@ -1010,11 +993,11 @@ ${pastedText}`;
                                                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                                                     Fecha programada *
                                                 </label>
-                                                <input 
-                                                    type="date" 
+                                                <input
+                                                    type="date"
                                                     className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-semibold transition-all"
-                                                    value={form.fecha} 
-                                                    onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} 
+                                                    value={form.fecha}
+                                                    onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))}
                                                 />
                                             </div>
                                         </div>
@@ -1036,9 +1019,8 @@ ${pastedText}`;
                                             </div>
 
                                             <div className="grid grid-cols-1 gap-2.5">
-                                                {BC_CIRCLE_CONFIG.filter(c => activeBcs.includes(c.id)).map(({ id, icon: Icon, bg, selectedBg, selectedText }) => {
+                                                {BC_CIRCLE_CONFIG.map(({ id, label, icon: Icon, bg, selectedBg, selectedText }) => {
                                                     const isSelected = form.bcs.includes(id);
-                                                    const label = bcLabels[id] || id;
                                                     return (
                                                         <button
                                                             key={id}
@@ -1051,15 +1033,13 @@ ${pastedText}`;
                                                                         : [...p.bcs, id]
                                                                 }));
                                                             }}
-                                                            className={`w-full p-2.5 rounded-xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
-                                                                isSelected
-                                                                    ? 'bg-white border-[#689C63] shadow-xs ring-2 ring-[#689C63]/40'
-                                                                    : 'bg-white/80 border-slate-200 hover:border-slate-300 hover:bg-white'
-                                                            }`}
+                                                            className={`w-full p-2.5 rounded-xl border text-left flex items-center gap-3 transition-all cursor-pointer ${isSelected
+                                                                ? 'bg-white border-[#689C63] shadow-xs ring-2 ring-[#689C63]/40'
+                                                                : 'bg-white/80 border-slate-200 hover:border-slate-300 hover:bg-white'
+                                                                }`}
                                                         >
-                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                                                                isSelected ? `${selectedBg} ${selectedText}` : `${bg} text-slate-700`
-                                                            }`}>
+                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? `${selectedBg} ${selectedText}` : `${bg} text-slate-700`
+                                                                }`}>
                                                                 <Icon size={16} strokeWidth={2.4} />
                                                             </div>
 
@@ -1119,6 +1099,7 @@ ${pastedText}`;
                                                 grado={currentCurso?.grado}
                                                 asignatura={currentAsignatura}
                                                 cursoId={form.cursoId ? Number(form.cursoId) : undefined}
+                                                nivelEducativo={currentCurso?.nivelEducativo}
                                                 periodo={useAppStore.getState().selectedPeriodo || currentCurso?.periodo || 'P2'}
                                                 initialIndicador={form.indicador}
                                                 onChange={(data) => {
@@ -1154,10 +1135,10 @@ ${pastedText}`;
                                         Curso destino *
                                     </label>
                                     <div className="relative">
-                                        <select 
+                                        <select
                                             data-guide="sel-curso-ia"
                                             className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold appearance-none transition-all cursor-pointer pr-9"
-                                            value={targetCursoId ? `${targetCursoId}::${targetAsignatura}` : '0::'} 
+                                            value={targetCursoId ? `${targetCursoId}::${targetAsignatura}` : '0::'}
                                             onChange={e => {
                                                 const [idStr, ...asigParts] = e.target.value.split('::');
                                                 setTargetCursoId(Number(idStr));
@@ -1186,10 +1167,10 @@ ${pastedText}`;
                                         Período *
                                     </label>
                                     <div className="relative">
-                                        <select 
+                                        <select
                                             data-guide="sel-periodo-ia"
                                             className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold appearance-none transition-all cursor-pointer pr-9"
-                                            value={targetPeriodo} 
+                                            value={targetPeriodo}
                                             onChange={e => setTargetPeriodo(e.target.value)}
                                         >
                                             <option value="" disabled>Selecciona el período…</option>
@@ -1252,9 +1233,9 @@ ${pastedText}`;
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#FAF7F2] p-4 rounded-2xl border border-slate-300">
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold uppercase tracking-wider text-slate-700">Curso Destino *</label>
-                                    <select 
+                                    <select
                                         className="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm bg-slate-100 text-[#1E2421] outline-none font-bold cursor-not-allowed"
-                                        value={targetCursoId ? `${targetCursoId}::${targetAsignatura}` : ''} 
+                                        value={targetCursoId ? `${targetCursoId}::${targetAsignatura}` : ''}
                                         disabled
                                     >
                                         <option value="" disabled>Seleccionar...</option>
@@ -1271,9 +1252,9 @@ ${pastedText}`;
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold uppercase tracking-wider text-slate-700">Período *</label>
-                                    <select 
+                                    <select
                                         className="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm bg-slate-100 text-[#1E2421] outline-none font-bold cursor-not-allowed"
-                                        value={targetPeriodo} 
+                                        value={targetPeriodo}
                                         disabled
                                     >
                                         <option value="" disabled>Seleccionar...</option>
@@ -1282,11 +1263,11 @@ ${pastedText}`;
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold uppercase tracking-wider text-slate-700">Fecha Programada</label>
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         className="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] font-bold"
-                                        value={targetFecha} 
-                                        onChange={e => setTargetFecha(e.target.value)} 
+                                        value={targetFecha}
+                                        onChange={e => setTargetFecha(e.target.value)}
                                     />
                                 </div>
                             </div>
@@ -1303,8 +1284,8 @@ ${pastedText}`;
                                     <thead>
                                         <tr className="bg-slate-100 border-b border-slate-300 text-xs font-black uppercase tracking-wider text-slate-700">
                                             <th className="p-3.5 w-12 text-center">
-                                                <input 
-                                                    type="checkbox" 
+                                                <input
+                                                    type="checkbox"
                                                     className="w-4 h-4 rounded border-slate-400 cursor-pointer accent-[#689C63]"
                                                     checked={extractedActivities.length > 0 && extractedActivities.every(a => a.selected)}
                                                     onChange={e => handleSelectAll(e.target.checked)}
@@ -1321,8 +1302,8 @@ ${pastedText}`;
                                         {extractedActivities.map((act, idx) => (
                                             <tr key={idx} className={`hover:bg-slate-50/80 transition-colors ${act.selected ? 'bg-[#689C63]/5' : ''}`}>
                                                 <td className="p-3.5 text-center">
-                                                    <input 
-                                                        type="checkbox" 
+                                                    <input
+                                                        type="checkbox"
                                                         data-guide="celda-actividad-ia"
                                                         className="w-4 h-4 rounded border-slate-400 cursor-pointer accent-[#689C63]"
                                                         checked={act.selected}
@@ -1330,8 +1311,8 @@ ${pastedText}`;
                                                     />
                                                 </td>
                                                 <td className="p-3.5">
-                                                    <input 
-                                                        type="text" 
+                                                    <input
+                                                        type="text"
                                                         className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-[#689C63] py-1 font-bold text-slate-800 outline-none transition-colors"
                                                         value={act.nombre}
                                                         onChange={e => updateActivityField(idx, 'nombre', e.target.value)}
@@ -1353,12 +1334,18 @@ ${pastedText}`;
                                                     <div className="flex flex-col gap-1.5">
                                                         {act.competencias.length > 0 ? (
                                                             act.competencias.map(bc => {
+                                                                const bcNames: Record<string, string> = {
+                                                                    'BC1': 'Comunicativa',
+                                                                    'BC2': 'Pensamiento Lógico, Creativo y Crítico; y Resolución de Problemas',
+                                                                    'BC3': 'Científica y Tecnológica; y Ambiental y de la Salud',
+                                                                    'BC4': 'Ética y Ciudadana; y Desarrollo Personal y Espiritual'
+                                                                };
                                                                 return (
                                                                     <span
                                                                         key={bc}
                                                                         className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border bg-white border-slate-300 text-slate-800"
                                                                     >
-                                                                        {getCompetenciaDisplay(bc, nivelEducativo)}
+                                                                        {bcNames[bc] || bc}
                                                                     </span>
                                                                 );
                                                             })
@@ -1368,7 +1355,7 @@ ${pastedText}`;
                                                     </div>
                                                 </td>
                                                 <td className="p-3.5">
-                                                    <textarea 
+                                                    <textarea
                                                         rows={3}
                                                         className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-[#689C63] py-1 font-medium text-slate-700 outline-none transition-colors resize-none leading-relaxed scrollbar-hide"
                                                         value={act.indicador_logro}
@@ -1377,7 +1364,7 @@ ${pastedText}`;
                                                     />
                                                 </td>
                                                 <td className="p-3.5">
-                                                    <textarea 
+                                                    <textarea
                                                         rows={3}
                                                         className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-[#689C63] py-1 font-medium text-slate-700 outline-none transition-colors resize-none leading-relaxed scrollbar-hide"
                                                         value={act.producto}

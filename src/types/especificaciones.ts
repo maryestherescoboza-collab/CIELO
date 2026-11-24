@@ -21,6 +21,8 @@ export interface CombinacionCurricular {
   grado: string;
   seccion: string;
   cursoNombre: string;
+  /** Nivel educativo (primaria / secundaria). */
+  nivelEducativo?: string;
   /** Valor crudo de asignatura (slug o nombre legado). */
   asignatura: string;
   /** Nombre para mostrar. */
@@ -83,6 +85,7 @@ export interface EspecificacionPeriodoDB {
 /** Filas del catálogo curricular (curr_indicadores / curr_contenidos). */
 export interface FilaIndicador {
   id: string;
+  nivel?: string;
   grado: string;
   asignatura: string;
   competencia: string;
@@ -93,6 +96,7 @@ export interface FilaIndicador {
 
 export interface FilaContenido {
   id: string;
+  nivel?: string;
   grado: string;
   asignatura: string;
   contenido: string;

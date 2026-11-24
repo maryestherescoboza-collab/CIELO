@@ -51,6 +51,8 @@ interface ResumenEspecificacionesProps {
   catalogoIndicadores: FilaIndicador[];
   /** Código de CE → ids de curr_indicadores vinculados en curr_ce_indicadores (vacío si la tabla no tiene filas). */
   puente: Map<string, string[]>;
+  /** Nivel educativo (primaria / secundaria). */
+  nivelEducativo?: string;
 }
 
 const SIN_ASOCIADOS = 'Sin elementos asociados';
@@ -162,6 +164,7 @@ export default function ResumenEspecificaciones({
   catalogoCE,
   catalogoIndicadores,
   puente,
+  nivelEducativo,
 }: ResumenEspecificacionesProps) {
   const resumen = useMemo<PeriodoResumen[]>(() => {
     const indiceCE = new Map(catalogoCE.map((f, i) => [f.codigo, i]));
@@ -212,7 +215,7 @@ export default function ResumenEspecificaciones({
           codigo: (cat?.codigo || i.codigo || '').trim(),
           descripcion: (cat?.descripcion || '').trim(),
           competencia: cat?.competencia ? cat.competencia.trim() : null,
-          bloque: bloqueDeCompetencia(cat?.competencia),
+          bloque: bloqueDeCompetencia(cat?.competencia, nivelEducativo),
         };
         if (item.codigo || item.descripcion) indicadores.push(item);
       }

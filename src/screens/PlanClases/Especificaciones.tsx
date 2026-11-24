@@ -16,14 +16,15 @@ import { PERIODOS_ACADEMICOS } from '../../cache/academicCache';
 import ResumenEspecificaciones from '../../components/plan-clases/ResumenEspecificaciones';
 import LeyendaCompetenciasCF from '../../components/plan-clases/LeyendaCompetenciasCF';
 import {
-  CF_BASE,
   COLORES_BLOQUE_CF,
   bloqueDeIndicador,
   claveGrado,
   configuracionCompleta,
+  crearCompetenciasBase,
   filtrarCompetenciasEspecificas,
   filtrarContenidos,
   filtrarIndicadores,
+  normalizarTexto,
 } from '../../lib/curriculo';
 import { esAsignaturaOptativa, getAsignaturaNombre } from '../../constants/asignaturas';
 import type {
@@ -204,14 +205,15 @@ export default function EspecificacionesCurriculares() {
           const nombreOptativa = getAsignaturaNombre(combo.asignatura);
           const cursoActual = cursos.find(c => c.id === combo.cursoId);
           const nivelStr = cursoActual?.nivelEducativo === 'primaria' ? 'Primaria' : 'Secundaria';
-          const cesOptativas: FilaCompetenciaEspecifica[] = CF_BASE.map((cf, idx) => ({
+          const baseCF = crearCompetenciasBase(cursoActual?.nivelEducativo);
+          const cesOptativas: FilaCompetenciaEspecifica[] = baseCF.map((cf, idx) => ({
             id: `optativa-ce-${idx + 1}`,
             nivel: nivelStr,
             grado: gradoCanonico,
             asignatura: combo.asignatura,
             bloque: cf.bloque,
             competencia_fundamental: cf.nombre,
-            codigo: cf.codigoPorDefecto,
+            codigo: cf.codigo,
             descriptor: `Aplicación de la competencia ${cf.nombre.toLowerCase()} en el desarrollo de ${nombreOptativa} (${gradoCanonico}).`,
           }));
           if (!cancelado) {
@@ -222,20 +224,28 @@ export default function EspecificacionesCurriculares() {
           return;
         }
 
-        const [inds, conts, ces] = await Promise.all([
-          supabase
-            .from('curr_indicadores')
-            .select('id, grado, asignatura, competencia, codigo, descripcion, is_active')
-            .eq('grado', gradoCanonico),
-          supabase
-            .from('curr_contenidos')
-            .select('id, grado, asignatura, contenido, contenido_json')
-            .eq('grado', gradoCanonico),
-          supabase
-            .from('curr_competencias_especificas')
-            .select('id, nivel, grado, asignatura, bloque, competencia_fundamental, codigo, descriptor')
-            .eq('grado', gradoCanonico),
-        ]);
+        const nivelFiltro = normalizarTexto(combo.nivelEducativo) === 'primaria' ? 'Primaria' : 'Secundaria';
+
+        let qInds = supabase
+          .from('curr_indicadores')
+          .select('id, nivel, grado, asignatura, competencia, codigo, descripcion, is_active')
+          .eq('grado', gradoCanonico);
+        let qConts = supabase
+          .from('curr_contenidos')
+          .select('id, nivel, grado, asignatura, contenido, contenido_json')
+          .eq('grado', gradoCanonico);
+        let qCes = supabase
+          .from('curr_competencias_especificas')
+          .select('id, nivel, grado, asignatura, bloque, competencia_fundamental, codigo, descriptor')
+          .eq('grado', gradoCanonico);
+
+        if (combo.nivelEducativo) {
+          qInds = qInds.eq('nivel', nivelFiltro);
+          qConts = qConts.eq('nivel', nivelFiltro);
+          qCes = qCes.eq('nivel', nivelFiltro);
+        }
+
+        const [inds, conts, ces] = await Promise.all([qInds, qConts, qCes]);
         if (cancelado) return;
 
         if (inds.error) {
@@ -253,9 +263,13 @@ export default function EspecificacionesCurriculares() {
           cesData = [];
         } else if (cesData.length === 0) {
           // Grado con formato distinto al catálogo: consultar el catálogo completo y filtrar por normalización.
-          const fallback = await supabase
+          let fallbackQuery = supabase
             .from('curr_competencias_especificas')
             .select('id, nivel, grado, asignatura, bloque, competencia_fundamental, codigo, descriptor');
+          if (combo.nivelEducativo) {
+            fallbackQuery = fallbackQuery.eq('nivel', nivelFiltro);
+          }
+          const fallback = await fallbackQuery;
           if (cancelado) return;
           if (fallback.error) {
             console.error('[Especificaciones] Error consultando catálogo completo:', fallback.error);
@@ -268,9 +282,13 @@ export default function EspecificacionesCurriculares() {
 
         let contsData: FilaContenido[] = (conts.data as FilaContenido[]) ?? [];
         if (contsData.length === 0) {
-          const fallbackConts = await supabase
+          let fallbackContsQuery = supabase
             .from('curr_contenidos')
-            .select('id, grado, asignatura, contenido, contenido_json');
+            .select('id, nivel, grado, asignatura, contenido, contenido_json');
+          if (combo.nivelEducativo) {
+            fallbackContsQuery = fallbackContsQuery.eq('nivel', nivelFiltro);
+          }
+          const fallbackConts = await fallbackContsQuery;
           if (!cancelado && fallbackConts.data) {
             contsData = fallbackConts.data as FilaContenido[];
           }
@@ -278,18 +296,22 @@ export default function EspecificacionesCurriculares() {
 
         let indsData: FilaIndicador[] = (inds.data as FilaIndicador[]) ?? [];
         if (indsData.length === 0) {
-          const fallbackInds = await supabase
+          let fallbackIndsQuery = supabase
             .from('curr_indicadores')
-            .select('id, grado, asignatura, competencia, codigo, descripcion, is_active');
+            .select('id, nivel, grado, asignatura, competencia, codigo, descripcion, is_active');
+          if (combo.nivelEducativo) {
+            fallbackIndsQuery = fallbackIndsQuery.eq('nivel', nivelFiltro);
+          }
+          const fallbackInds = await fallbackIndsQuery;
           if (!cancelado && fallbackInds.data) {
             indsData = fallbackInds.data as FilaIndicador[];
           }
         }
 
-        const cesFiltradas = filtrarCompetenciasEspecificas(cesData, combo.grado, combo.asignatura);
+        const cesFiltradas = filtrarCompetenciasEspecificas(cesData, combo.grado, combo.asignatura, combo.nivelEducativo);
         setCompetenciasCatalogo(cesFiltradas);
-        setIndicadores(filtrarIndicadores(indsData, combo.grado, combo.asignatura));
-        setContenidos(filtrarContenidos(contsData, combo.grado, combo.asignatura));
+        setIndicadores(filtrarIndicadores(indsData, combo.grado, combo.asignatura, combo.nivelEducativo));
+        setContenidos(filtrarContenidos(contsData, combo.grado, combo.asignatura, combo.nivelEducativo));
 
         // Sincronizar la selección: se descartan códigos que ya no existen en el
         // catálogo. Nunca se preselecciona nada: la elección es siempre del usuario
@@ -1086,6 +1108,7 @@ export default function EspecificacionesCurriculares() {
                 catalogoCE={competenciasCatalogo}
                 catalogoIndicadores={indicadores}
                 puente={puenteCeInd}
+                nivelEducativo={combo?.nivelEducativo}
               />
             </div>
           )}
@@ -1696,7 +1719,7 @@ export default function EspecificacionesCurriculares() {
               Selecciona los indicadores que trabajarás en el período{' '}
               <strong className="text-[#2E3330]">{periodo}</strong>.
             </p>
-            <LeyendaCompetenciasCF />
+            <LeyendaCompetenciasCF nivel={combo?.nivelEducativo} />
             {cargandoCatalogo ? (
               <div className="flex items-center justify-start py-12 text-left">
                 <Loader2 size={24} className="animate-spin text-[#689C63]" />
@@ -1719,7 +1742,7 @@ export default function EspecificacionesCurriculares() {
                 {indicadores.map((i) => {
                   const seleccionado = indicadoresSel.has(i.id);
                   // Acento por Competencia Fundamental: color CIELO en la etiqueta del código.
-                  const bloqueIL = bloqueDeIndicador(i);
+                  const bloqueIL = bloqueDeIndicador(i, null, combo?.nivelEducativo);
                   const colorIL = bloqueIL ? COLORES_BLOQUE_CF[bloqueIL] : null;
                   return (
                     <li key={i.id}>

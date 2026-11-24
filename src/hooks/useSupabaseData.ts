@@ -1348,6 +1348,7 @@ export function useSupabaseData(skipInit = false) {
                     nombre: g.nombre as string,
                     grado: g.grado as string,
                     seccion: g.seccion as string,
+                    nivelEducativo: (g.nivel_educativo || 'secundaria') as NivelEducativo,
                     createdAt: g.created_at as string
                 }));
 
@@ -1481,8 +1482,10 @@ export function useSupabaseData(skipInit = false) {
             // PASO 1 (PRIORITARIO): Garantizar la disponibilidad inmediata de los estudiantes del curso
             // desde la caché persistente de 1 año (Stale-While-Revalidate).
             const cursoActual = stateCursos.find(c => c.id === cursoId);
+            const nivelActual = cursoActual?.nivelEducativo || 'secundaria';
             const siblingCursos = cursoActual ? stateCursos.filter(c =>
                 c.id !== cursoId &&
+                (c.nivelEducativo || 'secundaria') === nivelActual &&
                 (
                     (cursoActual.centroId && c.centroId === cursoActual.centroId && cursoActual.grado && c.grado === cursoActual.grado && String(cursoActual.seccion || '').trim().toUpperCase() === String(c.seccion || '').trim().toUpperCase()) ||
                     (cursoActual.sharedCourseId && c.sharedCourseId === cursoActual.sharedCourseId) ||

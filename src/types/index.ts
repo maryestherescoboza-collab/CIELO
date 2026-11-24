@@ -427,6 +427,7 @@ export interface Grupo {
     nombre: string;
     grado: string;
     seccion: string;
+    nivelEducativo?: NivelEducativo;
     createdAt?: string;
 }
 

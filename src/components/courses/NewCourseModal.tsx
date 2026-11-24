@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { X, Hash, Layers, GraduationCap, Clock, ChevronDown, PlusCircle, Sparkles, AlertCircle } from 'lucide-react';
+import { ChevronDown, AlertCircle } from 'lucide-react';
 import {
     ASIGNATURAS_CATALOGO,
     OPCION_AGREGAR_OPTATIVA,
@@ -154,15 +154,22 @@ export function NewCourseModal({
     const canSubmit = Boolean(form.seccion?.trim()) && !isSaving && validacionAsignatura.valido;
 
     const modalFooter = (
-        <div className="flex gap-4 w-full">
-            <button className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all" onClick={onClose}>Descartar</button>
+        <div className="flex items-center justify-end gap-2 w-full">
             <button
+                type="button"
+                onClick={onClose}
+                className="h-8 px-3.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+                Cancelar
+            </button>
+            <button
+                type="button"
                 data-guide="modal-curso-confirmar"
-                className="flex-1 h-10 rounded-full text-xs font-bold uppercase tracking-widest bg-slate-900 text-white shadow-md shadow-slate-900/20 transition-all hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!canSubmit}
                 onClick={onConfirm}
+                className="h-8 px-4 rounded-md text-xs font-semibold text-white bg-[#689C63] hover:bg-[#5b8c56] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
-                {isSaving ? 'Guardando...' : 'Confirmar Curso'}
+                {isSaving ? 'Guardando...' : 'Crear curso'}
             </button>
         </div>
     );
@@ -171,110 +178,100 @@ export function NewCourseModal({
         <CieloModal
             isOpen={show}
             onClose={onClose}
-            title="Nuevo Curso"
-            subtitle="Configuración inicial del aula virtual"
-            icon={<PlusCircle size={20} />}
-            maxWidth="xl"
+            title={<span className="text-sm font-bold text-slate-900 normal-case tracking-normal">Nuevo curso</span>}
+            maxWidth="2xl"
             footer={modalFooter}
         >
-            <div data-guide="modal-curso-formulario" className="space-y-6">
-                    {/* Selector de Nivel Educativo */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
-                            <GraduationCap size={12} /> ¿A qué nivel educativo pertenece este curso? *
+            <div data-guide="modal-curso-formulario" className="space-y-4">
+                {/* 1. Selector de Nivel Educativo (Compacto, alineado a la izquierda) */}
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-medium text-slate-600">
+                        Nivel educativo
+                    </label>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            data-guide="modal-curso-nivel-primaria"
+                            onClick={() => setForm((f: any) => ({ ...f, nivelEducativo: 'primaria' }))}
+                            className={`h-8 w-28 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                                form.nivelEducativo === 'primaria'
+                                    ? 'bg-[#689C63] text-white'
+                                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                            }`}
+                        >
+                            Primaria
+                        </button>
+                        <button
+                            type="button"
+                            data-guide="modal-curso-nivel-secundaria"
+                            onClick={() => setForm((f: any) => ({ ...f, nivelEducativo: 'secundaria' }))}
+                            className={`h-8 w-28 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                                form.nivelEducativo === 'secundaria' || !form.nivelEducativo
+                                    ? 'bg-[#689C63] text-white'
+                                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                            }`}
+                        >
+                            Secundaria
+                        </button>
+                    </div>
+                </div>
+
+                {/* 2. Cuadrícula de 3 columnas (PC: 3 cols, Tablet: 2 cols, Móvil: 1 col) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {/* Grado */}
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                            Grado escolar
                         </label>
-                        <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-full border border-slate-200/80">
-                            <button
-                                type="button"
-                                data-guide="modal-curso-nivel-primaria"
-                                onClick={() => setForm((f: any) => ({ ...f, nivelEducativo: 'primaria' }))}
-                                className={`flex items-center justify-center gap-2 py-2 px-4 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                                    form.nivelEducativo === 'primaria'
-                                        ? 'bg-slate-900 text-white shadow-sm'
-                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                                }`}
+                        <div className="relative">
+                            <select
+                                data-guide="modal-curso-grado"
+                                className="w-full h-9 appearance-none bg-white border border-slate-200 focus:border-[#689C63] focus:ring-1 focus:ring-[#689C63] rounded-md px-3 pr-8 text-xs font-medium text-slate-800 outline-none transition-colors cursor-pointer"
+                                value={form.grado}
+                                onChange={e => setForm((f: any) => ({ ...f, grado: e.target.value }))}
                             >
-                                <span className={`w-2 h-2 rounded-full ${form.nivelEducativo === 'primaria' ? 'bg-emerald-400' : 'bg-slate-300'}`} />
-                                Primaria
-                            </button>
-                            <button
-                                type="button"
-                                data-guide="modal-curso-nivel-secundaria"
-                                onClick={() => setForm((f: any) => ({ ...f, nivelEducativo: 'secundaria' }))}
-                                className={`flex items-center justify-center gap-2 py-2 px-4 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                                    form.nivelEducativo === 'secundaria' || !form.nivelEducativo
-                                        ? 'bg-slate-900 text-white shadow-sm'
-                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                                }`}
-                            >
-                                <span className={`w-2 h-2 rounded-full ${form.nivelEducativo === 'secundaria' || !form.nivelEducativo ? 'bg-emerald-400' : 'bg-slate-300'}`} />
-                                Secundaria
-                            </button>
+                                {['1ro', '2do', '3ro', '4to', '5to', '6to'].map(g => (
+                                    <option key={g} value={g}>{g}</option>
+                                ))}
+                            </select>
+                            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                <GraduationCap size={12} /> Grado Escolar
-                            </label>
-                            <div className="relative">
-                                <select
-                                    data-guide="modal-curso-grado"
-                                    className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
-                                    value={form.grado}
-                                    onChange={e => setForm((f: any) => ({ ...f, grado: e.target.value }))}
-                                >
-                                    {['1ro', '2do', '3ro', '4to', '5to', '6to'].map(g => <option key={g}>{g}</option>)}
-                                </select>
-                                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                <Hash size={12} /> Sección
-                            </label>
-                            <input
-                                data-guide="modal-curso-seccion"
-                                className="w-full bg-slate-100 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all uppercase placeholder:text-slate-400"
-                                placeholder="A"
-                                maxLength={2}
-                                value={form.seccion}
-                                onChange={e => setForm((f: any) => ({ ...f, seccion: e.target.value.toUpperCase() }))}
-                            />
-                        </div>
+                    {/* Sección */}
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                            Sección
+                        </label>
+                        <input
+                            data-guide="modal-curso-seccion"
+                            className="w-full h-9 bg-white border border-slate-200 focus:border-[#689C63] focus:ring-1 focus:ring-[#689C63] rounded-md px-3 text-xs font-medium text-slate-800 outline-none transition-colors uppercase placeholder:text-slate-400"
+                            placeholder="Ej. A"
+                            maxLength={2}
+                            value={form.seccion}
+                            onChange={e => setForm((f: any) => ({ ...f, seccion: e.target.value.toUpperCase() }))}
+                        />
                     </div>
 
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between ml-1">
-                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                <Layers size={12} /> Asignatura
-                            </label>
-                            {form.esOptativa || esAsignaturaOptativa(form.asignatura) ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/80">
-                                    <Sparkles size={10} /> Optativa personalizada
-                                </span>
-                            ) : (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500">
-                                    Oficial
-                                </span>
-                            )}
-                        </div>
+                    {/* Asignatura */}
+                    <div className="sm:col-span-2 lg:col-span-1">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                            Asignatura
+                        </label>
                         <div className="relative">
                             <select
                                 data-guide="modal-curso-asignatura"
-                                className="w-full appearance-none bg-slate-100 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 outline-none transition-all"
+                                className="w-full h-9 appearance-none bg-white border border-slate-200 focus:border-[#689C63] focus:ring-1 focus:ring-[#689C63] rounded-md px-3 pr-8 text-xs font-medium text-slate-800 outline-none transition-colors cursor-pointer"
                                 value={form.esOptativa ? OPCION_AGREGAR_OPTATIVA : form.asignatura}
                                 onChange={e => handleSelectAsignaturaChange(e.target.value)}
                             >
-                                <optgroup label="Asignaturas Oficiales">
+                                <optgroup label="Oficiales">
                                     {ASIGNATURAS_CATALOGO.map(a => (
                                         <option key={a.id} value={a.id}>{a.nombre}</option>
                                     ))}
                                 </optgroup>
                                 {optativasPrevias.length > 0 && (
-                                    <optgroup label="Asignaturas Optativas Creadas">
+                                    <optgroup label="Optativas previas">
                                         {optativasPrevias.map(optId => (
                                             <option key={optId} value={optId}>
                                                 {getAsignaturaNombre(optId)} (Optativa)
@@ -283,68 +280,84 @@ export function NewCourseModal({
                                     </optgroup>
                                 )}
                                 <optgroup label="Personalizada">
-                                    <option value={OPCION_AGREGAR_OPTATIVA}>+ Agregar asignatura optativa</option>
+                                    <option value={OPCION_AGREGAR_OPTATIVA}>+ Agregar optativa</option>
                                 </optgroup>
                             </select>
-                            <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
                         </div>
-
-                        {form.esOptativa && (
-                            <div className="pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        autoFocus
-                                        maxLength={80}
-                                        placeholder="Escribe el nombre de la asignatura optativa (ej. Robótica, Teatro, Emprendimiento...)"
-                                        value={form.asignaturaOptativaNombre || ''}
-                                        onChange={e => setForm((f: any) => ({ ...f, asignaturaOptativaNombre: e.target.value }))}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter' && canSubmit) {
-                                                e.preventDefault();
-                                                onConfirm();
-                                            }
-                                        }}
-                                        className="w-full bg-white border-2 border-slate-200 focus:border-primary rounded-2xl px-5 py-3.5 text-sm font-bold text-slate-800 outline-none transition-all placeholder:text-slate-400 placeholder:font-medium shadow-xs"
-                                    />
-                                </div>
-                                <p className="text-[11px] font-medium text-slate-400 mt-1.5 ml-1">
-                                    Quedará vinculada a este curso, centro educativo y período académico como asignatura optativa.
-                                </p>
-                            </div>
-                        )}
-
-                        {validacionAsignatura.mensaje && (
-                            <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-800 text-xs font-semibold">
-                                <AlertCircle size={14} className="shrink-0 mt-0.5 text-amber-600" />
-                                <span>{validacionAsignatura.mensaje}</span>
-                            </div>
-                        )}
                     </div>
 
-                    <div className="space-y-4">
-                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
-                            <Clock size={12} /> Días de clase
-                        </label>
-                        <div className="flex gap-2 flex-wrap">
+                    {/* Fila condicional para Asignatura Optativa */}
+                    {form.esOptativa && (
+                        <div className="col-span-1 sm:col-span-2 lg:col-span-3">
+                            <label className="block text-xs font-medium text-slate-600 mb-1">
+                                Nombre de la asignatura optativa
+                            </label>
+                            <input
+                                type="text"
+                                autoFocus
+                                maxLength={80}
+                                placeholder="Ej. Robótica, Teatro, Emprendimiento..."
+                                value={form.asignaturaOptativaNombre || ''}
+                                onChange={e => setForm((f: any) => ({ ...f, asignaturaOptativaNombre: e.target.value }))}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter' && canSubmit) {
+                                        e.preventDefault();
+                                        onConfirm();
+                                    }
+                                }}
+                                className="w-full h-9 bg-white border border-slate-200 focus:border-[#689C63] focus:ring-1 focus:ring-[#689C63] rounded-md px-3 text-xs font-medium text-slate-800 outline-none transition-colors placeholder:text-slate-400"
+                            />
+                        </div>
+                    )}
+
+                    {/* Mensaje de validación contextual */}
+                    {validacionAsignatura.mensaje && (
+                        <div className="col-span-1 sm:col-span-2 lg:col-span-3">
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+                                <AlertCircle size={14} className="shrink-0 text-amber-600" />
+                                <span>{validacionAsignatura.mensaje}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* 3. Días de clase (selectores pequeños cuadrados) y Tutor oficial en fila compacta */}
+                <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-slate-600 mr-1">
+                            Días:
+                        </span>
+                        <div className="flex items-center gap-1">
                             {['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb'].map(d => (
-                                <button key={d} onClick={() => toggleDia(d)}
-                                    className={`h-10 rounded-full font-black text-xs uppercase tracking-widest shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 flex-1 ${form.diasSemana.includes(d) ? 'bg-[#2E3330] text-white border-[#2E3330] shadow-md -translate-y-0.5' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-350'}`}>
+                                <button
+                                    key={d}
+                                    type="button"
+                                    onClick={() => toggleDia(d)}
+                                    className={`w-8 h-8 rounded-md text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
+                                        form.diasSemana.includes(d)
+                                            ? 'bg-[#689C63] text-white'
+                                            : 'bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                                    }`}
+                                >
                                     {d}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    <div className="pt-2">
-                        <label className="inline-flex items-center gap-3 cursor-pointer group">
-                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${form.isTutorOficial ? 'bg-primary border-primary shadow-sm' : 'bg-slate-50 border-slate-200 group-hover:border-slate-300'}`}>
-                                {form.isTutorOficial && <X size={14} className="text-white rotate-45" />}
-                                <input type="checkbox" className="hidden" checked={form.isTutorOficial} onChange={(e) => setForm((f: any) => ({ ...f, isTutorOficial: e.target.checked }))} />
-                            </div>
-                            <span className="text-xs font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900 transition-colors">Soy el Tutor Oficial de este curso</span>
-                        </label>
-                    </div>
+                    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(form.isTutorOficial)}
+                            onChange={(e) => setForm((f: any) => ({ ...f, isTutorOficial: e.target.checked }))}
+                            className="w-4 h-4 rounded border-slate-300 text-[#689C63] accent-[#689C63] focus:ring-[#689C63] cursor-pointer"
+                        />
+                        <span className="text-xs font-medium text-slate-700">
+                            Soy el Tutor Oficial de este curso
+                        </span>
+                    </label>
+                </div>
             </div>
         </CieloModal>
     );

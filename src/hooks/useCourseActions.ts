@@ -129,7 +129,8 @@ export function useCourseActions() {
                     nombre: `${c.grado} ${c.seccion} (${nivelNombre})`, 
                     grado: c.grado, 
                     seccion: c.seccion,
-                    nivel_educativo: nivelEducativo
+                    nivel_educativo: nivelEducativo,
+                    centro_id: centro_id
                 }, { onConflict: 'grado,seccion,nivel_educativo' })
                 .select();
 
@@ -142,19 +143,35 @@ export function useCourseActions() {
 
             const grupo_id = grupoData[0].id;
 
-            // Si ya existe otro curso en el mismo centro para este mismo grado y sección,
+            // Si ya existe otro curso en el mismo centro para este mismo grado, sección, período y nivel educativo,
             // heredar su shared_course_id para garantizar la continuidad del estudiantado.
             let shared_course_id = c.sharedCourseId;
             if (!shared_course_id) {
                 const existingSibling = state.cursos.find(
                     existing =>
                         existing.centroId === centro_id &&
+                        existing.periodo === c.periodo &&
                         existing.grado === c.grado &&
                         String(existing.seccion || '').trim().toUpperCase() === String(c.seccion || '').trim().toUpperCase() &&
                         (existing.nivelEducativo || 'secundaria') === (c.nivelEducativo || 'secundaria') &&
                         Boolean(existing.sharedCourseId)
                 );
-                shared_course_id = existingSibling?.sharedCourseId || crypto.randomUUID();
+                if (existingSibling?.sharedCourseId) {
+                    shared_course_id = existingSibling.sharedCourseId;
+                } else {
+                    const { data: siblingDb } = await supabase
+                        .from('cursos')
+                        .select('shared_course_id')
+                        .eq('centro_id', centro_id)
+                        .eq('periodo', c.periodo)
+                        .eq('grado', c.grado)
+                        .eq('seccion', c.seccion)
+                        .eq('nivel_educativo', nivelEducativo)
+                        .not('shared_course_id', 'is', null)
+                        .limit(1)
+                        .maybeSingle();
+                    shared_course_id = siblingDb?.shared_course_id || crypto.randomUUID();
+                }
             }
 
             const { data, error } = await supabase.from('cursos').insert([{

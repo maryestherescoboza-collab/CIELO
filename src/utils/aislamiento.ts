@@ -27,6 +27,15 @@ export function perteneceAlContextoDelCurso(
     const cursoB = cursos.find(c => c.id === cursoIdB);
     if (!cursoB) return false;
 
+    // 0. Aislamiento obligatorio por Nivel Educativo
+    // Los grupos de Primaria y Secundaria NUNCA comparten estudiantes, matrículas ni contexto,
+    // aun cuando coincidan centro, período, grado y sección.
+    const nivelA = cursoAutorizado.nivelEducativo || 'secundaria';
+    const nivelB = cursoB.nivelEducativo || 'secundaria';
+    if (nivelA !== nivelB) {
+        return false;
+    }
+
     const centroA = cursoAutorizado.centroId || centroContexto || null;
     const centroB = cursoB.centroId || centroContexto || null;
 
@@ -53,10 +62,11 @@ export function perteneceAlContextoDelCurso(
         return true;
     }
 
-    // 3. Coincidencia por mismo centro educativo + grado + sección
+    // 3. Coincidencia por mismo centro educativo + nivel educativo + grado + sección
     // (Asegura que cursos con asignaturas optativas creados para la misma sección compartan el estudiantado)
     if (
         (centroA || centroB) &&
+        nivelA === nivelB &&
         cursoAutorizado.grado &&
         cursoB.grado &&
         cursoAutorizado.grado === cursoB.grado &&

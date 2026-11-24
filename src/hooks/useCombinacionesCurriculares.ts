@@ -33,6 +33,7 @@ export function useCombinacionesCurriculares(): CombinacionCurricular[] {
         grado: curso.grado,
         seccion: curso.seccion,
         cursoNombre: curso.nombre || `${curso.grado} ${curso.seccion}`,
+        nivelEducativo: curso.nivelEducativo || 'secundaria',
         asignatura: cd.asignatura,
         asignaturaNombre: getAsignaturaNombre(cd.asignatura),
       });
@@ -50,6 +51,7 @@ export function useCombinacionesCurriculares(): CombinacionCurricular[] {
         grado: curso.grado,
         seccion: curso.seccion,
         cursoNombre: curso.nombre || `${curso.grado} ${curso.seccion}`,
+        nivelEducativo: curso.nivelEducativo || 'secundaria',
         asignatura: curso.asignatura,
         asignaturaNombre: getAsignaturaNombre(curso.asignatura),
       });

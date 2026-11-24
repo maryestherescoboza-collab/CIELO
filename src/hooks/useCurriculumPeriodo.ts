@@ -136,20 +136,28 @@ export function useCurriculumPeriodo(
             try {
                 const gradoStr = String(combo.grado || '');
                 const gradoCanonico = claveGrado(combo.grado) || gradoStr;
-                const [inds, ces, conts] = await Promise.all([
-                    supabase
-                        .from('curr_indicadores')
-                        .select('id, grado, asignatura, competencia, codigo, descripcion, is_active')
-                        .eq('grado', gradoCanonico),
-                    supabase
-                        .from('curr_competencias_especificas')
-                        .select('id, nivel, grado, asignatura, bloque, competencia_fundamental, codigo, descriptor')
-                        .eq('grado', gradoCanonico),
-                    supabase
-                        .from('curr_contenidos')
-                        .select('id, grado, asignatura, contenido, contenido_json')
-                        .eq('grado', gradoCanonico),
-                ]);
+                const nivelFiltro = normalizarTexto(combo.nivelEducativo) === 'primaria' ? 'Primaria' : 'Secundaria';
+
+                let qInds = supabase
+                    .from('curr_indicadores')
+                    .select('id, nivel, grado, asignatura, competencia, codigo, descripcion, is_active')
+                    .eq('grado', gradoCanonico);
+                let qCes = supabase
+                    .from('curr_competencias_especificas')
+                    .select('id, nivel, grado, asignatura, bloque, competencia_fundamental, codigo, descriptor')
+                    .eq('grado', gradoCanonico);
+                let qConts = supabase
+                    .from('curr_contenidos')
+                    .select('id, nivel, grado, asignatura, contenido, contenido_json')
+                    .eq('grado', gradoCanonico);
+
+                if (combo.nivelEducativo) {
+                    qInds = qInds.eq('nivel', nivelFiltro);
+                    qCes = qCes.eq('nivel', nivelFiltro);
+                    qConts = qConts.eq('nivel', nivelFiltro);
+                }
+
+                const [inds, ces, conts] = await Promise.all([qInds, qCes, qConts]);
                 if (cancelado || token !== tokenRef.current) return;
                 if (inds.error) {
                     console.error('[Curriculo] Error consultando curr_indicadores:', inds.error);
@@ -163,9 +171,13 @@ export function useCurriculumPeriodo(
 
                 let indsData: FilaIndicador[] = (inds.data as FilaIndicador[]) || [];
                 if (indsData.length === 0) {
-                    const fallbackInds = await supabase
+                    let fallbackQuery = supabase
                         .from('curr_indicadores')
-                        .select('id, grado, asignatura, competencia, codigo, descripcion, is_active');
+                        .select('id, nivel, grado, asignatura, competencia, codigo, descripcion, is_active');
+                    if (combo.nivelEducativo) {
+                        fallbackQuery = fallbackQuery.eq('nivel', nivelFiltro);
+                    }
+                    const fallbackInds = await fallbackQuery;
                     if (!cancelado && fallbackInds.data) {
                         indsData = fallbackInds.data as FilaIndicador[];
                     }
@@ -173,9 +185,13 @@ export function useCurriculumPeriodo(
 
                 let cesData: FilaCompetenciaEspecifica[] = (ces.data as FilaCompetenciaEspecifica[]) || [];
                 if (cesData.length === 0) {
-                    const fallbackCes = await supabase
+                    let fallbackQuery = supabase
                         .from('curr_competencias_especificas')
                         .select('id, nivel, grado, asignatura, bloque, competencia_fundamental, codigo, descriptor');
+                    if (combo.nivelEducativo) {
+                        fallbackQuery = fallbackQuery.eq('nivel', nivelFiltro);
+                    }
+                    const fallbackCes = await fallbackQuery;
                     if (!cancelado && fallbackCes.data) {
                         cesData = fallbackCes.data as FilaCompetenciaEspecifica[];
                     }
@@ -183,18 +199,22 @@ export function useCurriculumPeriodo(
 
                 let contsData: FilaContenido[] = (conts.data as FilaContenido[]) || [];
                 if (contsData.length === 0) {
-                    const fallbackConts = await supabase
+                    let fallbackQuery = supabase
                         .from('curr_contenidos')
-                        .select('id, grado, asignatura, contenido, contenido_json');
+                        .select('id, nivel, grado, asignatura, contenido, contenido_json');
+                    if (combo.nivelEducativo) {
+                        fallbackQuery = fallbackQuery.eq('nivel', nivelFiltro);
+                    }
+                    const fallbackConts = await fallbackQuery;
                     if (!cancelado && fallbackConts.data) {
                         contsData = fallbackConts.data as FilaContenido[];
                     }
                 }
 
                 setCatalogo({
-                    indicadores: filtrarIndicadores(indsData, combo.grado, combo.asignatura),
-                    ces: filtrarCompetenciasEspecificas(cesData, combo.grado, combo.asignatura),
-                    conts: filtrarContenidos(contsData, combo.grado, combo.asignatura),
+                    indicadores: filtrarIndicadores(indsData, combo.grado, combo.asignatura, combo.nivelEducativo),
+                    ces: filtrarCompetenciasEspecificas(cesData, combo.grado, combo.asignatura, combo.nivelEducativo),
+                    conts: filtrarContenidos(contsData, combo.grado, combo.asignatura, combo.nivelEducativo),
                 });
                 setCargadoCatalogo(combo.key);
             } catch (err) {
@@ -264,7 +284,7 @@ export function useCurriculumPeriodo(
                     id: `ind-${ind.curr_indicador_id}`,
                     codigo,
                     texto: descripcion,
-                    bloque: bloqueDeCompetencia(cat?.competencia),
+                    bloque: bloqueDeCompetencia(cat?.competencia, combo?.nivelEducativo),
                     ceCodigo: null,
                 });
             }

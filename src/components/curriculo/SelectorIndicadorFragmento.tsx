@@ -48,6 +48,7 @@ export interface SelectorIndicadorFragmentoProps {
     grado?: string | null;
     asignatura?: string | null;
     cursoId?: number | null;
+    nivelEducativo?: string | null;
     periodo?: string | null;
     initialIndicador?: string;
     initialFragmento?: string | null;
@@ -230,6 +231,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
     grado,
     asignatura,
     cursoId,
+    nivelEducativo,
     periodo,
     initialIndicador = '',
     initialFragmento = null,
@@ -277,7 +279,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
             return;
         }
 
-        const cacheKey = `${grado}__${asignatura}`.toLowerCase();
+        const cacheKey = `${grado}__${asignatura}__${nivelEducativo || ''}`.toLowerCase();
         let isMounted = true;
 
         const cargarDatos = async () => {
@@ -296,9 +298,13 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                     }
                     let qInds = supabase
                         .from('curr_indicadores')
-                        .select('id, grado, asignatura, competencia, codigo, descripcion, is_active')
+                        .select('id, nivel, grado, asignatura, competencia, codigo, descripcion, is_active')
                         .eq('is_active', true);
 
+                    if (nivelEducativo) {
+                        const nivelFiltro = normalizarTexto(nivelEducativo) === 'primaria' ? 'Primaria' : 'Secundaria';
+                        qInds = qInds.eq('nivel', nivelFiltro);
+                    }
                     if (gradoCanonico) {
                         qInds = qInds.eq('grado', gradoCanonico);
                     }
@@ -307,17 +313,22 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
 
                     let rawInds = (resInds.data as FilaIndicador[]) || [];
                     if (rawInds.length === 0 && grado && grado !== gradoCanonico) {
-                        const retryInds = await supabase
+                        let retryInds = supabase
                             .from('curr_indicadores')
-                            .select('id, grado, asignatura, competencia, codigo, descripcion, is_active')
+                            .select('id, nivel, grado, asignatura, competencia, codigo, descripcion, is_active')
                             .eq('grado', grado)
                             .eq('is_active', true)
                             .limit(100);
-                        if (retryInds.data && retryInds.data.length > 0) {
-                            rawInds = retryInds.data as FilaIndicador[];
+                        if (nivelEducativo) {
+                            const nivelFiltro = normalizarTexto(nivelEducativo) === 'primaria' ? 'Primaria' : 'Secundaria';
+                            retryInds = retryInds.eq('nivel', nivelFiltro);
+                        }
+                        const retryRes = await retryInds;
+                        if (retryRes.data && retryRes.data.length > 0) {
+                            rawInds = retryRes.data as FilaIndicador[];
                         }
                     }
-                    const inds = filtrarIndicadores(rawInds, grado, asignatura);
+                    const inds = filtrarIndicadores(rawInds, grado, asignatura, nivelEducativo);
                     cacheIndicadores.set(cacheKey, inds);
                     return inds;
                 })();
@@ -330,8 +341,12 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                     }
                     let qConts = supabase
                         .from('curr_contenidos')
-                        .select('id, grado, asignatura, contenido, contenido_json');
+                        .select('id, nivel, grado, asignatura, contenido, contenido_json');
 
+                    if (nivelEducativo) {
+                        const nivelFiltro = normalizarTexto(nivelEducativo) === 'primaria' ? 'Primaria' : 'Secundaria';
+                        qConts = qConts.eq('nivel', nivelFiltro);
+                    }
                     if (gradoCanonico) {
                         qConts = qConts.eq('grado', gradoCanonico);
                     }
@@ -342,16 +357,21 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
 
                     let rawConts = (resConts.data as FilaContenido[]) || [];
                     if (rawConts.length === 0 && grado && grado !== gradoCanonico) {
-                        const retryConts = await supabase
+                        let retryConts = supabase
                             .from('curr_contenidos')
-                            .select('id, grado, asignatura, contenido, contenido_json')
+                            .select('id, nivel, grado, asignatura, contenido, contenido_json')
                             .eq('grado', grado)
                             .limit(60);
-                        if (retryConts.data && retryConts.data.length > 0) {
-                            rawConts = retryConts.data as FilaContenido[];
+                        if (nivelEducativo) {
+                            const nivelFiltro = normalizarTexto(nivelEducativo) === 'primaria' ? 'Primaria' : 'Secundaria';
+                            retryConts = retryConts.eq('nivel', nivelFiltro);
+                        }
+                        const retryContsRes = await retryConts;
+                        if (retryContsRes.data && retryContsRes.data.length > 0) {
+                            rawConts = retryContsRes.data as FilaContenido[];
                         }
                     }
-                    const conts = filtrarContenidos(rawConts, grado, asignatura);
+                    const conts = filtrarContenidos(rawConts, grado, asignatura, nivelEducativo);
                     cacheContenidos.set(cacheKey, conts);
                     return conts;
                 })();
@@ -503,7 +523,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
         ) => {
             const currentCont = contObj !== undefined ? contObj : activeContenido;
             if (ind) {
-                const bcBloque = bloqueDeCompetencia(ind.competencia) as BCKey | null;
+                const bcBloque = bloqueDeCompetencia(ind.competencia, nivelEducativo) as BCKey | null;
                 const textoFinal = frag && frag.trim() ? frag.trim() : ind.descripcion;
                 onChange({
                     indicadorTexto: textoFinal,
@@ -734,7 +754,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
     };
 
     const bcBloque = selectedIndicador
-        ? (bloqueDeCompetencia(selectedIndicador.competencia) as BloqueCF | null)
+        ? (bloqueDeCompetencia(selectedIndicador.competencia, nivelEducativo) as BloqueCF | null)
         : null;
     const colorBc = bcBloque ? COLORES_BLOQUE_CF[bcBloque] : undefined;
 
@@ -960,7 +980,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
                                         {indicadoresAfines.map(({ indicador: ind, afinidad }) => {
                                             const isSelected = selectedIndicadorId === ind.id;
-                                            const bcf = bloqueDeCompetencia(ind.competencia) as BloqueCF | null;
+                                            const bcf = bloqueDeCompetencia(ind.competencia, nivelEducativo) as BloqueCF | null;
                                             const color = bcf ? COLORES_BLOQUE_CF[bcf] : undefined;
 
                                             return (
@@ -1056,7 +1076,7 @@ export const SelectorIndicadorFragmento: React.FC<SelectorIndicadorFragmentoProp
                                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1 animate-in fade-in duration-150 pt-1">
                                                 {indicadoresSecundarios.map(({ indicador: ind }) => {
                                                     const isSelected = selectedIndicadorId === ind.id;
-                                                    const bcf = bloqueDeCompetencia(ind.competencia) as BloqueCF | null;
+                                                    const bcf = bloqueDeCompetencia(ind.competencia, nivelEducativo) as BloqueCF | null;
                                                     const color = bcf ? COLORES_BLOQUE_CF[bcf] : undefined;
 
                                                     return (
