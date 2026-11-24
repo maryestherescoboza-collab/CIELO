@@ -7,6 +7,8 @@ import { esEstudianteDelCurso } from '../utils/aislamiento';
 import { CieloPill } from '../components/ui/CieloPill';
 import GenerarInstrumentoModal from '../components/evaluacion/GenerarInstrumentoModal';
 import ExportarInstrumentoModal from '../components/evaluacion/ExportarInstrumentoModal';
+import { CotejoConfigModal } from '../components/cotejo/CotejoConfigModal';
+import { CotejoMobileView } from '../components/cotejo/CotejoMobileView';
 import {
     descargarCotejoDocx,
     guardarCotejoEnDrive,
@@ -82,6 +84,7 @@ export default function Cotejo({
     const [activeCell, setActiveCell] = useState<{ critId: number; val: number } | null>(null);
     const [showGenerarModal, setShowGenerarModal] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
+    const [showConfigModal, setShowConfigModal] = useState(false);
     const [isDownloadingEval, setIsDownloadingEval] = useState(false);
     const [isDownloadingPlantillas, setIsDownloadingPlantillas] = useState(false);
 
@@ -401,6 +404,13 @@ export default function Cotejo({
         if (numA !== numB) return numA - numB;
         return (a.apellido + a.nombre).localeCompare(b.apellido + b.nombre);
     });
+
+    // Auto-seleccionar primer estudiante si no hay ninguno seleccionado (vital para vista táctil)
+    useEffect(() => {
+        if (selectedEstId === null && sortedEsts.length > 0) {
+            setSelectedEstId(sortedEsts[0].id);
+        }
+    }, [sortedEsts, selectedEstId]);
     const cotejoPlantillas = state?.plantillas.filter(p =>
         p.tipo === 'cotejo' && p.userId === session?.user?.id
     ) || [];
@@ -682,9 +692,37 @@ export default function Cotejo({
     }
 
     return (
-        <div className="flex flex-col md:flex-row h-full overflow-hidden bg-base-creme">
+        <div className="flex flex-1 h-full overflow-hidden bg-base-creme">
+            {/* VISTA MÓVIL Y TABLETA (< lg) */}
+            <div className="lg:hidden flex-1 flex flex-col h-full overflow-hidden">
+                <CotejoMobileView
+                    curso={selectedCurso}
+                    selectedAsignatura={selectedAsignatura}
+                    selectedPeriodo={selectedPeriodo}
+                    selectedAct={selectedAct}
+                    sortedEsts={sortedEsts}
+                    selectedEstId={selectedEstId}
+                    activeCell={activeCell}
+                    onSelectCell={handleSelectCell}
+                    onAvatarClick={handleAvatarClick}
+                    onCancelActiveCell={() => setActiveCell(null)}
+                    localCriterios={localCriterios}
+                    respuestas={respuestas}
+                    multiEvaluations={multiEvaluations}
+                    onOpenConfigModal={() => setShowConfigModal(true)}
+                    onOpenExportModal={() => setShowExportModal(true)}
+                    onOpenGenerarIA={() => setShowGenerarModal(true)}
+                    onSave={Object.keys(multiEvaluations).length > 0 ? handleFinalizeGroupEvaluation : handleSave}
+                    isSaving={isSaving}
+                    savedFlash={savedFlash}
+                    calcPuntajeTotal={() => calcPuntajeWithRespuestas(respuestas)}
+                    readOnly={readOnly}
+                />
+            </div>
+
+            {/* VISTA DE ESCRITORIO (PC >= lg) - Inalterada */}
             {!readOnly && (
-                <aside className={`shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} min-h-screen border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex flex-col`}>
+                <aside className={`hidden lg:flex shrink-0 transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-72'} min-h-screen border-r border-slate-200 sidebar-artisan-white overflow-hidden relative flex-col`}>
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                         className="absolute top-4 -right-1 z-50 p-1.5 bg-primary text-white rounded-l-lg hover:opacity-90 transition-all shadow-md"
@@ -938,7 +976,7 @@ export default function Cotejo({
                 </aside>
             )}
 
-            <main className="flex-1 overflow-y-auto px-3 py-3 md:px-5 scroll-smooth scrollbar-hide">
+            <main className="hidden lg:block flex-1 overflow-y-auto px-3 py-3 md:px-5 scroll-smooth scrollbar-hide">
                 <div className="max-w-350 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both space-y-1.5">
                     <div className="flex flex-wrap items-center justify-between gap-4 pb-2">
                         <div>
@@ -1325,6 +1363,46 @@ export default function Cotejo({
                 estudiantes={sortedEsts}
                 onExportarWord={handleExportarWord}
                 onGuardarDrive={handleGuardarDrive}
+            />
+
+            <CotejoConfigModal
+                isOpen={showConfigModal}
+                onClose={() => setShowConfigModal(false)}
+                cursos={state?.cursos || []}
+                selectedCursoId={selectedCursoId}
+                selectedAsignatura={selectedAsignatura}
+                onSelectCurso={(id, asig) => {
+                    setSelectedCursoId(id);
+                    setSelectedAsignatura(asig);
+                    setSelectedEstId(null);
+                    setSelectedActId(null);
+                }}
+                selectedPeriodo={selectedPeriodo}
+                onSelectPeriodo={(p) => {
+                    setSelectedPeriodo(p);
+                    setSelectedActId(null);
+                    setSelectedEstId(null);
+                }}
+                actividades={actividades}
+                selectedActId={selectedAct?.id ?? null}
+                onSelectActividad={(actId) => setSelectedActId(actId)}
+                plantillas={cotejoPlantillas}
+                selectedPlantillaId={selectedPlantillaId}
+                onSelectPlantilla={(plantillaId) => {
+                    if (plantillaId === null) {
+                        setSelectedPlantillaId(null);
+                        setLocalCriterios(state?.criteriosCotejo || []);
+                    } else {
+                        const p = cotejoPlantillas.find((item) => item.id === plantillaId);
+                        if (p?.datos) {
+                            const data = p.datos as Record<string, unknown>;
+                            if (data.criterios) setLocalCriterios(data.criterios as CriterioCotejo[]);
+                            if (data.niveles) setLocalNiveles(data.niveles as any[]);
+                            setSelectedPlantillaId(plantillaId);
+                        }
+                    }
+                }}
+                onOpenGenerarIA={() => setShowGenerarModal(true)}
             />
             {captureOverlay}
         </div>
