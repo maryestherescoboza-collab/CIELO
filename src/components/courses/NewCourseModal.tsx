@@ -54,7 +54,7 @@ export function NewCourseModal({
             }
         });
         return Array.from(lista);
-    }, [existingCursos, cursoDocentes, form.grado, form.seccion]);
+    }, [existingCursos, cursoDocentes, form.grado, form.seccion, form.nivelEducativo]);
 
     // Asignaturas optativas personalizadas que el docente o centro ya creó previamente (para reutilizarlas rápido si desea)
     const optativasPrevias = useMemo(() => {
@@ -100,10 +100,11 @@ export function NewCourseModal({
             const duplicadaEnCurso = asignaturasExistentesEnSeccion.some(asig =>
                 sonMismaAsignatura(asig, idOptativa)
             );
+            const nivelLabel = form.nivelEducativo === 'primaria' ? 'Primaria' : 'Secundaria';
             if (duplicadaEnCurso) {
                 return {
                     valido: false,
-                    mensaje: `La asignatura optativa «${nombreOptativaLimpio}» ya existe en ${form.grado} - Sección ${form.seccion || 'A'}.`
+                    mensaje: `La asignatura optativa «${nombreOptativaLimpio}» ya existe en ${form.grado} de ${nivelLabel} - Sección ${form.seccion || 'A'}.`
                 };
             }
             return { valido: true, mensaje: null };
@@ -112,14 +113,15 @@ export function NewCourseModal({
                 sonMismaAsignatura(asig, form.asignatura)
             );
             if (duplicadaEnCurso) {
+                const nivelLabel = form.nivelEducativo === 'primaria' ? 'Primaria' : 'Secundaria';
                 return {
                     valido: false,
-                    mensaje: `La asignatura «${getAsignaturaNombre(form.asignatura)}» ya está registrada en ${form.grado} - Sección ${form.seccion || 'A'}.`
+                    mensaje: `La asignatura «${getAsignaturaNombre(form.asignatura)}» ya está registrada en ${form.grado} de ${nivelLabel} - Sección ${form.seccion || 'A'}.`
                 };
             }
             return { valido: true, mensaje: null };
         }
-    }, [form.esOptativa, form.asignatura, form.grado, form.seccion, nombreOptativaLimpio, asignaturasExistentesEnSeccion]);
+    }, [form.esOptativa, form.asignatura, form.grado, form.seccion, form.nivelEducativo, nombreOptativaLimpio, asignaturasExistentesEnSeccion]);
 
     if (!show) return null;
 

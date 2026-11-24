@@ -121,13 +121,16 @@ export function useCourseActions() {
             }
         } else {
             // Course does not exist, create a new one!
+            const nivelEducativo = c.nivelEducativo || 'secundaria';
+            const nivelNombre = nivelEducativo === 'primaria' ? 'Primaria' : 'Secundaria';
             const { data: grupoData, error: grupoError } = await supabase
                 .from('grupos')
                 .upsert({ 
-                    nombre: `${c.grado} ${c.seccion}`, 
+                    nombre: `${c.grado} ${c.seccion} (${nivelNombre})`, 
                     grado: c.grado, 
-                    seccion: c.seccion 
-                }, { onConflict: 'grado,seccion' })
+                    seccion: c.seccion,
+                    nivel_educativo: nivelEducativo
+                }, { onConflict: 'grado,seccion,nivel_educativo' })
                 .select();
 
             if (grupoError || !grupoData?.[0]) {
@@ -297,11 +300,14 @@ export function useCourseActions() {
     const handleSaveCurso = useCallback(async (c: Curso) => {
         if (!session?.user?.id) return;
         
+        const nivelEducativo = c.nivelEducativo || 'secundaria';
+        const nivelNombre = nivelEducativo === 'primaria' ? 'Primaria' : 'Secundaria';
         const { data: grp } = await supabase.from('grupos').upsert({
-            nombre: `${c.grado} ${c.seccion}`,
+            nombre: `${c.grado} ${c.seccion} (${nivelNombre})`,
             grado: c.grado,
-            seccion: c.seccion
-        }, { onConflict: 'grado,seccion' }).select();
+            seccion: c.seccion,
+            nivel_educativo: nivelEducativo
+        }, { onConflict: 'grado,seccion,nivel_educativo' }).select();
 
         const grupo_id = grp?.[0]?.id || c.grupoId;
 
@@ -314,6 +320,7 @@ export function useCourseActions() {
             seccion: c.seccion,
             periodo: c.periodo,
             color: c.color,
+            nivel_educativo: nivelEducativo,
             is_tutor_oficial: c.isTutorOficial,
             configuracion_evaluacion: c.configuracionEvaluacion || {},
             user_id: session.user.id,
