@@ -20,15 +20,16 @@ interface Params {
     cursoId: number;
     currentUserId?: string;
     currentCourseRole?: CursoDocente;
+    preferredAsignatura?: string | null;
     onSaveCalificaciones?: (califs: CalificacionActividad[], recs: RecuperacionBC[], cursoId: number) => Promise<any>;
     onSaveRecuperacionCotejo?: (detalle: RecuperacionCotejo[], cursoId: number, contextos?: ContextoRecuperacion[]) => Promise<void>;
 }
 
-export function useCursoDetalleData({ state, cursoId, currentUserId, currentCourseRole, onSaveCalificaciones, onSaveRecuperacionCotejo }: Params) {
+export function useCursoDetalleData({ state, cursoId, currentUserId, currentCourseRole, preferredAsignatura: passedAsignatura, onSaveCalificaciones, onSaveRecuperacionCotejo }: Params) {
     const { selectedPeriodo, setSelectedPeriodo, selectedAsignatura: storeSelectedAsignatura } = useAppStore();
     const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const urlAsignatura = searchParams?.get('asignatura') || null;
-    const preferredAsignatura = urlAsignatura || currentCourseRole?.asignatura || storeSelectedAsignatura || '';
+    const preferredAsignatura = passedAsignatura || urlAsignatura || currentCourseRole?.asignatura || storeSelectedAsignatura || '';
     const curso = state.cursos.find(c => c.id === cursoId && (!preferredAsignatura || sonMismaAsignatura(c.asignatura, preferredAsignatura)))
         || state.cursos.find(c => c.id === cursoId);
     const [buscar, setBuscar] = useState('');
@@ -409,9 +410,10 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
                 perteneceAlContextoDelCurso(state.cursos, curso, a.cursoId, centroContexto);
             const matchesPeriod = a.periodo === selectedPeriodo || (!a.periodo && selectedPeriodo === 'P1');
             const isMine = !currentUserId || a.userId === currentUserId || !a.userId || a.cursoId === cursoId;
-            // Regla obligatoria: Exigir que la actividad tenga asignatura y que coincida con la materia activa.
-            // Ser tutor no autoriza mezclar asignaturas en el registro pedagógico.
-            const matchAsignatura = Boolean(a.asignatura) && Boolean(myAsignatura) && normalizeArea(a.asignatura) === normalizeArea(myAsignatura);
+            
+            const actAsigNorm = a.asignatura ? normalizeArea(a.asignatura) : (curso?.asignatura ? normalizeArea(curso.asignatura) : '');
+            const myAsigNorm = myAsignatura ? normalizeArea(myAsignatura) : '';
+            const matchAsignatura = !myAsigNorm || !actAsigNorm || actAsigNorm === myAsigNorm;
             return (isMyAct || isSharedAct) && matchesPeriod && isMine && matchAsignatura;
         });
         
@@ -432,6 +434,18 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         console.log(`[DIAG][SCREEN] CursoDetalle cursoId=${cursoId} userId=${currentUserId ?? 'sin-usuario'} sharedCourseId=${sharedCourseId} periodo=${selectedPeriodo} actividadesConsumidas=${sorted.length} globalActividades=${state.actividades.length} localCalifs=${localCalifs.length} localRecs=${localRecs.length} ts=${new Date().toISOString()}`);
         return sorted;
     }, [state.actividades, state.cursos, cursoId, curso, centroContexto, selectedPeriodo, currentUserId, myAsignatura, currentCourseRole?.rol, localCalifs.length, localRecs.length, sharedCourseId]);
+
+    const availableAsignaturas = useMemo(() => {
+        const asigs = new Set<string>();
+        if (curso?.asignatura) asigs.add(curso.asignatura);
+        state.cursoDocentes
+            .filter(cd => cd.cursoId === cursoId && Boolean(cd.asignatura))
+            .forEach(cd => { if (cd.asignatura) asigs.add(cd.asignatura); });
+        state.actividades
+            .filter(a => a.cursoId === cursoId && Boolean(a.asignatura))
+            .forEach(a => { if (a.asignatura) asigs.add(a.asignatura); });
+        return Array.from(asigs);
+    }, [curso?.asignatura, state.cursoDocentes, state.actividades, cursoId]);
 
     const allCourseStudents = useMemo(() => {
         const filtered = state.estudiantes
@@ -892,6 +906,7 @@ export function useCursoDetalleData({ state, cursoId, currentUserId, currentCour
         isDirtyCotejo,
         setIsDirty,
         myAsignatura,
+        availableAsignaturas,
         sharedCourseId
     };
 }

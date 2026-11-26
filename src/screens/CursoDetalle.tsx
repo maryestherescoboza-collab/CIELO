@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/appStore';
 import { useCursoDetalleData } from '../hooks/useCursoDetalleData';
@@ -108,8 +108,23 @@ export default function CursoDetalle(props: Props) {
         isDirty,
         isDirtyCotejo,
         myAsignatura,
+        availableAsignaturas,
         sharedCourseId
-    } = useCursoDetalleData({ state, cursoId, currentUserId, currentCourseRole, onSaveCalificaciones: props.onSaveCalificaciones, onSaveRecuperacionCotejo: props.onSaveRecuperacionCotejo });
+    } = useCursoDetalleData({
+        state,
+        cursoId,
+        currentUserId,
+        currentCourseRole,
+        preferredAsignatura: targetAsignatura || undefined,
+        onSaveCalificaciones: props.onSaveCalificaciones,
+        onSaveRecuperacionCotejo: props.onSaveRecuperacionCotejo
+    });
+
+    const handleAsignaturaChange = useCallback((newAsig: string) => {
+        store.setSelectedAsignatura(newAsig);
+        navigate(`/curso/${cursoId}?asignatura=${encodeURIComponent(newAsig)}`, { replace: true });
+        loadCursoData(cursoId, selectedPeriodo || 'P2', false, newAsig, true);
+    }, [store, navigate, cursoId, loadCursoData, selectedPeriodo]);
 
     useEffect(() => {
         if (cursoId) {
@@ -270,21 +285,28 @@ export default function CursoDetalle(props: Props) {
         extra?: {
             indicadores_json?: any[];
             bcAsignados?: BCKey[];
+            nombre?: string;
+            descripcion?: string | null;
+            fecha?: string;
+            puntuacion?: number;
+            tipo?: string;
         }
     ): Promise<boolean> => {
         if (!curso || !props.onAddActividad) return false;
         const result = await props.onAddActividad({
-            nombre: `Actividad ${actividades.length + 1}`,
+            nombre: extra?.nombre || `Actividad ${actividades.length + 1}`,
             cursoId,
             sharedCourseId,
             periodo: selectedPeriodo,
             asignatura: myAsignatura,
             bcAsignados: extra?.bcAsignados && extra.bcAsignados.length > 0 ? extra.bcAsignados : ['BC1'],
             userId: currentUserId,
-            fecha: new Date().toISOString().split('T')[0],
+            fecha: extra?.fecha || new Date().toISOString().split('T')[0],
             indicador,
             indicadores_json: extra?.indicadores_json,
-            producto
+            producto,
+            isProductoFinal: extra?.tipo === 'producto_final',
+            descripcion: extra?.descripcion || undefined,
         });
         return !!result;
     };
@@ -359,6 +381,9 @@ export default function CursoDetalle(props: Props) {
                 isExporting={isExportingExcel}
                 onExportInstrumento={handleExportInstrumento}
                 isExportingInstrumento={isExportingInstrumento}
+                availableAsignaturas={availableAsignaturas}
+                selectedAsignatura={myAsignatura}
+                onAsignaturaChange={handleAsignaturaChange}
             />
 
             <PersistenceBanner 

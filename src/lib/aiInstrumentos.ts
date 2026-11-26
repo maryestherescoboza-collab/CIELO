@@ -17,6 +17,7 @@ export interface DescriptorGenerado {
 export interface ContextoInstrumento {
     asignatura: string;
     cursoNombre: string;
+    nivelEducativo?: string | null;
     periodo: string | null;
     actividadNombre: string | null;
     indicadorLogro: string | null;
@@ -80,16 +81,25 @@ function validarContextoBasico(ctx: ContextoInstrumento): void {
 export function generarPromptRubrica(ctx: ContextoInstrumento): string {
     validarContextoBasico(ctx);
 
-    const competenciasCtx = Object.entries(COMPETENCIAS_OFICIALES)
+    const esPrimaria = ctx.nivelEducativo?.toLowerCase() === 'primaria';
+    const competenciasDisponibles = esPrimaria
+        ? {
+            BC1: 'Comunicativa',
+            BC2: 'Pensamiento Lógico, Creativo y Crítico; Resolución de Problemas; Tecnológica y Científica',
+            BC3: 'Ética y Ciudadana; Desarrollo Personal y Espiritual; Ambiental y de la Salud',
+        }
+        : COMPETENCIAS_OFICIALES;
+
+    const competenciasCtx = Object.entries(competenciasDisponibles)
         .map(([codigo, nombre]) => `${codigo}: ${nombre}`)
         .join('\n   ');
 
-    return `Eres un experto en evaluación formativa por competencias (modelo chileno de Evaluación Procesual por Estándares, EPES). Redacta los descriptores de una rúbrica analítica para evaluar una actividad escolar.
+    return `Eres un experto en evaluación formativa por competencias del diseño curricular dominicano (MINERD). Redacta los descriptores de una rúbrica analítica para evaluar una actividad escolar de nivel ${esPrimaria ? 'Primaria (3 bloques: BC1 a BC3)' : 'Secundaria (4 bloques: BC1 a BC4)'}.
 
 CONTEXTO:
 ${construirContexto(ctx)}
 
-COMPETENCIAS BÁSICAS COMUNALES (BC):
+COMPETENCIAS FUNDAMENTALES (BC):
    ${competenciasCtx}
 
 NIVELES DE LOGRO (de mayor a menor):
@@ -108,7 +118,7 @@ INSTRUCCIONES DE SALIDA:
 {
   "descriptores": [
     {
-      "bc": "BC1", // (Solo usar: BC1, BC2, BC3 o BC4)
+      "bc": "BC1", // (Solo usar: ${esPrimaria ? 'BC1, BC2 o BC3' : 'BC1, BC2, BC3 o BC4'})
       "estrategico": "Descripción observable...",
       "autonomo": "Descripción observable...",
       "resolutivo": "Descripción observable...",

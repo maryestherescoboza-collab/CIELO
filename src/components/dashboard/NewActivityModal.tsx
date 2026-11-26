@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquareText, Brain, Puzzle, Microscope, Sparkles, BookOpen, AlertCircle, Check, Loader2 } from 'lucide-react';
+import { MessageSquareText, Brain, Puzzle, Microscope, Sparkles, AlertCircle, Check, Loader2 } from 'lucide-react';
 import type { AppState, Actividad, BCKey } from '../../types';
 import { COMPETENCIAS_LABEL } from '../../types';
 import { TC_Flux, TC_Genesis, TC_Archive, TC_Echo } from '../icons/TerraCognitaIcons';
@@ -49,6 +49,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     const actividades = useAppStore(s => s.state.actividades);
     const today = new Date().toISOString().split('T')[0];
     const [flowMode, setFlowMode] = useState<'choice' | 'manual' | 'text' | 'preview'>('choice');
+    const [manualStep, setManualStep] = useState<1 | 2 | 3>(1);
 
     // Manual flow states
     const [isSaving, setIsSaving] = useState(false);
@@ -59,7 +60,11 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
         bcs: ['BC1'] as BCKey[],
         cursoId: cursos[0]?.id ?? 0,
         asignatura: cursos[0]?.asignatura ?? '',
-        indicador: ''
+        indicador: '',
+        descripcion: '',
+        tipo: 'formativa',
+        puntuacion: 100,
+        producto: '',
     });
 
     const [indicadoresJson, setIndicadoresJson] = useState<any[]>([]);
@@ -103,6 +108,7 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
     // Reset all states
     const handleClose = () => {
         setFlowMode('choice');
+        setManualStep(1);
         setPastedText('');
         setErrorMsg(null);
         setFallbackNotice(null);
@@ -121,7 +127,11 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
             bcs: ['BC1'] as BCKey[],
             cursoId: cursos[0]?.id ?? 0,
             asignatura: cursos[0]?.asignatura ?? '',
-            indicador: ''
+            indicador: '',
+            descripcion: '',
+            tipo: 'formativa',
+            puntuacion: 100,
+            producto: '',
         });
         setIndicadoresJson([]);
         onClose();
@@ -171,7 +181,9 @@ export function NewActivityModal({ show, onClose, onAddActividad, cursos, onSucc
                 userId: currentUserId,
                 asignatura: docenteAsignatura,
                 indicador: form.indicador || undefined,
-                indicadores_json: indicadoresJson.length > 0 ? indicadoresJson : undefined
+                indicadores_json: indicadoresJson.length > 0 ? indicadoresJson : undefined,
+                descripcion: form.descripcion.trim() || undefined,
+                producto: form.producto.trim() || undefined,
             });
 
             if (result) {
@@ -682,36 +694,78 @@ ${pastedText}`;
         }
 
         if (flowMode === 'manual') {
-            const isManualReady = form.nombre.trim() && form.cursoId && form.bcs.length > 0 && form.indicador.trim() && !isSaving;
+            const isPaso1Valido = form.nombre.trim() && form.cursoId;
+            const isPaso2Valido = form.bcs.length > 0 && form.indicador.trim();
+            const isManualReady = isPaso1Valido && isPaso2Valido && !isSaving;
+
             return (
                 <div className="flex items-center justify-between gap-4 w-full">
-                    <button
-                        type="button"
-                        className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer"
-                        onClick={() => setFlowMode('choice')}
-                        disabled={isSaving}
-                    >
-                        Volver
-                    </button>
-                    <button
-                        type="button"
-                        className={`px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer ${!isManualReady ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
-                        onClick={handleCreateManual}
-                        disabled={!isManualReady}
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 size={16} className="animate-spin" />
-                                <span>Guardando…</span>
-                            </>
+                    {manualStep > 1 ? (
+                        <button
+                            type="button"
+                            className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                            onClick={() => setManualStep(s => (s - 1) as 1 | 2 | 3)}
+                            disabled={isSaving}
+                        >
+                            Anterior
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            className="px-6 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all active:scale-95 cursor-pointer"
+                            onClick={() => setFlowMode('choice')}
+                            disabled={isSaving}
+                        >
+                            Volver
+                        </button>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                        {manualStep < 3 ? (
+                            <button
+                                type="button"
+                                className={`px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${(manualStep === 1 && !isPaso1Valido) || (manualStep === 2 && !isPaso2Valido)
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : ''
+                                    }`}
+                                onClick={() => {
+                                    if (manualStep === 1 && !isPaso1Valido) {
+                                        setErrorMsg('Por favor indica el curso y el nombre de la actividad.');
+                                        return;
+                                    }
+                                    if (manualStep === 2 && !isPaso2Valido) {
+                                        setErrorMsg('Por favor selecciona la competencia y el indicador de logro.');
+                                        return;
+                                    }
+                                    setErrorMsg(null);
+                                    setManualStep(s => (s + 1) as 1 | 2 | 3);
+                                }}
+                                disabled={(manualStep === 1 && !isPaso1Valido) || (manualStep === 2 && !isPaso2Valido)}
+                            >
+                                <span>Continuar</span>
+                            </button>
                         ) : (
-                            <>
-                                <span>Programar Actividad</span>
-                                <TC_Flux size={15} />
-                            </>
+                            <button
+                                type="button"
+                                className={`px-8 h-11 rounded-full text-xs font-black uppercase tracking-wider bg-[#689C63] text-white shadow-md shadow-[#689C63]/25 hover:bg-[#5a8a55] transition-all active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer ${!isManualReady ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
+                                onClick={handleCreateManual}
+                                disabled={!isManualReady}
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        <span>Creando…</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check size={16} strokeWidth={3} />
+                                        <span>Crear actividad</span>
+                                    </>
+                                )}
+                            </button>
                         )}
-                    </button>
+                    </div>
                 </div>
             );
         }
@@ -902,7 +956,7 @@ ${pastedText}`;
                         </div>
                     )}
 
-                    {/* Modo 2: Creación manual amplia (Distribuida en 2 columnas en escritorio) */}
+                    {/* Modo 2: Creación manual en 3 pasos limpios, rápidos e intuitivos */}
                     {flowMode === 'manual' && (() => {
                         const currentCurso = cursos.find(
                             c => c.id === form.cursoId && (!form.asignatura || sonMismaAsignatura(c.asignatura, form.asignatura))
@@ -919,7 +973,67 @@ ${pastedText}`;
                             : '0::';
 
                         return (
-                            <div className="space-y-6 py-2">
+                            <div className="space-y-4 py-2">
+                                {/* Indicador de 3 pasos */}
+                                <div className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-2.5 sm:p-3 mb-2">
+                                    <div className="flex items-center justify-between gap-1 max-w-xl mx-auto">
+                                        <button
+                                            type="button"
+                                            onClick={() => setManualStep(1)}
+                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${manualStep === 1
+                                                ? 'bg-white text-[#2E3330] shadow-sm border border-slate-200 ring-2 ring-[#689C63]/30'
+                                                : 'text-slate-500 hover:text-slate-800'
+                                                }`}
+                                        >
+                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${manualStep === 1 ? 'bg-[#689C63] text-white' : manualStep > 1 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                                                }`}>
+                                                {manualStep > 1 ? <Check size={11} strokeWidth={3} /> : '1'}
+                                            </span>
+                                            <span className="hidden sm:inline">1. Actividad</span>
+                                        </button>
+
+                                        <div className={`h-0.5 flex-1 mx-1.5 transition-all ${manualStep >= 2 ? 'bg-[#689C63]' : 'bg-slate-200'}`} />
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (form.nombre.trim() && form.cursoId) setManualStep(2);
+                                            }}
+                                            disabled={!form.nombre.trim() || !form.cursoId}
+                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${manualStep === 2
+                                                ? 'bg-white text-[#2E3330] shadow-sm border border-slate-200 ring-2 ring-[#689C63]/30'
+                                                : 'text-slate-500 hover:text-slate-800'
+                                                }`}
+                                        >
+                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${manualStep === 2 ? 'bg-[#689C63] text-white' : manualStep > 2 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                                                }`}>
+                                                {manualStep > 2 ? <Check size={11} strokeWidth={3} /> : '2'}
+                                            </span>
+                                            <span className="hidden sm:inline">2. Evaluación</span>
+                                        </button>
+
+                                        <div className={`h-0.5 flex-1 mx-1.5 transition-all ${manualStep === 3 ? 'bg-[#689C63]' : 'bg-slate-200'}`} />
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (form.nombre.trim() && form.cursoId && form.bcs.length > 0 && form.indicador.trim()) setManualStep(3);
+                                            }}
+                                            disabled={!form.nombre.trim() || !form.cursoId || form.bcs.length === 0 || !form.indicador.trim()}
+                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${manualStep === 3
+                                                ? 'bg-white text-[#2E3330] shadow-sm border border-slate-200 ring-2 ring-[#689C63]/30'
+                                                : 'text-slate-500 hover:text-slate-800'
+                                                }`}
+                                        >
+                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${manualStep === 3 ? 'bg-[#689C63] text-white' : 'bg-slate-200 text-slate-600'
+                                                }`}>
+                                                3
+                                            </span>
+                                            <span className="hidden sm:inline">3. Confirmar</span>
+                                        </button>
+                                    </div>
+                                </div>
+
                                 {errorMsg && (
                                     <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-bold rounded-xl flex items-center gap-2.5">
                                         <AlertCircle size={17} className="text-rose-600 shrink-0" />
@@ -927,90 +1041,120 @@ ${pastedText}`;
                                     </div>
                                 )}
 
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                                    {/* Columna Izquierda: Información básica y Competencias (5 de 12 columnas) */}
-                                    <div className="lg:col-span-5 space-y-5">
-                                        {/* Bloque 1: Datos de la actividad */}
-                                        <div className="bg-[#FAF7F2]/70 border border-slate-300/80 rounded-2xl p-4.5 space-y-4">
-                                            <div className="border-b border-slate-200 pb-2.5">
-                                                <span className="text-[11px] font-black uppercase tracking-wider text-slate-600 block">
-                                                    Paso 1
-                                                </span>
-                                                <h3 className="text-sm font-extrabold text-[#2E3330]">
-                                                    Información de la actividad
-                                                </h3>
-                                            </div>
-
-                                            {/* Curso destino */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                                                    Curso destino *
-                                                </label>
-                                                <div className="relative">
-                                                    <select
-                                                        className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold appearance-none transition-all cursor-pointer pr-9"
-                                                        value={selectedCourseComposite}
-                                                        onChange={e => {
-                                                            const [idStr, ...asigParts] = e.target.value.split('::');
-                                                            const nextId = Number(idStr);
-                                                            const nextAsig = asigParts.join('::');
-                                                            setForm(p => ({ ...p, cursoId: nextId, asignatura: nextAsig }));
-                                                        }}
-                                                    >
-                                                        <option value="0::" disabled>Selecciona el curso…</option>
-                                                        {cursos.map(c => {
-                                                            const asigNombre = getAsignaturaNombre(c.asignatura);
-                                                            const esOpt = esAsignaturaOptativa(c.asignatura);
-                                                            return (
-                                                                <option key={`${c.id}-${c.asignatura}`} value={`${c.id}::${c.asignatura || ''}`}>
-                                                                    {c.grado} {c.seccion} — {asigNombre}{esOpt ? ' (Optativa)' : ''}
-                                                                </option>
-                                                            );
-                                                        })}
-                                                    </select>
-                                                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                                                        <TC_Flux size={14} className="rotate-90" />
-                                                    </div>
+                                {/* PASO 1: INFORMACIÓN DE LA ACTIVIDAD */}
+                                {manualStep === 1 && (
+                                    <div className="space-y-4 max-w-2xl mx-auto py-2">
+                                        {/* Curso destino */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                                                Curso y Asignatura *
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold appearance-none transition-all cursor-pointer pr-9"
+                                                    value={selectedCourseComposite}
+                                                    onChange={e => {
+                                                        const [idStr, ...asigParts] = e.target.value.split('::');
+                                                        const nextId = Number(idStr);
+                                                        const nextAsig = asigParts.join('::');
+                                                        setForm(p => ({ ...p, cursoId: nextId, asignatura: nextAsig }));
+                                                    }}
+                                                >
+                                                    <option value="0::" disabled>Selecciona el curso…</option>
+                                                    {cursos.map(c => {
+                                                        const asigNombre = getAsignaturaNombre(c.asignatura);
+                                                        const esOpt = esAsignaturaOptativa(c.asignatura);
+                                                        return (
+                                                            <option key={`${c.id}-${c.asignatura}`} value={`${c.id}::${c.asignatura || ''}`}>
+                                                                {c.grado} {c.seccion} — {asigNombre}{esOpt ? ' (Optativa)' : ''}
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </select>
+                                                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                                                    <TC_Flux size={14} className="rotate-90" />
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            {/* Nombre de la actividad */}
+                                        {/* Nombre de la actividad */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                                                Nombre de la actividad *
+                                            </label>
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] placeholder:text-slate-400 outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold transition-all shadow-xs"
+                                                placeholder="Ej: Análisis Crítico de Textos"
+                                                value={form.nombre}
+                                                onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        if (form.nombre.trim() && form.cursoId) setManualStep(2);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
                                                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                                                    Nombre de la actividad *
+                                                    Tipo de actividad
                                                 </label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] placeholder:text-slate-500 outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-semibold transition-all"
-                                                    placeholder="Ej: Análisis Crítico de Textos"
-                                                    value={form.nombre}
-                                                    onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))}
-                                                />
+                                                <select
+                                                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] font-bold outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 transition-all cursor-pointer"
+                                                    value={form.tipo}
+                                                    onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))}
+                                                >
+                                                    <option value="formativa">Formativa (Práctica o Taller)</option>
+                                                    <option value="sumativa">Sumativa (Evaluación calificada)</option>
+                                                    <option value="diagnostica">Diagnóstica (Conocimientos previos)</option>
+                                                    <option value="producto_final">Producto Final / Proyecto</option>
+                                                </select>
                                             </div>
 
-                                            {/* Fecha programada */}
                                             <div className="space-y-1.5">
                                                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                                                     Fecha programada *
                                                 </label>
                                                 <input
                                                     type="date"
-                                                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-semibold transition-all"
+                                                    className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] font-bold outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 transition-all"
                                                     value={form.fecha}
                                                     onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))}
                                                 />
                                             </div>
                                         </div>
 
-                                        {/* Bloque 2: Competencias a evaluar */}
+                                        <div className="space-y-1.5 pt-1">
+                                            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                                                <span>Descripción o instrucciones (opcional)</span>
+                                                <span className="text-[11px] font-medium text-slate-500 normal-case tracking-normal">No obligatorio</span>
+                                            </label>
+                                            <textarea
+                                                rows={3}
+                                                className="w-full border border-slate-300 rounded-xl p-3.5 text-xs sm:text-sm bg-white text-[#1E2421] placeholder:text-slate-400 outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-medium transition-all resize-none"
+                                                placeholder="Instrucciones o contexto breve para los estudiantes..."
+                                                value={form.descripcion}
+                                                onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* PASO 2: CONFIGURACIÓN DE LA EVALUACIÓN */}
+                                {manualStep === 2 && (
+                                    <div className="space-y-5 py-1">
                                         <div className="bg-[#FAF7F2]/70 border border-slate-300/80 rounded-2xl p-4.5 space-y-3">
                                             <div className="border-b border-slate-200 pb-2.5 flex items-center justify-between">
                                                 <div>
                                                     <span className="text-[11px] font-black uppercase tracking-wider text-slate-600 block">
-                                                        Paso 2
+                                                        Competencias Fundamentales a evaluar *
                                                     </span>
                                                     <h3 className="text-sm font-extrabold text-[#2E3330]">
-                                                        Competencias a evaluar *
+                                                        {currentCurso?.nivelEducativo === 'primaria' ? '3 Bloques de Primaria' : '4 Bloques de Secundaria'}
                                                     </h3>
                                                 </div>
                                                 <span className="text-[11px] font-bold text-slate-700 bg-white border border-slate-300 px-2.5 py-0.5 rounded-md">
@@ -1018,8 +1162,8 @@ ${pastedText}`;
                                                 </span>
                                             </div>
 
-                                            <div className="grid grid-cols-1 gap-2.5">
-                                                {BC_CIRCLE_CONFIG.map(({ id, label, icon: Icon, bg, selectedBg, selectedText }) => {
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                                                {BC_CIRCLE_CONFIG.slice(0, currentCurso?.nivelEducativo === 'primaria' ? 3 : 4).map(({ id, label, icon: Icon, bg, selectedBg, selectedText }) => {
                                                     const isSelected = form.bcs.includes(id);
                                                     return (
                                                         <button
@@ -1029,11 +1173,11 @@ ${pastedText}`;
                                                                 setForm(p => ({
                                                                     ...p,
                                                                     bcs: isSelected
-                                                                        ? p.bcs.filter(x => x !== id)
+                                                                        ? (p.bcs.length > 1 ? p.bcs.filter(x => x !== id) : p.bcs)
                                                                         : [...p.bcs, id]
                                                                 }));
                                                             }}
-                                                            className={`w-full p-2.5 rounded-xl border text-left flex items-center gap-3 transition-all cursor-pointer ${isSelected
+                                                            className={`p-2.5 rounded-xl border text-left flex items-center gap-3 transition-all cursor-pointer ${isSelected
                                                                 ? 'bg-white border-[#689C63] shadow-xs ring-2 ring-[#689C63]/40'
                                                                 : 'bg-white/80 border-slate-200 hover:border-slate-300 hover:bg-white'
                                                                 }`}
@@ -1051,11 +1195,10 @@ ${pastedText}`;
                                                                     {isSelected && (
                                                                         <span className="text-[10px] font-bold text-[#689C63] flex items-center gap-1">
                                                                             <Check size={12} strokeWidth={3} />
-                                                                            Activa
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                <p className="text-xs font-bold text-[#2E3330] leading-snug truncate">
+                                                                <p className="text-xs font-bold text-[#2E3330] leading-snug truncate" title={label}>
                                                                     {label}
                                                                 </p>
                                                             </div>
@@ -1064,37 +1207,20 @@ ${pastedText}`;
                                                 })}
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Columna Derecha: Currículo e Indicadores (7 de 12 columnas) */}
-                                    <div className="lg:col-span-7 bg-[#FAF7F2]/70 border border-slate-300/80 rounded-2xl p-4.5 space-y-4">
-                                        <div className="border-b border-slate-200 pb-2.5 flex items-center justify-between">
-                                            <div>
-                                                <span className="text-[11px] font-black uppercase tracking-wider text-slate-600 block">
-                                                    Paso 3
-                                                </span>
+                                        {/* Selector de Contenido e Indicador */}
+                                        <div className="bg-[#FAF7F2]/70 border border-slate-300/80 rounded-2xl p-4.5 space-y-4">
+                                            <div className="border-b border-slate-200 pb-2.5 flex items-center justify-between">
                                                 <h3 className="text-sm font-extrabold text-[#2E3330]">
                                                     Contenido e Indicador curricular
                                                 </h3>
+                                                {currentCurso && (
+                                                    <span className="text-xs font-bold text-slate-700 bg-white border border-slate-300 px-2.5 py-1 rounded-lg">
+                                                        {currentCurso.grado} · {getAsignaturaNombre(currentAsignatura || currentCurso.asignatura)}
+                                                    </span>
+                                                )}
                                             </div>
-                                            {currentCurso && (
-                                                <span className="text-xs font-bold text-slate-700 bg-white border border-slate-300 px-2.5 py-1 rounded-lg">
-                                                    {currentCurso.grado} · {getAsignaturaNombre(currentAsignatura || currentCurso.asignatura)}
-                                                </span>
-                                            )}
-                                        </div>
 
-                                        {!form.cursoId ? (
-                                            <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-300 space-y-2">
-                                                <BookOpen size={26} className="mx-auto text-slate-400" />
-                                                <p className="text-xs sm:text-sm font-bold text-slate-700">
-                                                    Selecciona primero un curso destino
-                                                </p>
-                                                <p className="text-xs text-slate-600 font-medium">
-                                                    Podrás explorar sus contenidos curriculares y seleccionar el indicador de logro.
-                                                </p>
-                                            </div>
-                                        ) : (
                                             <SelectorIndicadorFragmento
                                                 grado={currentCurso?.grado}
                                                 asignatura={currentAsignatura}
@@ -1106,15 +1232,127 @@ ${pastedText}`;
                                                     setForm(p => ({
                                                         ...p,
                                                         indicador: data.indicadorTexto,
-                                                        bcs: data.bcSugerido ? [data.bcSugerido] : p.bcs
+                                                        bcs: data.bcSugerido ? [data.bcSugerido] : p.bcs,
+                                                        producto: data.contenido ? (p.producto || data.contenido) : p.producto
                                                     }));
                                                     setIndicadoresJson(data.indicadoresJson);
                                                 }}
                                                 disabled={isSaving}
                                             />
-                                        )}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 bg-[#FAF7F2]/60 p-4 rounded-2xl border border-slate-200">
+                                            <div className="sm:col-span-8 space-y-1.5">
+                                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                                                    Producto / Evidencia de aprendizaje (opcional)
+                                                </label>
+                                                <input
+                                                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] placeholder:text-slate-400 outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 font-bold transition-all"
+                                                    placeholder="Ej: Cuaderno de trabajo, Ensayo, Exposición, Mapa mental…"
+                                                    value={form.producto}
+                                                    onChange={e => setForm(p => ({ ...p, producto: e.target.value }))}
+                                                />
+                                            </div>
+
+                                            <div className="sm:col-span-4 space-y-1.5">
+                                                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                                                    Puntuación máxima
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    max={100}
+                                                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm bg-white text-[#1E2421] font-bold outline-none focus:border-[#689C63] focus:ring-4 focus:ring-[#689C63]/10 transition-all"
+                                                    value={form.puntuacion}
+                                                    onChange={e => setForm(p => ({ ...p, puntuacion: Number(e.target.value) || 100 }))}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
+
+                                {/* PASO 3: REVISIÓN Y CONFIRMACIÓN */}
+                                {manualStep === 3 && (
+                                    <div className="max-w-2xl mx-auto py-2 space-y-4">
+                                        <div className="bg-[#FAF7F2] border border-slate-200/90 rounded-2xl p-5 space-y-4 shadow-xs">
+                                            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                                                <div>
+                                                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">
+                                                        Resumen de la actividad
+                                                    </span>
+                                                    <h4 className="text-base font-extrabold text-[#2E3330]">
+                                                        {form.nombre || 'Sin nombre'}
+                                                    </h4>
+                                                </div>
+                                                <span className="px-3 py-1 bg-white border border-slate-300 rounded-full text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                                    {form.tipo.replace('_', ' ')}
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Curso y Asignatura</span>
+                                                    <div className="font-bold text-slate-800">
+                                                        {currentCurso ? `${currentCurso.grado} ${currentCurso.seccion} · ${getAsignaturaNombre(currentAsignatura)}` : 'No especificado'}
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fecha y Puntuación</span>
+                                                    <div className="font-bold text-slate-800">
+                                                        {form.fecha} · {form.puntuacion} pts
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-2">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Competencias asignadas</span>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {form.bcs.map(bc => (
+                                                        <span key={bc} className="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-slate-100 text-slate-800 border border-slate-200">
+                                                            {bc}: {COMPETENCIAS_LABEL[bc] || bc}
+                                                        </span>
+                                                    ))}
+                                                </div>
+
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block pt-2">Indicador de logro</span>
+                                                <p className="text-xs text-slate-800 font-semibold leading-relaxed">
+                                                    {form.indicador || 'No seleccionado'}
+                                                </p>
+                                            </div>
+
+                                            {form.producto && (
+                                                <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-1">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Producto / Evidencia</span>
+                                                    <p className="text-xs font-bold text-[#2E3330]">
+                                                        {form.producto}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center justify-between px-2 text-xs text-slate-500 font-medium">
+                                            <span>¿Deseas modificar algún dato antes de crear?</span>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setManualStep(1)}
+                                                    className="font-bold text-[#689C63] hover:underline cursor-pointer"
+                                                >
+                                                    Paso 1 (Datos)
+                                                </button>
+                                                <span>·</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setManualStep(2)}
+                                                    className="font-bold text-[#689C63] hover:underline cursor-pointer"
+                                                >
+                                                    Paso 2 (Evaluación)
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         );
                     })()}

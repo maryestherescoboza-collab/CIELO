@@ -12,10 +12,12 @@ export interface GrupoActividades {
 
 export function useAgruparActividades() {
     const state = useAppStore((s: any) => s.state);
+    const session = useAppStore((s: any) => s.session);
 
     const groups = useMemo(() => {
         const initialAcc: Record<string, GrupoActividades> = {};
-        const acc = (state.actividades as Actividad[]).reduce((acc, act) => {
+        const isMine = (act: Actividad) => !session?.user?.id || act.userId === session?.user?.id || !act.userId;
+        const acc = (state.actividades as Actividad[]).filter(isMine).reduce((acc, act) => {
             const curso = (state.cursos as any[]).find(c => c.id === act.cursoId);
             if (!curso) return acc;
             

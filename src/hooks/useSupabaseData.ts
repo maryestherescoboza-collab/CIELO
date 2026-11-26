@@ -131,6 +131,7 @@ const mapCalificacion = (c: any, cursos?: any[]): CalificacionActividad => ({
 
 const mapCursoDetalle = (cd: any): CursoDetalleEvaluacion => ({
     id: cd.id as number,
+    userId: cd.user_id as string | undefined,
     cursoId: cd.curso_id as number,
     actividadId: cd.actividad_id as number,
     estudianteId: cd.estudiante_id as number,
@@ -1527,6 +1528,7 @@ export function useSupabaseData(skipInit = false) {
             // Si ya teníamos datos de IndexedDB, evitamos bloquear la pantalla con spinner
             if (!skipInit && idbSlicesCount === 0) setLoading(true);
             try {
+                const isCentroAdmin = esRolAdministrador(state.perfiles.find(p => p.userId === userId)?.rol);
                 const currentCursosLoaded = useAppStore.getState().loadedCursos;
                 const cursoYaCargado = currentCursosLoaded.includes(cursoId);
 
@@ -1537,6 +1539,9 @@ export function useSupabaseData(skipInit = false) {
                 if (faltantesAct.length > 0) {
                     const pNoNull = faltantesAct.filter(p => p !== NULL_PERIODO_TOKEN);
                     let qAct = supabase.from('actividades').select('*').eq('activo', true).eq('curso_id', cursoId);
+                    if (!isCentroAdmin) {
+                        qAct = qAct.eq('user_id', userId);
+                    }
                     if (faltantesAct.includes(NULL_PERIODO_TOKEN) && pNoNull.length > 0) {
                         qAct = qAct.or(`periodo.in.(${pNoNull.join(',')}),periodo.is.null`);
                     } else if (faltantesAct.includes(NULL_PERIODO_TOKEN)) {
@@ -1557,7 +1562,13 @@ export function useSupabaseData(skipInit = false) {
 
                 baseQueries.push(
                     cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('recuperaciones').select('*').eq('curso_id', cursoId),
-                    cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('curso_detalle').select('*').eq('curso_id', cursoId),
+                    cursoYaCargado ? Promise.resolve({ data: null, error: null }) : (() => {
+                        let q = supabase.from('curso_detalle').select('*').eq('curso_id', cursoId);
+                        if (!isCentroAdmin) {
+                            q = q.eq('user_id', userId);
+                        }
+                        return q;
+                    })(),
                     cursoYaCargado ? Promise.resolve({ data: null, error: null }) : supabase.from('recuperaciones_cotejo').select('*').eq('curso_id', cursoId)
                 );
 
@@ -1746,7 +1757,7 @@ export function useSupabaseData(skipInit = false) {
             if (isCentroAdmin && misCursosTutor.length === 0) {
                 secuenciaQuery = secuenciaQuery.in('curso_id', cursosActivos.map(c => c.id));
             } else if (cursosParticipaIds.length > 0) {
-                secuenciaQuery = secuenciaQuery.in('curso_id', cursosParticipaIds);
+                secuenciaQuery = secuenciaQuery.in('curso_id', cursosParticipaIds).eq('user_id', session.user.id);
             } else {
                 secuenciaQuery = secuenciaQuery.eq('user_id', session.user.id);
             }
@@ -1911,7 +1922,7 @@ export function useSupabaseData(skipInit = false) {
             if (isCentroAdmin && misCursosTutor.length === 0) {
                 actQuery = actQuery.in('curso_id', cursosActivos.map(c => c.id));
             } else if (cursosParticipaIds.length > 0) {
-                actQuery = actQuery.in('curso_id', cursosParticipaIds);
+                actQuery = actQuery.in('curso_id', cursosParticipaIds).eq('user_id', session.user.id);
             } else {
                 actQuery = actQuery.eq('user_id', session.user.id);
             }
@@ -1986,7 +1997,6 @@ export function useSupabaseData(skipInit = false) {
         if (isActividadesFetching.current) return;
         isActividadesFetching.current = true;
         console.log('[PLANIFICACION] lazy loading Actividades data');
-        setLoading(true);
         try {
             const currentProfile = state.perfiles.find(p => p.userId === session.user.id);
             const userCentroId = currentProfile?.centro_id;
@@ -2006,11 +2016,18 @@ export function useSupabaseData(skipInit = false) {
                 ...misCursosVinculados
             ]));
 
-            let actQuery = supabase.from('actividades').select('*').eq('activo', true);
+            // AGUA 6.1: Selección de columnas explícitas para reducir Disk IO y tamaño del payload
+            const columnasActividades = 'id, nombre, curso_id, fecha, periodo, hora_inicio, duracion_minutos, tipo_calendario, color_calendario, bc_asignados, secuencia_id, plan_ficha_id, is_rec, user_id, asignatura, shared_course_id, indicador, indicadores_json, producto, requiere_producto, descripcion, is_producto_final, activo';
+
+            let actQuery = supabase.from('actividades').select(columnasActividades).eq('activo', true);
             if (isCentroAdmin && misCursosTutor.length === 0) {
-                actQuery = actQuery.in('curso_id', cursosActivos.map(c => c.id));
+                if (cursosActivos.length > 0) {
+                    actQuery = actQuery.in('curso_id', cursosActivos.map(c => c.id));
+                } else {
+                    actQuery = actQuery.eq('user_id', session.user.id);
+                }
             } else if (cursosParticipaIds.length > 0) {
-                actQuery = actQuery.in('curso_id', cursosParticipaIds);
+                actQuery = actQuery.in('curso_id', cursosParticipaIds).eq('user_id', session.user.id);
             } else {
                 actQuery = actQuery.eq('user_id', session.user.id);
             }
@@ -2018,6 +2035,7 @@ export function useSupabaseData(skipInit = false) {
             const { data: actividades, error: actError } = await actQuery;
             if (actError) {
                 console.error('Error loading Actividades data:', actError);
+                addLoadedModule('actividades');
                 return;
             }
 
@@ -2034,11 +2052,11 @@ export function useSupabaseData(skipInit = false) {
             addLoadedModule('actividades');
         } catch (error) {
             console.error('Error loading Actividades data:', error);
+            addLoadedModule('actividades');
         } finally {
             isActividadesFetching.current = false;
-            setLoading(false);
         }
-    }, [session, loadedModules, addLoadedModule, setState, setLoading, state.perfiles, state.cursos, state.cursoDocentes]);
+    }, [session?.user?.id, loadedModules, addLoadedModule, setState, state.perfiles, state.cursos, state.cursoDocentes]);
 
     const loadIncidenciasData = useCallback(async () => {
         if (!session?.user?.id) return;

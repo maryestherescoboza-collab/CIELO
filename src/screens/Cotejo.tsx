@@ -122,7 +122,7 @@ export default function Cotejo({
 
             if (targetActId) {
                 const cd = cdList.find(
-                    item => item.estudianteId === est.id && item.actividadId === targetActId
+                    item => item.estudianteId === est.id && item.actividadId === targetActId && (!session?.user?.id || item.userId === session?.user?.id || !item.userId)
                 );
                 if (cd?.cotejoData) {
                     Object.entries(cd.cotejoData).forEach(([k, v]) => {
@@ -198,8 +198,8 @@ export default function Cotejo({
             const actividadesPeriodo = (state?.actividades || []).filter((actividad) =>
                 (actividad.cursoId === selectedCursoId ||
                     (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
-                (actividad.userId === session?.user?.id || !actividad.userId) &&
-                (!selectedAsignatura || normalizeArea(actividad.asignatura) === normalizeArea(selectedAsignatura)) &&
+                (!session?.user?.id || actividad.userId === session?.user?.id || !actividad.userId) &&
+                (!selectedAsignatura || !actividad.asignatura || normalizeArea(actividad.asignatura) === normalizeArea(selectedAsignatura)) &&
                 actividad.periodo === selectedPeriodo
             );
 
@@ -212,7 +212,7 @@ export default function Cotejo({
                     const studentRespuestas: Record<number, number | null> = {};
 
                     const cd = state?.cursoDetalle.find(
-                        (item) => item.estudianteId === est.id && item.actividadId === act.id
+                        (item) => item.estudianteId === est.id && item.actividadId === act.id && (!session?.user?.id || item.userId === session?.user?.id || !item.userId)
                     );
                     if (cd?.cotejoData) {
                         Object.entries(cd.cotejoData).forEach(([k, v]) => {
@@ -367,7 +367,8 @@ export default function Cotejo({
 
             const existing = state.cursoDetalle.find(cd =>
                 cd.estudianteId === selectedEstId &&
-                cd.actividadId === selectedActId
+                cd.actividadId === selectedActId &&
+                (!session?.user?.id || cd.userId === session?.user?.id || !cd.userId)
             );
             if (existing) {
                 const mappedRespuestas: Record<number, number | null> = {};
@@ -390,9 +391,8 @@ export default function Cotejo({
     const actividades = state?.actividades.filter(a =>
         (a.cursoId === selectedCursoId ||
             (selectedCurso?.sharedCourseId && a.sharedCourseId === selectedCurso.sharedCourseId)) &&
-        (a.userId === session?.user?.id || !a.userId) &&
-        Boolean(a.asignatura) &&
-        (!targetAsig || normalizeArea(a.asignatura) === normalizeArea(targetAsig)) &&
+        (!session?.user?.id || a.userId === session?.user?.id || !a.userId) &&
+        (!targetAsig || !a.asignatura || normalizeArea(a.asignatura) === normalizeArea(targetAsig)) &&
         a.periodo === selectedPeriodo
     ) || [];
     const estudiantes = (selectedCurso && state?.estudiantes)
@@ -1345,6 +1345,7 @@ export default function Cotejo({
                 onClose={() => setShowGenerarModal(false)}
                 tipo="cotejo"
                 actividades={actividades}
+                nivelEducativo={selectedCurso?.nivelEducativo}
                 cursoNombre={selectedCurso ? `${selectedCurso.grado} ${selectedCurso.seccion} - ${getAsignaturaNombre(selectedCurso.asignatura)}` : ''}
                 asignatura={state?.cursoDocentes.find(cd => cd.cursoId === selectedCursoId && cd.userId === session?.user?.id)?.asignatura ?? null}
                 onAplicarCotejo={aplicarCotejoIA}

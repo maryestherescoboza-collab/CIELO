@@ -14,13 +14,13 @@ const AutoGrowTextarea = forwardRef<HTMLTextAreaElement, Props>(function AutoGro
     const resize = () => {
         const node = innerRef.current;
         if (!node) return;
-        node.style.height = '0px';
+        node.style.height = 'auto';
         node.style.height = `${node.scrollHeight}px`;
     };
 
     useLayoutEffect(() => {
         resize();
-    }, [props.value]);
+    }, [props.value, props.defaultValue]);
 
     return (
         <textarea

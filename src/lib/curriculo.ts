@@ -199,8 +199,15 @@ export function mismoGrado(a: string | null | undefined, b: string | null | unde
 }
 
 export function mismoNivel(a?: string | null, b?: string | null): boolean {
-  if (!a || !b) return true; // Si alguno no se especifica, no excluye para mantener compatibilidad
-  return normalizarTexto(a) === normalizarTexto(b);
+  const na = normalizarTexto(a);
+  const nb = normalizarTexto(b);
+  // Si ambos definen nivel, deben ser estrictamente idénticos
+  if (na && nb) {
+    return na === nb;
+  }
+  // Si solo uno especifica nivel, no se asume compatibilidad automática
+  // a menos que sea un registro no catalogado
+  return !na && !nb;
 }
 
 /**

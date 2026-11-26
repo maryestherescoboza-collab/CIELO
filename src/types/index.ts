@@ -88,6 +88,8 @@ export interface IndicadorJsonItem {
     texto?: string;
     fragmento?: string | null;
     competencia?: string;
+    contenido?: string;
+    contenidoId?: string;
 }
 
 export interface Actividad {

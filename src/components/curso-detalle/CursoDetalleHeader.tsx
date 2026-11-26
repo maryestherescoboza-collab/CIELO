@@ -16,6 +16,7 @@ import {
 import type { Curso } from '../../types';
 import { CieloPill } from '../ui/CieloPill';
 import { NIVELES_DOMINIO } from '../../constants/evaluacionNiveles';
+import { getAsignaturaNombre, sonMismaAsignatura } from '../../constants/asignaturas';
 
 interface CursoDetalleHeaderProps {
     curso: Curso | undefined;
@@ -50,6 +51,9 @@ interface CursoDetalleHeaderProps {
     isExporting?: boolean;
     onExportInstrumento?: () => void;
     isExportingInstrumento?: boolean;
+    availableAsignaturas?: string[];
+    selectedAsignatura?: string;
+    onAsignaturaChange?: (asig: string) => void;
 }
 
 const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
@@ -83,7 +87,10 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
     onExportExcel,
     isExporting = false,
     onExportInstrumento,
-    isExportingInstrumento = false
+    isExportingInstrumento = false,
+    availableAsignaturas = [],
+    selectedAsignatura,
+    onAsignaturaChange
 }) => {
     const [showMobileSearch, setShowMobileSearch] = React.useState(false);
 
@@ -157,7 +164,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             onClick={() => setShowMobileSearch(!showMobileSearch)}
                             className={`w-7 h-7 flex items-center justify-center rounded-full border transition-all ${
                                 showMobileSearch || buscar
-                                    ? 'bg-primary text-white border-primary'
+                                ? 'bg-primary text-white border-primary'
                                     : 'bg-white border-(--border-soft) text-[#5F665E] hover:text-[#2E3330]'
                             }`}
                             title="Buscar estudiante"
@@ -166,6 +173,29 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         </button>
                     </div>
                 </div>
+
+                {/* Selector de asignatura en móvil si el curso tiene múltiples asignaturas */}
+                {availableAsignaturas && availableAsignaturas.length > 1 && (
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 -mt-0.5">
+                        {availableAsignaturas.map(asig => {
+                            const isSel = sonMismaAsignatura(asig, selectedAsignatura || curso?.asignatura || '');
+                            return (
+                                <button
+                                    key={asig}
+                                    type="button"
+                                    onClick={() => onAsignaturaChange?.(asig)}
+                                    className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full whitespace-nowrap transition-all cursor-pointer ${
+                                        isSel
+                                            ? 'bg-primary text-white shadow-xs'
+                                            : 'bg-(--background) text-[#5F665E] border border-(--border-soft) hover:text-[#2E3330]'
+                                    }`}
+                                >
+                                    {getAsignaturaNombre(asig)}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {/* Campo de búsqueda expandible en móvil */}
                 {(showMobileSearch || buscar) && (
@@ -274,6 +304,28 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             <span className="text-base lg:text-lg font-black text-[#2E3330] tracking-tight uppercase italic truncate">
                                 {curso?.grado} {curso?.seccion}
                             </span>
+                            {availableAsignaturas && availableAsignaturas.length > 1 && (
+                                <div className="flex items-center gap-1 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)] shrink-0">
+                                    {availableAsignaturas.map(asig => {
+                                        const isSel = sonMismaAsignatura(asig, selectedAsignatura || curso?.asignatura || '');
+                                        return (
+                                            <button
+                                                key={asig}
+                                                type="button"
+                                                onClick={() => onAsignaturaChange?.(asig)}
+                                                className={`px-2 py-0.5 text-[10px] font-bold rounded-full transition-all cursor-pointer ${
+                                                    isSel
+                                                        ? 'bg-white text-[#2E3330] shadow-xs'
+                                                        : 'text-[#5F665E]/70 hover:text-[#2E3330]'
+                                                }`}
+                                                title={getAsignaturaNombre(asig)}
+                                            >
+                                                {getAsignaturaNombre(asig)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                             <div className="flex items-center gap-0.5 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)] shrink-0">
                                 {['P1', 'P2', 'P3', 'P4'].map(p => (
                                     <button
@@ -480,10 +532,33 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                                 {curso?.grado} {curso?.seccion}
                             </span>
 
-                            {curso?.asignatura && (
-                                <span className="text-[11px] font-bold text-[#5F665E] bg-(--background) px-2.5 py-0.5 rounded-full border border-(--border-soft) truncate max-w-44 shrink-0" title={curso.asignatura}>
-                                    {curso.asignatura}
-                                </span>
+                            {availableAsignaturas && availableAsignaturas.length > 1 ? (
+                                <div className="flex items-center gap-1 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)] shrink-0">
+                                    {availableAsignaturas.map(asig => {
+                                        const isSel = sonMismaAsignatura(asig, selectedAsignatura || curso?.asignatura || '');
+                                        return (
+                                            <button
+                                                key={asig}
+                                                type="button"
+                                                onClick={() => onAsignaturaChange?.(asig)}
+                                                className={`px-2.5 py-0.5 text-[11px] font-bold rounded-full transition-all cursor-pointer ${
+                                                    isSel
+                                                        ? 'bg-white text-[#2E3330] shadow-xs border border-(--border-soft)'
+                                                        : 'text-[#5F665E]/70 hover:text-[#2E3330]'
+                                                }`}
+                                                title={getAsignaturaNombre(asig)}
+                                            >
+                                                {getAsignaturaNombre(asig)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                (selectedAsignatura || curso?.asignatura) && (
+                                    <span className="text-[11px] font-bold text-[#5F665E] bg-(--background) px-2.5 py-0.5 rounded-full border border-(--border-soft) truncate max-w-44 shrink-0" title={getAsignaturaNombre(selectedAsignatura || curso?.asignatura || '')}>
+                                        {getAsignaturaNombre(selectedAsignatura || curso?.asignatura || '')}
+                                    </span>
+                                )
                             )}
 
                             {/* Selector de periodo P1 - P4 */}
@@ -651,7 +726,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <div
                             role="radiogroup"
                             aria-label="Modo de evaluación"
-                            className="relative flex items-center justify-between rounded-full border border-neutral-200/90 bg-white px-1.5 py-1 w-[72px] h-6 shadow-2xs"
+                            className="relative flex items-center justify-between rounded-full border border-neutral-200/90 bg-white px-1.5 py-1 w-18 h-6 shadow-2xs"
                         >
                             {/* Línea horizontal que conecta los 3 nodos */}
                             <div className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-[1.5px] bg-neutral-200 z-0 pointer-events-none" />

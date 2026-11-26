@@ -213,9 +213,8 @@ export default function Rubrica({
         const acts = actividadesStore.filter((actividad) =>
             (actividad.cursoId === selectedCursoId ||
                 (curso?.sharedCourseId && actividad.sharedCourseId === curso.sharedCourseId)) &&
-            (actividad.userId === session?.user?.id || !actividad.userId) &&
-            Boolean(actividad.asignatura) &&
-            (!targetAsig || normalizeArea(actividad.asignatura) === normalizeArea(targetAsig)) &&
+            (!session?.user?.id || actividad.userId === session?.user?.id || !actividad.userId) &&
+            (!targetAsig || !actividad.asignatura || normalizeArea(actividad.asignatura) === normalizeArea(targetAsig)) &&
             actividad.periodo === selectedPeriodo
         );
 
@@ -268,7 +267,7 @@ export default function Rubrica({
             const studentEval: Record<string, number> = {};
             if (targetActId) {
                 const cd = cursoDetalleStore.find(
-                    item => item.estudianteId === est.id && item.actividadId === targetActId
+                    item => item.estudianteId === est.id && item.actividadId === targetActId && (!session?.user?.id || item.userId === session?.user?.id || !item.userId)
                 );
                 if (cd?.rubricaData) {
                     Object.entries(cd.rubricaData).forEach(([k, v]) => {
@@ -341,9 +340,8 @@ export default function Rubrica({
             const actividadesPeriodo = actividadesStore.filter((actividad) =>
                 (actividad.cursoId === selectedCursoId ||
                     (selectedCurso?.sharedCourseId && actividad.sharedCourseId === selectedCurso.sharedCourseId)) &&
-                (actividad.userId === session?.user?.id || !actividad.userId) &&
-                Boolean(actividad.asignatura) &&
-                (!targetAsig || normalizeArea(actividad.asignatura) === normalizeArea(targetAsig)) &&
+                (!session?.user?.id || actividad.userId === session?.user?.id || !actividad.userId) &&
+                (!targetAsig || !actividad.asignatura || normalizeArea(actividad.asignatura) === normalizeArea(targetAsig)) &&
                 actividad.periodo === selectedPeriodo
             );
 
@@ -356,7 +354,7 @@ export default function Rubrica({
                     const studentEval: Record<string, number> = {};
 
                     const cd = cursoDetalleStore.find(
-                        (item) => item.estudianteId === est.id && item.actividadId === act.id
+                        (item) => item.estudianteId === est.id && item.actividadId === act.id && (!session?.user?.id || item.userId === session?.user?.id || !item.userId)
                     );
                     if (cd?.rubricaData) {
                         Object.entries(cd.rubricaData).forEach(([k, v]) => {
@@ -612,7 +610,8 @@ export default function Rubrica({
             const existing = cursoDetalleStore.find(
                 (cursoDetalle) =>
                     cursoDetalle.estudianteId === selectedEstId &&
-                    cursoDetalle.actividadId === selectedActId
+                    cursoDetalle.actividadId === selectedActId &&
+                    (!session?.user?.id || cursoDetalle.userId === session?.user?.id || !cursoDetalle.userId)
             );
 
             if (existing) {
@@ -1503,6 +1502,7 @@ export default function Rubrica({
                 onClose={() => setShowGenerarModal(false)}
                 tipo="rubrica"
                 actividades={actividades}
+                nivelEducativo={selectedCurso?.nivelEducativo}
                 cursoNombre={selectedCurso ? `${selectedCurso.grado} ${selectedCurso.seccion} - ${getAsignaturaNombre(selectedCurso.asignatura)}` : ''}
                 asignatura={cursoDocentesStore.find((cd: any) => cd.cursoId === selectedCursoId && cd.userId === session?.user?.id)?.asignatura ?? null}
                 onAplicarRubrica={aplicarRubricaIA}

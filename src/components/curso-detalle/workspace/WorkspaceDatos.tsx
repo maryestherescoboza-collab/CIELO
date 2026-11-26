@@ -1,5 +1,6 @@
 import React from 'react';
 import type { WorkWindowPosition } from './FloatingWorkWindow';
+import AutoGrowTextarea from '../../AutoGrowTextarea';
 import { supabase } from '../../../lib/supabase';
 import type { Actividad, Secuencia } from '../../../types';
 
@@ -113,6 +114,16 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
     };
 
     const infoCurricular = extraerInfoCurricular(activity);
+    const indicadorTexto = (activity.indicador || infoCurricular?.descripcion || '').trim();
+    const esMismoIndicador = Boolean(
+        infoCurricular?.descripcion &&
+        indicadorTexto &&
+        infoCurricular.descripcion.trim().toLowerCase() === indicadorTexto.toLowerCase()
+    );
+    const mostrarDescripcionCurricular = Boolean(infoCurricular?.descripcion && !esMismoIndicador);
+    const mostrarInfoCurricular = Boolean(
+        infoCurricular && (infoCurricular.codigo || infoCurricular.fragmento || mostrarDescripcionCurricular)
+    );
 
     return (
         <div
@@ -135,13 +146,13 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
                 <table className="w-full text-left border-collapse min-w-190">
                     <thead>
                         <tr className="bg-[#F2EFE9] border-b-2 border-black text-[11px] font-black uppercase tracking-[0.14em] text-black">
-                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[24%]">
+                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[22%]">
                                 Nombre de la actividad
                             </th>
-                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[15%]">
+                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[13%]">
                                 Fecha
                             </th>
-                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[38%]">
+                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[42%]">
                                 Indicador de logro
                             </th>
                             <th scope="col" className="px-4 py-3 w-[23%] pr-11">
@@ -153,9 +164,8 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
                         <tr className="divide-x-2 divide-black align-top bg-white">
                             {/* 1. Nombre de la actividad */}
                             <td className="p-3.5">
-                                <textarea
-                                    className="w-full resize-none bg-transparent font-black text-black text-[13px] leading-snug outline-none focus:bg-[#FAF8F5] rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
-                                    rows={2}
+                                <AutoGrowTextarea
+                                    className="w-full resize-none overflow-hidden bg-transparent font-black text-black text-[13px] leading-snug outline-none focus:bg-[#FAF8F5] focus:ring-1 focus:ring-black/15 rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
                                     defaultValue={activity.nombre || ''}
                                     placeholder="Nombre de la actividad..."
                                     onBlur={(e) => commit({ nombre: e.currentTarget.value }, e.currentTarget.value, activity.nombre)}
@@ -166,7 +176,7 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
                             <td className="p-3.5">
                                 <input
                                     type="date"
-                                    className="w-full bg-transparent font-bold text-black text-[12px] outline-none focus:bg-[#FAF8F5] rounded p-1 transition-all font-sans cursor-pointer"
+                                    className="w-full bg-transparent font-bold text-black text-[12px] outline-none focus:bg-[#FAF8F5] focus:ring-1 focus:ring-black/15 rounded p-1 transition-all font-sans cursor-pointer"
                                     defaultValue={activity.fecha || ''}
                                     onBlur={(e) => commit({ fecha: e.currentTarget.value }, e.currentTarget.value, activity.fecha)}
                                 />
@@ -174,34 +184,46 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
 
                             {/* 3. Indicador de logro */}
                             <td className="p-3.5">
-                                <div className="flex flex-col gap-2">
-                                    <textarea
-                                        className="w-full resize-none bg-transparent text-neutral-900 font-medium text-[12px] leading-relaxed outline-none focus:bg-[#FAF8F5] rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
-                                        rows={2}
-                                        defaultValue={activity.indicador || ''}
+                                <div className="flex flex-col gap-2.5">
+                                    {/* Encabezado curricular integrado con píldora de código */}
+                                    {(infoCurricular?.codigo || mostrarInfoCurricular) && (
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            {infoCurricular?.codigo && (
+                                                <span className="inline-flex items-center px-2 py-0.5 bg-black text-white rounded text-[10px] font-black tracking-wider shadow-2xs">
+                                                    {infoCurricular.codigo}
+                                                </span>
+                                            )}
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                                                Currículo oficial
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Texto completo del indicador de logro con auto-expansión */}
+                                    <AutoGrowTextarea
+                                        className="w-full resize-none overflow-hidden bg-transparent text-neutral-900 font-medium text-[13px] leading-relaxed outline-none focus:bg-[#FAF8F5] focus:ring-1 focus:ring-black/15 rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
+                                        defaultValue={indicadorTexto}
                                         placeholder="¿Qué debe demostrar el estudiante al finalizar?"
                                         onBlur={(e) => commit({ indicador: e.currentTarget.value }, e.currentTarget.value, activity.indicador)}
                                     />
-                                    {infoCurricular && (
-                                        <div className="p-2 bg-[#F6F3EC] border border-black rounded-sm text-[11px] space-y-1">
-                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-black uppercase tracking-wider">
-                                                {infoCurricular.codigo && (
-                                                    <span className="px-1.5 py-0.5 bg-black text-white rounded-none text-[9px] font-black">
-                                                        {infoCurricular.codigo}
-                                                    </span>
-                                                )}
-                                                <span>Currículo oficial</span>
-                                            </div>
-                                            {infoCurricular.descripcion && (
-                                                <p className="text-[11px] text-neutral-800 font-medium leading-snug line-clamp-2" title={infoCurricular.descripcion}>
-                                                    {infoCurricular.descripcion}
-                                                </p>
-                                            )}
-                                            {infoCurricular.fragmento && (
-                                                <div className="text-[10px] font-black text-emerald-900 pt-0.5">
-                                                    Fragmento evaluado: <span className="italic font-bold">«{infoCurricular.fragmento}»</span>
-                                                </div>
-                                            )}
+
+                                    {/* Fragmento curricular evaluado específico (si aplica) */}
+                                    {infoCurricular?.fragmento && (
+                                        <div className="p-2 bg-emerald-50/90 border border-emerald-300 rounded text-[11px] text-emerald-950 font-medium leading-snug">
+                                            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-900 block mb-0.5">
+                                                Fragmento evaluado:
+                                            </span>
+                                            <span className="italic font-semibold">«{infoCurricular.fragmento}»</span>
+                                        </div>
+                                    )}
+
+                                    {/* Descripción curricular oficial si el docente personalizó el texto */}
+                                    {mostrarDescripcionCurricular && infoCurricular?.descripcion && (
+                                        <div className="p-2 bg-[#F6F3EC] border border-black/20 rounded text-[11px] text-neutral-800 font-medium leading-relaxed">
+                                            <span className="text-[9px] font-black uppercase tracking-wider text-neutral-600 block mb-0.5">
+                                                Descripción curricular base:
+                                            </span>
+                                            {infoCurricular.descripcion}
                                         </div>
                                     )}
                                 </div>
@@ -209,9 +231,8 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
 
                             {/* 4. Producto */}
                             <td className="p-3.5">
-                                <textarea
-                                    className="w-full resize-none bg-transparent text-neutral-900 font-medium text-[12px] leading-relaxed outline-none focus:bg-[#FAF8F5] rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
-                                    rows={2}
+                                <AutoGrowTextarea
+                                    className="w-full resize-none overflow-hidden bg-transparent text-neutral-900 font-medium text-[12px] leading-relaxed outline-none focus:bg-[#FAF8F5] focus:ring-1 focus:ring-black/15 rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
                                     defaultValue={activity.producto || ''}
                                     placeholder="Evidencia o producto esperado..."
                                     onBlur={(e) => commit({ producto: e.currentTarget.value }, e.currentTarget.value, activity.producto)}

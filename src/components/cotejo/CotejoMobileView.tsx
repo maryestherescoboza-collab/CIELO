@@ -127,17 +127,17 @@ export const CotejoMobileView: React.FC<CotejoMobileViewProps> = ({
 
     return (
         <div className="flex flex-col h-full bg-[#EFF3F2] overflow-hidden select-none">
-            {/* 1. Header Táctil Editorial */}
-            <header className="px-4 pt-3 pb-2 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shrink-0">
+            {/* 1. Header Táctil Fiel a la Maqueta */}
+            <header className="px-4 pt-4 pb-2 bg-transparent shrink-0">
                 <div className="flex items-center justify-between">
-                    {/* Indicadores decorativos del mockup */}
-                    <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#FF7A45]/40" />
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#FF7A45]/80" />
+                    {/* Indicadores circulares decorativos del mockup en la esquina superior izquierda */}
+                    <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#FFB598]" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#FF7A45]" />
                     </div>
 
-                    {/* Título Central */}
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight font-notion-title uppercase">
+                    {/* Título Central del Mockup */}
+                    <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight font-notion-title uppercase text-center flex-1 pr-6">
                         Lista de Cotejo
                     </h1>
 
@@ -147,31 +147,31 @@ export const CotejoMobileView: React.FC<CotejoMobileViewProps> = ({
                             <button
                                 type="button"
                                 onClick={onOpenGenerarIA}
-                                className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                className="p-1.5 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-white/60 transition-colors cursor-pointer"
                                 title="Generar con IA"
                             >
-                                <Sparkles size={17} className="text-amber-500" />
+                                <Sparkles size={18} className="text-amber-500" />
                             </button>
                         )}
                         {onOpenExportModal && (
                             <button
                                 type="button"
                                 onClick={onOpenExportModal}
-                                className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                className="p-1.5 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-white/60 transition-colors cursor-pointer"
                                 title="Exportar lista de cotejo"
                             >
-                                <FileDown size={17} />
+                                <FileDown size={18} />
                             </button>
                         )}
                     </div>
                 </div>
 
-                {/* 2. Barra de Selección de Contexto (Abre Modal de Configuración) */}
-                <div className="mt-2">
+                {/* 2. Barra de Selección de Contexto (Píldora Compacta) */}
+                <div className="mt-2.5">
                     <button
                         type="button"
                         onClick={onOpenConfigModal}
-                        className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-all shadow-2xs cursor-pointer group"
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/80 hover:bg-white border border-slate-200/70 text-left transition-all shadow-2xs cursor-pointer group backdrop-blur-xs"
                     >
                         <div className="min-w-0 flex-1 pr-2">
                             <div className="flex items-center gap-1.5 flex-wrap">
@@ -281,9 +281,9 @@ export const CotejoMobileView: React.FC<CotejoMobileViewProps> = ({
                     <button
                         type="button"
                         onClick={() => onSelectCell(currentCrit.id, 100)}
-                        className={`flex-1 max-w-44 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 ${isCumpleActive
-                            ? 'bg-[#689c63] text-white ring-4 ring-[#689c63]/40 shadow-md scale-105'
-                            : 'bg-[#689c63]/85 hover:bg-[#689c63] text-white'
+                        className={`flex-1 max-w-40 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 ${isCumpleActive
+                            ? 'bg-[#8EBC64] text-slate-900 ring-4 ring-[#8EBC64]/40 shadow-md scale-105'
+                            : 'bg-[#95C46B] hover:bg-[#8EBC64] text-slate-800'
                             }`}
                     >
                         <Check size={16} strokeWidth={3} />
@@ -294,9 +294,9 @@ export const CotejoMobileView: React.FC<CotejoMobileViewProps> = ({
                     <button
                         type="button"
                         onClick={() => onSelectCell(currentCrit.id, 0)}
-                        className={`flex-1 max-w-44 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 ${isNoCumpleActive
-                            ? 'bg-[#db5b48] text-white ring-4 ring-[#db5b48]/40 shadow-md scale-105'
-                            : 'bg-[#db5b48]/85 hover:bg-[#db5b48] text-white'
+                        className={`flex-1 max-w-40 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 ${isNoCumpleActive
+                            ? 'bg-[#BF503E] text-white ring-4 ring-[#BF503E]/40 shadow-md scale-105'
+                            : 'bg-[#C85A42] hover:bg-[#BF503E] text-white'
                             }`}
                     >
                         <CloseIcon size={16} strokeWidth={3} />
@@ -343,12 +343,12 @@ export const CotejoMobileView: React.FC<CotejoMobileViewProps> = ({
                                 {/* Círculo Naranja Prominente */}
                                 <div
                                     className={`relative flex items-center justify-center rounded-full text-white font-black transition-all ${isCumple
-                                        ? 'w-13 h-13 text-base bg-[#FF7A45] ring-4 ring-[#689c63] shadow-md scale-105'
+                                        ? 'w-13 h-13 text-base bg-[#FF7A45] ring-4 ring-[#8EBC64] shadow-md scale-105'
                                         : isNoCumple
-                                            ? 'w-13 h-13 text-base bg-[#FF7A45] ring-4 ring-[#db5b48] shadow-md scale-105'
+                                            ? 'w-13 h-13 text-base bg-[#FF7A45] ring-4 ring-[#BF503E] shadow-md scale-105'
                                             : est.id === selectedEstId
                                                 ? 'w-13 h-13 text-base bg-[#FF7A45] ring-4 ring-[#FF7A45]/40 shadow-md scale-105'
-                                                : 'w-12 h-12 text-sm bg-[#FF7A45]/85 hover:bg-[#FF7A45] opacity-90 hover:opacity-100'
+                                                : 'w-12 h-12 text-sm bg-[#FF7A45] shadow-xs hover:scale-102'
                                         }`}
                                 >
                                     {isCumple ? (

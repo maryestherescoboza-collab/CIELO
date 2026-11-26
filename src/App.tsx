@@ -182,15 +182,14 @@ export default function App() {
   }, [selectedCursoId, session?.user?.id, state.cursoDocentes, state.cursos, selectedCursoDocenteId, selectedAsignatura]);
 
   const visibleActividades = useMemo(() => {
-    const isMine = (a: any) => a.userId === session?.user?.id || !a.userId;
+    const isMine = (a: any) => !session?.user?.id || a.userId === session?.user?.id || !a.userId;
     if (!selectedCursoId) return state.actividades.filter(isMine);
     const targetAsig = currentCourseRole?.asignatura || selectedAsignatura || state.cursos.find((c: any) => c.id === selectedCursoId)?.asignatura;
     const baseFilter = (a: any) => a.cursoId === selectedCursoId && isMine(a);
     if (!targetAsig) return state.actividades.filter(baseFilter);
     return state.actividades.filter((a: any) => 
       baseFilter(a) && 
-      Boolean(a.asignatura) && 
-      normalizeArea(a.asignatura) === normalizeArea(targetAsig)
+      (!a.asignatura || normalizeArea(a.asignatura) === normalizeArea(targetAsig))
     );
   }, [state.actividades, state.cursos, selectedCursoId, currentCourseRole, selectedAsignatura, session?.user?.id]);
 
@@ -201,8 +200,7 @@ export default function App() {
     if (!targetAsig) return state.calificaciones.filter(baseFilter);
     return state.calificaciones.filter((c: any) => 
       baseFilter(c) && 
-      Boolean(c.asignatura) && 
-      normalizeArea(c.asignatura) === normalizeArea(targetAsig)
+      (!c.asignatura || normalizeArea(c.asignatura) === normalizeArea(targetAsig))
     );
   }, [state.calificaciones, state.cursos, selectedCursoId, currentCourseRole, selectedAsignatura]);
 

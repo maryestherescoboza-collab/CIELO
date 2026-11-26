@@ -16,6 +16,7 @@ interface Props {
     actividades: Actividad[];
     cursoNombre: string;
     asignatura: string | null;
+    nivelEducativo?: string | null;
     onAplicarRubrica?: (descriptores: DescriptorGenerado[]) => void;
     onAplicarCotejo?: (criterios: CriterioCotejo[]) => void;
 }
@@ -27,6 +28,7 @@ export default function GenerarInstrumentoModal({
     actividades,
     cursoNombre,
     asignatura,
+    nivelEducativo,
     onAplicarRubrica,
     onAplicarCotejo,
 }: Props) {
@@ -64,6 +66,7 @@ export default function GenerarInstrumentoModal({
             const contexto: ContextoInstrumento = {
                 asignatura: asignatura || '',
                 cursoNombre,
+                nivelEducativo: nivelEducativo || null,
                 periodo: actividadBase?.periodo || null,
                 actividadNombre: tipo === 'cotejo' ? actividadBase?.nombre || null : null,
                 indicadorLogro: tipo === 'cotejo' ? actividadBase?.indicador || null : null,

@@ -79,7 +79,7 @@ export default function Dashboard({ docenteNombre }: Props) {
 
   const filteredCalificaciones = useMemo(() => {
     const validStudentIds = new Set(filteredEstudiantes.map(e => e.id));
-    return state.calificaciones.filter(c => validStudentIds.has(c.estudianteId) && c.userId === session?.user?.id);
+    return state.calificaciones.filter(c => validStudentIds.has(c.estudianteId) && (c.userId === session?.user?.id || !c.userId));
   }, [state.calificaciones, filteredEstudiantes, session?.user?.id]);
 
   // ── Optimized: Pre-grouped grades by student for O(1) lookup ──

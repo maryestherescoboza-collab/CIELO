@@ -1,16 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { ActividadesPorCursoSection } from '../../components/planificacion/ActividadesPorCursoSection';
 import { useSupabaseData } from '../../hooks/useSupabaseData';
+import { useAppStore } from '../../store/appStore';
 
 export default function ActividadesIndex() {
     const periodos = ['P1', 'P2', 'P3', 'P4'];
     const { loadActividadesData, contextReady } = useSupabaseData(true);
+    const loadedModules = useAppStore(s => s.loadedModules);
+    const isLoaded = loadedModules.includes('actividades');
+    const [cargandoLocal, setCargandoLocal] = useState(!isLoaded);
 
     useEffect(() => {
-        if (contextReady) {
-            loadActividadesData(true);
+        if (!contextReady) return;
+
+        if (!isLoaded) {
+            setCargandoLocal(true);
+            void loadActividadesData().finally(() => {
+                setCargandoLocal(false);
+            });
+        } else {
+            setCargandoLocal(false);
         }
-    }, [contextReady, loadActividadesData]);
+    }, [contextReady, isLoaded, loadActividadesData]);
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-[clamp(64rem,92vw,110rem)] mx-auto w-full px-[clamp(1rem,3vw,3rem)] py-[clamp(1.25rem,2.5vw,2.5rem)] flex-1 flex flex-col">
@@ -21,19 +33,26 @@ export default function ActividadesIndex() {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[clamp(1rem,1.5vw,1.5rem)]">
-                {periodos.map(periodo => {
-                    return (
-                        <div key={periodo} className="flex flex-col">
-                            <h2 className="text-xs font-black text-(--ink) uppercase tracking-widest mb-4 border-b border-(--border-soft) pb-2 flex justify-between items-end">
-                                <span>{periodo === 'P1' ? 'Primer' : periodo === 'P2' ? 'Segundo' : periodo === 'P3' ? 'Tercer' : 'Cuarto'} periodo</span>
-                            </h2>
-                            
-                            <ActividadesPorCursoSection periodo={periodo} hideTitle />
-                        </div>
-                    );
-                })}
-            </div>
+            {cargandoLocal ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-24 gap-3 text-(--ink-soft)">
+                    <Loader2 className="w-8 h-8 animate-spin text-(--primary)" />
+                    <span className="text-sm font-semibold tracking-tight">Cargando biblioteca de actividades...</span>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[clamp(1rem,1.5vw,1.5rem)]">
+                    {periodos.map(periodo => {
+                        return (
+                            <div key={periodo} className="flex flex-col">
+                                <h2 className="text-xs font-black text-(--ink) uppercase tracking-widest mb-4 border-b border-(--border-soft) pb-2 flex justify-between items-end">
+                                    <span>{periodo === 'P1' ? 'Primer' : periodo === 'P2' ? 'Segundo' : periodo === 'P3' ? 'Tercer' : 'Cuarto'} periodo</span>
+                                </h2>
+                                
+                                <ActividadesPorCursoSection periodo={periodo} hideTitle />
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }
