@@ -130,11 +130,11 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
             className="pointer-events-auto fixed top-4 left-4 right-4 max-w-6xl mx-auto bg-[#FFFDF8] rounded-lg shadow-[5px_5px_0_0_#000000] border-2 border-black overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 font-sans"
             style={{ zIndex }}
         >
-            {/* Botón de cierre estilo brutalista */}
+            {/* Botón de cierre estilo brutalista circular */}
             <button
                 type="button"
                 onClick={onClose}
-                className="absolute top-2 right-2.5 z-10 w-6 h-6 flex items-center justify-center border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-all cursor-pointer text-[11px] font-black shadow-[2px_2px_0_0_#000] active:translate-x-px active:translate-y-px rounded-sm"
+                className="absolute top-2.5 right-3 z-10 w-7 h-7 flex items-center justify-center border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-all cursor-pointer text-xs font-black shadow-[2px_2px_0_0_#000] active:translate-x-px active:translate-y-px rounded-full"
                 title="Cerrar vista"
                 aria-label="Cerrar vista"
             >
@@ -146,16 +146,16 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
                 <table className="w-full text-left border-collapse min-w-190">
                     <thead>
                         <tr className="bg-[#F2EFE9] border-b-2 border-black text-[11px] font-black uppercase tracking-[0.14em] text-black">
-                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[22%]">
+                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[20%]">
                                 Nombre de la actividad
                             </th>
                             <th scope="col" className="px-4 py-3 border-r-2 border-black w-[13%]">
                                 Fecha
                             </th>
-                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[42%]">
+                            <th scope="col" className="px-4 py-3 border-r-2 border-black w-[47%]">
                                 Indicador de logro
                             </th>
-                            <th scope="col" className="px-4 py-3 w-[23%] pr-11">
+                            <th scope="col" className="px-4 py-3 w-[20%] pr-12">
                                 Producto
                             </th>
                         </tr>
@@ -165,6 +165,7 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
                             {/* 1. Nombre de la actividad */}
                             <td className="p-3.5">
                                 <AutoGrowTextarea
+                                    key={`nom-${activity.id}`}
                                     className="w-full resize-none overflow-hidden bg-transparent font-black text-black text-[13px] leading-snug outline-none focus:bg-[#FAF8F5] focus:ring-1 focus:ring-black/15 rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
                                     defaultValue={activity.nombre || ''}
                                     placeholder="Nombre de la actividad..."
@@ -185,31 +186,32 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
                             {/* 3. Indicador de logro */}
                             <td className="p-3.5">
                                 <div className="flex flex-col gap-2.5">
-                                    {/* Encabezado curricular integrado con píldora de código */}
-                                    {(infoCurricular?.codigo || mostrarInfoCurricular) && (
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                            {infoCurricular?.codigo && (
-                                                <span className="inline-flex items-center px-2 py-0.5 bg-black text-white rounded text-[10px] font-black tracking-wider shadow-2xs">
-                                                    {infoCurricular.codigo}
-                                                </span>
-                                            )}
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
-                                                Currículo oficial
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {/* Texto completo del indicador de logro con auto-expansión */}
+                                    {/* Texto completo del indicador de logro con auto-expansión sin corte ni scrollbar */}
                                     <AutoGrowTextarea
+                                        key={`ind-${activity.id}`}
                                         className="w-full resize-none overflow-hidden bg-transparent text-neutral-900 font-medium text-[13px] leading-relaxed outline-none focus:bg-[#FAF8F5] focus:ring-1 focus:ring-black/15 rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
                                         defaultValue={indicadorTexto}
                                         placeholder="¿Qué debe demostrar el estudiante al finalizar?"
                                         onBlur={(e) => commit({ indicador: e.currentTarget.value }, e.currentTarget.value, activity.indicador)}
                                     />
 
+                                    {/* Píldora del Currículo Oficial integrada abajo del texto */}
+                                    {(infoCurricular?.codigo || mostrarInfoCurricular) && (
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black bg-[#F6F3EC] w-fit shadow-2xs">
+                                            {infoCurricular?.codigo && (
+                                                <span className="px-1.5 py-0.5 bg-black text-white rounded text-[10px] font-black tracking-wider">
+                                                    {infoCurricular.codigo}
+                                                </span>
+                                            )}
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-black">
+                                                Currículo oficial
+                                            </span>
+                                        </div>
+                                    )}
+
                                     {/* Fragmento curricular evaluado específico (si aplica) */}
                                     {infoCurricular?.fragmento && (
-                                        <div className="p-2 bg-emerald-50/90 border border-emerald-300 rounded text-[11px] text-emerald-950 font-medium leading-snug">
+                                        <div className="p-2.5 bg-emerald-50/90 border border-emerald-300 rounded-md text-[11px] text-emerald-950 font-medium leading-snug">
                                             <span className="text-[9px] font-black uppercase tracking-wider text-emerald-900 block mb-0.5">
                                                 Fragmento evaluado:
                                             </span>
@@ -219,7 +221,7 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
 
                                     {/* Descripción curricular oficial si el docente personalizó el texto */}
                                     {mostrarDescripcionCurricular && infoCurricular?.descripcion && (
-                                        <div className="p-2 bg-[#F6F3EC] border border-black/20 rounded text-[11px] text-neutral-800 font-medium leading-relaxed">
+                                        <div className="p-2.5 bg-[#F6F3EC] border border-black/20 rounded-md text-[11px] text-neutral-800 font-medium leading-relaxed">
                                             <span className="text-[9px] font-black uppercase tracking-wider text-neutral-600 block mb-0.5">
                                                 Descripción curricular base:
                                             </span>
@@ -232,6 +234,7 @@ const WorkspaceDatos: React.FC<WorkspaceDatosProps> = ({
                             {/* 4. Producto */}
                             <td className="p-3.5">
                                 <AutoGrowTextarea
+                                    key={`prod-${activity.id}`}
                                     className="w-full resize-none overflow-hidden bg-transparent text-neutral-900 font-medium text-[12px] leading-relaxed outline-none focus:bg-[#FAF8F5] focus:ring-1 focus:ring-black/15 rounded p-1 transition-all placeholder:text-neutral-400 font-sans"
                                     defaultValue={activity.producto || ''}
                                     placeholder="Evidencia o producto esperado..."

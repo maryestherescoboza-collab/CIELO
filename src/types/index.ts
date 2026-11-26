@@ -357,6 +357,7 @@ export interface UserProfile {
     centro?: Centro;
     rol?: 'docente' | RolAdministrativoRaw;
     vinculo_confirmado?: boolean;
+    tutorial_secuencia_descartado?: boolean;
 }
 
 export interface Notification {

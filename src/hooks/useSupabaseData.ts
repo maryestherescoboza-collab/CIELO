@@ -371,7 +371,7 @@ export function useSupabaseData(skipInit = false) {
             
             const { data: miPerfil, error: miPerfilError } = await supabase
                 .from('perfiles')
-                .select('user_id, nombre, nombre_docente, telefono, avatar_color, avatar_url, bio, tipo_institucion, asignaturas, centro_id, rol, created_at, trial_extension_activated_at, last_seen, vinculo_confirmado')
+                .select('user_id, nombre, nombre_docente, telefono, avatar_color, avatar_url, bio, tipo_institucion, asignaturas, centro_id, rol, created_at, trial_extension_activated_at, last_seen, vinculo_confirmado, tutorial_secuencia_descartado')
                 .eq('user_id', session.user.id)
                 .single();
             
@@ -538,6 +538,7 @@ export function useSupabaseData(skipInit = false) {
                     centro: resolvedCentro,
                     rol: (p.rol as UserProfile['rol']) || undefined,
                     vinculo_confirmado: (p.vinculo_confirmado as boolean) ?? true,
+                    tutorial_secuencia_descartado: Boolean((p as any).tutorial_secuencia_descartado),
                     lastSeen: p.last_seen as string,
                     publicacionesRealizadas: hist ? (hist.publicaciones_realizadas as number) : 0
                 };
@@ -562,6 +563,7 @@ export function useSupabaseData(skipInit = false) {
                     centro: resolvedCentroMi,
                     rol: ((miPerfil as any).rol as UserProfile['rol']) || undefined,
                     vinculo_confirmado: ((miPerfil as any).vinculo_confirmado as boolean) ?? true,
+                    tutorial_secuencia_descartado: Boolean((miPerfil as any).tutorial_secuencia_descartado),
                     lastSeen: (miPerfil as any).last_seen as string || new Date().toISOString(),
                     publicacionesRealizadas: 0
                 });

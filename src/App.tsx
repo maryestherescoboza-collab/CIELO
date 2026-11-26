@@ -18,6 +18,7 @@ import NotificationsOverlay from './components/NotificationsOverlay';
 import InvitationModal from './components/courses/InvitationModal';
 import { VinculacionCentroModal } from './components/auth/VinculacionCentroModal';
 import { FloatingRubricManager } from './components/FloatingRubricManager';
+import { FloatingTutorialVideo } from './components/FloatingTutorialVideo';
 import { PresentationProvider } from './contexts/PresentationContext';
 import LoadingMessage from './components/LoadingMessage';
 import AuthRetryScreen from './components/AuthRetryScreen';
@@ -357,6 +358,7 @@ export default function App() {
     return (
       <ErrorBoundary>
         <CentroPanel onLogout={() => supabase.auth.signOut()} />
+        <FloatingTutorialVideo session={session} currentUserProfile={currentUserProfile} />
       </ErrorBoundary>
     );
   }
@@ -447,6 +449,7 @@ export default function App() {
       />
 
       <FloatingRubricManager />
+      <FloatingTutorialVideo session={session} currentUserProfile={currentUserProfile} />
 
       <InvitationModal 
         session={session}

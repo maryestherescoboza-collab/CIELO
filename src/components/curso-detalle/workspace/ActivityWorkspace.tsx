@@ -247,6 +247,7 @@ const ActivityWorkspace: React.FC<ActivityWorkspaceProps> = ({
 
             {openWins.datos && (
                 <WorkspaceDatos
+                    key={activity.id}
                     activity={activity}
                     position={positions.datos}
                     zIndex={zMap.datos}
