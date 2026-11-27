@@ -29,7 +29,8 @@ export function useCourseActions() {
             return null;
         }
 
-        // 1. Check if course already exists in this school for the same grade/section
+        // 1. Check if course already exists in this school for the same grade/section and educational level
+        const targetNivel = (c.nivelEducativo || 'secundaria').toLowerCase();
         const { data: existingData, error: findError } = await supabase
             .from('cursos')
             .select('*')
@@ -37,7 +38,7 @@ export function useCourseActions() {
             .eq('periodo', c.periodo)
             .eq('grado', c.grado)
             .eq('seccion', c.seccion)
-            .eq('nivel_educativo', c.nivelEducativo || 'secundaria')
+            .eq('nivel_educativo', targetNivel)
             .maybeSingle();
 
         if (findError) {
@@ -60,10 +61,18 @@ export function useCourseActions() {
                 return null;
             }
 
-            const yaEsTutorEnCurso =
-                existingData.user_id === session.user.id ||
-                state.cursoDocentes.some(cd => cd.cursoId === existingData.id && cd.userId === session.user.id && (cd.esTutor || cd.rol === 'tutor'));
-            const esTutorFinal = Boolean(c.isTutorOficial || yaEsTutorEnCurso);
+            // Comprobar en base de datos si ya existe un tutor oficial registrado con es_tutor = true
+            // para evitar violar la restricción única unique_tutor_per_curso
+            const { data: existingTutorInDb } = await supabase
+                .from('curso_docentes')
+                .select('id, docente_id')
+                .eq('curso_id', existingData.id)
+                .eq('es_tutor', true)
+                .maybeSingle();
+
+            const tutorYaExiste = Boolean(existingTutorInDb);
+            const esTutorFinal = !tutorYaExiste && Boolean(c.isTutorOficial || existingData.user_id === session.user.id);
+            const rolFinal = (existingData.user_id === session.user.id || c.isTutorOficial || esTutorFinal) ? 'tutor' : 'co-docente';
 
             // Insert linking record in curso_docentes
             const { data: linkData, error: linkError } = await supabase
@@ -71,7 +80,7 @@ export function useCourseActions() {
                 .insert([{
                     curso_id: existingData.id,
                     docente_id: session.user.id,
-                    rol: esTutorFinal ? 'tutor' : 'co-docente',
+                    rol: rolFinal,
                     es_tutor: esTutorFinal,
                     asignatura: c.asignatura,
                     dias_semana: c.diasSemana
@@ -81,7 +90,7 @@ export function useCourseActions() {
             if (linkError) {
                 console.error('Error linking to existing course:', linkError);
                 
-                // Buscar quién tiene la asignatura
+                // Buscar quién tiene la asignatura en caso de colisión real de asignatura
                 const { data: conflictLink } = await supabase
                     .from('curso_docentes')
                     .select('docente_id')
@@ -97,7 +106,11 @@ export function useCourseActions() {
                     }
                 }
 
-                setGenericToast({ message: `La asignatura ${getAsignaturaNombre(c.asignatura)} ya está siendo utilizada por ${nombreConflicto}. Elige otra asignatura para crear el curso.`, type: 'error' });
+                if (conflictLink) {
+                    setGenericToast({ message: `La asignatura ${getAsignaturaNombre(c.asignatura)} ya está siendo utilizada por ${nombreConflicto}. Elige otra asignatura para crear el curso.`, type: 'error' });
+                } else {
+                    setGenericToast({ message: `No se pudo vincular la asignatura al curso: ${linkError.message || 'Error de base de datos'}.`, type: 'error' });
+                }
                 setTimeout(() => setGenericToast(null), 8000);
                 return null;
             }
@@ -317,13 +330,14 @@ export function useCourseActions() {
     const handleSaveCurso = useCallback(async (c: Curso) => {
         if (!session?.user?.id) return;
         
-        const nivelEducativo = c.nivelEducativo || 'secundaria';
+        const nivelEducativo = (c.nivelEducativo || 'secundaria').toLowerCase();
         const nivelNombre = nivelEducativo === 'primaria' ? 'Primaria' : 'Secundaria';
         const { data: grp } = await supabase.from('grupos').upsert({
             nombre: `${c.grado} ${c.seccion} (${nivelNombre})`,
             grado: c.grado,
             seccion: c.seccion,
-            nivel_educativo: nivelEducativo
+            nivel_educativo: nivelEducativo,
+            centro_id: c.centroId
         }, { onConflict: 'grado,seccion,nivel_educativo' }).select();
 
         const grupo_id = grp?.[0]?.id || c.grupoId;
@@ -341,7 +355,8 @@ export function useCourseActions() {
             is_tutor_oficial: c.isTutorOficial,
             configuracion_evaluacion: c.configuracionEvaluacion || {},
             user_id: session.user.id,
-            grupo_id: grupo_id
+            grupo_id: grupo_id,
+            centro_id: c.centroId
         });
         // Invalidar el caché de cursos: el curso fue editado.
         clearCursoCache(session.user.id);
@@ -530,11 +545,12 @@ export function useCourseActions() {
         if (!existing) {
             const curso = state.cursos.find(c => c.id === cursoId && (!asignatura || sonMismaAsignatura(c.asignatura, asignatura))) || state.cursos.find(c => c.id === cursoId);
             if (curso && curso.userId === session.user.id) {
+                const yaTieneTutor = state.cursoDocentes.some(cd => cd.cursoId === cursoId && cd.esTutor);
                 const { data, error } = await supabase.from('curso_docentes').insert([{
                     curso_id: cursoId,
                     docente_id: session.user.id,
                     rol: 'tutor',
-                    es_tutor: true,
+                    es_tutor: !yaTieneTutor,
                     asignatura: curso.asignatura || 'Sin Asignatura',
                     dias_semana: diasSemana
                 }]).select();

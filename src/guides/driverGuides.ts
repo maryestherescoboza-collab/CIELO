@@ -5,6 +5,7 @@ import { initGuideEventListeners, cleanupGuideEventListeners } from './guideEven
 import { voiceNarrator } from './voiceNarrator';
 import { resolveAudioUrl } from './audioRegistry';
 import type { GuideExecutionState } from './guideConfirmation';
+import { useAppStore } from '../store/appStore';
 import {
   updateStageStatus,
   setIniciacionCompleted,
@@ -83,6 +84,7 @@ export function stopActiveGuide() {
 
     hideDriverOverlay();
     cleanupGuideEventListeners();
+    document.body.classList.remove('cielo-guide-active');
 
     if (driverObj) {
       const instance = driverObj;
@@ -118,7 +120,8 @@ export function startGuide(guideId: string, initialStep?: number, userId?: strin
   if (!guide) return;
 
   currentGuideId = guide.id;
-  activeUserId = getResolvedUserId(userId);
+  const resolvedUid = userId || useAppStore.getState().session?.user?.id;
+  activeUserId = getResolvedUserId(resolvedUid);
 
   // Si es la guía de iniciación y no se especificó un paso forzado desde cero, retomar progreso
   if (currentGuideId === 'iniciacion' && initialStep === undefined && !forceFromZero) {
@@ -132,15 +135,41 @@ export function startGuide(guideId: string, initialStep?: number, userId?: strin
     currentStepIndex = Math.max(0, Math.min(initialStep || 0, guide.steps.length - 1));
   }
 
-  // Configure Driver.js instance
+  // Configure Driver.js instance (animate: false prevents interpolating from detached (0,0) nodes across route/modal changes)
+  document.body.classList.add('cielo-guide-active');
   driverObj = driver({
+    animate: false,
     showButtons: [], // Custom interactive controls handled inside popover
     allowClose: true,
     overlayColor: 'rgba(0, 0, 0, 0.55)',
+    onPopoverRender: () => {
+      bindPopoverControls();
+      requestAnimationFrame(() => {
+        positionOutsideCourseModal();
+      });
+    },
+    onHighlighted: () => {
+      bindPopoverControls();
+      positionOutsideCourseModal();
+    },
     onDestroyed: () => {
+      // Si la ventana de Driver.js se cerró externamente (ej. tecla Escape o backdrop)
+      if (currentGuideId === 'iniciacion' && activeUserId && currentStepIndex > 0) {
+        saveIniciacionProgressOnExit(activeUserId, currentStepIndex);
+      }
       stopActiveGuide();
     }
   });
+
+  if (driverObj && typeof driverObj.refresh === 'function') {
+    const origRefresh = driverObj.refresh.bind(driverObj);
+    driverObj.refresh = () => {
+      origRefresh();
+      requestAnimationFrame(() => {
+        positionOutsideCourseModal();
+      });
+    };
+  }
 
   if (!activeResizeListener) {
     activeResizeListener = handleWindowResize;
@@ -156,6 +185,10 @@ export function startGuide(guideId: string, initialStep?: number, userId?: strin
  * o dejar cajas provisionales en las esquinas.
  */
 function hideDriverOverlay() {
+  document.querySelectorAll<HTMLElement>('.cielo-modal-card').forEach((el) => {
+    el.style.marginRight = '';
+    el.style.marginTop = '';
+  });
   const popover = document.querySelector('.driver-popover') as HTMLElement | null;
   const overlay = document.querySelector('.driver-overlay') as HTMLElement | null;
   if (popover) popover.style.display = 'none';
@@ -167,12 +200,14 @@ function hideDriverOverlay() {
  */
 export function isElementTrulyVisible(el: Element | null): el is HTMLElement {
   if (!el || !el.isConnected) return false;
+  if (el.closest('[hidden], [aria-hidden="true"]')) return false;
   const style = window.getComputedStyle(el);
   if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
     return false;
   }
+  if (el.getClientRects().length === 0) return false;
   const rect = el.getBoundingClientRect();
-  return rect.width > 0 && rect.height > 0;
+  return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.right > 0;
 }
 
 /**
@@ -249,19 +284,48 @@ export function attachDynamicTargetSync(targetElement: HTMLElement): () => void 
   }
 
   let rafSyncId: number | null = null;
+  let trackedElement: HTMLElement = targetElement;
 
   const triggerRefresh = () => {
     if (rafSyncId !== null) return;
     rafSyncId = requestAnimationFrame(() => {
       rafSyncId = null;
-      if (isGuideActive() && driverObj && typeof driverObj.refresh === 'function') {
+      if (!isGuideActive() || !driverObj) return;
+
+      // Si React re-renderizó el componente y desconectó el nodo antiguo, re-vincular al nodo vivo
+      if (!trackedElement.isConnected || !isElementTrulyVisible(trackedElement)) {
+        const guide = CATALOGO_GUIAS.find(g => g.id === currentGuideId);
+        const step = guide?.steps[currentStepIndex];
+        if (guide && step) {
+          const liveEl = findVisibleTargetElement(step.selector);
+          if (liveEl && liveEl !== trackedElement) {
+            trackedElement = liveEl;
+            highlightElement(step, liveEl, guide);
+            return;
+          }
+        }
+      }
+
+      if (typeof driverObj.refresh === 'function') {
         driverObj.refresh();
       }
+      positionOutsideCourseModal();
     });
   };
 
   // Capturar scroll en cualquier contenedor interno (modales con overflow-y-auto, tablas, etc.)
   window.addEventListener('scroll', triggerRefresh, { capture: true, passive: true });
+
+  // Observar mutaciones por si React reemplaza el nodo objetivo durante cargas asíncronas
+  let domRebindObserver: MutationObserver | null = null;
+  if (typeof MutationObserver !== 'undefined') {
+    domRebindObserver = new MutationObserver(() => {
+      if (!trackedElement.isConnected) {
+        triggerRefresh();
+      }
+    });
+    domRebindObserver.observe(document.body, { childList: true, subtree: true });
+  }
 
   // Observar redimensionamiento del elemento y su modal
   let resizeObserver: ResizeObserver | null = null;
@@ -282,6 +346,10 @@ export function attachDynamicTargetSync(targetElement: HTMLElement): () => void 
       rafSyncId = null;
     }
     window.removeEventListener('scroll', triggerRefresh, { capture: true } as any);
+    if (domRebindObserver) {
+      domRebindObserver.disconnect();
+      domRebindObserver = null;
+    }
     if (resizeObserver) {
       resizeObserver.disconnect();
       resizeObserver = null;
@@ -324,6 +392,17 @@ export function findVisibleTargetElement(selector: string): HTMLElement | null {
       if (table) {
         if (!table.id) table.id = 'dynamic-cotejo-table';
         if (isElementTrulyVisible(table)) return table as HTMLElement;
+      }
+      continue;
+    }
+
+    if (part === '[data-guide="modal-curso-formulario"]') {
+      const formEl = document.querySelector<HTMLElement>('[data-guide="modal-curso-formulario"]');
+      if (formEl) {
+        const modalCard = formEl.closest<HTMLElement>('.cielo-modal-card') || formEl;
+        if (isElementTrulyVisible(modalCard) && !isModalOrContainerLoading(modalCard)) {
+          return modalCard;
+        }
       }
       continue;
     }
@@ -490,6 +569,59 @@ function buildPopoverHtml(step: GuideStep, currentIdx: number, totalSteps: numbe
 /**
  * Attaches interactive click handlers to voice narrator buttons rendered in the popover.
  */
+/**
+ * Guarda progreso y finaliza limpiamente el recorrido interactivo.
+ */
+export function handleExitAndSaveGuide() {
+  voiceNarrator.stop();
+  const guideId = currentGuideId;
+  const stepIndex = currentStepIndex;
+  const uid = activeUserId || useAppStore.getState().session?.user?.id || null;
+
+  if (guideId === 'iniciacion') {
+    saveIniciacionProgressOnExit(uid, stepIndex);
+  }
+
+  stopActiveGuide();
+}
+
+/**
+ * Reinicia la guía de iniciación desde el paso 0.
+ */
+export function handleRestartGuide() {
+  voiceNarrator.stop();
+  if (window.confirm('¿Deseas reiniciar la guía de iniciación desde el principio?')) {
+    const uid = activeUserId || useAppStore.getState().session?.user?.id || null;
+    resetIniciacionProgress(uid);
+    stopActiveGuide();
+    setTimeout(() => {
+      startGuide('iniciacion', 0, uid || undefined, true);
+    }, 150);
+  }
+}
+
+// Delegated listener en document (useCapture: true) para garantizar que el clic en Guardar y salir
+// se capture SIEMPRE sin importar el ciclo de vida del DOM del popover de Driver.js
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    const exitBtn = (e.target as HTMLElement)?.closest?.('#cielo-guide-exit-btn, .cielo-tour-exit-action');
+    if (exitBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleExitAndSaveGuide();
+      return;
+    }
+
+    const restartBtn = (e.target as HTMLElement)?.closest?.('#cielo-guide-restart-btn, .cielo-tour-restart-action');
+    if (restartBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleRestartGuide();
+      return;
+    }
+  }, true);
+}
+
 function bindPopoverControls() {
   requestAnimationFrame(() => {
     const muteBtn = document.getElementById('cielo-guide-mute-btn');
@@ -532,13 +664,7 @@ function bindPopoverControls() {
     if (restartBtn) {
       restartBtn.onclick = (e) => {
         e.stopPropagation();
-        if (window.confirm('¿Deseas reiniciar la guía de iniciación desde el principio?')) {
-          resetIniciacionProgress(activeUserId);
-          stopActiveGuide();
-          setTimeout(() => {
-            startGuide('iniciacion', 0, activeUserId || undefined, true);
-          }, 150);
-        }
+        handleRestartGuide();
       };
     }
 
@@ -546,10 +672,7 @@ function bindPopoverControls() {
     if (exitBtn) {
       exitBtn.onclick = (e) => {
         e.stopPropagation();
-        if (currentGuideId === 'iniciacion') {
-          saveIniciacionProgressOnExit(activeUserId, currentStepIndex);
-        }
-        stopActiveGuide();
+        handleExitAndSaveGuide();
       };
     }
   });
@@ -743,6 +866,74 @@ function updatePopoverStatus(state: GuideExecutionState, message?: string) {
   } else {
     container.innerHTML = '';
   }
+
+  requestAnimationFrame(() => {
+    positionOutsideCourseModal();
+  });
+}
+
+/**
+ * En el paso 3 (cuando está abierto el modal "Nuevo curso"), ubica la tarjeta de la guía
+ * directamente fuera de los límites del modal (a su lado derecho/izquierdo, o arriba en pantallas estrechas),
+ * manteniéndola dentro del navegador sin cubrir jamás el formulario.
+ */
+function positionOutsideCourseModal() {
+  if (!isGuideActive()) return;
+  const formEl = document.querySelector<HTMLElement>('[data-guide="modal-curso-formulario"]');
+  const popoverEl = document.querySelector<HTMLElement>('.driver-popover');
+  if (!formEl || !popoverEl || popoverEl.style.display === 'none') return;
+
+  const modalCard = formEl.closest<HTMLElement>('.cielo-modal-card') || formEl;
+  if (!isElementTrulyVisible(modalCard)) return;
+
+  const popRect = popoverEl.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const gap = 14;
+
+  if (vw >= 820) {
+    // Si el modal centrado no deja suficiente espacio a la derecha para la tarjeta, desplazar ligeramente el modal a la izquierda
+    modalCard.style.marginTop = '';
+    const initialModalRect = modalCard.getBoundingClientRect();
+    const neededRight = popRect.width + gap + 12;
+    if (vw - initialModalRect.right < neededRight) {
+      const shift = Math.min(initialModalRect.left - 12, (neededRight - (vw - initialModalRect.right)) * 2);
+      if (shift > 0) {
+        modalCard.style.marginRight = `${Math.ceil(shift)}px`;
+      }
+    }
+
+    const modalRect = modalCard.getBoundingClientRect();
+    const left =
+      vw - modalRect.right >= popRect.width + 8
+        ? Math.min(modalRect.right + gap, vw - popRect.width - 8)
+        : Math.max(8, modalRect.left - popRect.width - gap);
+    const top = Math.max(
+      12,
+      Math.min(Math.round(modalRect.top + (modalRect.height - popRect.height) / 2), vh - popRect.height - 12)
+    );
+
+    popoverEl.style.setProperty('position', 'fixed', 'important');
+    popoverEl.style.setProperty('left', `${Math.round(left)}px`, 'important');
+    popoverEl.style.setProperty('right', 'auto', 'important');
+    popoverEl.style.setProperty('top', `${Math.round(top)}px`, 'important');
+    popoverEl.style.setProperty('bottom', 'auto', 'important');
+  } else {
+    // En pantallas pequeñas (< 820px): colocar la tarjeta compacta arriba del modal, fuera de su área
+    modalCard.style.marginRight = '';
+    const initialModalRect = modalCard.getBoundingClientRect();
+    const neededTop = popRect.height + gap + 8;
+    if (initialModalRect.top < neededTop) {
+      modalCard.style.marginTop = `${Math.ceil(neededTop - initialModalRect.top + 8)}px`;
+    }
+
+    const left = Math.max(8, Math.round((vw - popRect.width) / 2));
+    popoverEl.style.setProperty('position', 'fixed', 'important');
+    popoverEl.style.setProperty('left', `${left}px`, 'important');
+    popoverEl.style.setProperty('right', 'auto', 'important');
+    popoverEl.style.setProperty('top', '8px', 'important');
+    popoverEl.style.setProperty('bottom', 'auto', 'important');
+  }
 }
 
 /**
@@ -755,6 +946,10 @@ function highlightElement(step: GuideStep, targetElement: HTMLElement, guide: Gu
     const popoverHtml = buildPopoverHtml(step, currentStepIndex, guide.steps.length, guide);
 
     const isBottomNav = step.selector.includes('nav-');
+    const isCourseModal =
+      targetElement.classList.contains('cielo-modal-card') ||
+      step.selector.includes('modal-curso-formulario');
+
     if (targetElement && typeof (targetElement as any).scrollIntoView === 'function') {
       try {
         (targetElement as any).scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
@@ -767,17 +962,37 @@ function highlightElement(step: GuideStep, targetElement: HTMLElement, guide: Gu
     requestAnimationFrame(() => {
       if (!driverObj || !isGuideActive()) return;
 
+      // Si el elemento objetivo se desconectó durante el frame de scroll, re-resolverlo en vivo
+      let liveTarget = targetElement;
+      if (!liveTarget.isConnected || !isElementTrulyVisible(liveTarget)) {
+        const resolved = findVisibleTargetElement(step.selector);
+        if (!resolved) {
+          highlightStep();
+          return;
+        }
+        liveTarget = resolved;
+      }
+
+      const overlay = document.querySelector('.driver-overlay') as HTMLElement | null;
+      if (overlay) overlay.style.display = '';
+
       driverObj.highlight({
-        element: targetElement,
+        element: liveTarget,
         popover: {
           description: popoverHtml,
-          side: isBottomNav ? 'top' : 'bottom',
-          align: 'start'
+          side: isCourseModal ? 'right' : isBottomNav ? 'top' : (step.popoverSide || 'bottom'),
+          align: isCourseModal ? 'center' : (step.popoverAlign || 'start')
         }
       });
 
+      if (isCourseModal) {
+        positionOutsideCourseModal();
+        setTimeout(positionOutsideCourseModal, 220);
+        setTimeout(positionOutsideCourseModal, 420);
+      }
+
       // Vincular sincronización dinámica en vivo para scrolls internos en modales o cambios de tamaño
-      attachDynamicTargetSync(targetElement);
+      attachDynamicTargetSync(liveTarget);
 
       // Reproducir narración neuronal de forma estrictamente idempotente (una sola vez por paso)
       const stepText = step.voz || step.texto;

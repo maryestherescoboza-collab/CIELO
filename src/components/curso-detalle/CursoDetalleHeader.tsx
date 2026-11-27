@@ -253,17 +253,18 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                     {/* Lado derecho: 3 círculos de color/nivel arriba y botón + Agregar Actividad abajo */}
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                         {/* 3 puntos en tonos cálidos/naranjas según el mockup */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2" data-guide="barra-niveles-dominio">
                             {[
-                                { val: 100, bg: 'bg-[#EA580C]', label: '100' },
-                                { val: 85, bg: 'bg-[#F97316]', label: '85' },
-                                { val: 70, bg: 'bg-[#FDBA74]', label: '70' }
+                                { val: 100, bg: 'bg-[#EA580C]', label: '100', modeGuide: 'modo-eval-pincel' },
+                                { val: 85, bg: 'bg-[#F97316]', label: '85', modeGuide: 'modo-eval-numerico' },
+                                { val: 70, bg: 'bg-[#FDBA74]', label: '70', modeGuide: 'modo-eval-libre' }
                             ].map(item => {
                                 const isActive = activePaintColor === item.val;
                                 return (
                                     <button
                                         key={item.val}
                                         type="button"
+                                        data-guide={item.modeGuide}
                                         onClick={() => setActivePaintColor(isActive ? -1 : item.val)}
                                         title={`Nivel de logro ${item.val}`}
                                         className={`w-5 h-5 rounded-full transition-transform active:scale-90 ${item.bg} ${
@@ -441,6 +442,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                         <div className="flex items-center bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)] ml-1">
                             <button
                                 type="button"
+                                data-guide="modo-eval-pincel"
                                 onClick={() => setEvalMode('pincel')}
                                 className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase transition-all ${evalMode === 'pincel' ? 'bg-[#2E3330] text-white' : 'text-[#5F665E]'}`}
                             >
@@ -448,6 +450,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             </button>
                             <button
                                 type="button"
+                                data-guide="modo-eval-numerico"
                                 onClick={() => setEvalMode('numerico')}
                                 className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase transition-all ${evalMode === 'numerico' ? 'bg-[#2E3330] text-white' : 'text-[#5F665E]'}`}
                             >
@@ -455,6 +458,7 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
                             </button>
                             <button
                                 type="button"
+                                data-guide="modo-eval-libre"
                                 onClick={() => setEvalMode('libre')}
                                 className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase transition-all ${evalMode === 'libre' ? 'bg-[#2E3330] text-white' : 'text-[#5F665E]'}`}
                             >
@@ -465,36 +469,48 @@ const CursoDetalleHeader: React.FC<CursoDetalleHeaderProps> = ({
 
                     <div className="flex items-center gap-2">
                         {/* Niveles de dominio */}
-                        {(evalMode === 'pincel' || evalMode === 'numerico') && (
-                            <div className="flex items-center gap-1 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)]">
-                                {[100, 85, 70, 55].map(val => {
-                                    const isActive = activePaintColor === val;
-                                    const colors: Record<number, string> = {
-                                        100: 'bg-primary text-white',
-                                        85: 'bg-attention text-white',
-                                        70: 'bg-danger text-white',
-                                        55: 'bg-[#2E3330] text-white'
-                                    };
-                                    return (
-                                        <button
-                                            key={val}
-                                            type="button"
-                                            onClick={() => setActivePaintColor(val)}
-                                            className={`w-7 h-7 rounded-full text-xs font-black transition-all flex items-center justify-center ${
-                                                isActive ? `${colors[val]} ring-2 ring-black/15 shadow-xs scale-105` : 'bg-white text-[#5F665E] hover:text-[#2E3330]'
-                                            }`}
-                                        >
-                                            {val}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
+                        <div
+                            data-guide="barra-niveles-dominio"
+                            className="flex items-center gap-1 bg-(--background) p-0.5 rounded-full border border-[rgba(46,51,48,0.06)]"
+                        >
+                            {(evalMode === 'pincel' || evalMode === 'numerico') ? [100, 85, 70, 55].map(val => {
+                                const isActive = activePaintColor === val;
+                                const colors: Record<number, string> = {
+                                    100: 'bg-primary text-white',
+                                    85: 'bg-attention text-white',
+                                    70: 'bg-danger text-white',
+                                    55: 'bg-[#2E3330] text-white'
+                                };
+                                return (
+                                    <button
+                                        key={val}
+                                        type="button"
+                                        data-guide={evalMode === 'pincel' ? 'nivel-pincel' : 'nivel-num'}
+                                        onClick={() => setActivePaintColor(val)}
+                                        className={`w-7 h-7 rounded-full text-xs font-black transition-all flex items-center justify-center ${
+                                            isActive ? `${colors[val]} ring-2 ring-black/15 shadow-xs scale-105` : 'bg-white text-[#5F665E] hover:text-[#2E3330]'
+                                        }`}
+                                    >
+                                        {val}
+                                    </button>
+                                );
+                            }) : [100, 85, 70, 55].map(val => (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => { setEvalMode('numerico'); setActivePaintColor(val); }}
+                                    className="w-7 h-7 rounded-full text-xs font-black transition-all flex items-center justify-center bg-white text-[#5F665E] hover:text-[#2E3330]"
+                                >
+                                    {val}
+                                </button>
+                            ))}
+                        </div>
 
                         <CieloPill
                             as="button"
                             variant="ghost"
                             onClick={onAddActividad}
+                            data-guide="btn-agregar-actividad"
                             className="gap-1.5 px-3 min-h-7 bg-white text-[#2E3330] border border-(--border-soft) hover:bg-(--background) text-xs font-black"
                         >
                             <Plus size={13} strokeWidth={2.6} />

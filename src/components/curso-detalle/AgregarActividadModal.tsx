@@ -469,6 +469,7 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                         <button
                             type="button"
                             onClick={handleNext}
+                            data-guide="modal-actividad-continuar"
                             className="inline-flex items-center gap-1.5 bg-[#689C63] hover:bg-[#588654] text-white text-xs font-bold px-5 py-2 rounded-full shadow-xs transition-all cursor-pointer ml-auto"
                         >
                             <span>Continuar</span>
@@ -478,6 +479,7 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                         <button
                             type="button"
                             onClick={handleConfirm}
+                            data-guide="modal-actividad-guardar"
                             disabled={isSaving}
                             className="inline-flex items-center gap-1.5 bg-[#689C63] hover:bg-[#588654] disabled:opacity-50 text-white text-xs font-bold px-5 py-2 rounded-full shadow-xs transition-all cursor-pointer ml-auto"
                         >
@@ -560,6 +562,7 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                                     if (error) setError(null);
                                 }}
                                 placeholder="Escribe los contenidos curriculares..."
+                                data-guide="modal-actividad-selector-contenidos"
                                 className="w-full p-3 rounded-xl border border-slate-200/90 bg-white text-xs sm:text-sm text-[#2E3330] placeholder:text-slate-400 focus:border-[#689C63] focus:ring-2 focus:ring-[#689C63]/10 outline-none resize-none leading-relaxed transition-all"
                             />
                         ) : (
@@ -594,7 +597,7 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                                         No se encontraron contenidos con este criterio.
                                     </div>
                                 ) : (
-                                    <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                                    <div data-guide="modal-actividad-selector-contenidos" className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                                         {filteredContenidos.map((item) => {
                                             const isSelected = selectedContenidoIds.includes(item.id);
                                             const eje = item.contenido_json && ((item.contenido_json as ContenidoJson).bloque || (item.contenido_json as { eje?: string }).eje);
@@ -602,7 +605,13 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                                             return (
                                                 <div
                                                     key={item.id}
-                                                    onClick={() => toggleContenido(item.id)}
+                                                    data-guide="item-contenido"
+                                                    onClick={() => {
+                                                        toggleContenido(item.id);
+                                                        if (document.body.classList.contains('cielo-guide-active') && !isSelected) {
+                                                            window.setTimeout(() => setStep(2), 180);
+                                                        }
+                                                    }}
                                                     className={`px-3 py-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 select-none ${
                                                         isSelected
                                                             ? 'bg-[#689C63]/8 border-[#689C63]'
@@ -645,7 +654,7 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                 {step === 2 && (
                     <div className="space-y-2.5">
                         {isManual ? (
-                            <div className="space-y-2.5">
+                            <div data-guide="modal-actividad-selector-indicadores" className="space-y-2.5">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     {(['BC1', 'BC2', 'BC3', 'BC4'] as BCKey[]).map((bc) => {
                                         const colorBC = COLORES_BLOQUE_CF[bc] || '#689C63';
@@ -705,7 +714,7 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                                         No se encontraron indicadores para los contenidos seleccionados.
                                     </div>
                                 ) : (
-                                    <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                                    <div data-guide="modal-actividad-selector-indicadores" className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                                         {filteredIndicadores.map((ind) => {
                                             const isSelected = selectedIndicadorIds.includes(ind.id);
                                             const bc = (bloqueDeCompetencia(ind.competencia, activeNivel) || 'BC1') as BCKey;
@@ -714,7 +723,13 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                                             return (
                                                 <div
                                                     key={ind.id}
-                                                    onClick={() => toggleIndicador(ind.id)}
+                                                    data-guide="item-indicador"
+                                                    onClick={() => {
+                                                        toggleIndicador(ind.id);
+                                                        if (document.body.classList.contains('cielo-guide-active') && !isSelected) {
+                                                            window.setTimeout(() => setStep(3), 180);
+                                                        }
+                                                    }}
                                                     className={`px-3 py-2.5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 select-none ${
                                                         isSelected
                                                             ? 'bg-[#689C63]/8 border-[#689C63]'
@@ -763,7 +778,7 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                 {/* PASO 3: PRODUCTO */}
                 {/* ============================================================== */}
                 {step === 3 && (
-                    <div className="space-y-3">
+                    <div data-guide="modal-actividad-producto" className="space-y-3">
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5">
                             {OPCIONES_PRODUCTO.map((opcion) => {
                                 const isSelected = selectedProducto === opcion && !customProducto.trim();
@@ -771,6 +786,7 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                                     <button
                                         key={opcion}
                                         type="button"
+                                        data-guide="item-producto"
                                         onClick={() => {
                                             setSelectedProducto(opcion);
                                             setCustomProducto('');
@@ -793,6 +809,7 @@ export const AgregarActividadModal: React.FC<AgregarActividadModalProps> = ({
                             <input
                                 type="text"
                                 value={customProducto}
+                                data-guide="modal-actividad-producto-input"
                                 onChange={(e) => {
                                     setCustomProducto(e.target.value);
                                     if (e.target.value) setSelectedProducto('');

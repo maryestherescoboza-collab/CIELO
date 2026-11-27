@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Play, X, Maximize2, Minimize2 } from 'lucide-react';
@@ -204,19 +205,17 @@ export const FloatingTutorialVideo: React.FC<FloatingTutorialVideoProps> = ({
             {createPortal(
                 <aside
                     aria-label="Tutorial de secuencias didácticas de bienvenida"
-                    className={`transition-all duration-300 select-none ${
-                        isExpanded
+                    className={`transition-all duration-300 select-none ${isExpanded
                             ? 'fixed z-70 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-3xl'
                             : 'fixed right-3.5 bottom-20 sm:right-6 sm:bottom-8 z-40 w-[calc(100vw-1.75rem)] max-w-71.25 sm:max-w-77.5'
-                    }`}
+                        }`}
                     style={!isExpanded ? { animation: 'cieloFloatingAnimation 4s ease-in-out infinite' } : undefined}
                 >
                     <div
-                        className={`bg-[#FCFCFA] rounded-2xl border border-black/10 transition-all duration-300 flex flex-col overflow-hidden ${
-                            isExpanded
+                        className={`bg-[#FCFCFA] rounded-2xl border border-black/10 transition-all duration-300 flex flex-col overflow-hidden ${isExpanded
                                 ? 'shadow-2xl'
                                 : 'shadow-[0_10px_25px_-5px_rgba(0,0,0,0.12),0_8px_10px_-6px_rgba(0,0,0,0.08)] p-3 sm:p-3.5 hover:shadow-[0_16px_32px_-6px_rgba(0,0,0,0.18)] hover:[animation-play-state:paused]'
-                        }`}
+                            }`}
                     >
                         {/* ────────────────────────────────────────────────────────── */}
                         {/* CASO A: MODO EXPANDIDO (MODAL GRANDE CON REPRODUCTOR)      */}

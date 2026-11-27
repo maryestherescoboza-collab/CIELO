@@ -60,8 +60,13 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId, user: propUser })
     refreshProgress();
     const p = loadIniciacionProgress(effectiveUserId, currentUser.user_metadata);
 
-    // 3. Si ya completó la guía o ya la descartó, o si la guía ya está activa, no mostrar
-    if (p.completed || p.dismissedWelcome || isGuideActive()) {
+    // 3. Si la guía está activa o ya fue completada al 100%, no mostrar
+    if (p.completed || isGuideActive()) {
+      return;
+    }
+
+    // Si el usuario descartó el modal y no tiene pasos pendientes guardados
+    if (p.dismissedWelcome && (p.currentStepIndex === 0 || !p.currentStepIndex)) {
       return;
     }
 
@@ -71,16 +76,20 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId, user: propUser })
       return;
     }
 
-    // Programar la aparición suave tras completar el primer acceso
+    // Programar la aparición suave tras completar el acceso
     const timer = setTimeout(() => {
       if (!isGuideActive()) {
         sessionStorage.setItem(sessionKey, '1');
         setShowWelcome(true);
+        const isResuming = p.currentStepIndex > 0;
         const audioUrl = resolveAudioUrl(undefined, undefined, 'iniciacion_welcome');
+        const textToSpeak = isResuming
+          ? `Tienes tu recorrido interactivo guardado en la Etapa ${p.currentStage || 1}. ¿Deseas continuar donde lo dejaste?`
+          : 'Te acompañaremos paso a paso en una experiencia interactiva para que aprendas a utilizar las funciones fundamentales de CIELO.';
         voiceNarrator.speak(
-          'Te acompañaremos paso a paso en una experiencia interactiva para que aprendas a utilizar las funciones fundamentales de CIELO.',
+          textToSpeak,
           audioUrl,
-          { stepKey: 'modal_welcome' }
+          { stepKey: isResuming ? 'modal_resume' : 'modal_welcome' }
         );
       }
     }, 1500);
@@ -125,7 +134,13 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId, user: propUser })
     dismissIniciacionWelcome(effectiveUserId);
     refreshProgress();
     const stepToStart = progress.completed ? 0 : (progress.currentStepIndex || 0);
-    navigate('/inicio');
+    
+    // Navegación contextual según el paso guardado
+    if (stepToStart === 0) {
+      navigate('/inicio');
+    } else if (stepToStart >= 1 && stepToStart <= 3) {
+      navigate('/cursos');
+    }
     setTimeout(() => {
       startGuide('iniciacion', stepToStart, effectiveUserId);
     }, 220);
@@ -195,9 +210,20 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId, user: propUser })
 
             {/* Mensaje de bienvenida directo sobre fondo blanco, sin tarjetas anidadas */}
             <div className="pt-1 pb-6 pr-6">
-              <p className="text-base sm:text-[17px] font-medium text-[#2E3330] leading-relaxed">
-                Te acompañaremos paso a paso en una experiencia interactiva para que aprendas a utilizar las funciones fundamentales de CIELO.
-              </p>
+              {progress.currentStepIndex > 0 ? (
+                <>
+                  <h3 className="text-lg font-black text-[#2E3330] font-notion-title mb-1.5">
+                    Continuar guía de iniciación
+                  </h3>
+                  <p className="text-base sm:text-[15.5px] font-medium text-[#2E3330] leading-relaxed">
+                    Tienes tu recorrido interactivo guardado en la Etapa {progress.currentStage || 1}. ¿Deseas continuar donde lo dejaste?
+                  </p>
+                </>
+              ) : (
+                <p className="text-base sm:text-[17px] font-medium text-[#2E3330] leading-relaxed">
+                  Te acompañaremos paso a paso en una experiencia interactiva para que aprendas a utilizar las funciones fundamentales de CIELO.
+                </p>
+              )}
             </div>
 
             {/* Botones de acción */}
@@ -208,7 +234,7 @@ export const GuiaIniciacionModal: React.FC<Props> = ({ userId, user: propUser })
                 className="w-full sm:flex-1 h-11 rounded-full text-xs font-bold uppercase tracking-wider bg-[#2E3330] text-white hover:bg-black transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer select-none"
               >
                 <Volume2 size={16} />
-                <span>Comenzar recorrido</span>
+                <span>{progress.currentStepIndex > 0 ? 'Continuar recorrido' : 'Comenzar recorrido'}</span>
                 <ArrowRight size={15} />
               </button>
               <button

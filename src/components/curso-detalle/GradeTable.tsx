@@ -776,6 +776,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
 
                                                         <button
                                                             type="button"
+                                                            data-guide="celda-estudiante"
                                                             onClick={() => {
                                                                 const parts = (est.displayName || '').split(' ');
                                                                 const nombre = est.nombre || parts[0] || '';
@@ -1175,6 +1176,7 @@ const GradeTable: React.FC<GradeTableProps> = ({
                         <input
                             type="text"
                             autoFocus
+                            data-guide="celda-estudiante"
                             value={editingEstudiante?.nombre || ''}
                             onChange={(e) => setEditingEstudiante(prev => prev ? { ...prev, nombre: e.target.value } : null)}
                             placeholder="Nombre del estudiante"

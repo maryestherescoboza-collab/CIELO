@@ -32,16 +32,16 @@ export function NewCourseModal({
     existingCursos = [],
     cursoDocentes = []
 }: Props) {
-    // Asignaturas ya registradas en el grado + sección seleccionados
+    // Asignaturas ya registradas en el grado + sección seleccionados para este nivel educativo específico
     const asignaturasExistentesEnSeccion = useMemo(() => {
         const grado = String(form.grado || '').trim();
         const seccion = String(form.seccion || '').trim().toUpperCase();
         if (!grado || !seccion) return [];
-        const targetNivel = form.nivelEducativo || 'secundaria';
+        const targetNivel = (form.nivelEducativo || 'secundaria').toLowerCase();
         const cursosSeccion = existingCursos.filter(
             c => c.grado === grado && 
                  String(c.seccion || '').trim().toUpperCase() === seccion &&
-                 (c.nivelEducativo || 'secundaria') === targetNivel
+                 (c.nivelEducativo || 'secundaria').toLowerCase() === targetNivel
         );
         const idsCursos = new Set(cursosSeccion.map(c => c.id));
         const lista = new Set<string>();
@@ -56,23 +56,29 @@ export function NewCourseModal({
         return Array.from(lista);
     }, [existingCursos, cursoDocentes, form.grado, form.seccion, form.nivelEducativo]);
 
-    // Asignaturas optativas personalizadas que el docente o centro ya creó previamente (para reutilizarlas rápido si desea)
+    // Asignaturas optativas personalizadas que el docente o centro ya creó previamente para este nivel
     const optativasPrevias = useMemo(() => {
         const map = new Map<string, string>();
+        const targetNivel = (form.nivelEducativo || 'secundaria').toLowerCase();
         existingCursos.forEach(c => {
-            if (esAsignaturaOptativa(c.asignatura)) {
+            if ((c.nivelEducativo || 'secundaria').toLowerCase() === targetNivel && esAsignaturaOptativa(c.asignatura)) {
                 const id = crearAsignaturaOptativaId(getAsignaturaNombre(c.asignatura));
                 if (id) map.set(id.toLowerCase(), id);
             }
         });
+        const cursosNivelIds = new Set(
+            existingCursos
+                .filter(c => (c.nivelEducativo || 'secundaria').toLowerCase() === targetNivel)
+                .map(c => c.id)
+        );
         cursoDocentes.forEach(cd => {
-            if (esAsignaturaOptativa(cd.asignatura)) {
+            if (cursosNivelIds.has(cd.cursoId) && esAsignaturaOptativa(cd.asignatura)) {
                 const id = crearAsignaturaOptativaId(getAsignaturaNombre(cd.asignatura));
                 if (id) map.set(id.toLowerCase(), id);
             }
         });
         return Array.from(map.values());
-    }, [existingCursos, cursoDocentes]);
+    }, [existingCursos, cursoDocentes, form.nivelEducativo]);
 
     const nombreOptativaLimpio = String(form.asignaturaOptativaNombre || '').replace(/\s+/g, ' ').trim();
 

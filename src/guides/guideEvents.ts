@@ -89,7 +89,7 @@ export function initGuideEventListeners(
   });
 
   // ── REGLA ESPECÍFICA: PASO 3 DE AGREGAR ACTIVIDAD (PRODUCTO) ──
-  // No avanzar hasta detectar que el campo Producto tiene contenido válido (mínimo 3 caracteres).
+  // Avanza al seleccionar un producto predefinido o escribir uno personalizado (mínimo 3 caracteres).
   if (step.selector === '[data-guide="modal-actividad-producto"]') {
     let debounceTimer: any = null;
 
@@ -124,12 +124,21 @@ export function initGuideEventListeners(
       checkAndAdvance(val);
     };
 
-    const handleClickGuardar = (e: MouseEvent) => {
-      const btn = (e.target as HTMLElement)?.closest('[data-guide="modal-actividad-guardar"]');
+    const handleClickProductoOrGuardar = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement;
+      const presetBtn = targetEl?.closest('[data-guide="item-producto"]');
+      if (presetBtn) {
+        markActionDone();
+        return;
+      }
+
+      const btn = targetEl?.closest('[data-guide="modal-actividad-guardar"]');
       if (btn) {
-        const input = document.querySelector<HTMLInputElement>('[data-guide="modal-actividad-producto"]');
+        const input = document.querySelector<HTMLInputElement>('[data-guide="modal-actividad-producto-input"], [data-guide="modal-actividad-producto"] input');
         if (input && input.value.trim().length >= 3) {
           checkAndAdvance(input.value);
+        } else {
+          markActionDone();
         }
       }
     };
@@ -146,7 +155,7 @@ export function initGuideEventListeners(
     document.body.addEventListener('keydown', handleKeydown as any, true);
     document.body.addEventListener('change', handleChangeOrBlur, true);
     document.body.addEventListener('blur', handleChangeOrBlur, true);
-    document.body.addEventListener('click', handleClickGuardar, true);
+    document.body.addEventListener('click', handleClickProductoOrGuardar, true);
 
     activeListenerCleanup = () => {
       opCleanup();
@@ -155,7 +164,7 @@ export function initGuideEventListeners(
       document.body.removeEventListener('keydown', handleKeydown as any, true);
       document.body.removeEventListener('change', handleChangeOrBlur, true);
       document.body.removeEventListener('blur', handleChangeOrBlur, true);
-      document.body.removeEventListener('click', handleClickGuardar, true);
+      document.body.removeEventListener('click', handleClickProductoOrGuardar, true);
     };
     return;
   }

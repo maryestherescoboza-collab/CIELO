@@ -229,14 +229,19 @@ export function updateStageStatus(
 
 /**
  * Conserva el progreso exacto al pulsar «Guardar y salir».
- * NUNCA borra ni reinicia el progreso.
+ * NUNCA marca la guía como completada ni borra el progreso pendiente.
  */
 export function saveIniciacionProgressOnExit(userId: string | null, stepIndex: number, currentStage?: number) {
   const uid = getResolvedUserId(userId);
   const progress = loadIniciacionProgress(uid);
-  progress.currentStepIndex = stepIndex;
+  progress.currentStepIndex = Math.max(0, stepIndex);
+  progress.completed = false; // Garantiza que no se marque como completada al salir
   if (currentStage) {
     progress.currentStage = currentStage;
+  }
+  const stg = progress.currentStage as 1 | 2 | 3 | 4 | 5;
+  if (stg && progress.stages[stg] !== 'completada') {
+    progress.stages[stg] = 'en_progreso';
   }
   saveIniciacionProgress(progress, true);
 }
