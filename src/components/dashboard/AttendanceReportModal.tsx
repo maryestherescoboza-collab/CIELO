@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAsignaturaNombre } from '../../constants/asignaturas';
 import { esEstudianteDelCurso } from '../../utils/aislamiento';
+import { PrimariaAttendanceReport, esCursoPrimaria } from './PrimariaAttendanceReport';
 
 interface AttendanceReportModalProps {
     date: string; // "YYYY-MM-DD"
@@ -50,6 +51,19 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
         return (state.cursoDocentes || []).filter(cd => cd.userId === session?.user?.id);
     }, [state.cursoDocentes, session]);
 
+    // Curso activo y clasificación de nivel educativo (Primaria vs Secundaria)
+    const selectedCourse = useMemo(() => {
+        if (!selectedCursoDocenteId) return null;
+        const cd = state.cursoDocentes?.find(c => c.id === selectedCursoDocenteId);
+        if (!cd) return null;
+        return (state.cursos || []).find(c => c.id === cd.cursoId) || null;
+    }, [state.cursoDocentes, state.cursos, selectedCursoDocenteId]);
+
+    const isPrimaria = useMemo(
+        () => esCursoPrimaria(selectedCourse, state.grupos),
+        [selectedCourse, state.grupos]
+    );
+
     // Reset selected course if modal is reopened or courses change
     useEffect(() => {
         if (isOpen && !selectedCursoDocenteId && availableCursoDocentes.length > 0) {
@@ -85,9 +99,9 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
         };
     }, [isOpen, availableCursoDocentes, selectedCursoDocenteId]);
 
-    // Fetch monthly data con protección contra carreras al navegar rápido entre meses
+    // Fetch monthly data con protección contra carreras al navegar rápido entre meses (exclusivo para Secundaria)
     useEffect(() => {
-        if (!isOpen || !selectedCursoDocenteId) return;
+        if (!isOpen || !selectedCursoDocenteId || isPrimaria) return;
         
         let isCancelled = false;
         const fetchMonthlyAttendance = async () => {
@@ -140,7 +154,7 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
         return () => {
             isCancelled = true;
         };
-    }, [selectedCursoDocenteId, currentDate, isOpen]);
+    }, [selectedCursoDocenteId, currentDate, isOpen, isPrimaria]);
 
     // Get course students
     const courseStudents = useMemo(() => {
@@ -225,9 +239,9 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-[#fcfcfa] rounded-2xl shadow-2xl max-w-6xl w-full flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300">
-                <header className="px-6 py-4 border-b border-[#e6e8e2] bg-white flex justify-between items-center shrink-0">
+        <div className="cielo-attendance-report-portal fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="cielo-attendance-report-modal-box bg-[#fcfcfa] rounded-2xl shadow-2xl max-w-6xl w-full flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300">
+                <header className="no-print-primaria px-6 py-4 border-b border-[#e6e8e2] bg-white flex justify-between items-center shrink-0">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <h2 className="text-xl font-bold text-[#263128]">Informe de asistencia</h2>
                         <div className="flex items-center gap-1 bg-[#f9faf8] border border-[#e6e8e2] rounded-xl px-2 py-1 shadow-2xs">
@@ -259,10 +273,10 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
                     </button>
                 </header>
 
-                <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+                <div className="cielo-attendance-report-scroll flex-1 overflow-y-auto p-6 flex flex-col">
                     {/* Horizontal Course Selector */}
                     {availableCursoDocentes.length > 0 && (
-                        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-slate-200 shrink-0">
+                        <div className="no-print-primaria flex gap-2 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-slate-200 shrink-0">
                             {availableCursoDocentes.map(cd => {
                                 const c = state.cursos?.find(curso => curso.id === cd.cursoId);
                                 if (!c) return null;
@@ -283,6 +297,15 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
                         </div>
                     )}
 
+                    {isPrimaria && selectedCourse && selectedCursoDocenteId ? (
+                        <PrimariaAttendanceReport
+                            curso={selectedCourse}
+                            cursoDocenteId={selectedCursoDocenteId}
+                            currentDate={currentDate}
+                            courseStudents={courseStudents}
+                            userId={session?.user?.id}
+                        />
+                    ) : (
                     <div className="bg-white border border-[#e6e8e2] rounded-xl flex-1 flex flex-col min-h-0">
                         {isLoading ? (
                             <div className="flex-1 flex justify-center items-center p-12">
@@ -345,9 +368,10 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
                             </div>
                         )}
                     </div>
+                    )}
                 </div>
 
-                <footer className="px-6 py-4 border-t border-[#e6e8e2] bg-[#fcfcfa] shrink-0">
+                <footer className="no-print-primaria px-6 py-4 border-t border-[#e6e8e2] bg-[#fcfcfa] shrink-0">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs font-bold uppercase tracking-wider text-[#7a817b]">
                             <span><span className="text-[#689c63] font-black text-sm mr-1">P</span> Presente</span>
@@ -365,20 +389,37 @@ export function AttendanceReportModal({ date, isOpen, onClose }: AttendanceRepor
                             </button>
                             
                             {showLegend && (
-                                <div className="absolute bottom-full right-0 mb-2 w-72 p-4 bg-white rounded-xl shadow-lg border border-[#e6e8e2] text-xs text-[#2b405c] leading-relaxed animate-in fade-in slide-in-from-bottom-2 z-50">
-                                    <h5 className="font-bold mb-1.5 text-[#263128]">Códigos de asistencia diaria</h5>
-                                    <p className="mb-2.5 text-[#58625a]">En la hoja de asistencia del registro escolar, cada día se marca según corresponda: P, T, A o E.</p>
-                                    <ul className="list-disc pl-4 mb-3 space-y-1">
-                                        <li><strong className="text-[#263128]">P</strong>: Presente</li>
-                                        <li><strong className="text-[#263128]">T</strong>: Tardanza — 3 tardanzas cuentan como 1 ausencia</li>
-                                        <li><strong className="text-[#263128]">A</strong>: Ausente — falta sin justificación</li>
-                                        <li><strong className="text-[#263128]">E</strong>: Excusa — ausencia justificada por padre, madre o tutor</li>
-                                    </ul>
-                                    <h5 className="font-bold mb-1 text-[#263128]">Porcentaje de asistencia mensual</h5>
-                                    <p className="bg-[#f9faf8] p-2 rounded-lg border border-[#e6e8e2] font-mono text-[10px] my-1 text-[#58625a]">
-                                        (Total de días presentes / Total de sesiones en el mes) × 100
-                                    </p>
-                                </div>
+                                isPrimaria ? (
+                                    <div className="absolute bottom-full right-0 mb-2 w-80 p-4 bg-white rounded-xl shadow-lg border border-[#e6e8e2] text-xs text-[#2b405c] leading-relaxed animate-in fade-in slide-in-from-bottom-2 z-50">
+                                        <h5 className="font-bold mb-1.5 text-[#263128]">Control de asistencia (Nivel Primario)</h5>
+                                        <p className="mb-2.5 text-[#58625a]">Cada día laborable se registra como P (Presente), T (Tardanza), A (Ausente) o E (Excusa).</p>
+                                        <ul className="list-disc pl-4 mb-3 space-y-1 text-[#58625a]">
+                                            <li>Las tardanzas se contabilizan por separado y no se suman como ausencias.</li>
+                                            <li>Las excusas se contabilizan por separado y no se suman como días de asistencia.</li>
+                                        </ul>
+                                        <h5 className="font-bold mb-1 text-[#263128]">Porcentaje anual de asistencia y ausencia</h5>
+                                        <p className="bg-[#f9faf8] p-2 rounded-lg border border-[#e6e8e2] font-mono text-[10px] my-1 text-[#58625a]">
+                                            % Asistencia = (Total días asistidos / Total días trabajados) × 100
+                                            <br />
+                                            % Ausencia = (Total días de ausencia / Total días trabajados) × 100
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="absolute bottom-full right-0 mb-2 w-72 p-4 bg-white rounded-xl shadow-lg border border-[#e6e8e2] text-xs text-[#2b405c] leading-relaxed animate-in fade-in slide-in-from-bottom-2 z-50">
+                                        <h5 className="font-bold mb-1.5 text-[#263128]">Códigos de asistencia diaria</h5>
+                                        <p className="mb-2.5 text-[#58625a]">En la hoja de asistencia del registro escolar, cada día se marca según corresponda: P, T, A o E.</p>
+                                        <ul className="list-disc pl-4 mb-3 space-y-1">
+                                            <li><strong className="text-[#263128]">P</strong>: Presente</li>
+                                            <li><strong className="text-[#263128]">T</strong>: Tardanza — 3 tardanzas cuentan como 1 ausencia</li>
+                                            <li><strong className="text-[#263128]">A</strong>: Ausente — falta sin justificación</li>
+                                            <li><strong className="text-[#263128]">E</strong>: Excusa — ausencia justificada por padre, madre o tutor</li>
+                                        </ul>
+                                        <h5 className="font-bold mb-1 text-[#263128]">Porcentaje de asistencia mensual</h5>
+                                        <p className="bg-[#f9faf8] p-2 rounded-lg border border-[#e6e8e2] font-mono text-[10px] my-1 text-[#58625a]">
+                                            (Total de días presentes / Total de sesiones en el mes) × 100
+                                        </p>
+                                    </div>
+                                )
                             )}
                         </div>
                     </div>

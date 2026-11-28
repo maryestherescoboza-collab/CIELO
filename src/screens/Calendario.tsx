@@ -1408,84 +1408,135 @@ const CalendarSidePanel: React.FC<{
     const [isFichaSelectorOpen, setIsFichaSelectorOpen] = useState(false);
 
     return (
-        <aside className="w-full xl:w-80 bg-white border border-[#e6e8e2] rounded-xl p-4 flex flex-col gap-5 sticky top-5">
-            <header className="flex justify-between items-center pb-3 border-b border-[#e6e8e2]">
-                <h3 className="font-bold text-lg text-[#263128]">{selLocal.getDate()} de {monthNames[selLocal.getMonth()]}</h3>
+        <aside className="w-full xl:w-76 bg-white border border-[#e6e8e2] rounded-xl p-4 flex flex-col divide-y divide-[#eceee9] sticky top-5">
+            <header className="pb-3">
+                <h3 className="font-bold text-base text-[#263128] tracking-tight">
+                    {selLocal.getDate()} de {monthNames[selLocal.getMonth()]}
+                </h3>
             </header>
 
-            <section>
-                <h4 className="text-xs font-bold text-[#7a817b] uppercase tracking-wider mb-3">Actividades</h4>
-                <div className="flex flex-col gap-2 min-h-7.5" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); onMoveItem(draggedItem, date); }}>
-                    {dayActividades.map((act: any) => {
-                        const c = getCourseColor(act.cursoId || act.curso_id, cursos);
-                        return (
-                            <div
-                                key={act.id}
-                                draggable
-                                onDragStart={(e) => { setDraggedItem({ id: act.id, type: 'actividad' }); setTimeout(() => (e.target as HTMLElement).style.opacity = '0.45', 0); }}
-                                onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; setDraggedItem(null); }}
-                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); (e.currentTarget as HTMLElement).style.borderTop = `2px solid ${c.dot.replace('bg-[', '').replace(']', '')}`; }}
-                                onDragLeave={(e) => { (e.currentTarget as HTMLElement).style.borderTop = ''; }}
-                                onDrop={(e) => {
-                                    e.preventDefault(); e.stopPropagation(); (e.currentTarget as HTMLElement).style.borderTop = '';
-                                    onMoveItem(draggedItem, date, undefined, act.id);
-                                }}
-                                className={`p-2.5 rounded-lg border ${c.border} text-sm cursor-grab active:cursor-grabbing hover:border-black/20 transition-colors ${c.bg}`}
-                            >
-                                <div className={`font-bold ${c.text} leading-tight mb-1`}>{act.nombre}</div>
-                                <div className={`text-xs ${c.text} opacity-80 flex gap-2`}>
-                                    {act.hora_inicio && <span>{act.hora_inicio}</span>}
-                                    {act.asignatura && <span>· {getAsignaturaNombre(act.asignatura)}</span>}
-                                </div>
-                            </div>
-                        );
-                    })}
-                    <button onClick={onAddActividad} className="text-xs font-semibold text-[#689c63] hover:text-[#578952] flex items-center gap-1 mt-1 p-1">
-                        <Plus className="w-3.5 h-3.5" /> Nueva actividad
+            <section className="py-3 flex flex-col gap-1">
+                <button
+                    type="button"
+                    onClick={onOpenAttendance}
+                    data-guide="btn-pase-de-lista"
+                    className="w-full text-left px-2.5 py-2 rounded-lg bg-[#263128] hover:bg-[#1b241d] text-white text-sm font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                >
+                    <span>Sesión pase de lista</span>
+                    <ChevronRight className="w-4 h-4 text-white/70 shrink-0" />
+                </button>
+                <button
+                    type="button"
+                    onClick={onOpenAttendanceReport}
+                    className="w-full text-left px-2.5 py-2 rounded-lg text-[#263128] hover:bg-[#f4f6f2] text-sm font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                >
+                    <span>Informe de asistencia</span>
+                    <ChevronRight className="w-4 h-4 text-[#7a817b] shrink-0" />
+                </button>
+            </section>
+
+            <section className="py-3.5">
+                <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-semibold text-[#687169]">Actividades</h4>
+                    <button
+                        type="button"
+                        onClick={onAddActividad}
+                        className="text-xs font-semibold text-[#689c63] hover:text-[#578952] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Nueva actividad</span>
                     </button>
+                </div>
+                <div
+                    className="flex flex-col gap-1.5 min-h-6"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => { e.preventDefault(); onMoveItem(draggedItem, date); }}
+                >
+                    {dayActividades.length === 0 ? (
+                        <p className="text-xs text-[#8a918b] py-1">Sin actividades para este día.</p>
+                    ) : (
+                        dayActividades.map((act: any) => {
+                            const c = getCourseColor(act.cursoId || act.curso_id, cursos);
+                            return (
+                                <div
+                                    key={act.id}
+                                    draggable
+                                    onDragStart={(e) => { setDraggedItem({ id: act.id, type: 'actividad' }); setTimeout(() => (e.target as HTMLElement).style.opacity = '0.45', 0); }}
+                                    onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; setDraggedItem(null); }}
+                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); (e.currentTarget as HTMLElement).style.borderTop = `2px solid ${c.dot.replace('bg-[', '').replace(']', '')}`; }}
+                                    onDragLeave={(e) => { (e.currentTarget as HTMLElement).style.borderTop = ''; }}
+                                    onDrop={(e) => {
+                                        e.preventDefault(); e.stopPropagation(); (e.currentTarget as HTMLElement).style.borderTop = '';
+                                        onMoveItem(draggedItem, date, undefined, act.id);
+                                    }}
+                                    className="py-1.5 px-2 rounded-md hover:bg-[#f7f8f5] text-sm cursor-grab active:cursor-grabbing transition-colors"
+                                >
+                                    <div className="font-medium text-[#263128] leading-snug">{act.nombre}</div>
+                                    {(act.hora_inicio || act.asignatura) && (
+                                        <div className="text-xs text-[#687169] flex gap-1.5 mt-0.5">
+                                            {act.hora_inicio && <span>{act.hora_inicio}</span>}
+                                            {act.asignatura && <span>{act.hora_inicio ? `· ${getAsignaturaNombre(act.asignatura)}` : getAsignaturaNombre(act.asignatura)}</span>}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
             </section>
 
-            <section>
-                <h4 className="text-xs font-bold text-[#7a817b] uppercase tracking-wider mb-3">Fichas</h4>
-                <div className="flex flex-col gap-2 min-h-7.5" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); onMoveItem(draggedItem, date); }}>
-                    {dayFichasScheduled.map((ficha: any) => {
-                        const c = getCourseColor(ficha.cursoId || ficha.curso_id, cursos);
-                        return (
+            <section className="py-3.5">
+                <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-semibold text-[#687169]">Fichas</h4>
+                    <button
+                        type="button"
+                        onClick={() => setIsFichaSelectorOpen(true)}
+                        className="text-xs font-semibold text-[#537bac] hover:text-[#42648f] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Agregar ficha</span>
+                    </button>
+                </div>
+                <div
+                    className="flex flex-col gap-1.5 min-h-6"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => { e.preventDefault(); onMoveItem(draggedItem, date); }}
+                >
+                    {dayFichasScheduled.length === 0 ? (
+                        <p className="text-xs text-[#8a918b] py-1">Sin fichas programadas.</p>
+                    ) : (
+                        dayFichasScheduled.map((ficha: any) => (
                             <div
                                 key={`sched-ficha-${ficha.id}`}
                                 draggable
                                 onDragStart={(e) => { setDraggedItem({ id: ficha.id, type: 'actividad' }); setTimeout(() => (e.target as HTMLElement).style.opacity = '0.45', 0); }}
                                 onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; setDraggedItem(null); }}
-                                className={`p-2.5 rounded-lg border ${c.border} ${c.bg} text-sm cursor-grab active:cursor-grabbing hover:border-black/20 transition-colors`}
+                                className="py-1.5 px-2 rounded-md hover:bg-[#f7f8f5] text-sm cursor-grab active:cursor-grabbing transition-colors"
                             >
-                                <div className={`font-bold ${c.text} leading-tight`}>📄 {ficha.nombre}</div>
+                                <div className="font-medium text-[#263128] leading-snug">{ficha.nombre}</div>
                             </div>
-                        );
-                    })}
-                    <button onClick={() => setIsFichaSelectorOpen(true)} className="text-xs font-semibold text-[#537bac] hover:text-[#42648f] flex items-center gap-1 mt-1 p-1">
-                        <Plus className="w-3.5 h-3.5" /> Agregar ficha
-                    </button>
+                        ))
+                    )}
                 </div>
             </section>
 
             {dayMinerd.length > 0 && (
-                <section>
-                    <h4 className="text-xs font-bold text-[#7a817b] uppercase tracking-wider mb-3">MINERD</h4>
+                <section className="py-3.5">
+                    <h4 className="text-xs font-semibold text-[#687169] mb-2">MINERD</h4>
                     <div className="flex flex-col gap-2">
                         {dayMinerd.map(ev => (
-                            <div key={`minerd-side-${ev.id}`} className="p-2.5 rounded-lg border border-[#d6cfad] bg-[#fbf9ee] text-sm">
-                                <div className="flex justify-between items-start gap-2 mb-1">
-                                    <div className="font-bold text-[#5c5017] leading-tight">{ev.titulo}</div>
-                                    <div className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-[#e8e2c0] text-[#786b33] uppercase shrink-0">
+                            <div key={`minerd-side-${ev.id}`} className="py-1.5 px-2 rounded-md bg-[#fbf9ee] text-sm">
+                                <div className="flex justify-between items-baseline gap-2">
+                                    <div className="font-medium text-[#5c5017] leading-snug">{ev.titulo}</div>
+                                    <span className="text-xs font-medium text-[#786b33] shrink-0">
                                         {ev.tipo === 'institucional' ? 'Inst.' :
                                             ev.tipo === 'conmemoracion' ? 'Conm.' :
                                                 ev.tipo === 'evaluacion' ? 'Eval.' :
                                                     ev.tipo === 'receso' ? 'Receso' : ev.tipo}
-                                    </div>
+                                    </span>
                                 </div>
                                 {ev.descripcion && (
-                                    <p className="text-xs text-[#736830] opacity-90 leading-snug mt-1">
+                                    <p className="text-xs text-[#736830] leading-snug mt-1">
                                         {ev.descripcion}
                                     </p>
                                 )}
@@ -1499,21 +1550,15 @@ const CalendarSidePanel: React.FC<{
                 const recursos = dayFichasScheduled.flatMap((f: any) => (f.recursos || []).map((r: any) => ({ ...r, fichaTitulo: f.nombre, cursoId: f.cursoId || f.curso_id })));
                 if (recursos.length > 0) {
                     return (
-                        <section>
-                            <h4 className="text-xs font-bold text-[#7a817b] uppercase tracking-wider mb-3">Recursos</h4>
-                            <div className="flex flex-col gap-2">
-                                {recursos.map((r: any, i) => {
-                                    const c = getCourseColor(r.cursoId, cursos);
-                                    return (
-                                        <div key={i} className={`p-2.5 rounded-lg border ${c.border} ${c.bg} text-sm flex gap-2 items-center`}>
-                                            <span className="text-lg">📎</span>
-                                            <div>
-                                                <div className={`font-bold ${c.text} leading-tight`}>{r.titulo}</div>
-                                                <div className={`text-xs ${c.text} opacity-80`}>{r.fichaTitulo}</div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                        <section className="py-3.5">
+                            <h4 className="text-xs font-semibold text-[#687169] mb-2">Recursos</h4>
+                            <div className="flex flex-col gap-1.5">
+                                {recursos.map((r: any, i) => (
+                                    <div key={i} className="py-1 px-2 text-sm">
+                                        <div className="font-medium text-[#263128] leading-snug">{r.titulo}</div>
+                                        <div className="text-xs text-[#687169]">{r.fichaTitulo}</div>
+                                    </div>
+                                ))}
                             </div>
                         </section>
                     );
@@ -1525,44 +1570,21 @@ const CalendarSidePanel: React.FC<{
                 const entregas = dayActividades.filter(a => a.requiereProducto || a.producto);
                 if (entregas.length > 0) {
                     return (
-                        <section>
-                            <h4 className="text-xs font-bold text-[#7a817b] uppercase tracking-wider mb-3">Entregas</h4>
-                            <div className="flex flex-col gap-2">
-                                {entregas.map((a: any) => {
-                                    const c = getCourseColor(a.cursoId || a.curso_id, cursos);
-                                    return (
-                                        <div key={a.id} className={`p-2.5 rounded-lg border ${c.border} ${c.bg} text-sm flex gap-2 items-center`}>
-                                            <span className={`text-lg ${c.text}`}>↑</span>
-                                            <div>
-                                                <div className={`font-bold leading-tight ${c.text}`}>Producto: {a.producto || 'Entregable'}</div>
-                                                <div className={`text-xs opacity-80 ${c.text}`}>{a.nombre}</div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                        <section className="py-3.5">
+                            <h4 className="text-xs font-semibold text-[#687169] mb-2">Entregas</h4>
+                            <div className="flex flex-col gap-1.5">
+                                {entregas.map((a: any) => (
+                                    <div key={a.id} className="py-1 px-2 text-sm">
+                                        <div className="font-medium text-[#263128] leading-snug">{a.producto || 'Entregable'}</div>
+                                        <div className="text-xs text-[#687169]">{a.nombre}</div>
+                                    </div>
+                                ))}
                             </div>
                         </section>
                     );
                 }
                 return null;
             })()}
-
-            <section>
-                <h4 className="text-xs font-bold text-[#7a817b] uppercase tracking-wider mb-3">Asistencia</h4>
-                <button
-                    onClick={onOpenAttendance} data-guide="btn-pase-de-lista"
-                    className="w-full text-left p-3 rounded-lg border border-black/5 bg-[#fcfcfa] text-sm flex gap-3 items-center hover:border-black/20 hover:bg-white transition-colors"
-                >
-                    <div className="w-6 h-6 rounded-full bg-[#e0e9f4] text-[#537bac] flex items-center justify-center font-bold text-xs">✓</div>
-                    <div className="font-bold text-[#263128]">Pase de lista</div>
-                </button>
-                <button
-                    onClick={onOpenAttendanceReport}
-                    className="w-full text-left p-3 mt-2 rounded-lg border border-transparent text-sm flex gap-3 items-center hover:bg-[#f3f7ef] transition-colors"
-                >
-                    <div className="font-semibold text-[#58625a]">Informe de asistencia</div>
-                </button>
-            </section>
 
             {isFichaSelectorOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
